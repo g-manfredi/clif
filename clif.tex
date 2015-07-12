@@ -1,0 +1,39 @@
+\documentclass[a4paper,10pt]{article}
+%\documentclass[a4paper,10pt]{scrartcl}
+
+\usepackage[utf8]{inputenc}
+
+\title{CLIF - Calibrated Lightfield Interchange Format}
+\author{}
+\date{}
+
+\pdfinfo{%
+  /Title    (CLIF - Calibrated Lightfield Interchange Format)
+  /Author   ()
+  /Creator  ()
+  /Producer ()
+  /Subject  ()
+  /Keywords ()
+}
+
+\begin{document}
+\maketitle
+
+\section{Rationale}
+
+Reseach with light fields requires the appropriate data sets. At the moment recorded or rendered light field data is normally stored in a range of ad hoc formats, either based on image formats (png, tiff) or for example on a custom layouts of the hdf5 data format. Metadata which is crucial to describe the structure of the light field in question (e.g. camera parameters, viewpoint spacing) is handled either externally or with non-standard mappings, as, to the knowledge of the authors no such standard yet exists.
+
+Therefore we propose a standard data format based on hdf5, consisting of a range of allowed storage types as well as predefined data layouts and a mandatory selection of attributes sets which are necessary to get a well behaved light field. In this context well behaved means that it is possible to trace each datapoint from the dataset in space, within the limits of the respective setup and calibration.
+
+Files which adhere to such a structure should be indicated by the file extension .clif and may be used to exchange light field data between any software package which supports this standard, independend of the actual setup used to obtain the data. The idea is that with the inclusion and standardization of the respective metadata a use will never have to enter the setup dependend parameters of the recorded data but may directly use the light field, independed of how or by whom it was recorded.
+
+Additionally to the minimally required attributes, a range of optional attributes may be defined which are not crucial to interpret the structure of the light field itself, but may help to better represent or interpret the stored data, for example photometric calibration data.
+
+Also a number of attributes will be defined which are not subject to automatic interpretation, like textual descriptions of the setup and methods to acquire and calibrate the light field.
+
+\section{Targeted Use Cases}
+
+\section{}
+
+
+\end{document}
