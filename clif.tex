@@ -2,6 +2,9 @@
 %\documentclass[a4paper,10pt]{scrartcl}
 
 \usepackage[utf8]{inputenc}
+\usepackage{pdflscape}
+\usepackage{geometry}
+\usepackage{tabularx}
 
 \title{CLIF - Calibrated Lightfield Interchange Format}
 \author{}
@@ -27,13 +30,96 @@ Therefore we propose a standard data format based on hdf5, consisting of a range
 
 Files which adhere to such a structure should be indicated by the file extension .clif and may be used to exchange light field data between any software package which supports this standard, independend of the actual setup used to obtain the data. The idea is that with the inclusion and standardization of the respective metadata a use will never have to enter the setup dependend parameters of the recorded data but may directly use the light field, independed of how or by whom it was recorded.
 
+\section{Targeted Use Cases}
+
+\begin{itemize}
+ \item replacement of ad hoc storage formats
+ \item allow the exchange of light field data between different applications and research groups without the need to manually determine and convert the respective setup parameters
+\end{itemize}
+
+\section{Format overview}
+
+Based on hdf5, minimally mandatory data fields, supported data formats ...
+
 Additionally to the minimally required attributes, a range of optional attributes may be defined which are not crucial to interpret the structure of the light field itself, but may help to better represent or interpret the stored data, for example photometric calibration data.
 
 Also a number of attributes will be defined which are not subject to automatic interpretation, like textual descriptions of the setup and methods to acquire and calibrate the light field.
 
-\section{Targeted Use Cases}
+\section{Extensions}
 
-\section{}
+To allow both a well behaved exchange format and flexible use in research it is encouraged to use the format even for not well-behaved data sets, e.g. as storage format on recording, prior to the calibration step required by the setup. Such a file should be indicated by changing the file extension to rlif to indicate a ``raw'' light field as well as by setting the (TODO internal data flag!). The same goes for extensions of the format which are not yet covered by the common standard, but which may be standardized when a common pattern emerges. 
+
+\section{Developement of the Format and Reference Library}
+
+Open. Open Source. Public Developement.
+
+The format is designed with extendability in mind. All features shall not be changed but only ever extended, providing backwards compatibility but not (necessarily) forward compatibility.
+
+Two sets of standard features: Standardized and proposed. Proposed features may be added by anyone and are not subject to handling by the Reference library. Propositions may be changed at will, standardization requires fixation of the feature and implementation in the reference library.
+
+\section{Low Level Lightfield Library}
+
+Reference library: Minimal processing for clif files. Allow a user to abstract the stored light field format and structure and simply access the data in a fixed format, library automatically applies demosaicing, undistortion, reprojection, conversion, linearisation and EPI generation where required or requested. Additionally a range of tools for conversion to/from custom formats and for viewing of clif files will be included.
+
+The Library should always be in sync with the standard, meaning that all standardized features should be handled by the library.
+
+\begin{itemize}
+ \item c++ library
+ \item header-only bindings for different (c++,python?) libraries (opencv, vigra, ...?) to allow easy access for different library users
+ \item minimal processing capabilites: only ``simple'' processing like interpolation and demosaicing - the goal is the make the light field data available as easily as possible and in any required format
+\end{itemize}
+
+\section{Proposed Format}
+
+\begin{itemize}
+ \item hdf5
+ \item light fields are stored under the group ``/clif/'' (e.g ``/clif/lf1'', ``/clif/model car''), multiple data sets may be stored in one file
+ \item main data storage is ``/clif/.../data''
+ \item all attribute groups/non-LF datasets are attached below ``/clif/.../''
+\end{itemize}
+
+In the following table root describes the root group of the light field, not the hdf5 root. and can have an arbitrary name.
+At the moment all features are proposed and none are implemented :-D
+
+\newgeometry{left=1cm,right=1cm,top=0.5cm,bottom=0.5cm}
+\begin{landscape}
+\subsection{Core Format}
+\noindent
+\begin{tabularx}{\linewidth}{llllX}
+name/path         & object type & data type & possible values & description/notes\\
+root              & group \\
+root/data         & dataset          & 8/16 bit uint     \\
+root/format       & group \\
+root/format/pixel & attribute        & string            & ``Bayer'',``RGB'',``Multichannel'' & pixel-level interpretation, RGB has a planar layout (with data having a size of x $\times$ 3y)\\
+root/format/ordering   & attribute & string & ``RG'',``BG'',``GR'',``GB'' & Bayer / RGB pixel order\\
+root/viewpoints             & group & & & light field viewpoint layout\\
+root/viewpoints/geometry    & attribute & string & ``spherical'',``plane'' & viewpoint geometry \\
+root/viewpoints/layout      & attribute & string & ``line'', ``multiline'', ``grid'' & viewpoint layout \\
+root/viewpoints/dimensions  & attribute & int    & 1-3 & viewpoint dimension, 1 for ``line'', N for ``multiline'', 2-3 for ``grid'' (viewpoints may be arragned in a volume for a true 5D light field \\
+root/viewpoints/regularity  & attribute & string & ``regular'', ``scattered'' & how regular are recorded viewpoints\\
+root/viewpoints/distance    & attribute & double[N] & & actual, average or target viewpoint distance, N = 1 or N = dimensions (multiple dimensions may share the same viewpoint distance), in mm for ``plane'', as $\mathit{radius} \cdot \mathit{radian}$ in mm for spherical light fields around the origin  \\
+root/viewpoints/origin & attribute & double[3] & & rotation center for spherical light fields, origin for calibrated scattered light fields. When used as a rotation center: relative to first viewpoints, x,y parallel to image plane, z positive depth (all in mm) \\
+\end{tabularx} 
+
+\subsection{Optional Annotation}
+\noindent
+\begin{tabularx}{\linewidth}{llllX}
+name/path                          & hdf5 object type & hdf5 data type(s) & possible values & description \\
+\verb|*|\_means           & attribute & string & ``design'',``estimate'',``external measure'',``internal measure'' & how the respective value was determined, by design means a setup adheres to some value by construction, up to some accuracy/precision, estimate: and informed (manual) guess of the value, mostly for information purpose, ``external measure'': measured by external means, e.g. an extra sensor, ``internal measure'' measured form within the setup, for example with reference markers included in the recorded images, or with extra calibration images not (necessarily) included in the dataset. \\
+\verb|*|\_precision, \verb|*|\_accuracy & TODO \\
+\verb|*|\_max  & TODO \\
+\end{tabularx}
+\end{landscape}
+\restoregeometry
+
+\subsection{More Ideas}
+\begin{itemize}
+ \item multiple files: add an id field for each lf-dataset, (meta) information may be collected from a list of files - and may later be joined to a new file
+ \item allow linking to other files (by id) - for inclusion of calibration information?
+ \item add instituion, email, etc fields, software version fields
+ \item simple gui and cli apps to inspect files
+ \item directly include calibration images in dataset (+meta data for the respective calibration approach), useful together with multi-file? (one calibration dataset for multiple data files)
+\end{itemize}
 
 
 \end{document}
