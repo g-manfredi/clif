@@ -73,6 +73,24 @@ void save_string_attr(H5::Group &g, const char *name, const char *val)
   attr.write(strdatatype, val);
 }
 
+std::string read_string_attr(H5::H5File &f, H5::Group &group, const char *name)
+{
+  std::string strreadbuf ("");
+  
+  H5::StrType strdatatype(H5::PredType::C_S1); 
+  
+  H5::Attribute attr = group.openAttribute(name);
+  attr.read(strdatatype, strreadbuf);
+  
+  return strreadbuf;
+}
+
+std::string read_string_attr(H5::H5File &f, const char *parent_group_str, const char *name)
+{
+  H5::Group group = f.openGroup(parent_group_str);
+  return read_string_attr(f, group, name);
+}
+
 namespace clif {
   Datastore::Datastore(H5::H5File &f, const std::string parent_group_str, uint width, uint height, uint count, DataType datatype, DataOrg dataorg, DataOrder dataorder)
   : type(datatype), org(dataorg), order(dataorder) {
@@ -109,11 +127,13 @@ namespace clif {
   
   Datastore::Datastore(H5::H5File &f, const std::string parent_group_str)
   {
-    std::string dataset_str = parent_group_str;
-    if (dataset_str.back() == '/')
-      dataset_str.append("data");
-    else
-      dataset_str.append("/data");    
+    std::string dataset_str = appendToPath(parent_group_str, "data");
+    
+    H5::Group format = f.openGroup(appendToPath(parent_group_str, "format"));
+    
+    std::string type_string = read_string_attr(f,format, "type");
+    
+    printf("type: %s\n", type_string.c_str());
     
     if (!_hdf5_obj_exists(f, dataset_str.c_str()))
       return;
