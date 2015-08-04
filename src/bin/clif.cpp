@@ -71,14 +71,26 @@ int main(const int argc, const char *argv[])
     
     Mat img = imread(in_names[0], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
     
-    assert(img.depth() == CV_8U);
-    assert(img.channels() == 1);
+    int w = img.size().width;
+    int h = img.size().height;
+    int depth = img.depth();
     
     //FIXME only fixed bayer RG (opencv: bg) pattern for now!
-    Datastore lfdata(lffile, "/clif/set1", img.size().width, img.size().height, cliarg_sum(input), clif::DataType::UINT8, DataOrg::BAYER_2x2, DataOrder::RGGB);
+    assert(img.channels() == 1);
+    Datastore lfdata(lffile, "/clif/set1", w, h, cliarg_sum(input), CvDepth2DataType(depth), DataOrg::BAYER_2x2, DataOrder::RGGB);
     
-    for(int i=0;i<cliarg_sum(input);i++)
-      printf("input %d: %s\n", i, in_names[i]);
+    
+    assert(img.isContinuous());
+    
+    lfdata.writeRawImage(0, img.data);
+    for(int i=1;i<cliarg_sum(input);i++) {
+      Mat img = imread(in_names[0], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+      assert(w == img.size().width);
+      assert(h = img.size().height);
+      assert(depth = img.depth());
+      printf("store idx %d: %s\n", i, in_names[i]);
+      lfdata.writeRawImage(i, img.data);
+    }
   }
   
   return EXIT_SUCCESS;
