@@ -288,6 +288,17 @@ namespace clif {
     
     return list;
   }
+  
+  int Datastore::count()
+  {
+    H5::DataSpace space = data.getSpace();
+    hsize_t dims[3];
+    hsize_t maxdims[3];
+    
+    space.getSimpleExtentDims(dims, maxdims);
+    
+    return dims[2];
+  }
 }
 
 namespace clif_cv {

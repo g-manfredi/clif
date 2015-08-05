@@ -23,6 +23,7 @@ namespace clif {
       int imgMemSize();
       
       bool isValid();
+      int count();
       
       H5::DataSet data;
     protected:

@@ -84,7 +84,7 @@ int main(const int argc, const char *argv[])
     
     lfdata.writeRawImage(0, img.data);
     for(int i=1;i<cliarg_sum(input);i++) {
-      Mat img = imread(in_names[0], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+      Mat img = imread(in_names[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
       assert(w == img.size().width);
       assert(h = img.size().height);
       assert(depth = img.depth());
