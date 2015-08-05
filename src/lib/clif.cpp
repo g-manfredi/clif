@@ -77,9 +77,10 @@ std::string read_string_attr(H5::H5File &f, H5::Group &group, const char *name)
 {
   std::string strreadbuf ("");
   
-  H5::StrType strdatatype(H5::PredType::C_S1); 
-  
   H5::Attribute attr = group.openAttribute(name);
+  
+  H5::StrType strdatatype(H5::PredType::C_S1, attr.getStorageSize());
+  
   attr.read(strdatatype, strreadbuf);
   
   return strreadbuf;
@@ -91,7 +92,19 @@ std::string read_string_attr(H5::H5File &f, const char *parent_group_str, const 
   return read_string_attr(f, group, name);
 }
 
-namespace clif {
+int parse_string_enum(std::string &str, const char **enumstrs)
+{
+  int i=0;
+  while (enumstrs[i]) {
+    if (!str.compare(enumstrs[i]))
+      return i;
+    i++;
+  }
+  
+  return -1;
+}
+
+namespace clif {  
   Datastore::Datastore(H5::H5File &f, const std::string parent_group_str, uint width, uint height, uint count, DataType datatype, DataOrg dataorg, DataOrder dataorder)
   : type(datatype), org(dataorg), order(dataorder) {
     hsize_t dims[3] = {width,height, 0};
@@ -127,13 +140,36 @@ namespace clif {
   
   Datastore::Datastore(H5::H5File &f, const std::string parent_group_str)
   {
+    std::string attr_str;
     std::string dataset_str = appendToPath(parent_group_str, "data");
+    int res;
     
     H5::Group format = f.openGroup(appendToPath(parent_group_str, "format"));
     
-    std::string type_string = read_string_attr(f,format, "type");
+    //FIXME too much copy paste, need error convention
+    attr_str = read_string_attr(f,format, "type");
+    res = parse_string_enum(attr_str, DataTypeStr);
+    if (res == -1) {
+      printf("error: invlid enum string %s for enum %s!\n", attr_str.c_str(), "DataType");
+      return;
+    }
+    type = (DataType)res;
     
-    printf("type: %s\n", type_string.c_str());
+    attr_str = read_string_attr(f,format, "organsiation");
+    res = parse_string_enum(attr_str, DataOrgStr);
+    if (res == -1) {
+      printf("error: invlid enum string %s for enum %s!\n", attr_str.c_str(), "DataOrg");
+      return;
+    }
+    org = (DataOrg)res;
+    
+    attr_str = read_string_attr(f,format, "order");
+    res = parse_string_enum(attr_str, DataOrderStr);
+    if (res == -1) {
+      printf("error: invlid enum string %s for enum %s!\n", attr_str.c_str(), "DataOrder");
+      return;
+    }
+    order = (DataOrder)res;
     
     if (!_hdf5_obj_exists(f, dataset_str.c_str()))
       return;
@@ -184,9 +220,17 @@ namespace clif {
     
     H5::DataSpace imgspace(3, size);
     
+    //FIXME other types need size calculation?
     assert(org == DataOrg::BAYER_2x2);
     
     data.read(imgdata, H5PredType(type), imgspace, space);
+  }
+  
+  bool Datastore::isValid()
+  {
+    if (data.getId() == H5I_INVALID_HID)
+      return false;
+    return true;
   }
   
   
@@ -227,16 +271,6 @@ namespace clif {
     }
   }
   
-  DataType CvDepth2DataType(int cv_type)
-  {
-    switch (cv_type) {
-      case CV_8U : return clif::DataType::UINT8;
-      case CV_16U : return clif::DataType::UINT16;
-      default :
-        abort();
-    }
-  }
-  
   std::vector<std::string> Datasets(H5::H5File &f)
   {
     std::vector<std::string> list(0);
@@ -256,4 +290,48 @@ namespace clif {
   }
 }
 
+namespace clif_cv {
   
+  cv::Size CvDatastore::imgSize()
+  {
+    H5::DataSpace space = data.getSpace();
+    hsize_t dims[3];
+    hsize_t maxdims[3];
+    
+    space.getSimpleExtentDims(dims, maxdims);
+    
+    return cv::Size(dims[0],dims[1]);
+  }
+  
+  //TODO create mappings with cmake?
+  DataType CvDepth2DataType(int cv_type)
+  {
+    switch (cv_type) {
+      case CV_8U : return clif::DataType::UINT8;
+      case CV_16U : return clif::DataType::UINT16;
+      default :
+        abort();
+    }
+  }
+  
+  int DataType2CvDepth(DataType t)
+  {
+    switch (t) {
+      case clif::DataType::UINT8 : return CV_8U;
+      case clif::DataType::UINT16 : return CV_16U;
+      default :
+        abort();
+    }
+  }
+    
+  void CvDatastore::readCvMat(uint idx, cv::Mat &m)
+  {
+    assert(org == DataOrg::BAYER_2x2);
+    
+    //FIXME bayer only for now!
+    m = cv::Mat(imgSize(), DataType2CvDepth(type));
+    
+    readRawImage(idx, m.data);
+  }
+}
+

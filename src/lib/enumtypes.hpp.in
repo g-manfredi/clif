@@ -1,0 +1,16 @@
+#ifndef _CLIF_ENUMTYPES_H
+#define _CLIF_ENUMTYPES_H
+
+namespace clif {
+  enum class DataType : int {${DataTypeEnums}};
+  enum class DataOrg {${DataOrgEnums}};
+  enum class DataOrder {${DataOrderEnums}};
+  
+  const char *DataTypeStr[] = {${DataTypeStrs}};
+  const char *DataOrgStr[] = {${DataOrgStrs}};
+  const char *DataOrderStr[] = {${DataOrderStrs}};
+}
+
+#define ClifEnumString(Type,Var) Type ## Str[ static_cast<int>(Var) ]
+
+#endif

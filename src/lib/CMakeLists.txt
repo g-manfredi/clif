@@ -14,10 +14,15 @@ set(DataOrderEnums "RGGB,BGGR,GBRG,GRBG,RGB")
 
 set(DataTypeStrs "\"${DataTypeEnums}\"")
 string(REPLACE "," "\",\"" DataTypeStrs ${DataTypeStrs})
+set(DataTypeStrs "${DataTypeStrs},NULL")
+
 set(DataOrgStrs "\"${DataOrgEnums}\"")
 string(REPLACE "," "\",\"" DataOrgStrs ${DataOrgStrs})
+set(DataOrgStrs "${DataOrgStrs},NULL")
+
 set(DataOrderStrs "\"${DataOrderEnums}\"")
 string(REPLACE "," "\",\"" DataOrderStrs ${DataOrderStrs})
+set(DataOrderStrs "${DataOrderStrs},NULL")
 
 
 configure_file(enumtypes.hpp.in enumtypes.hpp)
