@@ -7,7 +7,8 @@
 #include <iostream>
 #include <exception>
 
-#include "opencv2/core/core.hpp"
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 static bool _hdf5_obj_exists(H5::H5File &f, const char * const group_str)
 {
@@ -335,7 +336,7 @@ namespace clif_cv {
     }
   }
     
-  void CvDatastore::readCvMat(uint idx, cv::Mat &m)
+  void CvDatastore::readCvMat(uint idx, cv::Mat &m, int flags)
   {
     assert(org == DataOrg::BAYER_2x2);
     
@@ -343,6 +344,23 @@ namespace clif_cv {
     m = cv::Mat(imgSize(), DataType2CvDepth(type));
     
     readRawImage(idx, m.data);
+    
+    if (org == DataOrg::BAYER_2x2 && flags & CLIF_DEMOSAIC) {
+      switch (order) {
+        case DataOrder::RGGB :
+          cvtColor(m, m, CV_BayerBG2BGR);
+          break;
+        case DataOrder::BGGR :
+          cvtColor(m, m, CV_BayerRG2BGR);
+          break;
+        case DataOrder::GBRG :
+          cvtColor(m, m, CV_BayerGR2BGR);
+          break;
+        case DataOrder::GRBG :
+          cvtColor(m, m, CV_BayerGB2BGR);
+          break;
+      }
+    }
   }
 }
 

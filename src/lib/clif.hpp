@@ -6,6 +6,10 @@
 #include "enumtypes.hpp"
 
 namespace clif {
+
+#define CLIF_DEMOSAIC  1
+#define CLIF_CVT_8BIT  2
+#define CLIF_UNDISTORT 4
   
   //representation of a "raw" clif datset - the images
   class Datastore {
@@ -56,6 +60,6 @@ namespace clif_cv {
     cv::Size imgSize();
     
     void writeCvMat(uint idx, cv::Mat &m);
-    void readCvMat(uint idx, cv::Mat &m);
+    void readCvMat(uint idx, cv::Mat &m, int flags = 0);
   };
 }
