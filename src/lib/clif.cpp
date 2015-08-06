@@ -10,6 +10,8 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+#include "cliini.h"
+
 static bool _hdf5_obj_exists(H5::H5File &f, const char * const group_str)
 {
   H5E_auto2_t  oldfunc;
@@ -58,67 +60,228 @@ static void _rec_make_groups(H5::H5File &f, const char * const group_str)
   free(buf);
 }
 
-static std::string appendToPath(std::string str, std::string append)
-{
-  if (str.back() != '/')
-    str = str.append("/");
+namespace clif {
+  
+  BaseType cliini_type_to_BaseType(int type)
+  {
+    switch (type) {
+      case CLIINI_STRING : return BaseType::STRING;
+      case CLIINI_DOUBLE : return BaseType::DOUBLE;
+      case CLIINI_INT : return BaseType::INT;
+    }
     
-  return str.append(append);
-}
-
-void save_string_attr(H5::Group &g, const char *name, const char *val)
-{
-  H5::DataSpace string_space(H5S_SCALAR);
-  H5::StrType strdatatype(H5::PredType::C_S1, strlen(val)+1);
-  H5::Attribute attr = g.createAttribute(name, strdatatype, string_space);
-  attr.write(strdatatype, val);
-}
-
-std::string read_string_attr(H5::H5File &f, H5::Group &group, const char *name)
-{
-  std::string strreadbuf ("");
-  
-  H5::Attribute attr = group.openAttribute(name);
-  
-  H5::StrType strdatatype(H5::PredType::C_S1, attr.getStorageSize());
-  
-  attr.read(strdatatype, strreadbuf);
-  
-  return strreadbuf;
-}
-
-std::string read_string_attr(H5::H5File &f, const char *parent_group_str, const char *name)
-{
-  H5::Group group = f.openGroup(parent_group_str);
-  return read_string_attr(f, group, name);
-}
-
-int parse_string_enum(std::string &str, const char **enumstrs)
-{
-  int i=0;
-  while (enumstrs[i]) {
-    if (!str.compare(enumstrs[i]))
-      return i;
-    i++;
+    printf("ERROR: unknown argument type!\n");
+    abort();
   }
   
-  return -1;
-}
+  BaseType PredType_to_native_BaseType(H5::PredType type)
+  {    
+    switch (type.getClass()) {
+      case H5T_STRING : return BaseType::STRING;
+      case H5T_INTEGER : return BaseType::INT;
+      case H5T_FLOAT: return BaseType::DOUBLE;
+    }
+    
+    printf("ERROR: unknown argument type!\n");
+    abort();
+  }
+  
+  BaseType hid_t_to_native_BaseType(hid_t type)
+  {
+    switch (H5Tget_class(type)) {
+      case H5T_STRING : return BaseType::STRING;
+      case H5T_INTEGER : return BaseType::INT;
+      case H5T_FLOAT: return BaseType::DOUBLE;
+    }
+    
+    printf("ERROR: unknown argument type!\n");
+    abort();
+  }
+  
+  H5::PredType BaseType_to_PredType(BaseType type)
+  {    
+    switch (type) {
+      case BaseType::STRING : return H5::PredType::C_S1;
+      case BaseType::INT : return H5::PredType::NATIVE_INT;
+      case BaseType::DOUBLE: return H5::PredType::NATIVE_DOUBLE;
+    }
+    
+    printf("ERROR: unknown argument type!\n");
+    abort();
+  }
+  
+    
+  static std::string appendToPath(std::string str, std::string append)
+  {
+    if (str.back() != '/')
+      str = str.append("/");
+      
+    return str.append(append);
+  }
 
-namespace clif {
-  Datastore::Datastore(H5::H5File &f, const std::string parent_group_str, uint width, uint height, uint count, DataType datatype, DataOrg dataorg, DataOrder dataorder)
-  : type(datatype), org(dataorg), order(dataorder) {
+  void save_string_attr(H5::Group &g, const char *name, const char *val)
+  {
+    H5::DataSpace string_space(H5S_SCALAR);
+    H5::StrType strdatatype(H5::PredType::C_S1, strlen(val)+1);
+    H5::Attribute attr = g.createAttribute(name, strdatatype, string_space);
+    attr.write(strdatatype, val);
+  }
+
+  std::string read_string_attr(H5::H5File &f, H5::Group &group, const char *name)
+  {
+    std::string strreadbuf ("");
+    
+    H5::Attribute attr = group.openAttribute(name);
+    
+    H5::StrType strdatatype(H5::PredType::C_S1, attr.getStorageSize());
+    
+    attr.read(strdatatype, strreadbuf);
+    
+    return strreadbuf;
+  }
+  
+  //FIXME single strings only atm!
+  int basetype_size(BaseType type)
+  { 
+    switch (type) {
+      case BaseType::STRING : return sizeof(char);
+      case BaseType::INT :    return sizeof(int);
+      case BaseType::DOUBLE : return sizeof(double);
+      default:
+        printf("invalid type!\n");
+        abort();
+    }
+  }
+
+  void *read_attr(H5::Group g, std::string name, BaseType &type, int *size)
+  {
+    H5::Attribute attr = g.openAttribute(name);
+    
+    type =  hid_t_to_native_BaseType(H5Aget_type(attr.getId()));
+    
+    //FIXME 1D only atm!
+    
+    H5::DataSpace space = attr.getSpace();
+    int dimcount = space.getSimpleExtentNdims();
+    assert(dimcount == 1);
+    hsize_t dims[1];
+    hsize_t maxdims[1];
+    space.getSimpleExtentDims(dims, maxdims);
+    
+    void *buf = malloc(basetype_size(type)*dims[1]);
+    
+    attr.read(BaseType_to_PredType(type), buf);
+    
+    return buf;
+  }
+
+  std::string read_string_attr(H5::H5File &f, const char *parent_group_str, const char *name)
+  {
+    H5::Group group = f.openGroup(parent_group_str);
+    return read_string_attr(f, group, name);
+  }
+
+  int parse_string_enum(std::string &str, const char **enumstrs)
+  {
+    int i=0;
+    while (enumstrs[i]) {
+      if (!str.compare(enumstrs[i]))
+        return i;
+      i++;
+    }
+    
+    return -1;
+  }
+  
+  Attributes::Attributes(const char *inifile, const char *typefile) 
+  {
+    cliini_optgroup group = {
+      NULL,
+      NULL,
+      0,
+      0,
+      CLIINI_ALLOW_UNKNOWN_OPT
+    };
+    
+    cliini_args *attr_args = cliini_parsefile(inifile, &group);
+    cliini_args *attr_types = cliini_parsefile(typefile, &group);
+    
+    attrs.resize(cliargs_count(attr_args));
+    
+    //FIXME for now only 1d attributes :-P
+    for(int i=0;i<cliargs_count(attr_args);i++) {
+      cliini_arg *arg = cliargs_nth(attr_args, i);
+      
+      int dims = 1;
+      int size = cliarg_sum(arg);
+      
+      attrs[i].Set<int>(arg->opt->longflag, dims, &size, cliini_type_to_BaseType(arg->opt->type), arg->vals);
+    }
+      
+      
+    //FIXME free cliini allocated memory!
+  }
+  
+  static void attributes_append_group(Attributes &attrs, H5::Group &g, std::string group_path)
+  {
+    for(int i=0;i<g.getNumObjs();i++) {
+      H5G_obj_t type = g.getObjTypeByIdx(i);
+      
+      std::string name = appendToPath(appendToPath(group_path, "/"), g.getObjnameByIdx(hsize_t(i)));
+      
+      if (type == H5G_GROUP)
+        attributes_append_group(attrs, g, name);
+    }
+    
+    
+    for(int i=0;i<g.getNumAttrs();i++) {
+      H5::Attribute h5attr = g.openAttribute(i);
+      Attribute attr;
+      void *data;
+      int size[1];
+      BaseType type;
+      
+      std::string name = appendToPath(appendToPath(group_path, "/"), h5attr.getName());
+      
+      data = read_attr(g, h5attr.getName(),type,size);
+      
+      attr.Set<int>(name, 1, size, type, data);
+      attrs.append(attr);
+    }
+  }
+  
+  /*Attributes::Attributes(H5::H5File &f, std::string &name)
+  {
+    H5::Group group = f.openGroup(name.c_str());
+    
+    
+  }*/
+
+  
+  void Attributes::append(Attribute &attr)
+  {
+    attrs.push_back(attr);
+  }
+      
+  
+  Datastore::Datastore(H5::H5File &f, const std::string parent_group_str, const std::string name, uint width, uint height, uint count, DataType datatype, DataOrg dataorg, DataOrder dataorder)
+  : type(datatype), org(dataorg), order(dataorder)
+  {
     hsize_t dims[3] = {width,height, 0};
     hsize_t maxdims[3] = {width,height,H5S_UNLIMITED}; 
     std::string dataset_str = parent_group_str;
-    dataset_str = appendToPath(dataset_str, "data");
+    dataset_str = appendToPath(dataset_str, name);
     
-    printf("type: %s\n", ClifEnumString(DataType,type));
+    //printf("type: %s\n", ClifEnumString(DataType,type));
     
-    if (_hdf5_obj_exists(f, parent_group_str.c_str()))
-      f.unlink(parent_group_str);
+    if (_hdf5_obj_exists(f, dataset_str.c_str())) {
+      data = f.openDataSet(dataset_str);
+      return;
+    }
     
-    printf("make %s\n", parent_group_str.c_str());
+    _rec_make_groups(f, parent_group_str.c_str());
+    
+    /*printf("make %s\n", parent_group_str.c_str());
     _rec_make_groups(f, parent_group_str.c_str());
     
     H5::Group parent_group = f.openGroup(parent_group_str.c_str());
@@ -126,7 +289,7 @@ namespace clif {
     
     save_string_attr(format_group, "type", ClifEnumString(DataType,type));
     save_string_attr(format_group, "organsiation", ClifEnumString(DataOrg,org));
-    save_string_attr(format_group, "order", ClifEnumString(DataOrder,order));
+    save_string_attr(format_group, "order", ClifEnumString(DataOrder,order));*/
     
     //chunking fixed for now
     hsize_t chunk_dims[3] = {width,height,1};
@@ -139,16 +302,16 @@ namespace clif {
 	               H5PredType(type), space, prop);
   }
   
-  Datastore::Datastore(H5::H5File &f, const std::string parent_group_str)
+  /*Datastore::Datastore(H5::H5File &f, const std::string dataset_str, DataType datatype, DataOrg dataorg, DataOrder dataorder)
+  : type(datatype), org(dataorg), order(dataorder)
   {
-    std::string attr_str;
-    std::string dataset_str = appendToPath(parent_group_str, "data");
-    int res;
+    std::string attr_str;*/
+    //int res;
     
-    H5::Group format = f.openGroup(appendToPath(parent_group_str, "format"));
+    /*H5::Group format = f.openGroup(appendToPath(parent_group_str, "format"));
     
     //FIXME too much copy paste, need error convention
-    attr_str = read_string_attr(f,format, "type");
+   attr_str = read_string_attr(f,format, "type");
     res = parse_string_enum(attr_str, DataTypeStr);
     if (res == -1) {
       printf("error: invlid enum string %s for enum %s!\n", attr_str.c_str(), "DataType");
@@ -170,13 +333,13 @@ namespace clif {
       printf("error: invlid enum string %s for enum %s!\n", attr_str.c_str(), "DataOrder");
       return;
     }
-    order = (DataOrder)res;
+    order = (DataOrder)res;*/
     
-    if (!_hdf5_obj_exists(f, dataset_str.c_str()))
+    /*if (!_hdf5_obj_exists(f, dataset_str.c_str()))
       return;
 
     data = f.openDataSet(dataset_str);
-  }
+  }*/
 
   
   void Datastore::writeRawImage(uint idx, void *imgdata)

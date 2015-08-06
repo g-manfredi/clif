@@ -13,16 +13,59 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
 #define CLIF_DEMOSAIC  1
 #define CLIF_CVT_8BIT  2
 #define CLIF_UNDISTORT 4
+
+
+  class Attribute {
+    public:
+      Attribute() {};
+      template<typename T> void Set(std::string name_, int dims_, T *size_, BaseType type_, void *data_);
+      
+    private:
+      
+      //HDF5 already has a type system - use it.
+      std::string name;
+      BaseType type = BaseType::INVALID;
+      int dims = 0;
+      std::vector<int> size;
+      void *data = NULL;
+  };
   
-  //representation of a "raw" clif datset - the images
+  template<typename T> void Attribute::Set(std::string name_, int dims_, T *size_, BaseType type_, void *data_)
+  {
+    name = name_;
+    type = type_;
+    dims = dims_;
+    size.resize(dims);
+    for(int i=0;i<dims;i++)
+      size[i] = size_[i];
+    data = data_;
+  }
+  
+  class Attributes {
+    public:
+      Attributes() {};
+      
+      //get attributes from ini file(s) TODO second represents types for now!
+      Attributes(const char *inifile, const char *typefile);
+      Attributes(H5::H5File &f, std::string &name);
+      
+      
+      Attribute &get(const char *name);
+      void append(Attribute &attr);
+      
+    protected:
+      std::vector<Attribute> attrs; 
+  };
+  
+  //representation of a "raw" clif datset - mostly the images
   class Datastore {
     public:
       Datastore() {};
       
       //open datastore for writing
-      Datastore(H5::H5File &f, const std::string parent_group_str, uint width, uint height, uint count, DataType datatype, DataOrg dataorg, DataOrder dataorder);
-      //open datastor for reading
-      Datastore(H5::H5File &f, const std::string parent_group_str);
+      Datastore(H5::H5File &f, const std::string parent_group_str, const std::string name, uint width, uint height, uint count, DataType datatype, DataOrg dataorg, DataOrder dataorder);
+      //open datastore for writing
+      //Datastore(H5::H5File &f, const std::string parent_group_str, uint width, uint height, uint count, Attributes &attrs);
       
       void writeRawImage(uint idx, void *data);
       void readRawImage(uint idx, void *data);
@@ -39,25 +82,21 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
       DataOrder order;
   };
   
-  class Attribute {
+  class Dataset {
     public:
-      Attribute() {};
+      Dataset(H5::H5File &f_, std::string name_) : f(f_), name(name_) {};
       
-      //HDF5 already has a type system - use it.
-      BaseType type = BaseType::INVALID;
-      int dims = 0;
-      std::vector<int> size;
-      void *data = NULL;
-  };
-  
-  class Attributes {
-    public:
-      Attributes() {};
+      void set(Datastore &data_) { data = data_; };
+      void set(Attributes &attrs_) { attrs = attrs_; };
       
-      //get attributes from ini file(s) TODO second represents types for now!
-      Attributes(const char *inifile, const char *typefile);
-    protected:
-      std::vector<Attribute> attrs; 
+      //save attributes!
+      ~Dataset();
+      
+    private:
+      H5::H5File f;
+      std::string name;
+      Datastore data;
+      Attributes attrs;
   };
   
   H5::PredType H5PredType(DataType type);
