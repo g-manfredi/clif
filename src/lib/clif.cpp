@@ -152,6 +152,30 @@ namespace clif {
         abort();
     }
   }
+  
+  void Attribute::write(H5::H5File &f, std::string dataset_name)
+  {
+    std::string path = name;
+    std::replace(path.begin(), path.end(), '.', '/');
+    
+    path = appendToPath(dataset_name, path);
+    
+    printf("attribute loc: %s\n", path.c_str());
+    
+    _rec_make_groups(f, path.c_str());
+    
+    H5::Group g = f.openGroup(path);
+    
+    hsize_t dim[1];
+    
+    dim[0] = size[0];
+    
+    H5::DataSpace space(1, dim);
+    
+    H5::Attribute attr = g.createAttribute(name, BaseType_to_PredType(type), space);
+       
+    attr.write(BaseType_to_PredType(type), data);
+  }
 
   void *read_attr(H5::Group g, std::string name, BaseType &type, int *size)
   {
@@ -183,6 +207,8 @@ namespace clif {
 
   int parse_string_enum(const char *str, const char **enumstrs)
   {
+    printf("search %s\n", str);
+    
     int i=0;
     while (enumstrs[i]) {
       if (!strcmp(str,enumstrs[i]))
@@ -231,7 +257,14 @@ namespace clif {
       int dims = 1;
       int size = cliarg_sum(arg);
       
-      attrs[i].Set<int>(arg->opt->longflag, dims, &size, cliini_type_to_BaseType(arg->opt->type), arg->vals);
+      if (arg->opt->type == CLIINI_STRING) {
+        assert(size == 1);
+        //only single string supported!
+        size = strlen(((char**)(arg->vals))[0])+1;
+        attrs[i].Set<int>(arg->opt->longflag, dims, &size, cliini_type_to_BaseType(arg->opt->type), ((char**)(arg->vals))[0]);
+      }
+      else
+        attrs[i].Set<int>(arg->opt->longflag, dims, &size, cliini_type_to_BaseType(arg->opt->type), arg->vals);
     }
       
       
@@ -240,6 +273,8 @@ namespace clif {
   
   Attribute *Attributes::get(const char *name)
   {
+    printf("search %s\n", name);
+    
     for(int i=0;i<attrs.size();i++)
       if (!attrs[i].name.compare(name))
         return &attrs[i];
@@ -253,8 +288,11 @@ namespace clif {
     if (!attrs.size())
       return;
     
-    for(int i=0;i<attrs.size();i++)
+    for(int i=0;i<attrs.size();i++) {
+      
+      attrs[i].write(f, name);
       printf("TODO: save %s under %s\n", attrs[i].name.c_str(), name.c_str());
+    }
     
     //for all attributes
     //create path 

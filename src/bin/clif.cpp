@@ -107,9 +107,9 @@ int main(const int argc, const char *argv[])
   //FIXME only fixed bayer RG (opencv: bg) pattern for now!
   assert(img.channels() == 1);
   
-  clif::DataType  type  = clif::DataType(parse_string_enum(attrs.get("format.type")->get<char**>()[0],DataTypeStr));
-  DataOrg   org   = DataOrg  (parse_string_enum(attrs.get("format.organisation")->get<char**>()[0], DataOrgStr));
-  DataOrder order = DataOrder(parse_string_enum(attrs.get("format.order")->get<char**>()[0],DataOrgStr));
+  clif::DataType  type  = clif::DataType(parse_string_enum(attrs.get("format.type")->get<char*>(),DataTypeStr));
+  DataOrg   org   = DataOrg  (parse_string_enum(attrs.get("format.organisation")->get<char*>(), DataOrgStr));
+  DataOrder order = DataOrder(parse_string_enum(attrs.get("format.order")->get<char*>(),DataOrgStr));
   
   Datastore imgs(lffile, "/clif/set1", "data", w, h, cliarg_sum(input), type, org, order);
   

@@ -21,8 +21,11 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
     public:
       Attribute() {};
       template<typename T> void Set(std::string name_, int dims_, T *size_, BaseType type_, void *data_);
+      
       template<typename T> T get();
 
+      void write(H5::H5File &f, std::string dataset_name);
+      
       std::string name;
     private:
       
