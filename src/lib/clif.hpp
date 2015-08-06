@@ -14,16 +14,19 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
 #define CLIF_CVT_8BIT  2
 #define CLIF_UNDISTORT 4
 
+  int parse_string_enum(std::string &str, const char **enumstrs);
+  int parse_string_enum(const char *str, const char **enumstrs);
 
   class Attribute {
     public:
       Attribute() {};
       template<typename T> void Set(std::string name_, int dims_, T *size_, BaseType type_, void *data_);
-      
+      template<typename T> T get();
+
+      std::string name;
     private:
       
       //HDF5 already has a type system - use it.
-      std::string name;
       BaseType type = BaseType::INVALID;
       int dims = 0;
       std::vector<int> size;
@@ -41,6 +44,11 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
     data = data_;
   }
   
+ template<typename T> T Attribute::get()
+ {
+   return (T)data;
+  }
+      
   class Attributes {
     public:
       Attributes() {};
@@ -49,9 +57,9 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
       Attributes(const char *inifile, const char *typefile);
       Attributes(H5::H5File &f, std::string &name);
       
-      
-      Attribute &get(const char *name);
+      Attribute *get(const char *name);
       void append(Attribute &attr);
+      void write(H5::H5File &f, std::string &name);
       
     protected:
       std::vector<Attribute> attrs; 

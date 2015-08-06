@@ -181,6 +181,20 @@ namespace clif {
     return read_string_attr(f, group, name);
   }
 
+  int parse_string_enum(const char *str, const char **enumstrs)
+  {
+    int i=0;
+    while (enumstrs[i]) {
+      if (!strcmp(str,enumstrs[i]))
+        return i;
+      i++;
+    }
+    
+    printf("unknown enum str %s\n", str);
+    
+    return -1;
+  }
+  
   int parse_string_enum(std::string &str, const char **enumstrs)
   {
     int i=0;
@@ -189,6 +203,8 @@ namespace clif {
         return i;
       i++;
     }
+    
+    printf("unknown enum str %s\n", str.c_str());
     
     return -1;
   }
@@ -220,6 +236,35 @@ namespace clif {
       
       
     //FIXME free cliini allocated memory!
+  }
+  
+  Attribute *Attributes::get(const char *name)
+  {
+    for(int i=0;i<attrs.size();i++)
+      if (!attrs[i].name.compare(name))
+        return &attrs[i];
+      
+    return NULL;
+  }
+  
+  
+  void Attributes::write(H5::H5File &f, std::string &name)
+  {
+    if (!attrs.size())
+      return;
+    
+    for(int i=0;i<attrs.size();i++)
+      printf("TODO: save %s under %s\n", attrs[i].name.c_str(), name.c_str());
+    
+    //for all attributes
+    //create path 
+    //create hdf5 attr
+    //write attr
+  }
+  
+  Dataset::~Dataset()
+  {
+    attrs.write(f, name);
   }
   
   static void attributes_append_group(Attributes &attrs, H5::Group &g, std::string group_path)
@@ -431,6 +476,7 @@ namespace clif {
       case DataType::UINT8 : return H5::PredType::STD_U8LE;
       case DataType::UINT16 : return H5::PredType::STD_U16LE;
       default :
+        assert(type != DataType::UINT16);
         abort();
     }
   }

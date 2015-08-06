@@ -3,8 +3,8 @@
 
 namespace clif {
   enum class DataType : int {${DataTypeEnums}};
-  enum class DataOrg {${DataOrgEnums}};
-  enum class DataOrder {${DataOrderEnums}};
+  enum class DataOrg : int {${DataOrgEnums}};
+  enum class DataOrder : int {${DataOrderEnums}};
   
   const char *DataTypeStr[] = {${DataTypeStrs}};
   const char *DataOrgStr[] = {${DataOrgStrs}};
