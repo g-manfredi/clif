@@ -105,7 +105,7 @@ int parse_string_enum(std::string &str, const char **enumstrs)
   return -1;
 }
 
-namespace clif {  
+namespace clif {
   Datastore::Datastore(H5::H5File &f, const std::string parent_group_str, uint width, uint height, uint count, DataType datatype, DataOrg dataorg, DataOrder dataorder)
   : type(datatype), org(dataorg), order(dataorder) {
     hsize_t dims[3] = {width,height, 0};

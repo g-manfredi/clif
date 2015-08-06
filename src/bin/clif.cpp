@@ -45,6 +45,7 @@ cliini_optgroup group = {
   opts,
   NULL,
   sizeof(opts)/sizeof(*opts),
+  0,
   0
 };
 

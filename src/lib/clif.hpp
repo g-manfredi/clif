@@ -6,6 +6,9 @@
 #include "enumtypes.hpp"
 
 namespace clif {
+  
+//base type for elements
+enum class BaseType {INVALID,INT,DOUBLE,STRING};
 
 #define CLIF_DEMOSAIC  1
 #define CLIF_CVT_8BIT  2
@@ -34,6 +37,27 @@ namespace clif {
       DataType type; 
       DataOrg org;
       DataOrder order;
+  };
+  
+  class Attribute {
+    public:
+      Attribute() {};
+      
+      //HDF5 already has a type system - use it.
+      BaseType type = BaseType::INVALID;
+      int dims = 0;
+      std::vector<int> size;
+      void *data = NULL;
+  };
+  
+  class Attributes {
+    public:
+      Attributes() {};
+      
+      //get attributes from ini file(s) TODO second represents types for now!
+      Attributes(const char *inifile, const char *typefile);
+    protected:
+      std::vector<Attribute> attrs; 
   };
   
   H5::PredType H5PredType(DataType type);
