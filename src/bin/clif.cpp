@@ -107,39 +107,22 @@ int main(const int argc, const char *argv[])
   //FIXME only fixed bayer RG (opencv: bg) pattern for now!
   assert(img.channels() == 1);
   
+  //FIXME this is ugly!
   clif::DataType  type  = clif::DataType(parse_string_enum(attrs.get("format.type")->get<char*>(),DataTypeStr));
   DataOrg   org   = DataOrg  (parse_string_enum(attrs.get("format.organisation")->get<char*>(), DataOrgStr));
   DataOrder order = DataOrder(parse_string_enum(attrs.get("format.order")->get<char*>(),DataOrgStr));
   
   Datastore imgs(lffile, "/clif/set1", "data", w, h, cliarg_sum(input), type, org, order);
   
-  /*H5File lffile(cliarg_str(output), H5F_ACC_TRUNC);
-  
-  vector<char*> in_names(cliarg_sum(input));
-  cliarg_strs(input, &in_names[0]);
-  
-  Mat img = imread(in_names[0], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
-  
-  int w = img.size().width;
-  int h = img.size().height;
-  int depth = img.depth();
-  
-  //FIXME only fixed bayer RG (opencv: bg) pattern for now!
-  assert(img.channels() == 1);
-  Datastore lfdata(lffile, "/clif/set1", w, h, cliarg_sum(input), CvDepth2DataType(depth), DataOrg::BAYER_2x2, DataOrder::RGGB);
-  
-  
-  assert(img.isContinuous());
-  
-  lfdata.writeRawImage(0, img.data);
+  imgs.writeRawImage(0, img.data);
   for(int i=1;i<cliarg_sum(input);i++) {
     Mat img = imread(in_names[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
     assert(w == img.size().width);
     assert(h = img.size().height);
     assert(depth = img.depth());
     printf("store idx %d: %s\n", i, in_names[i]);
-    lfdata.writeRawImage(i, img.data);
-  }*/
+    imgs.writeRawImage(i, img.data);
+  }
   
   return EXIT_SUCCESS;
 }
