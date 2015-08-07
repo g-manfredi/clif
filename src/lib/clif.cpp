@@ -153,17 +153,52 @@ namespace clif {
     }
   }
   
+  std::string remove_last_part(std::string in, char c)
+  {
+    size_t pos = in.rfind(c);
+    
+    if (pos == std::string::npos)
+      return std::string("");
+    
+    return in.substr(0, pos);
+  }
+  
+  std::string get_last_part(std::string in, char c)
+  {
+    size_t pos = in.rfind(c);
+    
+    if (pos == std::string::npos)
+      return in;
+    
+    return in.substr(pos+1, in.npos);
+  }
+  
+  std::string Attribute::toString()
+  {
+    if (type == BaseType::STRING) {
+      return std::string((char*)data);
+    }
+    else
+      return std::string("TODO fix toString for type");
+  }
+  
   void Attribute::write(H5::H5File &f, std::string dataset_name)
   {
     std::string path = name;
     std::replace(path.begin(), path.end(), '.', '/');
     
-    path = appendToPath(dataset_name, path);
     
-    printf("attribute loc: %s\n", path.c_str());
+    printf("dataset name %s\n", dataset_name.c_str());
+    
+    path = appendToPath(dataset_name, path);
+    path = remove_last_part(path, '/');
+    
+    std::string attr_name = get_last_part(name, '.');
+    
+    printf("attribute group loc: %s attr name %s\n", path.c_str(), attr_name.c_str());
     
     _rec_make_groups(f, path.c_str());
-    
+
     H5::Group g = f.openGroup(path);
     
     hsize_t dim[1];
@@ -172,7 +207,7 @@ namespace clif {
     
     H5::DataSpace space(1, dim);
     
-    H5::Attribute attr = g.createAttribute(name, BaseType_to_PredType(type), space);
+    H5::Attribute attr = g.createAttribute(attr_name, BaseType_to_PredType(type), space);
        
     attr.write(BaseType_to_PredType(type), data);
   }
@@ -192,7 +227,7 @@ namespace clif {
     hsize_t maxdims[1];
     space.getSimpleExtentDims(dims, maxdims);
     
-    void *buf = malloc(basetype_size(type)*dims[1]);
+    void *buf = malloc(basetype_size(type)*dims[0]);
     
     attr.read(BaseType_to_PredType(type), buf);
     
@@ -207,16 +242,12 @@ namespace clif {
 
   int parse_string_enum(const char *str, const char **enumstrs)
   {
-    printf("search %s\n", str);
-    
     int i=0;
     while (enumstrs[i]) {
       if (!strcmp(str,enumstrs[i]))
         return i;
       i++;
     }
-    
-    printf("unknown enum str %s\n", str);
     
     return -1;
   }
@@ -229,8 +260,6 @@ namespace clif {
         return i;
       i++;
     }
-    
-    printf("unknown enum str %s\n", str.c_str());
     
     return -1;
   }
@@ -272,14 +301,22 @@ namespace clif {
   }
   
   Attribute *Attributes::get(const char *name)
-  {
-    printf("search %s\n", name);
-    
+  {    
     for(int i=0;i<attrs.size();i++)
       if (!attrs[i].name.compare(name))
         return &attrs[i];
       
     return NULL;
+  }
+  
+  StringTree Attributes::getTree()
+  {
+    StringTree tree;
+    
+    for(int i=0;i<attrs.size();i++)
+      tree.add(attrs[i].name, &attrs[i], '.');
+    
+    return tree;
   }
   
   
@@ -300,20 +337,43 @@ namespace clif {
     //write attr
   }
   
-  Dataset::~Dataset()
+  int Attributes::count()
+  {
+    return attrs.size();
+  }
+  
+  Attribute Attributes::operator[](int pos)
+  {
+    return attrs[pos];
+  }
+  
+  
+  Dataset::Dataset(H5::H5File &f_, std::string name_)
+  : f(f_), name(name_)
+  {
+    if (_hdf5_obj_exists(f, name.c_str())) {
+      attrs = Attributes(f, name);
+    }
+  }
+
+  void Dataset::writeAttributes()
   {
     attrs.write(f, name);
   }
   
-  static void attributes_append_group(Attributes &attrs, H5::Group &g, std::string group_path)
-  {
+  static void attributes_append_group(Attributes &attrs, H5::Group &g, std::string basename, std::string group_path)
+  {    
     for(int i=0;i<g.getNumObjs();i++) {
       H5G_obj_t type = g.getObjTypeByIdx(i);
       
-      std::string name = appendToPath(appendToPath(group_path, "/"), g.getObjnameByIdx(hsize_t(i)));
+      std::string name = appendToPath(group_path, g.getObjnameByIdx(hsize_t(i)));
       
-      if (type == H5G_GROUP)
-        attributes_append_group(attrs, g, name);
+      
+      
+      if (type == H5G_GROUP) {
+        H5::Group sub = g.openGroup(g.getObjnameByIdx(hsize_t(i)));
+        attributes_append_group(attrs, sub, basename, name);
+      }
     }
     
     
@@ -323,22 +383,25 @@ namespace clif {
       void *data;
       int size[1];
       BaseType type;
-      
-      std::string name = appendToPath(appendToPath(group_path, "/"), h5attr.getName());
+
+      std::string name = appendToPath(group_path, h5attr.getName());
       
       data = read_attr(g, h5attr.getName(),type,size);
+      
+      name = name.substr(basename.length()+1, name.length()-basename.length()-1);
+      std::replace(name.begin(), name.end(), '/', '.');
       
       attr.Set<int>(name, 1, size, type, data);
       attrs.append(attr);
     }
   }
   
-  /*Attributes::Attributes(H5::H5File &f, std::string &name)
+  Attributes::Attributes(H5::H5File &f, std::string &name)
   {
     H5::Group group = f.openGroup(name.c_str());
     
-    
-  }*/
+    attributes_append_group(*this, group, name, name);
+  }
 
   
   void Attributes::append(Attribute &attr)
@@ -355,24 +418,12 @@ namespace clif {
     std::string dataset_str = parent_group_str;
     dataset_str = appendToPath(dataset_str, name);
     
-    //printf("type: %s\n", ClifEnumString(DataType,type));
-    
     if (_hdf5_obj_exists(f, dataset_str.c_str())) {
       data = f.openDataSet(dataset_str);
       return;
     }
     
     _rec_make_groups(f, parent_group_str.c_str());
-    
-    /*printf("make %s\n", parent_group_str.c_str());
-    _rec_make_groups(f, parent_group_str.c_str());
-    
-    H5::Group parent_group = f.openGroup(parent_group_str.c_str());
-    H5::Group format_group = f.createGroup(appendToPath(parent_group_str, "format"));
-    
-    save_string_attr(format_group, "type", ClifEnumString(DataType,type));
-    save_string_attr(format_group, "organsiation", ClifEnumString(DataOrg,org));
-    save_string_attr(format_group, "order", ClifEnumString(DataOrder,order));*/
     
     //chunking fixed for now
     hsize_t chunk_dims[3] = {width,height,1};
@@ -385,45 +436,40 @@ namespace clif {
 	               H5PredType(type), space, prop);
   }
   
-  /*Datastore::Datastore(H5::H5File &f, const std::string dataset_str, DataType datatype, DataOrg dataorg, DataOrder dataorder)
-  : type(datatype), org(dataorg), order(dataorder)
+  Datastore::Datastore(Dataset *dataset, std::string path, int w, int h, int count)
   {
-    std::string attr_str;*/
-    //int res;
+    type  = clif::DataType(parse_string_enum(dataset->attrs.get("format.type")->get<char*>(),DataTypeStr));
+    org   = DataOrg  (parse_string_enum(dataset->attrs.get("format.organisation")->get<char*>(), DataOrgStr));
+    order = DataOrder(parse_string_enum(dataset->attrs.get("format.order")->get<char*>(),DataOrderStr));
     
-    /*H5::Group format = f.openGroup(appendToPath(parent_group_str, "format"));
-    
-    //FIXME too much copy paste, need error convention
-   attr_str = read_string_attr(f,format, "type");
-    res = parse_string_enum(attr_str, DataTypeStr);
-    if (res == -1) {
-      printf("error: invlid enum string %s for enum %s!\n", attr_str.c_str(), "DataType");
+    if (int(type) == -1 || int(org) == -1 || int(order) == -1) {
+      printf("ERROR: unsupported dataset format!\n");
       return;
     }
-    type = (DataType)res;
     
-    attr_str = read_string_attr(f,format, "organsiation");
-    res = parse_string_enum(attr_str, DataOrgStr);
-    if (res == -1) {
-      printf("error: invlid enum string %s for enum %s!\n", attr_str.c_str(), "DataOrg");
-      return;
-    }
-    org = (DataOrg)res;
+    Datastore(dataset->f, dataset->name, path, w, h, count, type, org, order);
+  }
+  
+  Datastore::Datastore(Dataset *dataset, std::string path)
+  {
+    std::string dataset_str = appendToPath(dataset->name, path);
     
-    attr_str = read_string_attr(f,format, "order");
-    res = parse_string_enum(attr_str, DataOrderStr);
-    if (res == -1) {
-      printf("error: invlid enum string %s for enum %s!\n", attr_str.c_str(), "DataOrder");
+    if (!_hdf5_obj_exists(dataset->f, dataset_str.c_str())) 
       return;
-    }
-    order = (DataOrder)res;*/
     
-    /*if (!_hdf5_obj_exists(f, dataset_str.c_str()))
-      return;
+    type  = clif::DataType(parse_string_enum(dataset->attrs.get("format.type")->get<char*>(),DataTypeStr));
+    org   = DataOrg  (parse_string_enum(dataset->attrs.get("format.organisation")->get<char*>(), DataOrgStr));
+    order = DataOrder(parse_string_enum(dataset->attrs.get("format.order")->get<char*>(),DataOrderStr));
 
-    data = f.openDataSet(dataset_str);
-  }*/
-
+    if (int(type) == -1 || int(org) == -1 || int(order) == -1) {
+      printf("ERROR: unsupported dataset format!\n");
+      return;
+    }
+    
+    data = dataset->f.openDataSet(dataset_str);
+    
+    //printf("Datastore open %s: %s %s %s\n", dataset_str.c_str(), ClifEnumString(DataType,type),ClifEnumString(DataOrg,org),ClifEnumString(DataOrder,order));
+  }
   
   void Datastore::writeRawImage(uint idx, void *imgdata)
   {
@@ -546,6 +592,84 @@ namespace clif {
     space.getSimpleExtentDims(dims, maxdims);
     
     return dims[2];
+  }
+  
+  StringTree::StringTree(std::string name, void *data)
+  {
+    val.first = name;
+    val.second = data;
+  }
+  
+  void StringTree::print(int depth)
+  {
+    for(int i=0;i<depth;i++)
+      printf("   ");
+    printf("%s (%d)\n", val.first.c_str(),childs.size());
+    for(int i=0;i<childs.size();i++)
+      childs[i].print(depth+1);
+  }
+  
+  void StringTree::add(std::string str, void *data, char delim)
+  {
+    int found = str.find(delim);
+    std::string name = str.substr(0, found);
+    
+    std::cout << "add: " << str << ":" << name << std::endl;
+    
+    for(int i=0;i<childs.size();i++)
+      if (!name.compare(childs[i].val.first)) {
+        if (found < str.length()-1) { //don't point to last letter or beyond (npos)
+          printf("found!\n");
+          childs[i].add(str.substr(found+1), data, delim);
+          return;
+        }
+        else {
+          printf("FIXME StringTree: handle existing elements in add!\n");
+          return;
+        }
+      } 
+    
+    if (found < str.length()-1) {
+      printf("not found add %s\n", name.c_str());
+      childs.push_back(StringTree(name,NULL));
+      childs.back().add(str.substr(found+1), data, delim);
+    }
+    else {
+      std::cout << "actual add: " << str << ":" << name << std::endl;
+      childs.push_back(StringTree(name,data));
+    }
+    
+  }
+    
+  std::pair<std::string, void*> *StringTree::search(std::string str, char delim)
+  {
+    int found = str.find(delim);
+    std::string name = str.substr(0, found);
+    
+    std::cout << "search: " << str << ":" << name << std::endl;
+    
+    for(int i=0;i<childs.size();i++)
+      if (!name.compare(childs[i].val.first)) {
+        if (found < str.length()-1) { //don't point to last letter or beyond (npos)
+          return childs[i].search(str.substr(found+1), delim);
+        }
+        else
+          return &val;
+      } 
+    
+    std::cout << "not found: " << str << ":" << name << std::endl;
+    return NULL;
+  }
+  
+  
+  StringTree *StringTree::operator[](int idx)
+  {
+    return &childs[idx];
+  }
+  
+  int StringTree::childCount()
+  {
+    return childs.size();
   }
 }
 

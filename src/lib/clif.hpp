@@ -17,6 +17,23 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
   int parse_string_enum(std::string &str, const char **enumstrs);
   int parse_string_enum(const char *str, const char **enumstrs);
 
+  class StringTree {
+  public:
+    StringTree() {};
+    StringTree(std::string name, void *data);
+    
+    void print(int depth = 0);
+    
+    void add(std::string str, void *data, char delim);
+    int childCount();
+    StringTree *operator[](int idx);
+    
+    std::pair<std::string, void*> *search(std::string str, char delim);
+    
+    std::pair<std::string, void*> val;
+    std::vector<StringTree> childs;
+  };
+  
   class Attribute {
     public:
       Attribute() {};
@@ -25,6 +42,7 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
       template<typename T> T get();
 
       void write(H5::H5File &f, std::string dataset_name);
+      std::string toString();
       
       std::string name;
     private:
@@ -62,21 +80,31 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
       
       Attribute *get(const char *name);
       void append(Attribute &attr);
+      int count();
+      Attribute operator[](int pos);
       void write(H5::H5File &f, std::string &name);
+      StringTree getTree();
       
     protected:
       std::vector<Attribute> attrs; 
   };
+  
+  class Dataset;
   
   //representation of a "raw" clif datset - mostly the images
   class Datastore {
     public:
       Datastore() {};
       
-      //open datastore for writing
+      //TODO remove this one?
       Datastore(H5::H5File &f, const std::string parent_group_str, const std::string name, uint width, uint height, uint count, DataType datatype, DataOrg dataorg, DataOrder dataorder);
-      //open datastore for writing
-      //Datastore(H5::H5File &f, const std::string parent_group_str, uint width, uint height, uint count, Attributes &attrs);
+      
+      //create new datastore
+      Datastore(Dataset *dataset, std::string path, int w, int h, int count);
+      
+      //open existing datastore
+      Datastore(Dataset *dataset, std::string path);
+      
       
       void writeRawImage(uint idx, void *data);
       void readRawImage(uint idx, void *data);
@@ -95,19 +123,20 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
   
   class Dataset {
     public:
-      Dataset(H5::H5File &f_, std::string name_) : f(f_), name(name_) {};
+      Dataset() {};
+      Dataset(H5::H5File &f_, std::string name_);
       
-      void set(Datastore &data_) { data = data_; };
+      //void set(Datastore &data_) { data = data_; };
       void set(Attributes &attrs_) { attrs = attrs_; };
       
-      //save attributes!
-      ~Dataset();
+      void writeAttributes();
       
-    private:
       H5::H5File f;
       std::string name;
-      Datastore data;
       Attributes attrs;
+      
+    private:
+      //Datastore data;
   };
   
   H5::PredType H5PredType(DataType type);

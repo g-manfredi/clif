@@ -94,6 +94,7 @@ int main(const int argc, const char *argv[])
   Dataset dataset(lffile, "/clif/set1");
   
   dataset.set(attrs);
+  dataset.writeAttributes();
   
   vector<char*> in_names(cliarg_sum(input));
   cliarg_strs(input, &in_names[0]);
@@ -110,7 +111,7 @@ int main(const int argc, const char *argv[])
   //FIXME this is ugly!
   clif::DataType  type  = clif::DataType(parse_string_enum(attrs.get("format.type")->get<char*>(),DataTypeStr));
   DataOrg   org   = DataOrg  (parse_string_enum(attrs.get("format.organisation")->get<char*>(), DataOrgStr));
-  DataOrder order = DataOrder(parse_string_enum(attrs.get("format.order")->get<char*>(),DataOrgStr));
+  DataOrder order = DataOrder(parse_string_enum(attrs.get("format.order")->get<char*>(),DataOrderStr));
   
   Datastore imgs(lffile, "/clif/set1", "data", w, h, cliarg_sum(input), type, org, order);
   
@@ -123,6 +124,6 @@ int main(const int argc, const char *argv[])
     printf("store idx %d: %s\n", i, in_names[i]);
     imgs.writeRawImage(i, img.data);
   }
-  
+
   return EXIT_SUCCESS;
 }
