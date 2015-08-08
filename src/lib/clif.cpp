@@ -300,7 +300,7 @@ namespace clif {
     //FIXME free cliini allocated memory!
   }
   
-  Attribute *Attributes::get(const char *name)
+  Attribute *Attributes::getAttribute(const char *name)
   {    
     for(int i=0;i<attrs.size();i++)
       if (!attrs[i].name.compare(name))

@@ -78,7 +78,16 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
       Attributes(const char *inifile, const char *typefile);
       Attributes(H5::H5File &f, std::string &name);
       
-      Attribute *get(const char *name);
+      Attribute *getAttribute(const char *name);
+      
+      template<typename T> void readAttribute(const char *name, T &val);
+      template<typename T> void readAttribute(const char *name, std::vector<T> &val);
+      
+      template<typename T> void writeAttribute(const char *name, T &val);
+      template<typename T> void writeAttribute(const char *name, std::vector<T> &val);
+      
+      template<typename T> T getEnum(const char *name) { string_to_enum<T>(getAttribute(name)->get<char*>()); };
+      template<typename T> void readEnum(const char *name, T &val) { val = getEnum<T>(name); };
       
       
       void append(Attribute &attr);
@@ -130,9 +139,10 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
       void setAttributes(Attributes &attrs_) { attrs = attrs_; };
       
       //directly pass on some Attribute functions
-      Attribute *getAttribute(const char *name) { attrs.get(name); };
-      template<typename T> T getEnum(const char *name) { string_to_enum<T>(attrs.get(name)->get<char*>()); };
-      template<typename T> void readEnum(const char *name, T &val) { val = getEnum<T>(name); };
+      Attribute *getAttribute(const char *name) { attrs.getAttribute(name); };
+      
+      template<typename T> T getEnum(const char *name) { attrs.getEnum<T>(name); };
+      template<typename T> void readEnum(const char *name, T &val) { attrs.readEnum(name, val); };
       
       void writeAttributes();
       
