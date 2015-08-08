@@ -129,20 +129,20 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
       DataOrder order;
   };
   
-  class Dataset {
+  class Dataset : public Attributes {
     public:
       Dataset() {};
       Dataset(H5::H5File &f_, std::string name_);
       
       //void set(Datastore &data_) { data = data_; };
       //TODO should this call writeAttributes (and we completely hide io?)
-      void setAttributes(Attributes &attrs_) { attrs = attrs_; };
+      void setAttributes(Attributes &attrs) { static_cast<Attributes&>(*this) = attrs; };
       
       //directly pass on some Attribute functions
-      Attribute *getAttribute(const char *name) { attrs.getAttribute(name); };
+      //Attribute *getAttribute(const char *name) { attrs.getAttribute(name); };
       
-      template<typename T> T getEnum(const char *name) { attrs.getEnum<T>(name); };
-      template<typename T> void readEnum(const char *name, T &val) { attrs.readEnum(name, val); };
+      //template<typename T> T getEnum(const char *name) { attrs.getEnum<T>(name); };
+      //template<typename T> void readEnum(const char *name, T &val) { attrs.readEnum(name, val); };
       
       void writeAttributes();
       
@@ -150,7 +150,7 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
       
       H5::H5File f;
       std::string name;
-      Attributes attrs;
+      //Attributes attrs;
 
     private:
       //Datastore data;

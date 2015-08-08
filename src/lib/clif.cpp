@@ -352,20 +352,21 @@ namespace clif {
   : f(f_), name(name_)
   {
     if (_hdf5_obj_exists(f, name.c_str())) {
-      attrs = Attributes(f, name);
+      Attributes(f, name);
     }
   }
   
   bool Dataset::valid()
   {
-    if (attrs.count()) 
+    if (count()) 
       return true;
     return false;
   }
 
   void Dataset::writeAttributes()
   {
-    attrs.write(f, name);
+    //writes only Attributes!
+    write(f, name);
   }
   
   static void attributes_append_group(Attributes &attrs, H5::Group &g, std::string basename, std::string group_path)
