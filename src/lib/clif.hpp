@@ -7,8 +7,13 @@
 
 namespace clif {
   
+class InvalidBaseType {};
+  
 //base type for elements
-enum class BaseType {INVALID,INT,DOUBLE,STRING};
+enum class BaseType : int {INVALID,INT,DOUBLE,STRING};
+
+std::type_index BaseTypeTypes[] = {std::type_index(typeid(InvalidBaseType)), std::type_index(typeid(int)), std::type_index(typeid(double)), std::type_index(typeid(char))};
+
 
 #define CLIF_DEMOSAIC  1
 #define CLIF_CVT_8BIT  2
@@ -39,7 +44,45 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
       Attribute() {};
       template<typename T> void Set(std::string name_, int dims_, T *size_, BaseType type_, void *data_);
       
-      template<typename T> T get();
+      const char *get()
+      {
+        if (type != BaseType::STRING)
+          throw std::invalid_argument("Attribute type doesn't match requested type.");
+        return (char*)data;
+      };
+      
+      template<typename T> T getEnum()
+      {
+        T val = string_to_enum<T>(get());
+        if (int(val) == -1)
+          throw std::invalid_argument("could not parse enum.");
+      };
+      
+      template<typename T> void greadEnum(T &val)
+      {
+        val = getEnum<T>();
+      };
+      
+      template<typename T> void read(T &val)
+      {
+        if (BaseTypeTypes[int(type)] != std::type_index(typeid(T)))
+          throw std::invalid_argument("Attribute type doesn't match requested type.");
+        
+        val = (T*)data;
+        
+      };
+      
+      template<typename T> void read(std::vector<T> &val)
+      {
+        if (BaseTypeTypes[int(type)] != std::type_index(typeid(T)))
+          throw std::invalid_argument("Attribute type doesn't match requested type.");
+        
+        //TODO n-D handling!
+        val.resize(size[0]);
+        for(int i=0;i<size[0];i++)
+          val[i] = ((T*)data)[i];
+        
+      };
 
       void write(H5::H5File &f, std::string dataset_name);
       std::string toString();
@@ -64,11 +107,6 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
       size[i] = size_[i];
     data = data_;
   }
-  
- template<typename T> T Attribute::get()
- {
-   return (T)data;
-  }
       
   class Attributes {
     public:
@@ -80,13 +118,13 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
       
       Attribute *getAttribute(const char *name);
       
-      template<typename T> void readAttribute(const char *name, T &val);
-      template<typename T> void readAttribute(const char *name, std::vector<T> &val);
+      template<typename T> void readAttribute(const char *name, T &val) { getAttribute(name)->read(val); };
+      template<typename T> void readAttribute(const char *name, std::vector<T> &val) { getAttribute(name)->read(val); };
       
       template<typename T> void writeAttribute(const char *name, T &val);
       template<typename T> void writeAttribute(const char *name, std::vector<T> &val);
       
-      template<typename T> T getEnum(const char *name) { string_to_enum<T>(getAttribute(name)->get<char*>()); };
+      template<typename T> T getEnum(const char *name) { getAttribute(name)->getEnum<T>(); };
       template<typename T> void readEnum(const char *name, T &val) { val = getEnum<T>(name); };
       
       
@@ -136,15 +174,9 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
       
       //void set(Datastore &data_) { data = data_; };
       //TODO should this call writeAttributes (and we completely hide io?)
-      void setAttributes(Attributes &attrs) { static_cast<Attributes&>(*this) = attrs; };
-      
-      //directly pass on some Attribute functions
-      //Attribute *getAttribute(const char *name) { attrs.getAttribute(name); };
-      
-      //template<typename T> T getEnum(const char *name) { attrs.getEnum<T>(name); };
-      //template<typename T> void readEnum(const char *name, T &val) { attrs.readEnum(name, val); };
-      
-      void writeAttributes();
+      void setAttributes(Attributes &attrs) { static_cast<Attributes&>(*this) = attrs; };   
+      //writes only Attributes! FIXME hide Attributes::Write
+      void writeAttributes() { write(f, name); }
       
       bool valid();
       

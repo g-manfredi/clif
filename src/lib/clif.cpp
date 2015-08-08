@@ -44,9 +44,7 @@ static void _rec_make_groups(H5::H5File &f, const char * const group_str)
     buf[next_pos] = '\0';
     last_pos = next_pos;
 
-    printf("check %s\n", buf);
     if (!_hdf5_obj_exists(f, buf)) {
-      printf("create %s\n", buf);
       f.createGroup(buf);
     }
 
@@ -187,16 +185,11 @@ namespace clif {
     std::string path = name;
     std::replace(path.begin(), path.end(), '.', '/');
     
-    
-    printf("dataset name %s\n", dataset_name.c_str());
-    
     path = appendToPath(dataset_name, path);
     path = remove_last_part(path, '/');
     
     std::string attr_name = get_last_part(name, '.');
-    
-    printf("attribute group loc: %s attr name %s\n", path.c_str(), attr_name.c_str());
-    
+        
     _rec_make_groups(f, path.c_str());
 
     H5::Group g = f.openGroup(path);
@@ -322,19 +315,8 @@ namespace clif {
   
   void Attributes::write(H5::H5File &f, std::string &name)
   {
-    if (!attrs.size())
-      return;
-    
-    for(int i=0;i<attrs.size();i++) {
-      
+    for(int i=0;i<attrs.size();i++)
       attrs[i].write(f, name);
-      printf("TODO: save %s under %s\n", attrs[i].name.c_str(), name.c_str());
-    }
-    
-    //for all attributes
-    //create path 
-    //create hdf5 attr
-    //write attr
   }
   
   int Attributes::count()
@@ -361,12 +343,6 @@ namespace clif {
     if (count()) 
       return true;
     return false;
-  }
-
-  void Dataset::writeAttributes()
-  {
-    //writes only Attributes!
-    write(f, name);
   }
   
   static void attributes_append_group(Attributes &attrs, H5::Group &g, std::string basename, std::string group_path)

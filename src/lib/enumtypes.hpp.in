@@ -14,7 +14,7 @@ namespace clif {
   const char *DataOrgStr[] = {${DataOrgStrs}};
   const char *DataOrderStr[] = {${DataOrderStrs}};
   
-  std::unordered_map<std::type_index, const char **> enum_mappings = { 
+  static std::unordered_map<std::type_index, const char **> enum_mappings = { 
     {std::type_index(typeid(DataType)), DataTypeStr},
     {std::type_index(typeid(DataOrg)), DataOrgStr},
     {std::type_index(typeid(DataOrder)), DataOrderStr}
