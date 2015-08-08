@@ -415,46 +415,39 @@ namespace clif {
   {
     attrs.push_back(attr);
   }
-      
-  
-  Datastore::Datastore(H5::H5File &f, const std::string parent_group_str, const std::string name, uint width, uint height, uint count, DataType datatype, DataOrg dataorg, DataOrder dataorder)
-  : type(datatype), org(dataorg), order(dataorder)
-  {
-    hsize_t dims[3] = {width,height, 0};
-    hsize_t maxdims[3] = {width,height,H5S_UNLIMITED}; 
-    std::string dataset_str = parent_group_str;
-    dataset_str = appendToPath(dataset_str, name);
-    
-    if (_hdf5_obj_exists(f, dataset_str.c_str())) {
-      data = f.openDataSet(dataset_str);
-      return;
-    }
-    
-    _rec_make_groups(f, parent_group_str.c_str());
-    
-    //chunking fixed for now
-    hsize_t chunk_dims[3] = {width,height,1};
-    H5::DSetCreatPropList prop;
-    prop.setChunk(3, chunk_dims);
-    
-    H5::DataSpace space(3, dims, maxdims);
-    
-    data = f.createDataSet(dataset_str, 
-	               H5PredType(type), space, prop);
-  }
   
   Datastore::Datastore(Dataset *dataset, std::string path, int w, int h, int count)
   {
-    type  = clif::DataType(parse_string_enum(dataset->attrs.get("format.type")->get<char*>(),DataTypeStr));
-    org   = DataOrg  (parse_string_enum(dataset->attrs.get("format.organisation")->get<char*>(), DataOrgStr));
-    order = DataOrder(parse_string_enum(dataset->attrs.get("format.order")->get<char*>(),DataOrderStr));
+    dataset->readEnum("format.type",         type);
+    dataset->readEnum("format.organisation", org);
+    dataset->readEnum("format.order",        order);
     
     if (int(type) == -1 || int(org) == -1 || int(order) == -1) {
       printf("ERROR: unsupported dataset format!\n");
       return;
     }
     
-    Datastore(dataset->f, dataset->name, path, w, h, count, type, org, order);
+    hsize_t dims[3] = {w,h, 0};
+    hsize_t maxdims[3] = {w,h,H5S_UNLIMITED}; 
+    std::string dataset_str = dataset->name;
+    dataset_str = appendToPath(dataset_str, path);
+    
+    if (_hdf5_obj_exists(dataset->f, dataset_str.c_str())) {
+      data = dataset->f.openDataSet(dataset_str);
+      return;
+    }
+    
+    _rec_make_groups(dataset->f, path.c_str());
+    
+    //chunking fixed for now
+    hsize_t chunk_dims[3] = {w,h,1};
+    H5::DSetCreatPropList prop;
+    prop.setChunk(3, chunk_dims);
+    
+    H5::DataSpace space(3, dims, maxdims);
+    
+    data = dataset->f.createDataSet(dataset_str, 
+	               H5PredType(type), space, prop);
   }
   
   Datastore::Datastore(Dataset *dataset, std::string path)
@@ -464,9 +457,9 @@ namespace clif {
     if (!_hdf5_obj_exists(dataset->f, dataset_str.c_str())) 
       return;
     
-    type  = clif::DataType(parse_string_enum(dataset->attrs.get("format.type")->get<char*>(),DataTypeStr));
-    org   = DataOrg  (parse_string_enum(dataset->attrs.get("format.organisation")->get<char*>(), DataOrgStr));
-    order = DataOrder(parse_string_enum(dataset->attrs.get("format.order")->get<char*>(),DataOrderStr));
+    dataset->readEnum("format.type",         type);
+    dataset->readEnum("format.organisation", org);
+    dataset->readEnum("format.order",        order);
 
     if (int(type) == -1 || int(org) == -1 || int(order) == -1) {
       printf("ERROR: unsupported dataset format!\n");
@@ -740,5 +733,13 @@ namespace clif_cv {
       }
     }
   }
+}
+
+bool ClifDataset::valid()
+{
+  if (clif::Dataset::valid() && clif::Datastore::valid())
+    return true;
+  
+  return false;
 }
 

@@ -79,6 +79,8 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
       Attributes(H5::H5File &f, std::string &name);
       
       Attribute *get(const char *name);
+      
+      
       void append(Attribute &attr);
       int count();
       Attribute operator[](int pos);
@@ -95,9 +97,6 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
   class Datastore {
     public:
       Datastore() {};
-      
-      //TODO remove this one?
-      Datastore(H5::H5File &f, const std::string parent_group_str, const std::string name, uint width, uint height, uint count, DataType datatype, DataOrg dataorg, DataOrder dataorder);
       
       //create new datastore
       Datastore(Dataset *dataset, std::string path, int w, int h, int count);
@@ -127,7 +126,13 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
       Dataset(H5::H5File &f_, std::string name_);
       
       //void set(Datastore &data_) { data = data_; };
-      void set(Attributes &attrs_) { attrs = attrs_; };
+      //TODO should this call writeAttributes (and we completely hide io?)
+      void setAttributes(Attributes &attrs_) { attrs = attrs_; };
+      
+      //directly pass on some Attribute functions
+      Attribute *getAttribute(const char *name) { attrs.get(name); };
+      template<typename T> T getEnum(const char *name) { string_to_enum<T>(attrs.get(name)->get<char*>()); };
+      template<typename T> void readEnum(const char *name, T &val) { val = getEnum<T>(name); };
       
       void writeAttributes();
       
@@ -144,7 +149,36 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
   H5::PredType H5PredType(DataType type);
   
   std::vector<std::string> Datasets(H5::H5File &f);
+    
 }
+
+//specific (high-level) Clif handling - uses Dataset and Datastore to access
+//the attributes and the "main" dataStore
+//plus addtitional functions which interpret those.
+class ClifDataset : public clif::Dataset, public clif::Datastore
+{
+public:
+  ClifDataset(H5::H5File &f, std::string name);
+  
+  bool valid();
+  
+  //TODO for future:
+  //clif::Datastore calibrationImages;
+};
+
+class ClifFile
+{
+  ClifFile();
+  ClifFile(std::string &filename, unsigned int flags);
+  
+  void open(std::string &filename, unsigned int flags);
+  void close();
+  
+  ClifDataset openDataset(int idx);
+  ClifDataset openDataset(std::string name);
+  int datasetCount();
+  std::vector<std::string> datasetList();
+};
 
 //TODO here start public cv stuff -> move to extra header files
 #include "opencv2/core/core.hpp"

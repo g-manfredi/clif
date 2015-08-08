@@ -93,7 +93,7 @@ int main(const int argc, const char *argv[])
   
   Dataset dataset(lffile, "/clif/set1");
   
-  dataset.set(attrs);
+  dataset.setAttributes(attrs);
   dataset.writeAttributes();
   
   vector<char*> in_names(cliarg_sum(input));
@@ -105,15 +105,7 @@ int main(const int argc, const char *argv[])
   int h = img.size().height;
   int depth = img.depth();
   
-  //FIXME only fixed bayer RG (opencv: bg) pattern for now!
-  assert(img.channels() == 1);
-  
-  //FIXME this is ugly!
-  clif::DataType  type  = clif::DataType(parse_string_enum(attrs.get("format.type")->get<char*>(),DataTypeStr));
-  DataOrg   org   = DataOrg  (parse_string_enum(attrs.get("format.organisation")->get<char*>(), DataOrgStr));
-  DataOrder order = DataOrder(parse_string_enum(attrs.get("format.order")->get<char*>(),DataOrderStr));
-  
-  Datastore imgs(lffile, "/clif/set1", "data", w, h, cliarg_sum(input), type, org, order);
+  Datastore imgs(&dataset, "data", w, h, cliarg_sum(input));
   
   imgs.writeRawImage(0, img.data);
   for(int i=1;i<cliarg_sum(input);i++) {
