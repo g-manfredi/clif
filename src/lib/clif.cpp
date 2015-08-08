@@ -352,7 +352,7 @@ namespace clif {
   : f(f_), name(name_)
   {
     if (_hdf5_obj_exists(f, name.c_str())) {
-      Attributes(f, name);
+      static_cast<Attributes&>(*this) = Attributes(f, name);
     }
   }
   
