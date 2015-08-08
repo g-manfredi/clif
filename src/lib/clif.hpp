@@ -111,7 +111,7 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
       
       int imgMemSize();
       
-      bool isValid();
+      bool valid();
       int count();
       
       H5::DataSet data;
@@ -131,10 +131,12 @@ enum class BaseType {INVALID,INT,DOUBLE,STRING};
       
       void writeAttributes();
       
+      bool valid();
+      
       H5::H5File f;
       std::string name;
       Attributes attrs;
-      
+
     private:
       //Datastore data;
   };

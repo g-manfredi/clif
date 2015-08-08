@@ -355,6 +355,13 @@ namespace clif {
       attrs = Attributes(f, name);
     }
   }
+  
+  bool Dataset::valid()
+  {
+    if (attrs.count()) 
+      return true;
+    return false;
+  }
 
   void Dataset::writeAttributes()
   {
@@ -519,7 +526,7 @@ namespace clif {
     data.read(imgdata, H5PredType(type), imgspace, space);
   }
   
-  bool Datastore::isValid()
+  bool Datastore::valid()
   {
     if (data.getId() == H5I_INVALID_HID)
       return false;
