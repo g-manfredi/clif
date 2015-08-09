@@ -4,7 +4,6 @@
 #include <string>
 #include <assert.h>
 
-#include <iostream>
 #include <exception>
 
 #include <opencv2/core/core.hpp>
@@ -171,22 +170,46 @@ namespace clif {
     return in.substr(pos+1, in.npos);
   }
   
- /* template<BaseType> void appendstreamdata(std::ostream &stream, int idx);
-  
-  template<> void appendstreamdata<BaseType::DOUBLE>(std::ostream &stream, int idx)
+  template<typename T> void ostreamInsertArrrayIdx(std::ostream *stream, void *val, int idx)
   {
-    stream << ((double*)data)[idx];
-  }*/
+    *stream << ((T*)val)[idx];
+  }
+  
+  template<typename T> class insertionDispatcher {
+  public:
+    static void call(std::ostream *stream, void *val, int idx)
+    {
+      *stream << ((T*)val)[idx];
+    }
+  };
   
   std::string Attribute::toString()
   {
     if (type == BaseType::STRING) {
       return std::string((char*)data);
     }
-    else if (type == BaseType::DOUBLE) {
+    else {
       std::ostringstream stream;
       if (size[0] == 1) {
-        stream << ((double*)data)[0];
+        basetype_typecall<insertionDispatcher>(type, &stream, data, 0);
+        return stream.str();
+      }
+      stream << "[";
+      //FIXME dims!
+      int i;
+      for(i=0;i<size[0]-1;i++) {
+        basetype_typecall<insertionDispatcher>(type, &stream, data, i);
+        stream << ",";
+      }
+      basetype_typecall<insertionDispatcher>(type, &stream, data, i);
+      stream << "]";
+      return stream.str();
+    }
+    /*else if (type == BaseType::DOUBLE) {
+      std::ostringstream stream;
+      if (size[0] == 1) {
+        //stream << ((double*)data)[0];
+        basetype_typecall<insertionDispatcher>(type, stream, data);
         return stream.str();
       }
       stream << "[";
@@ -212,7 +235,7 @@ namespace clif {
       return stream.str();
     }
     else
-      return std::string("TODO fix toString for type");
+      return std::string("TODO fix toString for type");*/
   }
   
   void Attribute::write(H5::H5File &f, std::string dataset_name)
