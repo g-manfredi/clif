@@ -269,6 +269,7 @@ namespace clif {
     
     cliini_args *attr_args = cliini_parsefile(inifile, &group);
     cliini_args *attr_types = cliini_parsefile(typefile, &group);
+    cliini_fit_typeopts(attr_args, attr_types);
     
     attrs.resize(cliargs_count(attr_args));
     
@@ -279,14 +280,34 @@ namespace clif {
       int dims = 1;
       int size = cliarg_sum(arg);
       
-      if (arg->opt->type == CLIINI_STRING) {
+      attrs[i].setName(arg->opt->longflag);
+        
+      //FIXME nice enum type conversion
+      switch (arg->opt->type) {
+        case CLIINI_STRING :
+          assert(size == 1);
+          attrs[i].set(((char**)(arg->vals))[0], strlen(((char**)(arg->vals))[0])+1);
+          break;
+        case CLIINI_INT :
+          attrs[i].set((int*)(arg->vals), size);
+          break;
+        case CLIINI_DOUBLE :
+          attrs[i].set((double*)(arg->vals), size);
+          break;
+        default :
+          abort();
+      }
+      
+      /*if (arg->opt->type == CLIINI_STRING) {
         assert(size == 1);
         //only single string supported!
         size = strlen(((char**)(arg->vals))[0])+1;
         attrs[i].Set<int>(arg->opt->longflag, dims, &size, cliini_type_to_BaseType(arg->opt->type), ((char**)(arg->vals))[0]);
       }
-      else
-        attrs[i].Set<int>(arg->opt->longflag, dims, &size, cliini_type_to_BaseType(arg->opt->type), arg->vals);
+      if else (arg->opt->type == CLIINI_INT) {
+        attrs[i].set( size);
+        //attrs[i].Set<int>(arg->opt->longflag, dims, &size, cliini_type_to_BaseType(arg->opt->type), arg->vals);
+      }*/
     }
       
       

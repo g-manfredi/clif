@@ -14,7 +14,23 @@ enum class BaseType : int {INVALID,INT,DOUBLE,STRING};
 
 std::type_index BaseTypeTypes[] = {std::type_index(typeid(InvalidBaseType)), std::type_index(typeid(int)), std::type_index(typeid(double)), std::type_index(typeid(char))};
 
+static std::unordered_map<std::type_index, BaseType> BaseTypeMap = { 
+    {std::type_index(typeid(char)), BaseType::STRING},
+    {std::type_index(typeid(int)), BaseType::INT},
+    {std::type_index(typeid(double)), BaseType::DOUBLE}
+};
 
+  
+template<typename T> BaseType toBaseType()
+{
+  return BaseTypeMap[std::type_index(typeid(T))];
+}
+  /*
+template<typename T> BaseType to_type_index()
+{
+  std::type_index(typeid(T));
+}*/
+  
 #define CLIF_DEMOSAIC  1
 #define CLIF_CVT_8BIT  2
 #define CLIF_UNDISTORT 4
@@ -44,6 +60,8 @@ std::type_index BaseTypeTypes[] = {std::type_index(typeid(InvalidBaseType)), std
       Attribute() {};
       template<typename T> void Set(std::string name_, int dims_, T *size_, BaseType type_, void *data_);
       
+      void setName(std::string name_) { name = name_; };
+      
       const char *get()
       {
         if (type != BaseType::STRING)
@@ -63,7 +81,7 @@ std::type_index BaseTypeTypes[] = {std::type_index(typeid(InvalidBaseType)), std
         val = getEnum<T>();
       };
       
-      template<typename T> void read(T &val)
+      template<typename T> void get(T &val)
       {
         if (BaseTypeTypes[int(type)] != std::type_index(typeid(T)))
           throw std::invalid_argument("Attribute type doesn't match requested type.");
@@ -72,7 +90,7 @@ std::type_index BaseTypeTypes[] = {std::type_index(typeid(InvalidBaseType)), std
         
       };
       
-      template<typename T> void read(std::vector<T> &val)
+      template<typename T> void get(std::vector<T> &val)
       {
         if (BaseTypeTypes[int(type)] != std::type_index(typeid(T)))
           throw std::invalid_argument("Attribute type doesn't match requested type.");
@@ -83,15 +101,60 @@ std::type_index BaseTypeTypes[] = {std::type_index(typeid(InvalidBaseType)), std
           val[i] = ((T*)data)[i];
         
       };
+      
+      template<typename T> void set(T &val)
+      {
+        type = toBaseType<T>();
+        
+        data = new T[1];
+        
+        size.resize(1);
+        size[0] = 1;
+        
+        ((T*)data)[0] = val;
+        
+      };
+      
+      template<typename T> void set(std::vector<T> &val)
+      {
+        type = toBaseType<T>();
+        
+        //TODO n-D handling!
+        
+        //FIXME delete!
+        data = new T[val.size()];
+        
+        size.resize(1);
+        size[0] = val.size();
+        
+        for(int i=0;i<size[0];i++)
+          ((T*)data)[i] = val[i];
+        
+      };
+      
+      template<typename T> void set(T *val, int count = 1)
+      {
+        type = toBaseType<T>();
+
+        //FIXME delete!
+        data = new T[count];
+        
+        size.resize(1);
+        size[0] = count;
+        
+        //TODO n-D handling!
+        for(int i=0;i<count;i++)
+          ((T*)data)[i] = val[i];
+      };
 
       void write(H5::H5File &f, std::string dataset_name);
       std::string toString();
       
       std::string name;
+      BaseType type = BaseType::INVALID;
     private:
       
       //HDF5 already has a type system - use it.
-      BaseType type = BaseType::INVALID;
       int dims = 0;
       std::vector<int> size;
       void *data = NULL;
@@ -118,11 +181,11 @@ std::type_index BaseTypeTypes[] = {std::type_index(typeid(InvalidBaseType)), std
       
       Attribute *getAttribute(const char *name);
       
-      template<typename T> void readAttribute(const char *name, T &val) { getAttribute(name)->read(val); };
-      template<typename T> void readAttribute(const char *name, std::vector<T> &val) { getAttribute(name)->read(val); };
+      template<typename T> void getAttribute(const char *name, T &val) { getAttribute(name)->get(val); };
+      template<typename T> void getAttribute(const char *name, std::vector<T> &val) { getAttribute(name)->get(val); };
       
-      template<typename T> void writeAttribute(const char *name, T &val);
-      template<typename T> void writeAttribute(const char *name, std::vector<T> &val);
+      template<typename T> void setAttribute(const char *name, T &val);
+      template<typename T> void setAttribute(const char *name, std::vector<T> &val);
       
       template<typename T> T getEnum(const char *name) { getAttribute(name)->getEnum<T>(); };
       template<typename T> void readEnum(const char *name, T &val) { val = getEnum<T>(name); };
@@ -189,8 +252,6 @@ std::type_index BaseTypeTypes[] = {std::type_index(typeid(InvalidBaseType)), std
   };
   
   H5::PredType H5PredType(DataType type);
-  
-  std::vector<std::string> Datasets(H5::H5File &f);
     
 }
 
@@ -219,7 +280,10 @@ class ClifFile
   ClifDataset openDataset(int idx);
   ClifDataset openDataset(std::string name);
   int datasetCount();
-  std::vector<std::string> datasetList();
+  
+  std::vector<std::string> datasetList() {return datasets;};
+private:
+  std::vector<std::string> datasets;
 };
 
 //TODO here start public cv stuff -> move to extra header files
