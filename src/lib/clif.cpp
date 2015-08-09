@@ -177,7 +177,7 @@ namespace clif {
   
   template<typename T> class insertionDispatcher {
   public:
-    static void call(std::ostream *stream, void *val, int idx)
+    void operator()(std::ostream *stream, void *val, int idx)
     {
       *stream << ((T*)val)[idx];
     }
@@ -191,51 +191,20 @@ namespace clif {
     else {
       std::ostringstream stream;
       if (size[0] == 1) {
-        basetype_typecall<insertionDispatcher>(type, &stream, data, 0);
+        callByBaseType<insertionDispatcher>(type, &stream, data, 0);
         return stream.str();
       }
       stream << "[";
       //FIXME dims!
       int i;
       for(i=0;i<size[0]-1;i++) {
-        basetype_typecall<insertionDispatcher>(type, &stream, data, i);
+        callByBaseType<insertionDispatcher>(type, &stream, data, i);
         stream << ",";
       }
-      basetype_typecall<insertionDispatcher>(type, &stream, data, i);
+      callByBaseType<insertionDispatcher>(type, &stream, data, i);
       stream << "]";
       return stream.str();
     }
-    /*else if (type == BaseType::DOUBLE) {
-      std::ostringstream stream;
-      if (size[0] == 1) {
-        //stream << ((double*)data)[0];
-        basetype_typecall<insertionDispatcher>(type, stream, data);
-        return stream.str();
-      }
-      stream << "[";
-      //FIXME dims!
-      int i;
-      for(i=0;i<size[0]-1;i++)
-        stream << ((double*)data)[i] << ",";
-      stream << ((double*)data)[i] << "]";
-      return stream.str();
-    }
-    else if (type == BaseType::INT) {
-      std::ostringstream stream;
-      if (size[0] == 1) {
-        stream << ((int*)data)[0];
-        return stream.str();
-      }
-      stream << "[";
-      //FIXME dims!
-      int i;
-      for(i=0;i<size[0]-1;i++)
-        stream << ((int*)data)[i] << ",";
-      stream << ((int*)data)[i] << "]";
-      return stream.str();
-    }
-    else
-      return std::string("TODO fix toString for type");*/
   }
   
   void Attribute::write(H5::H5File &f, std::string dataset_name)
