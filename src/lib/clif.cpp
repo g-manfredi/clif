@@ -171,10 +171,45 @@ namespace clif {
     return in.substr(pos+1, in.npos);
   }
   
+ /* template<BaseType> void appendstreamdata(std::ostream &stream, int idx);
+  
+  template<> void appendstreamdata<BaseType::DOUBLE>(std::ostream &stream, int idx)
+  {
+    stream << ((double*)data)[idx];
+  }*/
+  
   std::string Attribute::toString()
   {
     if (type == BaseType::STRING) {
       return std::string((char*)data);
+    }
+    else if (type == BaseType::DOUBLE) {
+      std::ostringstream stream;
+      if (size[0] == 1) {
+        stream << ((double*)data)[0];
+        return stream.str();
+      }
+      stream << "[";
+      //FIXME dims!
+      int i;
+      for(i=0;i<size[0]-1;i++)
+        stream << ((double*)data)[i] << ",";
+      stream << ((double*)data)[i] << "]";
+      return stream.str();
+    }
+    else if (type == BaseType::INT) {
+      std::ostringstream stream;
+      if (size[0] == 1) {
+        stream << ((int*)data)[0];
+        return stream.str();
+      }
+      stream << "[";
+      //FIXME dims!
+      int i;
+      for(i=0;i<size[0]-1;i++)
+        stream << ((int*)data)[i] << ",";
+      stream << ((int*)data)[i] << "]";
+      return stream.str();
     }
     else
       return std::string("TODO fix toString for type");
@@ -221,6 +256,9 @@ namespace clif {
     space.getSimpleExtentDims(dims, maxdims);
     
     void *buf = malloc(basetype_size(type)*dims[0]);
+    
+    //FIXME 1D only atm
+    *size = dims[0];
     
     attr.read(BaseType_to_PredType(type), buf);
     
@@ -279,6 +317,8 @@ namespace clif {
       
       int dims = 1;
       int size = cliarg_sum(arg);
+      
+      printf("opt %s size %d\n", arg->opt->longflag, size);
       
       attrs[i].setName(arg->opt->longflag);
         
@@ -392,6 +432,8 @@ namespace clif {
       std::string name = appendToPath(group_path, h5attr.getName());
       
       data = read_attr(g, h5attr.getName(),type,size);
+      
+      printf("att size: %d\n", size[0]);
       
       name = name.substr(basename.length()+1, name.length()-basename.length()-1);
       std::replace(name.begin(), name.end(), '/', '.');

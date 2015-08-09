@@ -252,7 +252,8 @@ template<typename T> BaseType to_type_index()
   };
   
   H5::PredType H5PredType(DataType type);
-    
+  
+  std::vector<std::string> Datasets(H5::H5File &f);
 }
 
 //specific (high-level) Clif handling - uses Dataset and Datastore to access
