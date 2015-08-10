@@ -210,12 +210,11 @@ namespace clif {
   void Attribute::write(H5::H5File &f, std::string dataset_name)
   {
     std::string path = name;
-    std::replace(path.begin(), path.end(), '.', '/');
     
     path = appendToPath(dataset_name, path);
     path = remove_last_part(path, '/');
     
-    std::string attr_name = get_last_part(name, '.');
+    std::string attr_name = get_last_part(name, '/');
         
     _rec_make_groups(f, path.c_str());
 
@@ -425,7 +424,6 @@ namespace clif {
       data = read_attr(g, h5attr.getName(),type,size);
             
       name = name.substr(basename.length()+1, name.length()-basename.length()-1);
-      std::replace(name.begin(), name.end(), '/', '.');
       
       attr.Set<int>(name, 1, size, type, data);
       attrs.append(attr);

@@ -99,14 +99,14 @@ int main(const int argc, const char *argv[])
   
   Datastore imgs(&dataset, "data", w, h, cliarg_sum(input));
   
-  imgs.writeRawImage(0, img.data);
+  //imgs.writeRawImage(0, img.data);
   for(int i=1;i<cliarg_sum(input);i++) {
-    Mat img = imread(in_names[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+    //Mat img = imread(in_names[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
     assert(w == img.size().width);
     assert(h = img.size().height);
     assert(depth = img.depth());
     printf("store idx %d: %s\n", i, in_names[i]);
-    imgs.writeRawImage(i, img.data);
+    //imgs.writeRawImage(i, img.data);
   }
 
   return EXIT_SUCCESS;
