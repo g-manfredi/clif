@@ -314,6 +314,7 @@ namespace clif {
         
       //FIXME nice enum type conversion
       switch (arg->opt->type) {
+        case CLIINI_ENUM:
         case CLIINI_STRING :
           assert(size == 1);
           attrs[i].set(((char**)(arg->vals))[0], strlen(((char**)(arg->vals))[0])+1);

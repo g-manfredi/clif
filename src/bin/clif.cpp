@@ -68,21 +68,13 @@ cliini_optgroup group = {
 int main(const int argc, const char *argv[])
 {
   cliini_args *args = cliini_parsopts(argc, argv, &group);
+
+  cliini_arg *input = cliargs_get(args, "input");
+  cliini_arg *output = cliargs_get(args, "output");
+  cliini_arg *config = cliargs_get(args, "config");
+  cliini_arg *types = cliargs_get(args, "types");
   
-  if (!args) {
-    printf("error parsing command line, exiting.\n");
-    return EXIT_FAILURE;
-  }
-  
-  if (cliarg_get(args, "help\n"))
-    printf("TODO: print help!");
-  
-  cliini_arg *input = cliarg_get(args, "input");
-  cliini_arg *output = cliarg_get(args, "output");
-  cliini_arg *config = cliarg_get(args, "config");
-  cliini_arg *types = cliarg_get(args, "types");
-  
-  if (!input || !output || !config || !types) {
+  if (!args || cliargs_get(args, "help\n") || !input || !output || !config || !types) {
     printf("TODO: print help!");
     return EXIT_FAILURE;
   }
