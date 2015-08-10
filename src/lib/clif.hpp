@@ -38,6 +38,17 @@ template<template<typename> class F, typename ... ArgTypes> void callByBaseType(
   }
 }
 
+template<template<typename> class F, typename R, typename ... ArgTypes> R callByBaseType(BaseType type, ArgTypes ... args)
+{
+  switch (type) {
+    case BaseType::INT : return F<int>()(args...); break;
+    case BaseType::DOUBLE : return F<double>()(args...); break;
+    case BaseType::STRING : return F<char>()(args...); break;
+    default:
+      abort();
+  }
+}
+
   
 #define CLIF_DEMOSAIC  1
 #define CLIF_CVT_8BIT  2
@@ -267,12 +278,17 @@ template<template<typename> class F, typename ... ArgTypes> void callByBaseType(
 //specific (high-level) Clif handling - uses Dataset and Datastore to access
 //the attributes and the "main" dataStore
 //plus addtitional functions which interpret those.
-class ClifDataset : public clif::Dataset, public clif::Datastore
+class ClifDataset : public clif::Dataset, public virtual clif::Datastore
 {
 public:
+  ClifDataset() {};
   ClifDataset(H5::H5File &f, std::string name);
+  ClifDataset(H5::H5File &f, std::string name, hsize_t w, hsize_t h, hsize_t count);
   
-  bool valid();
+  int imgCount() { clif::Datastore::count(); };
+  int attributeCount() { clif::Attributes::count(); };
+  
+  bool valid() { return clif::Dataset::valid() && clif::Datastore::valid(); };
   
   //TODO for future:
   //clif::Datastore calibrationImages;
@@ -280,18 +296,27 @@ public:
 
 class ClifFile
 {
-  ClifFile();
+public:
+  ClifFile() {};
+  //for write H5F_ACC_TRUNC
   ClifFile(std::string &filename, unsigned int flags);
   
   void open(std::string &filename, unsigned int flags);
-  void close();
+  //void close();
   
   ClifDataset openDataset(int idx);
   ClifDataset openDataset(std::string name);
+
+  ClifDataset createDataset(std::string name, hsize_t w, hsize_t h, hsize_t count);
+  
   int datasetCount();
+  
+  bool valid();
   
   std::vector<std::string> datasetList() {return datasets;};
 private:
+  
+  H5::H5File f;
   std::vector<std::string> datasets;
 };
 
@@ -306,7 +331,7 @@ namespace clif_cv {
   DataType CvDepth2DataType(int cv_type);
   int DataType2CvDepth(DataType t);
   
-  class CvDatastore : public clif::Datastore
+  class CvDatastore : public virtual clif::Datastore
   {
   public:
     using Datastore::Datastore;
@@ -317,3 +342,26 @@ namespace clif_cv {
     void readCvMat(uint idx, cv::Mat &m, int flags = 0);
   };
 }
+
+//the datastore in inherited via ClifDataset iw the same as the on inherited in CvDatastore, allowing to apply the respective opencv methods
+class CvClifDataset : public ClifDataset, public clif_cv::CvDatastore
+{
+public:
+  
+  //ClifDataset::valid calls Datastore::valid anyway
+  bool valid() { ClifDataset::valid(); };
+};
+
+//convenience class get casting
+class CvClifFile : public ClifFile
+{
+public:
+  
+  //FIXME there has to be a better way than those temporaries
+  template<typename ... Ts> CvClifDataset openDataset(Ts ... args)
+  {
+    ClifDataset tmp1 = ClifFile::openDataset(args...);
+    CvClifDataset tmp2 = static_cast<CvClifDataset&>(tmp1);
+    return tmp2;
+  };
+};

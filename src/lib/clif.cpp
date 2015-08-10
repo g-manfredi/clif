@@ -309,9 +309,7 @@ namespace clif {
       
       int dims = 1;
       int size = cliarg_sum(arg);
-      
-      printf("opt %s size %d\n", arg->opt->longflag, size);
-      
+
       attrs[i].setName(arg->opt->longflag);
         
       //FIXME nice enum type conversion
@@ -424,9 +422,7 @@ namespace clif {
       std::string name = appendToPath(group_path, h5attr.getName());
       
       data = read_attr(g, h5attr.getName(),type,size);
-      
-      printf("att size: %d\n", size[0]);
-      
+            
       name = name.substr(basename.length()+1, name.length()-basename.length()-1);
       std::replace(name.begin(), name.end(), '/', '.');
       
@@ -486,8 +482,13 @@ namespace clif {
   {
     std::string dataset_str = appendToPath(dataset->name, path);
     
-    if (!_hdf5_obj_exists(dataset->f, dataset_str.c_str())) 
+    
+  printf("constuct clifdatastore %s\n", dataset_str.c_str());
+    
+    if (!_hdf5_obj_exists(dataset->f, dataset_str.c_str())) {
+      printf("error: could not find requrested datset: %s\n", dataset_str.c_str());
       return;
+    }
     
     dataset->readEnum("format.type",         type);
     dataset->readEnum("format.organisation", org);
@@ -645,13 +646,10 @@ namespace clif {
   {
     int found = str.find(delim);
     std::string name = str.substr(0, found);
-    
-    std::cout << "add: " << str << ":" << name << std::endl;
-    
+        
     for(int i=0;i<childs.size();i++)
       if (!name.compare(childs[i].val.first)) {
         if (found < str.length()-1) { //don't point to last letter or beyond (npos)
-          printf("found!\n");
           childs[i].add(str.substr(found+1), data, delim);
           return;
         }
@@ -662,12 +660,10 @@ namespace clif {
       } 
     
     if (found < str.length()-1) {
-      printf("not found add %s\n", name.c_str());
       childs.push_back(StringTree(name,NULL));
       childs.back().add(str.substr(found+1), data, delim);
     }
     else {
-      std::cout << "actual add: " << str << ":" << name << std::endl;
       childs.push_back(StringTree(name,data));
     }
     
@@ -767,11 +763,83 @@ namespace clif_cv {
   }
 }
 
-bool ClifDataset::valid()
+
+void ClifFile::open(std::string &filename, unsigned int flags)
 {
-  if (clif::Dataset::valid() && clif::Datastore::valid())
-    return true;
+  f.openFile(filename, flags);
   
-  return false;
+  datasets.resize(0);
+  
+  if (f.getId() == H5I_INVALID_HID)
+    return;
+  
+  if (!_hdf5_obj_exists(f, "/clif"))
+      return;
+    
+  H5::Group g = f.openGroup("/clif");
+  
+  hsize_t count = g.getNumObjs();
+  datasets.resize(count);
+  
+  for(int i=0;i<count;i++)
+    datasets[i] = g.getObjnameByIdx(i);
+}
+
+ClifFile::ClifFile(std::string &filename, unsigned int flags)
+{
+  open(filename, flags);
+}
+
+int ClifFile::datasetCount()
+{
+  return datasets.size();
+}
+
+
+ClifDataset ClifFile::openDataset(std::string name)
+{
+  return ClifDataset(f, name);
+}
+
+ClifDataset ClifFile::createDataset(std::string name, hsize_t w, hsize_t h, hsize_t count)
+{
+  return ClifDataset(f, name, w, h, count);
+}
+
+ClifDataset ClifFile::openDataset(int idx)
+{
+  return openDataset(datasets[idx]);
+}
+
+bool ClifFile::valid()
+{
+  return f.getId() != H5I_INVALID_HID;
+}
+
+ClifDataset::ClifDataset(H5::H5File &f, std::string name, hsize_t w, hsize_t h, hsize_t count)
+{
+  std::string fullpath("/clif/");
+  fullpath = fullpath.append(name);
+    
+  static_cast<clif::Dataset&>(*this) = clif::Dataset(f, fullpath);
+  if (!clif::Dataset::valid()) {
+    printf("could not open dataset!\n");
+    return;
+  }
+  
+  fullpath = fullpath.append("/data");
+  static_cast<clif::Datastore&>(*this) = clif::Datastore(this, fullpath, w, h, count);
+}
+
+ClifDataset::ClifDataset(H5::H5File &f, std::string name)
+{
+  std::string fullpath("/clif/");
+  fullpath = fullpath.append(name);
+    
+  static_cast<clif::Dataset&>(*this) = clif::Dataset(f, fullpath);
+  if (!clif::Dataset::valid())
+    return;
+  
+  static_cast<clif::Datastore&>(*this) = clif::Datastore(this, "data");
 }
 
