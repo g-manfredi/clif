@@ -28,6 +28,11 @@ static bool _hdf5_obj_exists(H5::H5File &f, const char * const group_str)
   return false;
 }
 
+static bool _hdf5_obj_exists(H5::H5File &f, const std::string group_str)
+{
+  return _hdf5_obj_exists(f,group_str.c_str());
+}
+
 static void _rec_make_groups(H5::H5File &f, const char * const group_str) 
 {
   int last_pos = 0, next_pos;
@@ -208,25 +213,30 @@ namespace clif {
   }
   
   void Attribute::write(H5::H5File &f, std::string dataset_name)
-  {
-    std::string path = name;
-    
-    path = appendToPath(dataset_name, path);
-    path = remove_last_part(path, '/');
-    
-    std::string attr_name = get_last_part(name, '/');
-        
-    _rec_make_groups(f, path.c_str());
-
-    H5::Group g = f.openGroup(path);
+  {  
+    //FIXME we should have a path?
+    std::string attr_path = name;
+    std::replace(attr_path.begin(), attr_path.end(), '.', '/');
+    std::string fullpath = appendToPath(dataset_name, attr_path);
+    std::string grouppath = remove_last_part(fullpath, '/');
+    std::string attr_name = get_last_part(fullpath, '/');
     
     hsize_t dim[1];
-    
     dim[0] = size[0];
-    
     H5::DataSpace space(1, dim);
+    H5::Attribute attr;
+    H5::Group g;
+    bool attr_exists;
     
-    H5::Attribute attr = g.createAttribute(attr_name, BaseType_to_PredType(type), space);
+    if (!attr_exists)
+      _rec_make_groups(f, grouppath.c_str());
+    
+    g = f.openGroup(grouppath);
+    
+    if (g.attrExists(attr_name))
+      g.removeAttr(attr_name);
+      
+    attr = g.createAttribute(attr_name, BaseType_to_PredType(type), space);
        
     attr.write(BaseType_to_PredType(type), data);
   }
@@ -344,15 +354,6 @@ namespace clif {
     //FIXME free cliini allocated memory!
   }
   
-  Attribute *Attributes::getAttribute(const char *name)
-  {    
-    for(int i=0;i<attrs.size();i++)
-      if (!attrs[i].name.compare(name))
-        return &attrs[i];
-      
-    return NULL;
-  }
-  
   StringTree Attributes::getTree()
   {
     StringTree tree;
@@ -379,7 +380,6 @@ namespace clif {
   {
     return attrs[pos];
   }
-  
   
   Dataset::Dataset(H5::H5File &f_, std::string name_)
   : f(f_), name(name_)
@@ -443,6 +443,13 @@ namespace clif {
     attrs.push_back(attr);
   }
   
+  void Attributes::append(Attributes &other)
+  {
+    for(int i=0;i<other.attrs.size();i++)
+      if (!getAttribute(other.attrs[i].name))
+        attrs.push_back(other.attrs[i]);
+  }
+  
   Datastore::Datastore(Dataset *dataset, std::string path, int w, int h, int count)
   {
     dataset->readEnum("format.type",         type);
@@ -464,7 +471,7 @@ namespace clif {
       return;
     }
     
-    _rec_make_groups(dataset->f, path.c_str());
+    _rec_make_groups(dataset->f, remove_last_part(dataset_str, '/').c_str());
     
     //chunking fixed for now
     hsize_t chunk_dims[3] = {w,h,1};
@@ -784,6 +791,27 @@ void ClifFile::open(std::string &filename, unsigned int flags)
     datasets[i] = g.getObjnameByIdx(i);
 }
 
+void ClifFile::create(std::string &filename)
+{
+  f = H5::H5File(filename, H5F_ACC_TRUNC);
+  
+  datasets.resize(0);
+  
+  if (f.getId() == H5I_INVALID_HID)
+    return;
+  
+  if (!_hdf5_obj_exists(f, "/clif"))
+      return;
+    
+  H5::Group g = f.openGroup("/clif");
+  
+  hsize_t count = g.getNumObjs();
+  datasets.resize(count);
+  
+  for(int i=0;i<count;i++)
+    datasets[i] = g.getObjnameByIdx(i);
+}
+
 ClifFile::ClifFile(std::string &filename, unsigned int flags)
 {
   open(filename, flags);
@@ -797,17 +825,17 @@ int ClifFile::datasetCount()
 
 ClifDataset ClifFile::openDataset(std::string name)
 {
-  return ClifDataset(f, name);
+  return ClifDataset(f, std::string("/clif/").append(name));
 }
 
-ClifDataset ClifFile::createDataset(std::string name, hsize_t w, hsize_t h, hsize_t count)
+ClifDataset ClifFile::createDataset(std::string name, hsize_t w, hsize_t h, hsize_t count, clif::Attributes *attrs)
 {
-  return ClifDataset(f, name, w, h, count);
+  return ClifDataset(f, name, w, h, count, attrs);
 }
 
 ClifDataset ClifFile::openDataset(int idx)
 {
-  return openDataset(datasets[idx]);
+  return openDataset(std::string("/clif/").append(datasets[idx]));
 }
 
 bool ClifFile::valid()
@@ -815,19 +843,22 @@ bool ClifFile::valid()
   return f.getId() != H5I_INVALID_HID;
 }
 
-ClifDataset::ClifDataset(H5::H5File &f, std::string name, hsize_t w, hsize_t h, hsize_t count)
+ClifDataset::ClifDataset(H5::H5File &f, std::string set_name, hsize_t w, hsize_t h, hsize_t count, Attributes *attrs)
 {
   std::string fullpath("/clif/");
-  fullpath = fullpath.append(name);
-    
+  fullpath = fullpath.append(set_name);
+  
   static_cast<clif::Dataset&>(*this) = clif::Dataset(f, fullpath);
   if (!clif::Dataset::valid()) {
-    printf("could not open dataset!\n");
-    return;
+    printf("could not open dataset %s!\n", fullpath.c_str());
   }
   
-  fullpath = fullpath.append("/data");
-  static_cast<clif::Datastore&>(*this) = clif::Datastore(this, fullpath, w, h, count);
+  if (attrs)
+    clif::Attributes::append(*attrs);
+  
+  printf("create dataset! attach attrs %p\n", attrs);
+  
+  static_cast<clif::Datastore&>(*this) = clif::Datastore(this, "data", w, h, count);
 }
 
 ClifDataset::ClifDataset(H5::H5File &f, std::string name)

@@ -3,6 +3,14 @@
 #include <cstdlib>
 #include <vector>
 
+#ifndef _GNU_SOURCE
+  #define _GNU_SOURCE //FIXME need portable extension matcher...
+#endif
+#include <fnmatch.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include "H5Cpp.h"
 #include "H5File.h"
 #include "opencv2/highgui/highgui.hpp"
@@ -26,7 +34,7 @@ cliini_opt opts[] = {
   {
     "input",
     1, //argcount min
-    -1, //argcount max
+    CLIINI_ARGCOUNT_ANY, //argcount max
     CLIINI_STRING, //type
     0, //flags
     'i'
@@ -34,21 +42,13 @@ cliini_opt opts[] = {
   {
     "output",
     1, //argcount
-    1, //argcount
+    CLIINI_ARGCOUNT_ANY, //argcount
     CLIINI_STRING, //type
     0, //flags
     'o'
   },
   {
-    "config",
-    1, //argcount
-    1, //argcount
-    CLIINI_STRING, //type
-    0, //flags
-    'c'
-  },
-  {
-    "types",
+    "types", //FIXME remove this
     1, //argcount
     1, //argcount
     CLIINI_STRING, //type
@@ -65,20 +65,142 @@ cliini_optgroup group = {
   0
 };
 
+const char *clif_extension_pattern = "*.cli?";
+const char *ini_extension_pattern = "*.ini";
+//ksh extension match using FNM_EXTMATCH
+const char *img_extension_pattern = "*.+(png|tif|tiff|jpg|jpeg|jpe|jp2|bmp|dib|pbm|pgm|ppm|sr|ras)";
+
+vector<string> extract_matching_strings(cliini_arg *arg, const char *pattern)
+{
+  vector<string> files;
+  
+  for(int i=0;i<cliarg_sum(arg);i++)
+    if (!fnmatch(pattern, cliarg_nth_str(arg, i), FNM_CASEFOLD | FNM_EXTMATCH))
+      files.push_back(cliarg_nth_str(arg, i));
+    
+  return files;
+}
+
+void errorexit(const char *msg)
+{
+  printf("ERROR: %s\n",msg);
+  exit(EXIT_FAILURE);
+}
+
+inline bool file_exists(const std::string& name)
+{
+  struct stat st;   
+  return (stat(name.c_str(), &st) == 0);
+}
+
 int main(const int argc, const char *argv[])
 {
   cliini_args *args = cliini_parsopts(argc, argv, &group);
 
   cliini_arg *input = cliargs_get(args, "input");
   cliini_arg *output = cliargs_get(args, "output");
-  cliini_arg *config = cliargs_get(args, "config");
   cliini_arg *types = cliargs_get(args, "types");
   
-  if (!args || cliargs_get(args, "help\n") || !input || !output || !config || !types) {
+  if (!args || cliargs_get(args, "help\n") || !input || !output || !types) {
     printf("TODO: print help!");
     return EXIT_FAILURE;
   }
   
+  //several modes:                  input      output
+  //add/append data to clif file     N x *     1x clif
+  //extract image/and or ini        1 x clif  1x init/ Nx img pattern
+  
+  vector<string> clif_append = extract_matching_strings(output, clif_extension_pattern);
+  vector<string> clif_extra_images = extract_matching_strings(output, img_extension_pattern);
+  vector<string> clif_extract_attributes = extract_matching_strings(output, ini_extension_pattern);
+  
+  vector<string> input_clifs = extract_matching_strings(input, clif_extension_pattern);
+  vector<string> input_imgs  = extract_matching_strings(input, img_extension_pattern);
+  assert(input_imgs.size());
+  vector<string> input_inis  = extract_matching_strings(input, ini_extension_pattern);
+  
+  bool output_clif;
+  //std::string input_set_name;
+  std::string output_set_name("default");
+  
+  if (clif_append.size()) {
+    if (clif_append.size() > 1)
+      errorexit("only a single output clif file may be specififed!");
+    if (clif_extra_images.size() || clif_extract_attributes.size())
+      errorexit("may not write to clif at the same time as extracting imgs/attributes!");
+    output_clif = true;
+  }
+  else {
+    if (!clif_extra_images.size() && !clif_extract_attributes.size())
+      errorexit("no valid output format found!");
+    output_clif = false;
+  }
+  
+  if (output_clif) {
+    Attributes attrs;
+    CvClifFile f_out;
+    
+    if (file_exists(clif_append[0]))
+      f_out.open(clif_append[0], H5F_ACC_RDWR);
+    else
+      f_out.create(clif_append[0]);
+    
+    for(int i=0;i<input_clifs.size();i++) {
+      ClifFile f_in(input_clifs[i], H5F_ACC_RDONLY);
+      
+      //FIXME input name handling/selection
+      if (f_in.datasetCount() != 1)
+        errorexit("FIXME: at the moment only files with a single dataset are supported by this program.");
+      
+      //FIXME implement dataset handling for datasets without datastore!
+      ClifDataset set = f_in.openDataset(0);
+      attrs.append(static_cast<Attributes&>(set));
+      
+      printf("FIXME: append image data/other datasets!");
+    }
+    
+    for(int i=0;i<input_inis.size();i++) {
+      printf("append ini file!\n");
+      Attributes others = Attributes(input_inis[i].c_str(), cliarg_str(types));
+      attrs.append(others);
+    }
+    
+    CvClifDataset set;
+    //FIXME multiple dataset handling!
+    if (f_out.datasetCount())
+      set = f_out.openDataset(0);
+    
+    //FIXME allow "empty" datasets with only attributes!
+    
+    int start = 0;
+    //FIXME handle appending to datastore!
+    //FIXME check wether image format was sufficiently defined!
+    if (!set.valid() && input_imgs.size()) {
+      Mat img = imread(input_imgs[0], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+      int w = img.size().width;
+      int h = img.size().height;
+      int depth = img.depth();   
+      //FIXME check wether image format was sufficiently defined!
+      printf("create dataset!\n");
+      set = f_out.createDataset(output_set_name,w,h,input_imgs.size(), &attrs);
+      start = 1;
+      set.writeRawImage(0, img.data);
+    }
+    else
+      //FIXME how do we handle overwriting of data?
+      set.setAttributes(attrs);
+    
+    set.writeAttributes();
+
+    //FIXME handle appending to datastore!
+    for(int i=start;i<input_imgs.size();i++) {
+      printf("store idx %d: %s\n", i, input_imgs[i].c_str());
+      Mat img = imread(input_imgs[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+      set.writeRawImage(i, img.data);
+    }
+  }
+  
+  /*
   Attributes attrs(cliarg_str(config),cliarg_str(types));
   
   H5File lffile(cliarg_str(output), H5F_ACC_TRUNC);
@@ -107,7 +229,7 @@ int main(const int argc, const char *argv[])
     assert(depth = img.depth());
     printf("store idx %d: %s\n", i, in_names[i]);
     //imgs.writeRawImage(i, img.data);
-  }
+  }*/
 
   return EXIT_SUCCESS;
 }

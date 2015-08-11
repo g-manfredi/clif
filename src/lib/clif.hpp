@@ -198,7 +198,14 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       Attributes(const char *inifile, const char *typefile);
       Attributes(H5::H5File &f, std::string &name);
       
-      Attribute *getAttribute(const char *name);
+      template<typename STRINGTYPE> Attribute *getAttribute(STRINGTYPE name)
+      {    
+        for(int i=0;i<attrs.size();i++)
+          if (!attrs[i].name.compare(name))
+            return &attrs[i];
+          
+        return NULL;
+      }
       
       template<typename T> void getAttribute(const char *name, T &val) { getAttribute(name)->get(val); };
       template<typename T> void getAttribute(const char *name, std::vector<T> &val) { getAttribute(name)->get(val); };
@@ -211,6 +218,7 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       
       
       void append(Attribute &attr);
+      void append(Attributes &attrs);
       int count();
       Attribute operator[](int pos);
       void write(H5::H5File &f, std::string &name);
@@ -258,7 +266,7 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       //TODO should this call writeAttributes (and we completely hide io?)
       void setAttributes(Attributes &attrs) { static_cast<Attributes&>(*this) = attrs; };   
       //writes only Attributes! FIXME hide Attributes::Write
-      void writeAttributes() { write(f, name); }
+      void writeAttributes() { Attributes::write(f, name); }
       
       bool valid();
       
@@ -282,8 +290,11 @@ class ClifDataset : public clif::Dataset, public virtual clif::Datastore
 {
 public:
   ClifDataset() {};
+  //TODO maybe no special constructors but open/create methods?
+  //open existing dataset
   ClifDataset(H5::H5File &f, std::string name);
-  ClifDataset(H5::H5File &f, std::string name, hsize_t w, hsize_t h, hsize_t count);
+  //create new dataset
+  ClifDataset(H5::H5File &f, std::string name, hsize_t w, hsize_t h, hsize_t count, Attributes *attrs = NULL);
   
   int imgCount() { clif::Datastore::count(); };
   int attributeCount() { clif::Attributes::count(); };
@@ -298,16 +309,17 @@ class ClifFile
 {
 public:
   ClifFile() {};
-  //for write H5F_ACC_TRUNC
+  //TODO create file if not existing?
   ClifFile(std::string &filename, unsigned int flags);
   
   void open(std::string &filename, unsigned int flags);
+  void create(std::string &filename);
   //void close();
   
   ClifDataset openDataset(int idx);
   ClifDataset openDataset(std::string name);
 
-  ClifDataset createDataset(std::string name, hsize_t w, hsize_t h, hsize_t count);
+  ClifDataset createDataset(std::string name, hsize_t w, hsize_t h, hsize_t count, clif::Attributes *attrs = NULL);
   
   int datasetCount();
   
@@ -347,6 +359,7 @@ namespace clif_cv {
 class CvClifDataset : public ClifDataset, public clif_cv::CvDatastore
 {
 public:
+  using ClifDataset::ClifDataset;
   
   //ClifDataset::valid calls Datastore::valid anyway
   bool valid() { ClifDataset::valid(); };
@@ -356,11 +369,20 @@ public:
 class CvClifFile : public ClifFile
 {
 public:
+  using ClifFile::ClifFile;
   
   //FIXME there has to be a better way than those temporaries
   template<typename ... Ts> CvClifDataset openDataset(Ts ... args)
   {
     ClifDataset tmp1 = ClifFile::openDataset(args...);
+    CvClifDataset tmp2 = static_cast<CvClifDataset&>(tmp1);
+    return tmp2;
+  };
+  
+    //FIXME there has to be a better way than those temporaries
+  template<typename ... Ts> CvClifDataset createDataset(Ts ... args)
+  {
+    ClifDataset tmp1 = ClifFile::createDataset(args...);
     CvClifDataset tmp2 = static_cast<CvClifDataset&>(tmp1);
     return tmp2;
   };
