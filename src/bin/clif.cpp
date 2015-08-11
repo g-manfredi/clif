@@ -101,7 +101,7 @@ int main(const int argc, const char *argv[])
   cliini_arg *output = cliargs_get(args, "output");
   cliini_arg *types = cliargs_get(args, "types");
   
-  if (!args || cliargs_get(args, "help\n") || !input || !output || !types) {
+  if (!args || cliargs_get(args, "help\n") || !input || !output) {
     printf("TODO: print help!");
     return EXIT_FAILURE;
   }
@@ -123,6 +123,8 @@ int main(const int argc, const char *argv[])
   std::string output_set_name("default");
   
   if (clif_append.size()) {
+    if (!types)
+      errorexit("FIXME add global type declaration!");
     if (clif_append.size() > 1)
       errorexit("only a single output clif file may be specififed!");
     if (clif_extra_images.size() || clif_extract_attributes.size())
@@ -132,6 +134,8 @@ int main(const int argc, const char *argv[])
   else {
     if (!clif_extra_images.size() && !clif_extract_attributes.size())
       errorexit("no valid output format found!");
+    if (input_clifs.size() != 1)
+      errorexit("only single input clif file allowed!");
     output_clif = false;
   }
   
@@ -173,6 +177,7 @@ int main(const int argc, const char *argv[])
     
     for(int i=0;i<input_inis.size();i++) {
       printf("append ini file!\n");
+      //FIXME multiple type files?
       Attributes others = Attributes(input_inis[i].c_str(), cliarg_str(types));
       set.append(others);
     }
@@ -191,6 +196,20 @@ int main(const int argc, const char *argv[])
       int w = img.size().width;
       int h = img.size().height;
       set.appendRawImage(w, h, img.data);
+    }
+  }
+  else {
+    
+    for(int ini=0;ini<clif_extract_attributes.size();ini++) {
+      ClifFile f_in(input_clifs[0], H5F_ACC_RDONLY);
+      
+      //FIXME input name handling/selection
+      if (f_in.datasetCount() != 1)
+        errorexit("FIXME: at the moment only files with a single dataset are supported by this program.");
+      
+      //FIXME implement dataset handling for datasets without datastore!
+      ClifDataset set = f_in.openDataset(0);
+        set.writeIni(clif_extract_attributes[ini]);
     }
   }
   

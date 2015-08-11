@@ -5,6 +5,7 @@
 #include <assert.h>
 
 #include <exception>
+#include <fstream>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -383,6 +384,25 @@ namespace clif {
   {
     for(int i=0;i<attrs.size();i++)
       attrs[i].write(f, name);
+  }
+  
+  void Attributes::writeIni(std::string &filename)
+  {
+    std::ofstream f;
+    f.open (filename);
+    
+    std::string currsection;
+    std::string nextsection;
+    
+    for(int i=0;i<attrs.size();i++) {
+      nextsection = remove_last_part(attrs[i].name, '/');
+      if (nextsection.compare(currsection)) {
+        currsection = nextsection;
+        std::replace(nextsection.begin(), nextsection.end(), '/', '.');
+        f << std::endl << std::endl << "[" << nextsection << "]" << std::endl << std::endl;
+      }
+      f << get_last_part(attrs[i].name,'/') << " = " << attrs[i] << std::endl;
+    }
   }
   
   int Attributes::count()

@@ -193,6 +193,8 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
 
         return NULL;
       }
+
+      void writeIni(std::string &filename);
       
       template<typename T> void getAttribute(const char *name, T &val) { getAttribute(name)->get(val); };
       template<typename T> void getAttribute(const char *name, std::vector<T> &val) { getAttribute(name)->get(val); };
