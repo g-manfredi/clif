@@ -6,6 +6,8 @@
 
 #include "enumtypes.hpp"
 
+#include "stringtree.hpp"
+
 namespace clif {
   
 class InvalidBaseType {};
@@ -56,23 +58,6 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
 
   int parse_string_enum(std::string &str, const char **enumstrs);
   int parse_string_enum(const char *str, const char **enumstrs);
-
-  class StringTree {
-  public:
-    StringTree() {};
-    StringTree(std::string name, void *data);
-    
-    void print(int depth = 0);
-    
-    void add(std::string str, void *data, char delim);
-    int childCount();
-    StringTree *operator[](int idx);
-    
-    std::pair<std::string, void*> *search(std::string str, char delim);
-    
-    std::pair<std::string, void*> val;
-    std::vector<StringTree> childs;
-  };
   
   class Attribute {
     public:
@@ -168,6 +153,9 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       void write(H5::H5File &f, std::string dataset_name);
       std::string toString();
       
+      friend std::ostream& operator<<(std::ostream& out, const Attribute& a);
+
+      
       std::string name;
       BaseType type = BaseType::INVALID;
     private:
@@ -221,11 +209,21 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       int count();
       Attribute operator[](int pos);
       void write(H5::H5File &f, std::string &name);
-      StringTree getTree();
+      StringTree<Attribute*> getTree();
       
     protected:
       std::vector<Attribute> attrs; 
   };
+  
+  StringTree<Attribute*> Attributes::getTree()
+  {
+    StringTree<Attribute*> tree;
+    
+    for(int i=0;i<attrs.size();i++)
+      tree.add(attrs[i].name, &attrs[i], '/');
+    
+    return tree;
+  }
   
   class Dataset;
   

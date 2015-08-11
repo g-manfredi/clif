@@ -3,7 +3,7 @@ project(clif)
 
 find_package(HDF5 REQUIRED CXX)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -std=c++14")
 
 add_library(clif SHARED clif.cpp)
 

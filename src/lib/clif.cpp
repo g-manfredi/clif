@@ -188,6 +188,30 @@ namespace clif {
     }
   };
   
+  std::ostream& operator<<(std::ostream& out, const Attribute& a)
+  {
+    if (a.type == BaseType::STRING) {
+      out << (char*)a.data;
+      return out;
+    }
+    else {
+      if (a.size[0] == 1) {
+        callByBaseType<insertionDispatcher>(a.type, &out, a.data, 0);
+        return out;
+      }
+      out << "[";
+      //FIXME dims!
+      int i;
+      for(i=0;i<a.size[0]-1;i++) {
+        callByBaseType<insertionDispatcher>(a.type, &out, a.data, i);
+        out << ",";
+      }
+      callByBaseType<insertionDispatcher>(a.type, &out, a.data, i);
+      out << "]";
+      return out;
+    }
+  }
+  
   std::string Attribute::toString()
   {
     if (type == BaseType::STRING) {
@@ -352,16 +376,6 @@ namespace clif {
       
       
     //FIXME free cliini allocated memory!
-  }
-  
-  StringTree Attributes::getTree()
-  {
-    StringTree tree;
-    
-    for(int i=0;i<attrs.size();i++)
-      tree.add(attrs[i].name, &attrs[i], '.');
-    
-    return tree;
   }
   
   
@@ -671,79 +685,6 @@ namespace clif {
     space.getSimpleExtentDims(dims, maxdims);
     
     return dims[2];
-  }
-  
-  StringTree::StringTree(std::string name, void *data)
-  {
-    val.first = name;
-    val.second = data;
-  }
-  
-  void StringTree::print(int depth)
-  {
-    for(int i=0;i<depth;i++)
-      printf("   ");
-    printf("%s (%d)\n", val.first.c_str(),childs.size());
-    for(int i=0;i<childs.size();i++)
-      childs[i].print(depth+1);
-  }
-  
-  void StringTree::add(std::string str, void *data, char delim)
-  {
-    int found = str.find(delim);
-    std::string name = str.substr(0, found);
-        
-    for(int i=0;i<childs.size();i++)
-      if (!name.compare(childs[i].val.first)) {
-        if (found < str.length()-1) { //don't point to last letter or beyond (npos)
-          childs[i].add(str.substr(found+1), data, delim);
-          return;
-        }
-        else {
-          printf("FIXME StringTree: handle existing elements in add!\n");
-          return;
-        }
-      } 
-    
-    if (found < str.length()-1) {
-      childs.push_back(StringTree(name,NULL));
-      childs.back().add(str.substr(found+1), data, delim);
-    }
-    else {
-      childs.push_back(StringTree(name,data));
-    }
-    
-  }
-    
-  std::pair<std::string, void*> *StringTree::search(std::string str, char delim)
-  {
-    int found = str.find(delim);
-    std::string name = str.substr(0, found);
-    
-    std::cout << "search: " << str << ":" << name << std::endl;
-    
-    for(int i=0;i<childs.size();i++)
-      if (!name.compare(childs[i].val.first)) {
-        if (found < str.length()-1) { //don't point to last letter or beyond (npos)
-          return childs[i].search(str.substr(found+1), delim);
-        }
-        else
-          return &val;
-      } 
-    
-    std::cout << "not found: " << str << ":" << name << std::endl;
-    return NULL;
-  }
-  
-  
-  StringTree *StringTree::operator[](int idx)
-  {
-    return &childs[idx];
-  }
-  
-  int StringTree::childCount()
-  {
-    return childs.size();
   }
 }
 
