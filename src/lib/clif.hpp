@@ -76,7 +76,6 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
   
   class Attribute {
     public:
-      Attribute() {};
       template<typename T> void Set(std::string name_, int dims_, T *size_, BaseType type_, void *data_);
       
       void setName(std::string name_) { name = name_; };
@@ -232,15 +231,12 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
   
   //representation of a "raw" clif datset - mostly the images
   class Datastore {
-    public:
-      Datastore() {};
-      
+    public:      
       //create new datastore
-      void create(Dataset *dataset, std::string path);
+      void create(std::string path, Dataset *dataset = NULL, hsize_t w = 0, hsize_t h = 0);
       
       //open existing datastore
       void open(Dataset *dataset, std::string path);
-      
       
       void writeRawImage(uint idx, hsize_t w, hsize_t h, void *data);
       void appendRawImage(hsize_t w, hsize_t h, void *data);
@@ -250,16 +246,17 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       
       bool valid();
       int count();
+      
+      std::string getDatastorePath() { return path; };
 
     protected:
-      void initialize_internal(hsize_t w, hsize_t h);
+      void init_from_dataset(Dataset *dataset, hsize_t w, hsize_t h);
       
       DataType type; 
       DataOrg org;
       DataOrder order;
       
       H5::DataSet data;
-      clif::Dataset *parent_set;
       std::string path;
       
   };
@@ -297,15 +294,21 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
 class ClifDataset : public clif::Dataset, public virtual clif::Datastore
 {
 public:
-  ClifDataset() {};
   //TODO maybe no special constructors but open/create methods?
   //open existing dataset
   void open(H5::H5File &f, std::string name);
   //create new dataset
   void create(H5::H5File &f, std::string name);
   
+  ClifDataset &operator=(const ClifDataset &other) { Dataset::operator=(other); Datastore::operator=(other); return *this; }
+  
   int imgCount() { clif::Datastore::count(); };
   int attributeCount() { clif::Attributes::count(); };
+  
+  //TODO make this more generic?
+  //initializes datastore if necessary
+  void writeRawImage(uint idx, hsize_t w, hsize_t h, void *data);
+  void appendRawImage(hsize_t w, hsize_t h, void *data);
   
   bool valid() { return clif::Dataset::valid() && clif::Datastore::valid(); };
   
@@ -355,6 +358,7 @@ namespace clif_cv {
   {
   public:
     using Datastore::Datastore;
+    //TODO check assignment operator!
     
     cv::Size imgSize();
     
@@ -368,6 +372,9 @@ class CvClifDataset : public ClifDataset, public clif_cv::CvDatastore
 {
 public:
   using ClifDataset::ClifDataset;
+  
+  //TODO init dataste if necessary...
+  void writeCvMat(uint idx, hsize_t w, hsize_t h, void *data);
   
   //ClifDataset::valid calls Datastore::valid anyway
   bool valid() { ClifDataset::valid(); };

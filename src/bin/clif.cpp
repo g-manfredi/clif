@@ -116,7 +116,6 @@ int main(const int argc, const char *argv[])
   
   vector<string> input_clifs = extract_matching_strings(input, clif_extension_pattern);
   vector<string> input_imgs  = extract_matching_strings(input, img_extension_pattern);
-  assert(input_imgs.size());
   vector<string> input_inis  = extract_matching_strings(input, ini_extension_pattern);
   
   bool output_clif;
@@ -147,10 +146,16 @@ int main(const int argc, const char *argv[])
     
     CvClifDataset set;
     //FIXME multiple dataset handling!
-    if (f_out.datasetCount())
+    if (f_out.datasetCount()) {
+      printf("INFO: appending to HDF5 DataSet %s\n", f_out.datasetList()[0].c_str());
       set = f_out.openDataset(0);
-    else
+    }
+    else {
+      printf("INFO: creating new HDF5 DataSet %s\n", output_set_name.c_str());
       set = f_out.createDataset(output_set_name);
+    }
+    
+    
     
     for(int i=0;i<input_clifs.size();i++) {
       ClifFile f_in(input_clifs[i], H5F_ACC_RDONLY);
@@ -173,28 +178,13 @@ int main(const int argc, const char *argv[])
     }
     
     //FIXME allow "empty" datasets with only attributes!
-    
-    /*int start = 0;
     //FIXME handle appending to datastore!
     //FIXME check wether image format was sufficiently defined!
-    if (!set.valid() && input_imgs.size()) {
-      Mat img = imread(input_imgs[0], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
-      int w = img.size().width;
-      int h = img.size().height;
-      int depth = img.depth();   
-      //FIXME check wether image format was sufficiently defined!
-      printf("create dataset!\n");
-      set = f_out.createDataset(output_set_name,w,h,&attrs);
-      start = 1;
-      set.appendRawImage(img.data);
-    }
-    else
-      //FIXME how do we handle overwriting of data?
-      set.setAttributes(attrs);*/
+    //FIXME check wether image format was sufficiently defined!
+    //FIXME how do we handle overwriting of data?
     
     set.writeAttributes();
-
-    //FIXME handle appending to datastore!
+    
     for(int i=0;i<input_imgs.size();i++) {
       printf("store idx %d: %s\n", i, input_imgs[i].c_str());
       Mat img = imread(input_imgs[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);

@@ -458,23 +458,25 @@ namespace clif {
   }
   
   //FIXME wether dataset already exists and overwrite?
-  void Datastore::create(Dataset *dataset, std::string path_)
+  void Datastore::create(std::string path_, Dataset *dataset, hsize_t w, hsize_t h)
   {
     type = DataType(-1); 
     org = DataOrg(-1);
     order = DataOrder(-1); 
       
     data = H5::DataSet();
-    parent_set = dataset;
     path = path_;
+    
+    if (dataset && w && h)
+      init_from_dataset(dataset,w,h);
   }
   
   
-  void Datastore::initialize_internal(hsize_t w, hsize_t h)
+  void Datastore::init_from_dataset(Dataset *dataset, hsize_t w, hsize_t h)
   {
-    parent_set->readEnum("format/type",         type);
-    parent_set->readEnum("format/organisation", org);
-    parent_set->readEnum("format/order",        order);
+    dataset->readEnum("format/type",         type);
+    dataset->readEnum("format/organisation", org);
+    dataset->readEnum("format/order",        order);
     
     if (int(type) == -1 || int(org) == -1 || int(order) == -1) {
       printf("ERROR: unsupported dataset format!\n");
@@ -483,15 +485,15 @@ namespace clif {
     
     hsize_t dims[3] = {w,h, 0};
     hsize_t maxdims[3] = {w,h,H5S_UNLIMITED}; 
-    std::string dataset_str = parent_set->name;
+    std::string dataset_str = dataset->name;
     dataset_str = appendToPath(dataset_str, path);
     
-    if (_hdf5_obj_exists(parent_set->f, dataset_str.c_str())) {
-      data = parent_set->f.openDataSet(dataset_str);
+    if (_hdf5_obj_exists(dataset->f, dataset_str.c_str())) {
+      data = dataset->f.openDataSet(dataset_str);
       return;
     }
     
-    _rec_make_groups(parent_set->f, remove_last_part(dataset_str, '/').c_str());
+    _rec_make_groups(dataset->f, remove_last_part(dataset_str, '/').c_str());
     
     //chunking fixed for now
     hsize_t chunk_dims[3] = {w,h,1};
@@ -500,18 +502,17 @@ namespace clif {
     
     H5::DataSpace space(3, dims, maxdims);
     
-    data = parent_set->f.createDataSet(dataset_str, 
+    data = dataset->f.createDataSet(dataset_str, 
 	               H5PredType(type), space, prop);
   }
   
   void Datastore::open(Dataset *dataset, std::string path_)
   {
     //only fills in internal data
-    create(dataset, path_);
+    create(path_);
+        
     std::string dataset_str = appendToPath(dataset->name, path_);
-    
-    printf("constuct clifdatastore %s\n", dataset_str.c_str());
-    
+        
     if (!_hdf5_obj_exists(dataset->f, dataset_str.c_str())) {
       printf("error: could not find requrested datset: %s\n", dataset_str.c_str());
       return;
@@ -533,8 +534,7 @@ namespace clif {
   
   void Datastore::writeRawImage(uint idx, hsize_t w, hsize_t h, void *imgdata)
   {
-    if (!valid())
-      initialize_internal(w, h);
+    assert(valid());
     
     H5::DataSpace space = data.getSpace();
     hsize_t dims[3];
@@ -892,12 +892,10 @@ void ClifDataset::create(H5::H5File &f, std::string set_name)
   std::string fullpath("/clif/");
   fullpath = fullpath.append(set_name);
   
+  //TODO create only
   static_cast<clif::Dataset&>(*this) = clif::Dataset(f, fullpath);
-  if (!clif::Dataset::valid()) {
-    printf("could not open dataset %s!\n", fullpath.c_str());
-  }
   
-  clif::Datastore::create(this, "data");
+  clif::Datastore::create("data");
 }
 
 void ClifDataset::open(H5::H5File &f, std::string name)
@@ -914,3 +912,19 @@ void ClifDataset::open(H5::H5File &f, std::string name)
   clif::Datastore::open(this, "data");
 }
 
+
+void ClifDataset::writeRawImage(uint idx, hsize_t w, hsize_t h, void *data)
+{
+  if (!Datastore::valid())
+    init_from_dataset(this, w, h);
+  
+  Datastore::writeRawImage(idx, w, h, data);
+    
+}
+void ClifDataset::appendRawImage(hsize_t w, hsize_t h, void *data)
+{
+  if (!Datastore::valid())
+    init_from_dataset(this, w, h);
+  
+  Datastore::appendRawImage(w, h, data);
+}
