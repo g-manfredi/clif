@@ -203,7 +203,7 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
         for(int i=0;i<attrs.size();i++)
           if (!attrs[i].name.compare(name))
             return &attrs[i];
-          
+
         return NULL;
       }
       
@@ -236,30 +236,38 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       Datastore() {};
       
       //create new datastore
-      Datastore(Dataset *dataset, std::string path, int w, int h, int count);
+      void create(Dataset *dataset, std::string path);
       
       //open existing datastore
-      Datastore(Dataset *dataset, std::string path);
+      void open(Dataset *dataset, std::string path);
       
       
-      void writeRawImage(uint idx, void *data);
-      void readRawImage(uint idx, void *data);
+      void writeRawImage(uint idx, hsize_t w, hsize_t h, void *data);
+      void appendRawImage(hsize_t w, hsize_t h, void *data);
+      void readRawImage(uint idx, hsize_t w, hsize_t h, void *data);
       
       int imgMemSize();
       
       bool valid();
       int count();
-      
-      H5::DataSet data;
+
     protected:
+      void initialize_internal(hsize_t w, hsize_t h);
+      
       DataType type; 
       DataOrg org;
       DataOrder order;
+      
+      H5::DataSet data;
+      clif::Dataset *parent_set;
+      std::string path;
+      
   };
   
   class Dataset : public Attributes {
     public:
       Dataset() {};
+      //FIXME use open/create methods
       Dataset(H5::H5File &f_, std::string name_);
       
       //void set(Datastore &data_) { data = data_; };
@@ -292,9 +300,9 @@ public:
   ClifDataset() {};
   //TODO maybe no special constructors but open/create methods?
   //open existing dataset
-  ClifDataset(H5::H5File &f, std::string name);
+  void open(H5::H5File &f, std::string name);
   //create new dataset
-  ClifDataset(H5::H5File &f, std::string name, hsize_t w, hsize_t h, hsize_t count, Attributes *attrs = NULL);
+  void create(H5::H5File &f, std::string name);
   
   int imgCount() { clif::Datastore::count(); };
   int attributeCount() { clif::Attributes::count(); };
@@ -319,7 +327,7 @@ public:
   ClifDataset openDataset(int idx);
   ClifDataset openDataset(std::string name);
 
-  ClifDataset createDataset(std::string name, hsize_t w, hsize_t h, hsize_t count, clif::Attributes *attrs = NULL);
+  ClifDataset createDataset(std::string name);
   
   int datasetCount();
   

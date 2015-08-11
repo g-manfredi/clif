@@ -318,7 +318,7 @@ namespace clif {
       
       int dims = 1;
       int size = cliarg_sum(arg);
-
+      
       attrs[i].setName(arg->opt->longflag);
         
       //FIXME nice enum type conversion
@@ -443,18 +443,38 @@ namespace clif {
     attrs.push_back(attr);
   }
   
+  //TODO document:
+  //overwrites existing attributes of same name
   void Attributes::append(Attributes &other)
   {
-    for(int i=0;i<other.attrs.size();i++)
-      if (!getAttribute(other.attrs[i].name))
+    Attribute *at;
+    for(int i=0;i<other.attrs.size();i++) {
+      at = getAttribute(other.attrs[i].name);
+      if (!at)
         attrs.push_back(other.attrs[i]);
+      else
+        *at = other.attrs[i];
+    }
   }
   
-  Datastore::Datastore(Dataset *dataset, std::string path, int w, int h, int count)
+  //FIXME wether dataset already exists and overwrite?
+  void Datastore::create(Dataset *dataset, std::string path_)
   {
-    dataset->readEnum("format.type",         type);
-    dataset->readEnum("format.organisation", org);
-    dataset->readEnum("format.order",        order);
+    type = DataType(-1); 
+    org = DataOrg(-1);
+    order = DataOrder(-1); 
+      
+    data = H5::DataSet();
+    parent_set = dataset;
+    path = path_;
+  }
+  
+  
+  void Datastore::initialize_internal(hsize_t w, hsize_t h)
+  {
+    parent_set->readEnum("format/type",         type);
+    parent_set->readEnum("format/organisation", org);
+    parent_set->readEnum("format/order",        order);
     
     if (int(type) == -1 || int(org) == -1 || int(order) == -1) {
       printf("ERROR: unsupported dataset format!\n");
@@ -463,15 +483,15 @@ namespace clif {
     
     hsize_t dims[3] = {w,h, 0};
     hsize_t maxdims[3] = {w,h,H5S_UNLIMITED}; 
-    std::string dataset_str = dataset->name;
+    std::string dataset_str = parent_set->name;
     dataset_str = appendToPath(dataset_str, path);
     
-    if (_hdf5_obj_exists(dataset->f, dataset_str.c_str())) {
-      data = dataset->f.openDataSet(dataset_str);
+    if (_hdf5_obj_exists(parent_set->f, dataset_str.c_str())) {
+      data = parent_set->f.openDataSet(dataset_str);
       return;
     }
     
-    _rec_make_groups(dataset->f, remove_last_part(dataset_str, '/').c_str());
+    _rec_make_groups(parent_set->f, remove_last_part(dataset_str, '/').c_str());
     
     //chunking fixed for now
     hsize_t chunk_dims[3] = {w,h,1};
@@ -480,25 +500,26 @@ namespace clif {
     
     H5::DataSpace space(3, dims, maxdims);
     
-    data = dataset->f.createDataSet(dataset_str, 
+    data = parent_set->f.createDataSet(dataset_str, 
 	               H5PredType(type), space, prop);
   }
   
-  Datastore::Datastore(Dataset *dataset, std::string path)
+  void Datastore::open(Dataset *dataset, std::string path_)
   {
-    std::string dataset_str = appendToPath(dataset->name, path);
+    //only fills in internal data
+    create(dataset, path_);
+    std::string dataset_str = appendToPath(dataset->name, path_);
     
-    
-  printf("constuct clifdatastore %s\n", dataset_str.c_str());
+    printf("constuct clifdatastore %s\n", dataset_str.c_str());
     
     if (!_hdf5_obj_exists(dataset->f, dataset_str.c_str())) {
       printf("error: could not find requrested datset: %s\n", dataset_str.c_str());
       return;
     }
     
-    dataset->readEnum("format.type",         type);
-    dataset->readEnum("format.organisation", org);
-    dataset->readEnum("format.order",        order);
+    dataset->readEnum("format/type",         type);
+    dataset->readEnum("format/organisation", org);
+    dataset->readEnum("format/order",        order);
 
     if (int(type) == -1 || int(org) == -1 || int(order) == -1) {
       printf("ERROR: unsupported dataset format!\n");
@@ -510,8 +531,11 @@ namespace clif {
     //printf("Datastore open %s: %s %s %s\n", dataset_str.c_str(), ClifEnumString(DataType,type),ClifEnumString(DataOrg,org),ClifEnumString(DataOrder,order));
   }
   
-  void Datastore::writeRawImage(uint idx, void *imgdata)
+  void Datastore::writeRawImage(uint idx, hsize_t w, hsize_t h, void *imgdata)
   {
+    if (!valid())
+      initialize_internal(w, h);
+    
     H5::DataSpace space = data.getSpace();
     hsize_t dims[3];
     hsize_t maxdims[3];
@@ -535,7 +559,23 @@ namespace clif {
     data.write(imgdata, H5PredType(type), imgspace, space);
   }
   
-  void Datastore::readRawImage(uint idx, void *imgdata)
+  void Datastore::appendRawImage(hsize_t w, hsize_t h, void *imgdata)
+  {
+    int idx = 0;
+    if (valid()) {
+      H5::DataSpace space = data.getSpace();
+      hsize_t dims[3];
+      hsize_t maxdims[3];
+      
+      space.getSimpleExtentDims(dims, maxdims);
+      
+      idx = dims[2];
+    }
+    
+    writeRawImage(idx, w, h, imgdata);
+  }
+  
+  void Datastore::readRawImage(uint idx, hsize_t w, hsize_t h, void *imgdata)
   {
     H5::DataSpace space = data.getSpace();
     hsize_t dims[3];
@@ -748,7 +788,7 @@ namespace clif_cv {
     //FIXME bayer only for now!
     m = cv::Mat(imgSize(), DataType2CvDepth(type));
     
-    readRawImage(idx, m.data);
+    readRawImage(idx, m.size().width, m.size().height, m.data);
     
     if (org == DataOrg::BAYER_2x2 && flags & CLIF_DEMOSAIC) {
       switch (order) {
@@ -825,17 +865,21 @@ int ClifFile::datasetCount()
 
 ClifDataset ClifFile::openDataset(std::string name)
 {
-  return ClifDataset(f, std::string("/clif/").append(name));
+  ClifDataset set;
+  set.open(f, name);
+  return set;
 }
 
-ClifDataset ClifFile::createDataset(std::string name, hsize_t w, hsize_t h, hsize_t count, clif::Attributes *attrs)
+ClifDataset ClifFile::createDataset(std::string name)
 {
-  return ClifDataset(f, name, w, h, count, attrs);
+  ClifDataset set;
+  set.create(f, name);
+  return set;
 }
 
 ClifDataset ClifFile::openDataset(int idx)
 {
-  return openDataset(std::string("/clif/").append(datasets[idx]));
+  return openDataset(datasets[idx]);
 }
 
 bool ClifFile::valid()
@@ -843,7 +887,7 @@ bool ClifFile::valid()
   return f.getId() != H5I_INVALID_HID;
 }
 
-ClifDataset::ClifDataset(H5::H5File &f, std::string set_name, hsize_t w, hsize_t h, hsize_t count, Attributes *attrs)
+void ClifDataset::create(H5::H5File &f, std::string set_name)
 {
   std::string fullpath("/clif/");
   fullpath = fullpath.append(set_name);
@@ -853,23 +897,20 @@ ClifDataset::ClifDataset(H5::H5File &f, std::string set_name, hsize_t w, hsize_t
     printf("could not open dataset %s!\n", fullpath.c_str());
   }
   
-  if (attrs)
-    clif::Attributes::append(*attrs);
-  
-  printf("create dataset! attach attrs %p\n", attrs);
-  
-  static_cast<clif::Datastore&>(*this) = clif::Datastore(this, "data", w, h, count);
+  clif::Datastore::create(this, "data");
 }
 
-ClifDataset::ClifDataset(H5::H5File &f, std::string name)
+void ClifDataset::open(H5::H5File &f, std::string name)
 {
   std::string fullpath("/clif/");
   fullpath = fullpath.append(name);
     
   static_cast<clif::Dataset&>(*this) = clif::Dataset(f, fullpath);
-  if (!clif::Dataset::valid())
+  if (!clif::Dataset::valid()) {
+    printf("could not open dataset %s\n", fullpath.c_str());
     return;
+  }
   
-  static_cast<clif::Datastore&>(*this) = clif::Datastore(this, "data");
+  clif::Datastore::open(this, "data");
 }
 

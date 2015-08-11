@@ -137,13 +137,20 @@ int main(const int argc, const char *argv[])
   }
   
   if (output_clif) {
-    Attributes attrs;
     CvClifFile f_out;
     
-    if (file_exists(clif_append[0]))
+    if (file_exists(clif_append[0])) {
       f_out.open(clif_append[0], H5F_ACC_RDWR);
+    }
     else
       f_out.create(clif_append[0]);
+    
+    CvClifDataset set;
+    //FIXME multiple dataset handling!
+    if (f_out.datasetCount())
+      set = f_out.openDataset(0);
+    else
+      set = f_out.createDataset(output_set_name);
     
     for(int i=0;i<input_clifs.size();i++) {
       ClifFile f_in(input_clifs[i], H5F_ACC_RDONLY);
@@ -154,7 +161,7 @@ int main(const int argc, const char *argv[])
       
       //FIXME implement dataset handling for datasets without datastore!
       ClifDataset set = f_in.openDataset(0);
-      attrs.append(static_cast<Attributes&>(set));
+      set.append(static_cast<Attributes&>(set));
       
       printf("FIXME: append image data/other datasets!");
     }
@@ -162,17 +169,12 @@ int main(const int argc, const char *argv[])
     for(int i=0;i<input_inis.size();i++) {
       printf("append ini file!\n");
       Attributes others = Attributes(input_inis[i].c_str(), cliarg_str(types));
-      attrs.append(others);
+      set.append(others);
     }
-    
-    CvClifDataset set;
-    //FIXME multiple dataset handling!
-    if (f_out.datasetCount())
-      set = f_out.openDataset(0);
     
     //FIXME allow "empty" datasets with only attributes!
     
-    int start = 0;
+    /*int start = 0;
     //FIXME handle appending to datastore!
     //FIXME check wether image format was sufficiently defined!
     if (!set.valid() && input_imgs.size()) {
@@ -182,21 +184,23 @@ int main(const int argc, const char *argv[])
       int depth = img.depth();   
       //FIXME check wether image format was sufficiently defined!
       printf("create dataset!\n");
-      set = f_out.createDataset(output_set_name,w,h,input_imgs.size(), &attrs);
+      set = f_out.createDataset(output_set_name,w,h,&attrs);
       start = 1;
-      set.writeRawImage(0, img.data);
+      set.appendRawImage(img.data);
     }
     else
       //FIXME how do we handle overwriting of data?
-      set.setAttributes(attrs);
+      set.setAttributes(attrs);*/
     
     set.writeAttributes();
 
     //FIXME handle appending to datastore!
-    for(int i=start;i<input_imgs.size();i++) {
+    for(int i=0;i<input_imgs.size();i++) {
       printf("store idx %d: %s\n", i, input_imgs[i].c_str());
       Mat img = imread(input_imgs[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
-      set.writeRawImage(i, img.data);
+      int w = img.size().width;
+      int h = img.size().height;
+      set.appendRawImage(w, h, img.data);
     }
   }
   
