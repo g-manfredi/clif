@@ -200,7 +200,7 @@ int main(const int argc, const char *argv[])
   }
   else {
     
-    for(int ini=0;ini<clif_extract_attributes.size();ini++) {
+    for(int i=0;i<clif_extract_attributes.size();i++) {
       ClifFile f_in(input_clifs[0], H5F_ACC_RDONLY);
       
       //FIXME input name handling/selection
@@ -209,40 +209,29 @@ int main(const int argc, const char *argv[])
       
       //FIXME implement dataset handling for datasets without datastore!
       ClifDataset set = f_in.openDataset(0);
-        set.writeIni(clif_extract_attributes[ini]);
+        set.writeIni(clif_extract_attributes[i]);
+    }
+    
+    for(int i=0;i<clif_extra_images.size();i++) {
+      CvClifFile f_in(input_clifs[0], H5F_ACC_RDONLY);
+      
+      //FIXME input name handling/selection
+      if (f_in.datasetCount() != 1)
+        errorexit("FIXME: at the moment only files with a single dataset are supported by this program.");
+      
+      //FIXME implement dataset handling for datasets without datastore!
+      CvClifDataset set = f_in.openDataset(0);
+        
+      char buf[4096];
+      for(int c=0;c<set.imgCount();c++) {
+        Mat img;
+        sprintf(buf, clif_extra_images[i].c_str(), c);
+        printf("store idx %d: %s\n", c, buf);
+        set.readCvMat(c, img);
+        imwrite(buf, img);
+      }
     }
   }
-  
-  /*
-  Attributes attrs(cliarg_str(config),cliarg_str(types));
-  
-  H5File lffile(cliarg_str(output), H5F_ACC_TRUNC);
-  
-  Dataset dataset(lffile, "/clif/set1");
-  
-  dataset.setAttributes(attrs);
-  dataset.writeAttributes();
-  
-  vector<char*> in_names(cliarg_sum(input));
-  cliarg_strs(input, &in_names[0]);
-  
-  Mat img = imread(in_names[0], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
-  
-  int w = img.size().width;
-  int h = img.size().height;
-  int depth = img.depth();
-  
-  Datastore imgs(&dataset, "data", w, h, cliarg_sum(input));
-  
-  //imgs.writeRawImage(0, img.data);
-  for(int i=1;i<cliarg_sum(input);i++) {
-    //Mat img = imread(in_names[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
-    assert(w == img.size().width);
-    assert(h = img.size().height);
-    assert(depth = img.depth());
-    printf("store idx %d: %s\n", i, in_names[i]);
-    //imgs.writeRawImage(i, img.data);
-  }*/
 
   return EXIT_SUCCESS;
 }
