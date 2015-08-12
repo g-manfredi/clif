@@ -3,14 +3,17 @@ project(clif)
 
 find_package(HDF5 REQUIRED CXX)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -std=c++14")
+find_package(PkgConfig REQUIRED)
+#TODO make optional
+pkg_search_module(MATIO REQUIRED matio)
 
-add_library(clif SHARED clif.cpp)
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -std=c++11 -Wall")
+
+add_library(clif SHARED clif.cpp matio.cpp)
 
 set(DataTypeEnums "UINT8,UINT16")
-set(DataOrgEnums "BAYER_2x2")
+set(DataOrgEnums "PLANAR,INTERLEAVED,BAYER_2x2")
 set(DataOrderEnums "RGGB,BGGR,GBRG,GRBG,RGB")
-
 
 set(DataTypeStrs "\"${DataTypeEnums}\"")
 string(REPLACE "," "\",\"" DataTypeStrs ${DataTypeStrs})
@@ -27,4 +30,4 @@ set(DataOrderStrs "${DataOrderStrs},NULL")
 
 configure_file(enumtypes.hpp.in enumtypes.hpp)
 
-target_link_libraries(clif ${HDF5_CXX_LIBRARIES} ${OPENCV_LIBRARIES})
+target_link_libraries(clif ${HDF5_CXX_LIBRARIES} ${OPENCV_LIBRARIES} ${MATIO_LIBRARIES})

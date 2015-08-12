@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 2.6)
 project(clif)
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -std=c++14")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -std=c++11 -Wall")
 
 add_executable(clif-bin clif.cpp)
 add_executable(clifinfo clifinfo.cpp)

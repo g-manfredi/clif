@@ -16,6 +16,7 @@
 #include "opencv2/highgui/highgui.hpp"
 
 #include "clif.hpp"
+#include "matio.hpp"
 
 using namespace clif_cv;
 using namespace H5;
@@ -67,6 +68,7 @@ cliini_optgroup group = {
 
 const char *clif_extension_pattern = "*.cli?";
 const char *ini_extension_pattern = "*.ini";
+const char *mat_extension_pattern = "*.mat";
 //ksh extension match using FNM_EXTMATCH
 const char *img_extension_pattern = "*.+(png|tif|tiff|jpg|jpeg|jpe|jp2|bmp|dib|pbm|pgm|ppm|sr|ras)";
 
@@ -117,6 +119,13 @@ int main(const int argc, const char *argv[])
   vector<string> input_clifs = extract_matching_strings(input, clif_extension_pattern);
   vector<string> input_imgs  = extract_matching_strings(input, img_extension_pattern);
   vector<string> input_inis  = extract_matching_strings(input, ini_extension_pattern);
+  vector<string> input_mats  = extract_matching_strings(input, mat_extension_pattern);
+  
+  if (input_mats.size()) {
+    for(int i=0;i<input_mats.size();i++)
+      list_mat(input_mats[i]);
+    return EXIT_SUCCESS;
+  }
   
   bool output_clif;
   //std::string input_set_name;
@@ -140,7 +149,7 @@ int main(const int argc, const char *argv[])
   }
   
   if (output_clif) {
-    CvClifFile f_out;
+    ClifFile f_out;
     
     if (file_exists(clif_append[0])) {
       f_out.open(clif_append[0], H5F_ACC_RDWR);
@@ -148,7 +157,7 @@ int main(const int argc, const char *argv[])
     else
       f_out.create(clif_append[0]);
     
-    CvClifDataset set;
+    ClifDataset set;
     //FIXME multiple dataset handling!
     if (f_out.datasetCount()) {
       printf("INFO: appending to HDF5 DataSet %s\n", f_out.datasetList()[0].c_str());
@@ -213,21 +222,21 @@ int main(const int argc, const char *argv[])
     }
     
     for(int i=0;i<clif_extra_images.size();i++) {
-      CvClifFile f_in(input_clifs[0], H5F_ACC_RDONLY);
+      ClifFile f_in(input_clifs[0], H5F_ACC_RDONLY);
       
       //FIXME input name handling/selection
       if (f_in.datasetCount() != 1)
         errorexit("FIXME: at the moment only files with a single dataset are supported by this program.");
       
       //FIXME implement dataset handling for datasets without datastore!
-      CvClifDataset set = f_in.openDataset(0);
+      ClifDataset set = f_in.openDataset(0);
         
       char buf[4096];
       for(int c=0;c<set.imgCount();c++) {
         Mat img;
         sprintf(buf, clif_extra_images[i].c_str(), c);
         printf("store idx %d: %s\n", c, buf);
-        set.readCvMat(c, img);
+        readCvMat(set, c, img);
         imwrite(buf, img);
       }
     }

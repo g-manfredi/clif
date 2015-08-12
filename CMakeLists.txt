@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 2.6)
 project(clif)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -std=c++11 -Wall")
 
 find_package(OpenCV REQUIRED)
 

@@ -189,6 +189,11 @@ namespace clif {
     }
   };
   
+  template<typename T> void printthis(std::ostream *stream, void *val, int idx)
+    {
+      *stream << ((T*)val)[idx];
+    }
+  
   std::ostream& operator<<(std::ostream& out, const Attribute& a)
   {
     if (a.type == BaseType::STRING) {
@@ -492,52 +497,85 @@ namespace clif {
   }
   
   //FIXME wether dataset already exists and overwrite?
-  void Datastore::create(std::string path_, Dataset *dataset, hsize_t w, hsize_t h)
+  void Datastore::create(std::string path, Dataset *dataset, hsize_t w, hsize_t h)
   {
-    type = DataType(-1); 
-    org = DataOrg(-1);
-    order = DataOrder(-1); 
+    _type = DataType(-1); 
+    _org = DataOrg(-1);
+    _order = DataOrder(-1); 
       
-    data = H5::DataSet();
-    path = path_;
+    _data = H5::DataSet();
+    _path = path;
     
     if (dataset && w && h)
       init_from_dataset(dataset,w,h);
   }
   
+  int combinedTypeElementCount(DataType type, DataOrg org, DataOrder order)
+  {
+    switch (org) {
+      case DataOrg::PLANAR : return 1;
+      case DataOrg::INTERLEAVED :
+        switch (order) {
+          case DataOrder::RGB : return 3;
+          default:
+            abort();
+        }
+      case DataOrg::BAYER_2x2 : return 1;
+      default :
+        abort();
+    }
+  }
+  
+  int combinedTypePlaneCount(DataType type, DataOrg org, DataOrder order)
+  {
+    switch (org) {
+      case DataOrg::PLANAR :
+        switch (order) {
+          case DataOrder::RGB   : return 3;
+          default:
+            abort();
+        }
+      case DataOrg::INTERLEAVED : return 1;
+      case DataOrg::BAYER_2x2   : return 1;
+    }
+  }
+  
   
   void Datastore::init_from_dataset(Dataset *dataset, hsize_t w, hsize_t h)
   {
-    dataset->readEnum("format/type",         type);
-    dataset->readEnum("format/organisation", org);
-    dataset->readEnum("format/order",        order);
+    dataset->readEnum("format/type",         _type);
+    dataset->readEnum("format/organisation", _org);
+    dataset->readEnum("format/order",        _order);
     
-    if (int(type) == -1 || int(org) == -1 || int(order) == -1) {
+    if (int(_type) == -1 || int(_org) == -1 || int(_order) == -1) {
       printf("ERROR: unsupported dataset format!\n");
       return;
     }
     
-    hsize_t dims[3] = {w,h, 0};
-    hsize_t maxdims[3] = {w,h,H5S_UNLIMITED}; 
+    hsize_t comb_w = w*combinedTypeElementCount(_type,_org,_order);
+    hsize_t comb_h = h*combinedTypePlaneCount(_type,_org,_order);
+    
+    hsize_t dims[3] = {comb_w,comb_h,0};
+    hsize_t maxdims[3] = {comb_w,comb_h,H5S_UNLIMITED}; 
     std::string dataset_str = dataset->name;
-    dataset_str = appendToPath(dataset_str, path);
+    dataset_str = appendToPath(dataset_str, _path);
     
     if (_hdf5_obj_exists(dataset->f, dataset_str.c_str())) {
-      data = dataset->f.openDataSet(dataset_str);
+      _data = dataset->f.openDataSet(dataset_str);
       return;
     }
     
     _rec_make_groups(dataset->f, remove_last_part(dataset_str, '/').c_str());
     
     //chunking fixed for now
-    hsize_t chunk_dims[3] = {w,h,1};
+    hsize_t chunk_dims[3] = {comb_w,comb_h,1};
     H5::DSetCreatPropList prop;
     prop.setChunk(3, chunk_dims);
     
     H5::DataSpace space(3, dims, maxdims);
     
-    data = dataset->f.createDataSet(dataset_str, 
-	               H5PredType(type), space, prop);
+    _data = dataset->f.createDataSet(dataset_str, 
+	               H5PredType(_type), space, prop);
   }
   
   void Datastore::open(Dataset *dataset, std::string path_)
@@ -552,25 +590,26 @@ namespace clif {
       return;
     }
     
-    dataset->readEnum("format/type",         type);
-    dataset->readEnum("format/organisation", org);
-    dataset->readEnum("format/order",        order);
+    dataset->readEnum("format/type",         _type);
+    dataset->readEnum("format/organisation", _org);
+    dataset->readEnum("format/order",        _order);
 
-    if (int(type) == -1 || int(org) == -1 || int(order) == -1) {
+    if (int(_type) == -1 || int(_org) == -1 || int(_order) == -1) {
       printf("ERROR: unsupported dataset format!\n");
       return;
     }
     
-    data = dataset->f.openDataSet(dataset_str);
+    _data = dataset->f.openDataSet(dataset_str);
     
     //printf("Datastore open %s: %s %s %s\n", dataset_str.c_str(), ClifEnumString(DataType,type),ClifEnumString(DataOrg,org),ClifEnumString(DataOrder,order));
   }
   
+  //FIXME chekc w,h?
   void Datastore::writeRawImage(uint idx, hsize_t w, hsize_t h, void *imgdata)
   {
     assert(valid());
     
-    H5::DataSpace space = data.getSpace();
+    H5::DataSpace space = _data.getSpace();
     hsize_t dims[3];
     hsize_t maxdims[3];
     
@@ -578,8 +617,8 @@ namespace clif {
     
     if (dims[2] <= idx) {
       dims[2] = idx+1;
-      data.extend(dims);
-      space = data.getSpace();
+      _data.extend(dims);
+      space = _data.getSpace();
     }
     
     hsize_t size[3] = {dims[0],dims[1],1};
@@ -588,16 +627,14 @@ namespace clif {
     
     H5::DataSpace imgspace(3, size);
     
-    assert(org == DataOrg::BAYER_2x2);
-    
-    data.write(imgdata, H5PredType(type), imgspace, space);
+    _data.write(imgdata, H5PredType(_type), imgspace, space);
   }
   
   void Datastore::appendRawImage(hsize_t w, hsize_t h, void *imgdata)
   {
     int idx = 0;
     if (valid()) {
-      H5::DataSpace space = data.getSpace();
+      H5::DataSpace space = _data.getSpace();
       hsize_t dims[3];
       hsize_t maxdims[3];
       
@@ -609,9 +646,10 @@ namespace clif {
     writeRawImage(idx, w, h, imgdata);
   }
   
+  //FIXME implement 8-bit conversion if requested
   void Datastore::readRawImage(uint idx, hsize_t w, hsize_t h, void *imgdata)
   {
-    H5::DataSpace space = data.getSpace();
+    H5::DataSpace space = _data.getSpace();
     hsize_t dims[3];
     hsize_t maxdims[3];
     
@@ -626,15 +664,12 @@ namespace clif {
     
     H5::DataSpace imgspace(3, size);
     
-    //FIXME other types need size calculation?
-    assert(org == DataOrg::BAYER_2x2);
-    
-    data.read(imgdata, H5PredType(type), imgspace, space);
+    _data.read(imgdata, H5PredType(_type), imgspace, space);
   }
   
   bool Datastore::valid()
   {
-    if (data.getId() == H5I_INVALID_HID)
+    if (_data.getId() == H5I_INVALID_HID)
       return false;
     return true;
   }
@@ -647,7 +682,7 @@ namespace clif {
       printf("store idx %d: %s\n", i, in_names[i]);
       lfdata.writeRawImage(i, img.data);*/
   
-  int Datastore::imgMemSize()
+  /*int Datastore::imgMemSize()
   {
     int size = 1;
     switch (type) {
@@ -665,7 +700,7 @@ namespace clif {
     space.getSimpleExtentDims(dims, maxdims);
     
     return size*dims[0]*dims[1];
-  }
+  }*/
   
   H5::PredType H5PredType(DataType type)
   {
@@ -698,7 +733,7 @@ namespace clif {
   
   int Datastore::count()
   {
-    H5::DataSpace space = data.getSpace();
+    H5::DataSpace space = _data.getSpace();
     hsize_t dims[3];
     hsize_t maxdims[3];
     
@@ -710,13 +745,16 @@ namespace clif {
 
 namespace clif_cv {
   
-  cv::Size CvDatastore::imgSize()
+  cv::Size imgSize(Datastore &store)
   {
-    H5::DataSpace space = data.getSpace();
+    H5::DataSpace space = store.dataset().getSpace();
     hsize_t dims[3];
     hsize_t maxdims[3];
     
     space.getSimpleExtentDims(dims, maxdims);
+    
+    dims[0] /= combinedTypeElementCount(store.type(), store.org(), store.order());
+    dims[1] /= combinedTypePlaneCount(store.type(), store.org(), store.order());
     
     return cv::Size(dims[0],dims[1]);
   }
@@ -741,31 +779,51 @@ namespace clif_cv {
         abort();
     }
   }
-    
-  void CvDatastore::readCvMat(uint idx, cv::Mat &m, int flags)
+  
+  
+  void readEPI(ClifDataset &lf, cv::Mat &m, int line)
   {
-    assert(org == DataOrg::BAYER_2x2);
+
+    //TODO maybe easier to read on image and just use that type...
+    //or create a extra function to calc type in clif_cv
+    m = cv::Mat(cv::Size(imgSize(lf).width, lf.imgCount()), CV_MAKETYPE(DataType2CvDepth(lf.type()), 3));
     
-    //FIXME bayer only for now!
-    m = cv::Mat(imgSize(), DataType2CvDepth(type));
+    for(int i=0;i<lf.imgCount();i++)
+    {
+      cv::Mat tmp;
+      readCvMat(lf, i, tmp, CLIF_DEMOSAIC);
+      tmp.row(line).copyTo(m.row(i));
+    }
+  }
     
-    readRawImage(idx, m.size().width, m.size().height, m.data);
-    
-    if (org == DataOrg::BAYER_2x2 && flags & CLIF_DEMOSAIC) {
-      switch (order) {
-        case DataOrder::RGGB :
-          cvtColor(m, m, CV_BayerBG2BGR);
-          break;
-        case DataOrder::BGGR :
-          cvtColor(m, m, CV_BayerRG2BGR);
-          break;
-        case DataOrder::GBRG :
-          cvtColor(m, m, CV_BayerGR2BGR);
-          break;
-        case DataOrder::GRBG :
-          cvtColor(m, m, CV_BayerGB2BGR);
-          break;
+  void readCvMat(Datastore &store, uint idx, cv::Mat &m, int flags)
+  {
+    if (store.org() == DataOrg::BAYER_2x2) {
+      //FIXME bayer only for now!
+      m = cv::Mat(imgSize(store), DataType2CvDepth(store.type()));
+      
+      store.readRawImage(idx, m.size().width, m.size().height, m.data);
+      
+      if (store.org() == DataOrg::BAYER_2x2 && flags & CLIF_DEMOSAIC) {
+        switch (store.order()) {
+          case DataOrder::RGGB :
+            cvtColor(m, m, CV_BayerBG2BGR);
+            break;
+          case DataOrder::BGGR :
+            cvtColor(m, m, CV_BayerRG2BGR);
+            break;
+          case DataOrder::GBRG :
+            cvtColor(m, m, CV_BayerGR2BGR);
+            break;
+          case DataOrder::GRBG :
+            cvtColor(m, m, CV_BayerGB2BGR);
+            break;
+        }
       }
+    }
+    else if (store.org() == DataOrg::INTERLEAVED && store.order() == DataOrder::RGB) {
+      m = cv::Mat(imgSize(store), CV_MAKETYPE(DataType2CvDepth(store.type()), 3));
+      store.readRawImage(idx, m.size().width, m.size().height, m.data);
     }
   }
 }

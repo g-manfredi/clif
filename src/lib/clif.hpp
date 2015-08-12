@@ -1,3 +1,6 @@
+#ifndef _CLIF_H
+#define _CLIF_H
+
 #include "H5Cpp.h"
 #include "H5File.h"
 
@@ -15,7 +18,7 @@ class InvalidBaseType {};
 //base type for elements
 enum class BaseType : int {INVALID,INT,DOUBLE,STRING};
 
-std::type_index BaseTypeTypes[] = {std::type_index(typeid(InvalidBaseType)), std::type_index(typeid(int)), std::type_index(typeid(double)), std::type_index(typeid(char))};
+static std::type_index BaseTypeTypes[] = {std::type_index(typeid(InvalidBaseType)), std::type_index(typeid(int)), std::type_index(typeid(double)), std::type_index(typeid(char))};
 
 static std::unordered_map<std::type_index, BaseType> BaseTypeMap = { 
     {std::type_index(typeid(char)), BaseType::STRING},
@@ -50,7 +53,6 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       abort();
   }
 }
-
   
 #define CLIF_DEMOSAIC  1
 #define CLIF_CVT_8BIT  2
@@ -217,7 +219,7 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       std::vector<Attribute> attrs; 
   };
   
-  StringTree<Attribute*> Attributes::getTree()
+  inline StringTree<Attribute*> Attributes::getTree()
   {
     StringTree<Attribute*> tree;
     
@@ -247,17 +249,22 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       bool valid();
       int count();
       
-      std::string getDatastorePath() { return path; };
-
+      const std::string& getDatastorePath() const { return _path; };
+      
+      const H5::DataSet & dataset() const { return _data; };
+      const DataType & type() const { return _type; };
+      const DataOrg & org() const { return _org; };
+      const DataOrder & order() const { return _order; };
+      
     protected:
       void init_from_dataset(Dataset *dataset, hsize_t w, hsize_t h);
       
-      DataType type; 
-      DataOrg org;
-      DataOrder order;
+      DataType _type; 
+      DataOrg _org;
+      DataOrder _order;
       
-      H5::DataSet data;
-      std::string path;
+      H5::DataSet _data;
+      std::string _path;
       
   };
   
@@ -301,6 +308,18 @@ public:
   void create(H5::H5File &f, std::string name);
   
   ClifDataset &operator=(const ClifDataset &other) { Dataset::operator=(other); Datastore::operator=(other); return *this; }
+ 
+ 
+  template<template<typename> class F, typename R, typename ... ArgTypes> R callFunctor(ArgTypes ... args)
+  {
+    switch (type) {
+      case clif::BaseType::INT : return F<int>()(this, args...); break;
+      case clif::BaseType::DOUBLE : return F<double>()(this, args...); break;
+      case clif::BaseType::STRING : return F<char>()(this, args...); break;
+      default:
+        abort();
+    }
+  }
   
   int imgCount() { clif::Datastore::count(); };
   int attributeCount() { clif::Attributes::count(); };
@@ -321,9 +340,9 @@ class ClifFile
 public:
   ClifFile() {};
   //TODO create file if not existing?
-  ClifFile(std::string &filename, unsigned int flags);
+  ClifFile(std::string &filename, unsigned int flags = H5F_ACC_RDONLY);
   
-  void open(std::string &filename, unsigned int flags);
+  void open(std::string &filename, unsigned int flags = H5F_ACC_RDONLY);
   void create(std::string &filename);
   //void close();
   
@@ -336,7 +355,7 @@ public:
   
   bool valid();
   
-  std::vector<std::string> datasetList() {return datasets;};
+  const std::vector<std::string> & datasetList() const {return datasets;};
 private:
   
   H5::H5File f;
@@ -353,52 +372,15 @@ namespace clif_cv {
   
   DataType CvDepth2DataType(int cv_type);
   int DataType2CvDepth(DataType t);
+
+  cv::Size imgSize();
+    
+  void writeCvMat(Datastore &store, uint idx, cv::Mat &m);
+  void readCvMat(Datastore &store, uint idx, cv::Mat &m, int flags = 0);
   
-  class CvDatastore : public virtual clif::Datastore
-  {
-  public:
-    using Datastore::Datastore;
-    //TODO check assignment operator!
-    
-    cv::Size imgSize();
-    
-    void writeCvMat(uint idx, cv::Mat &m);
-    void readCvMat(uint idx, cv::Mat &m, int flags = 0);
-  };
+  void readEPI(ClifDataset &lf, cv::Mat &m, int line);
+
+  void writeCvMat(Datastore &store, uint idx, hsize_t w, hsize_t h, void *data);
 }
 
-//the datastore in inherited via ClifDataset iw the same as the on inherited in CvDatastore, allowing to apply the respective opencv methods
-class CvClifDataset : public ClifDataset, public clif_cv::CvDatastore
-{
-public:
-  using ClifDataset::ClifDataset;
-  
-  //TODO init dataste if necessary...
-  void writeCvMat(uint idx, hsize_t w, hsize_t h, void *data);
-  
-  //ClifDataset::valid calls Datastore::valid anyway
-  bool valid() { ClifDataset::valid(); };
-};
-
-//convenience class get casting
-class CvClifFile : public ClifFile
-{
-public:
-  using ClifFile::ClifFile;
-  
-  //FIXME there has to be a better way than those temporaries
-  template<typename ... Ts> CvClifDataset openDataset(Ts ... args)
-  {
-    ClifDataset tmp1 = ClifFile::openDataset(args...);
-    CvClifDataset tmp2 = static_cast<CvClifDataset&>(tmp1);
-    return tmp2;
-  };
-  
-    //FIXME there has to be a better way than those temporaries
-  template<typename ... Ts> CvClifDataset createDataset(Ts ... args)
-  {
-    ClifDataset tmp1 = ClifFile::createDataset(args...);
-    CvClifDataset tmp2 = static_cast<CvClifDataset&>(tmp1);
-    return tmp2;
-  };
-};
+#endif

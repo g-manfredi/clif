@@ -10,9 +10,9 @@ namespace clif {
   enum class DataOrg : int {${DataOrgEnums}};
   enum class DataOrder : int {${DataOrderEnums}};
   
-  const char *DataTypeStr[] = {${DataTypeStrs}};
-  const char *DataOrgStr[] = {${DataOrgStrs}};
-  const char *DataOrderStr[] = {${DataOrderStrs}};
+  const static char *DataTypeStr[] = {${DataTypeStrs}};
+  const static char *DataOrgStr[] = {${DataOrgStrs}};
+  const static char *DataOrderStr[] = {${DataOrderStrs}};
   
   static std::unordered_map<std::type_index, const char **> enum_mappings = { 
     {std::type_index(typeid(DataType)), DataTypeStr},
