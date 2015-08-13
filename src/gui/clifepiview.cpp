@@ -1,5 +1,7 @@
 #include <QtGui/QtGui>
 
+#include <QSplitter>
+
 #include "clifepiview.hpp"
 #include "clifqt.hpp"
 
@@ -8,39 +10,31 @@ namespace clif_qt {
 DlgFind::DlgFind(ClifDataset *dataset, QWidget* parent)
 : QDialog(parent), _dataset(dataset)
 {
-    label = new QLabel("Find &what:"); // 2.
-    what = new QLineEdit();
-    label->setBuddy(what); // 3.
-
-    cbCase = new QCheckBox("Match &case");
-    cbBack = new QCheckBox("Search &backward");
-
     _centerview = new clifScaledImageView(this);
     _epiview = new clifScaledImageView(this);
+    _slider = new QSlider(this);
+    _slider->setOrientation(Qt::Horizontal);
     
-    btnFind = new QPushButton("&Find"); // 4.
-    btnFind->setDefault(true);
-    btnFind->setEnabled(false);
-
-    btnClose = new QPushButton("Close");
-
-    // 5.
-    connect(what, SIGNAL(textChanged(const QString&)), this, SLOT(enableBtnFind(const QString&)));
-    connect(btnFind, SIGNAL(clicked()), this, SLOT(findClicked()));
-    connect(btnClose, SIGNAL(clicked()), this, SLOT(close()));
+    /*connect(what, SIGNAL(textChanged(const QString&)), this, SLOT(enableBtnFind(const QString&)));
+    connect(btnFind, SIGNAL(clicked()), this, SLOT(findClicked()));*/
+    connect(_slider, SIGNAL(valueChanged(int)), this, SLOT(horopterChanged(int)));
 
     setLayout(createLayout());
     
     readQImage(*dataset, 0, _center_img, CLIF_DEMOSAIC);
     _centerview->setImage(_center_img);
     
-    readEPI(*dataset, _epi_img, 200);
-    _epiview->setImage(_epi_img);  
+    readEPI(*dataset, _epi_img, 200, 0);
+    _epiview->setImage(_epi_img);
+    
+    _slider->setMaximum(50);
+    _slider->setMinimum(-50);
+    _slider->setValue(0);
     
     setWindowTitle("Find");
-    setFixedHeight(sizeHint().height()); // 6.
+    //setFixedHeight(sizeHint().height()); // 6.
 }
-
+/*
 QHBoxLayout* DlgFind::createLayout() // 7.
 {
     QHBoxLayout* topLeft = new QHBoxLayout();
@@ -65,8 +59,23 @@ QHBoxLayout* DlgFind::createLayout() // 7.
     main->addLayout(right);
 
     return main;
-}
+}*/
 
+QVBoxLayout* DlgFind::createLayout()
+{
+  QSplitter *splitter = new QSplitter();
+  splitter->addWidget(_centerview);
+  splitter->addWidget(_epiview);
+  
+  splitter->setOrientation(Qt::Vertical);
+  
+  QVBoxLayout* box = new QVBoxLayout();
+  box->addWidget(splitter);
+  box->addWidget(_slider);
+  
+  return box;
+}
+/*
 void DlgFind::findClicked() // 8.
 {  
     QString text = what->text();
@@ -79,11 +88,18 @@ void DlgFind::findClicked() // 8.
     {
         emit findNext(text, cs);
     }
-}
-
+}*/
+/*
 void DlgFind::enableBtnFind(const QString& text) // 9.
 {
     btnFind->setEnabled(!text.isEmpty());
+}*/
+
+void DlgFind::horopterChanged(int value)
+{
+  _horopter = value;
+  readEPI(*_dataset, _epi_img, 200, _horopter);
+  _epiview->setImage(_epi_img);
 }
 
 double DlgFind::getHoropter(ClifDataset *dataset, QWidget *parent)

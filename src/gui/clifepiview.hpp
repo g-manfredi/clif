@@ -14,6 +14,7 @@
 #include <QCheckBox>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QSlider>
 
 #if defined WTF_HACK_QT_EXPORT
  #define TEST_COMMON_DLLSPEC Q_DECL_EXPORT
@@ -37,19 +38,15 @@ signals:
     void findPrev(const QString& str, Qt::CaseSensitivity cs);
 
 private slots:
-    void findClicked();
-    void enableBtnFind(const QString& text);
+    //void findClicked();
+    //void enableBtnFind(const QString& text);
+  
+    void horopterChanged(int value);
 
 private:
-    QHBoxLayout* createLayout();
+    QVBoxLayout* createLayout();
 
-    QLabel* label;
-    QLineEdit* what;
-    QCheckBox* cbCase;
-    QCheckBox* cbBack;
-    QPushButton* btnFind;
-    QPushButton* btnClose;
-    
+    QSlider *_slider;
     clifScaledImageView *_centerview;
     clifScaledImageView *_epiview;
     

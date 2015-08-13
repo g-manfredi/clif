@@ -390,7 +390,7 @@ namespace clif_cv {
   void writeCvMat(Datastore &store, uint idx, cv::Mat &m);
   void readCvMat(Datastore &store, uint idx, cv::Mat &m, int flags = 0);
   
-  void readEPI(ClifDataset &lf, cv::Mat &m, int line, int flags = 0);
+  void readEPI(ClifDataset &lf, cv::Mat &m, int line, double depth = 0, int flags = 0);
 
   void writeCvMat(Datastore &store, uint idx, hsize_t w, hsize_t h, void *data);
 }

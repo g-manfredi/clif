@@ -781,7 +781,7 @@ namespace clif_cv {
   }
   
   
-  void readEPI(ClifDataset &lf, cv::Mat &m, int line, int flags)
+  void readEPI(ClifDataset &lf, cv::Mat &m, int line, double depth, int flags)
   {
 
     //TODO maybe easier to read on image and just use that type...
@@ -793,10 +793,21 @@ namespace clif_cv {
     m = cv::Mat(cv::Size(imgSize(lf).width, lf.imgCount()), tmp.type());
     tmp.row(line).copyTo(m.row(0));
     
+    printf("depth %f\n", depth);
+    
     for(int i=0;i<lf.imgCount();i++)
-    {
+    {      
+      double d = depth*i;
       readCvMat(lf, i, tmp, flags | CLIF_DEMOSAIC);
-      tmp.row(line).copyTo(m.row(i));
+      if (d <= 0) {
+        d = -d;
+        int w = tmp.size().width + d;
+        tmp.row(line).colRange(d, d+w).copyTo(m.row(i).colRange(0, w));
+      }
+      else {
+        int w = tmp.size().width - d;
+        tmp.row(line).colRange(0, w).copyTo(m.row(i).colRange(d, d+w));
+      }
     }
   }
     
