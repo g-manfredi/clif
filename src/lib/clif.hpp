@@ -57,6 +57,7 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
 #define CLIF_DEMOSAIC  1
 #define CLIF_CVT_8U  2
 #define CLIF_UNDISTORT 4
+#define CLIF_PROCESS_FLAGS_MAX 8
 
   int parse_string_enum(std::string &str, const char **enumstrs);
   int parse_string_enum(const char *str, const char **enumstrs);
@@ -256,6 +257,9 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       const DataOrg & org() const { return _org; };
       const DataOrder & order() const { return _order; };
       
+      void *cache_get(uint64_t key);
+      void cache_set(uint64_t, void *data);
+      
     protected:
       void init_from_dataset(Dataset *dataset, hsize_t w, hsize_t h);
       
@@ -266,6 +270,8 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       H5::DataSet _data;
       std::string _path;
       
+  private:
+    std::unordered_map<uint64_t,void*> image_cache;
   };
   
   class Dataset : public Attributes {

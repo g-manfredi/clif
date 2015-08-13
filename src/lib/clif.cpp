@@ -578,6 +578,21 @@ namespace clif {
 	               H5PredType(_type), space, prop);
   }
   
+  void * Datastore::cache_get(uint64_t key)
+  {
+    auto it_find = image_cache.find(key);
+    
+    if (it_find == image_cache.end())
+      return NULL;
+    else
+      return it_find->second;
+  }
+  
+  void Datastore::cache_set(uint64_t key, void *data)
+  {
+    image_cache[key] = data;
+  }
+  
   void Datastore::open(Dataset *dataset, std::string path_)
   {
     //only fills in internal data
@@ -790,18 +805,17 @@ namespace clif_cv {
     cv::Mat tmp;
     readCvMat(lf, 0, tmp, flags | CLIF_DEMOSAIC);
 
-    m = cv::Mat(cv::Size(imgSize(lf).width, lf.imgCount()), tmp.type());
-    tmp.row(line).copyTo(m.row(0));
-    
-    printf("depth %f\n", depth);
+    m = cv::Mat::zeros(cv::Size(imgSize(lf).width, lf.imgCount()), tmp.type());
+    //tmp.row(line).copyTo(m.row(0));
     
     for(int i=0;i<lf.imgCount();i++)
     {      
-      double d = depth*i;
+      //FIXME rounding?
+      double d = depth*(i-lf.imgCount()/2);
       readCvMat(lf, i, tmp, flags | CLIF_DEMOSAIC);
       if (d <= 0) {
         d = -d;
-        int w = tmp.size().width + d;
+        int w = tmp.size().width - d;
         tmp.row(line).colRange(d, d+w).copyTo(m.row(i).colRange(0, w));
       }
       else {
@@ -811,40 +825,52 @@ namespace clif_cv {
     }
   }
     
-  void readCvMat(Datastore &store, uint idx, cv::Mat &m, int flags)
+  void readCvMat(Datastore &store, uint idx, cv::Mat &outm, int flags)
   {   
+    uint64_t key = idx*CLIF_PROCESS_FLAGS_MAX | flags;
+    
+    cv::Mat *m = static_cast<cv::Mat*>(store.cache_get(key));
+    if (m) {
+      outm = m->clone();
+      return;
+    }
+    
     if (store.org() == DataOrg::BAYER_2x2) {
       //FIXME bayer only for now!
-      m = cv::Mat(imgSize(store), DataType2CvDepth(store.type()));
+      m = new cv::Mat(imgSize(store), DataType2CvDepth(store.type()));
       
-      store.readRawImage(idx, m.size().width, m.size().height, m.data);
+      store.readRawImage(idx, m->size().width, m->size().height, m->data);
       
       if (store.org() == DataOrg::BAYER_2x2 && flags & CLIF_DEMOSAIC) {
         switch (store.order()) {
           case DataOrder::RGGB :
-            cvtColor(m, m, CV_BayerBG2BGR);
+            cvtColor(*m, *m, CV_BayerBG2BGR);
             break;
           case DataOrder::BGGR :
-            cvtColor(m, m, CV_BayerRG2BGR);
+            cvtColor(*m, *m, CV_BayerRG2BGR);
             break;
           case DataOrder::GBRG :
-            cvtColor(m, m, CV_BayerGR2BGR);
+            cvtColor(*m, *m, CV_BayerGR2BGR);
             break;
           case DataOrder::GRBG :
-            cvtColor(m, m, CV_BayerGB2BGR);
+            cvtColor(*m, *m, CV_BayerGB2BGR);
             break;
         }
       }
     }
     else if (store.org() == DataOrg::INTERLEAVED && store.order() == DataOrder::RGB) {
-      m = cv::Mat(imgSize(store), CV_MAKETYPE(DataType2CvDepth(store.type()), 3));
-      store.readRawImage(idx, m.size().width, m.size().height, m.data);
+      m = new cv::Mat(imgSize(store), CV_MAKETYPE(DataType2CvDepth(store.type()), 3));
+      store.readRawImage(idx, m->size().width, m->size().height, m->data);
     }
     
-    if (m.depth() == CV_16U && flags & CLIF_CVT_8U) {
-      m *= 1.0/256.0;
-      m.convertTo(m, CV_8U);
+    if (m->depth() == CV_16U && flags & CLIF_CVT_8U) {
+      *m *= 1.0/256.0;
+      m->convertTo(*m, CV_8U);
     }
+    
+    store.cache_set(key, m);
+    
+    outm = m->clone();
   }
 }
 

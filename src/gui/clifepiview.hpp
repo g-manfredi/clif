@@ -42,6 +42,7 @@ private slots:
     //void enableBtnFind(const QString& text);
   
     void horopterChanged(int value);
+    void lineChanged(QPointF *p);
 
 private:
     QVBoxLayout* createLayout();
@@ -54,6 +55,7 @@ private:
     QImage _epi_img;
     
     double _horopter;
+    int _line;
     ClifDataset *_dataset;
 };
 

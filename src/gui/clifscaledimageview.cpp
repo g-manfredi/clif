@@ -9,6 +9,7 @@ clifScaledImageView::clifScaledImageView(QWidget *parent)
     : QGraphicsView(parent)
 {
         setScene(&scene);
+        setDragMode(QGraphicsView::ScrollHandDrag);
 };
 
 
@@ -32,8 +33,11 @@ void clifScaledImageView::mousePressEvent(QMouseEvent *me)
         setTransform(QTransform::fromScale(1,1));
     }
   }
- else
+ else {
+    QPointF p = mapToScene(me->pos());
+    emit imgClicked(&p);
     QGraphicsView::mousePressEvent(me);
+ }
 }
 
 void clifScaledImageView::wheelEvent(QWheelEvent * event)

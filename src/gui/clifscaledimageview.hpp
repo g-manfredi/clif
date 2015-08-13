@@ -20,7 +20,10 @@ public:
     clifScaledImageView(QWidget *parent = 0);
     
     void setImage(QImage &img);
-
+    
+signals:
+    void imgClicked(QPointF *p);
+ 
 protected:
     void resizeEvent(QResizeEvent * event);
     void mousePressEvent(QMouseEvent *me);

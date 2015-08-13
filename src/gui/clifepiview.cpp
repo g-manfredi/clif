@@ -1,5 +1,7 @@
 #include <QtGui/QtGui>
 
+#include <QApplication>
+
 #include <QSplitter>
 
 #include "clifepiview.hpp"
@@ -18,14 +20,15 @@ DlgFind::DlgFind(ClifDataset *dataset, QWidget* parent)
     /*connect(what, SIGNAL(textChanged(const QString&)), this, SLOT(enableBtnFind(const QString&)));
     connect(btnFind, SIGNAL(clicked()), this, SLOT(findClicked()));*/
     connect(_slider, SIGNAL(valueChanged(int)), this, SLOT(horopterChanged(int)));
+    connect(_centerview, SIGNAL(imgClicked(QPointF*)), this, SLOT(lineChanged(QPointF*)));
 
     setLayout(createLayout());
     
     readQImage(*dataset, 0, _center_img, CLIF_DEMOSAIC);
     _centerview->setImage(_center_img);
     
-    readEPI(*dataset, _epi_img, 200, 0);
-    _epiview->setImage(_epi_img);
+    _line = _center_img.size().height()/2;
+    horopterChanged(0);
     
     _slider->setMaximum(50);
     _slider->setMinimum(-50);
@@ -97,9 +100,23 @@ void DlgFind::enableBtnFind(const QString& text) // 9.
 
 void DlgFind::horopterChanged(int value)
 {
+  _slider->blockSignals(true);
   _horopter = value;
-  readEPI(*_dataset, _epi_img, 200, _horopter);
+  readEPI(*_dataset, _epi_img, _line, _horopter);
   _epiview->setImage(_epi_img);
+  qApp->processEvents();
+  _slider->blockSignals(false);
+}
+
+void DlgFind::lineChanged(QPointF *p)
+{
+  _slider->blockSignals(true);
+  _line = p->y();
+  readEPI(*_dataset, _epi_img, _line, _horopter);
+  _epiview->setImage(_epi_img);
+  _epiview->centerOn(p->x(), 0);
+  qApp->processEvents();
+  _slider->blockSignals(false);
 }
 
 double DlgFind::getHoropter(ClifDataset *dataset, QWidget *parent)
