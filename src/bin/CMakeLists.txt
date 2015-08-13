@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 2.6)
-project(clif)
+project(clif-bin)
 
 
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -std=c++11 -Wall")

@@ -335,6 +335,18 @@ public:
   //clif::Datastore calibrationImages;
 };
 
+/*
+class Cliff3DSubset {
+public:
+  Cliff3DSubset() {};
+  //takes the line'nth line definition found in calibration.extrinsincs
+  Cliff3DSubset(ClifDataset *data, int line = 0);
+  
+private:
+  ClifDataset *_data = NUL;
+  std::vector<std::pair<int,int>> indizes;
+};*/
+
 class ClifFile
 {
 public:

@@ -12,3 +12,4 @@ add_subdirectory(src/lib)
 include_directories(src/lib)
 
 add_subdirectory(src/bin)
+add_subdirectory(src/gui)
