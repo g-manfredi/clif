@@ -781,23 +781,27 @@ namespace clif_cv {
   }
   
   
-  void readEPI(ClifDataset &lf, cv::Mat &m, int line)
+  void readEPI(ClifDataset &lf, cv::Mat &m, int line, int flags)
   {
 
     //TODO maybe easier to read on image and just use that type...
     //or create a extra function to calc type in clif_cv
-    m = cv::Mat(cv::Size(imgSize(lf).width, lf.imgCount()), CV_MAKETYPE(DataType2CvDepth(lf.type()), 3));
+    
+    cv::Mat tmp;
+    readCvMat(lf, 0, tmp, flags | CLIF_DEMOSAIC);
+
+    m = cv::Mat(cv::Size(imgSize(lf).width, lf.imgCount()), tmp.type());
+    tmp.row(line).copyTo(m.row(0));
     
     for(int i=0;i<lf.imgCount();i++)
     {
-      cv::Mat tmp;
-      readCvMat(lf, i, tmp, CLIF_DEMOSAIC);
+      readCvMat(lf, i, tmp, flags | CLIF_DEMOSAIC);
       tmp.row(line).copyTo(m.row(i));
     }
   }
     
   void readCvMat(Datastore &store, uint idx, cv::Mat &m, int flags)
-  {
+  {   
     if (store.org() == DataOrg::BAYER_2x2) {
       //FIXME bayer only for now!
       m = cv::Mat(imgSize(store), DataType2CvDepth(store.type()));
@@ -824,6 +828,11 @@ namespace clif_cv {
     else if (store.org() == DataOrg::INTERLEAVED && store.order() == DataOrder::RGB) {
       m = cv::Mat(imgSize(store), CV_MAKETYPE(DataType2CvDepth(store.type()), 3));
       store.readRawImage(idx, m.size().width, m.size().height, m.data);
+    }
+    
+    if (m.depth() == CV_16U && flags & CLIF_CVT_8U) {
+      m *= 1.0/256.0;
+      m.convertTo(m, CV_8U);
     }
   }
 }

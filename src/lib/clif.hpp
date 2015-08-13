@@ -55,7 +55,7 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
 }
   
 #define CLIF_DEMOSAIC  1
-#define CLIF_CVT_8BIT  2
+#define CLIF_CVT_8U  2
 #define CLIF_UNDISTORT 4
 
   int parse_string_enum(std::string &str, const char **enumstrs);
@@ -390,7 +390,7 @@ namespace clif_cv {
   void writeCvMat(Datastore &store, uint idx, cv::Mat &m);
   void readCvMat(Datastore &store, uint idx, cv::Mat &m, int flags = 0);
   
-  void readEPI(ClifDataset &lf, cv::Mat &m, int line);
+  void readEPI(ClifDataset &lf, cv::Mat &m, int line, int flags = 0);
 
   void writeCvMat(Datastore &store, uint idx, hsize_t w, hsize_t h, void *data);
 }

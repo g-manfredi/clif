@@ -12,7 +12,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(${Qt5Widgets_INCLUDE_DIRS})
 
 add_definitions(-DWTF_HACK_QT_EXPORT)
-add_library(clif-qt SHARED clifscaledgraphicsview.cpp clifepiview.cpp)
+add_library(clif-qt SHARED clifscaledimageview.cpp clifepiview.cpp clifqt.cpp)
 
 #TODO add clif
 target_link_libraries(clif-qt ${Qt5Widgets_LIBRARIES})

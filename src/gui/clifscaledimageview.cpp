@@ -1,17 +1,18 @@
-#include "clifscaledgraphicsview.hpp"
+#include "clifscaledimageview.hpp"
 
 #include <QMouseEvent>
 #include <QPixmap>
 
+namespace clif_qt {
 
-clifScaledGraphicsView::clifScaledGraphicsView(QWidget *parent)
+clifScaledImageView::clifScaledImageView(QWidget *parent)
     : QGraphicsView(parent)
 {
         setScene(&scene);
 };
 
 
-void clifScaledGraphicsView::resizeEvent(QResizeEvent * event)
+void clifScaledImageView::resizeEvent(QResizeEvent * event)
 {
     if (fit)
         fitInView(sceneRect(), Qt::KeepAspectRatio);
@@ -19,7 +20,7 @@ void clifScaledGraphicsView::resizeEvent(QResizeEvent * event)
     QGraphicsView::resizeEvent(event);
 }
 
-void clifScaledGraphicsView::mousePressEvent(QMouseEvent *me)
+void clifScaledImageView::mousePressEvent(QMouseEvent *me)
 {
  if(me->button()==Qt::MiddleButton) {
     fit = !fit;
@@ -35,7 +36,7 @@ void clifScaledGraphicsView::mousePressEvent(QMouseEvent *me)
     QGraphicsView::mousePressEvent(me);
 }
 
-void clifScaledGraphicsView::wheelEvent(QWheelEvent * event)
+void clifScaledImageView::wheelEvent(QWheelEvent * event)
 {
     fit = false;
 
@@ -48,11 +49,13 @@ void clifScaledGraphicsView::wheelEvent(QWheelEvent * event)
     event->accept();
 }
 
-void clifScaledGraphicsView::setImage(QImage &img)
+void clifScaledImageView::setImage(QImage &img)
 {
     scene.clear();
 
     scene.addPixmap(QPixmap::fromImage(img));
     
     show();
+}
+
 }

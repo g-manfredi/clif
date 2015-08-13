@@ -1,8 +1,12 @@
 #include <QtGui/QtGui>
 
 #include "clifepiview.hpp"
+#include "clifqt.hpp"
 
-DlgFind::DlgFind(QWidget* parent) : QDialog(parent)
+namespace clif_qt {
+
+DlgFind::DlgFind(ClifDataset *dataset, QWidget* parent)
+: QDialog(parent), _dataset(dataset)
 {
     label = new QLabel("Find &what:"); // 2.
     what = new QLineEdit();
@@ -11,6 +15,9 @@ DlgFind::DlgFind(QWidget* parent) : QDialog(parent)
     cbCase = new QCheckBox("Match &case");
     cbBack = new QCheckBox("Search &backward");
 
+    _centerview = new clifScaledImageView(this);
+    _epiview = new clifScaledImageView(this);
+    
     btnFind = new QPushButton("&Find"); // 4.
     btnFind->setDefault(true);
     btnFind->setEnabled(false);
@@ -23,6 +30,13 @@ DlgFind::DlgFind(QWidget* parent) : QDialog(parent)
     connect(btnClose, SIGNAL(clicked()), this, SLOT(close()));
 
     setLayout(createLayout());
+    
+    readQImage(*dataset, 0, _center_img, CLIF_DEMOSAIC);
+    _centerview->setImage(_center_img);
+    
+    readEPI(*dataset, _epi_img, 200);
+    _epiview->setImage(_epi_img);  
+    
     setWindowTitle("Find");
     setFixedHeight(sizeHint().height()); // 6.
 }
@@ -42,6 +56,9 @@ QHBoxLayout* DlgFind::createLayout() // 7.
     right->addWidget(btnFind);
     right->addWidget(btnClose);
     right->addStretch();
+    
+    right->addWidget(_centerview);
+    right->addWidget(_epiview);
 
     QHBoxLayout* main = new QHBoxLayout();
     main->addLayout(left);
@@ -51,9 +68,7 @@ QHBoxLayout* DlgFind::createLayout() // 7.
 }
 
 void DlgFind::findClicked() // 8.
-{
-    somestring = what->text();
-  
+{  
     QString text = what->text();
     Qt::CaseSensitivity cs = cbCase->isChecked() ? Qt::CaseSensitive : Qt::CaseInsensitive;
     if(cbBack->isChecked())
@@ -71,15 +86,17 @@ void DlgFind::enableBtnFind(const QString& text) // 9.
     btnFind->setEnabled(!text.isEmpty());
 }
 
-QString DlgFind::getString(QWidget *parent)
+double DlgFind::getHoropter(ClifDataset *dataset, QWidget *parent)
 {
-  DlgFind *finder = new DlgFind(parent);
+  DlgFind *finder = new DlgFind(dataset, parent);
   
   finder->exec();
   
-  QString tmp = finder->somestring;
+  double h = finder->_horopter;
   
   delete finder;
   
-  return tmp;
+  return h;
+}
+
 }

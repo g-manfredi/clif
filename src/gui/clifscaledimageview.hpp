@@ -10,12 +10,14 @@
  #define TEST_COMMON_DLLSPEC Q_DECL_IMPORT
 #endif
 
-class TEST_COMMON_DLLSPEC clifScaledGraphicsView : public QGraphicsView
+namespace clif_qt {
+  
+class TEST_COMMON_DLLSPEC clifScaledImageView : public QGraphicsView
 {
     Q_OBJECT
 
 public:
-    clifScaledGraphicsView(QWidget *parent = 0);
+    clifScaledImageView(QWidget *parent = 0);
     
     void setImage(QImage &img);
 
@@ -27,6 +29,8 @@ private:
     bool fit = true;
     QGraphicsScene scene;
 };
+
+}
 
 
 #endif // SCALEDQGRAPHICSVIEW
