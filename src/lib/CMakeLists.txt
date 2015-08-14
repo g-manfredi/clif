@@ -9,24 +9,24 @@ pkg_search_module(MATIO REQUIRED matio)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -std=c++11 -Wall")
 
-add_library(clif SHARED clif.cpp matio.cpp)
+add_library(clif SHARED clif.cpp matio.cpp clif3dsubset.cpp)
 
-set(DataTypeEnums "UINT8,UINT16")
-set(DataOrgEnums "PLANAR,INTERLEAVED,BAYER_2x2")
-set(DataOrderEnums "RGGB,BGGR,GBRG,GRBG,RGB")
+function(createEnumStrings ENUMSTR)
+  set(${ENUMSTR}Enums ${${ENUMSTR}} PARENT_SCOPE)
+  set(${ENUMSTR}Strs "\"${${ENUMSTR}}\"")
+  string(REPLACE "," "\",\"" ${ENUMSTR}Strs ${${ENUMSTR}Strs})
+  set(${ENUMSTR}Strs "${${ENUMSTR}Strs},NULL" PARENT_SCOPE)
+endfunction(createEnumStrings)
 
-set(DataTypeStrs "\"${DataTypeEnums}\"")
-string(REPLACE "," "\",\"" DataTypeStrs ${DataTypeStrs})
-set(DataTypeStrs "${DataTypeStrs},NULL")
+set(DataType "UINT8,UINT16")
+set(DataOrg "PLANAR,INTERLEAVED,BAYER_2x2")
+set(DataOrder "RGGB,BGGR,GBRG,GRBG,RGB")
+set(ExtrType "LINE")
 
-set(DataOrgStrs "\"${DataOrgEnums}\"")
-string(REPLACE "," "\",\"" DataOrgStrs ${DataOrgStrs})
-set(DataOrgStrs "${DataOrgStrs},NULL")
-
-set(DataOrderStrs "\"${DataOrderEnums}\"")
-string(REPLACE "," "\",\"" DataOrderStrs ${DataOrderStrs})
-set(DataOrderStrs "${DataOrderStrs},NULL")
-
+createEnumStrings(DataType)
+createEnumStrings(DataOrg)
+createEnumStrings(DataOrder)
+createEnumStrings(ExtrType)
 
 configure_file(enumtypes.hpp.in enumtypes.hpp)
 

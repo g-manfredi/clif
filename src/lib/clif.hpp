@@ -13,6 +13,7 @@
 
 namespace clif {
   
+  
 class InvalidBaseType {};
   
 //base type for elements
@@ -68,7 +69,7 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       
       void setName(std::string name_) { name = name_; };
       
-      const char *get()
+      const char *getStr()
       {
         if (type != BaseType::STRING)
           throw std::invalid_argument("Attribute type doesn't match requested type.");
@@ -77,7 +78,7 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       
       template<typename T> T getEnum()
       {
-        T val = string_to_enum<T>(get());
+        T val = string_to_enum<T>(getStr());
         if (int(val) == -1)
           throw std::invalid_argument("could not parse enum.");
       };
@@ -94,6 +95,18 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
         
         val = (T*)data;
         
+      };
+      
+      template<typename T> void get(T *val, int count)
+      {
+        if (BaseTypeTypes[int(type)] != std::type_index(typeid(T)))
+          throw std::invalid_argument("Attribute type doesn't match requested type.");
+        
+        if (size[0] != count)
+          throw std::invalid_argument("Attribute size doesn't match requested size.");
+        
+        for(int i=0;i<size[0];i++)
+          val[i] = ((T*)data)[i];
       };
       
       template<typename T> void get(std::vector<T> &val)
@@ -188,6 +201,8 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       Attributes(const char *inifile, const char *typefile);
       Attributes(H5::H5File &f, std::string &name);
       
+      std::vector<std::string> extrinsicGroups();
+      
       template<typename STRINGTYPE> Attribute *getAttribute(STRINGTYPE name)
       {    
         for(int i=0;i<attrs.size();i++)
@@ -199,14 +214,17 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
 
       void writeIni(std::string &filename);
       
-      template<typename T> void getAttribute(const char *name, T &val) { getAttribute(name)->get(val); };
-      template<typename T> void getAttribute(const char *name, std::vector<T> &val) { getAttribute(name)->get(val); };
+      //template<typename T> void getAttribute(const char *name, T &val) { getAttribute(name)->get(val); };
+      //template<typename T> void getAttribute(const char *name, std::vector<T> &val) { getAttribute(name)->get(val); };
+      
+      template<typename S, typename T1, typename ...TS> void getAttribute(S name, T1 a1, TS...args) { getAttribute(name)->get(a1, args...); };
+      //template<typename T1, typename ...TS> void getAttribute(const char *name, T1 a1, TS...args) { getAttribute(name)->get(a1, args...); };
       
       template<typename T> void setAttribute(const char *name, T &val);
       template<typename T> void setAttribute(const char *name, std::vector<T> &val);
       
       template<typename T> T getEnum(const char *name) { getAttribute(name)->getEnum<T>(); };
-      template<typename T> void readEnum(const char *name, T &val) { val = getEnum<T>(name); };
+      template<typename T> void getEnum(const char *name, T &val) { val = getEnum<T>(name); };
       
       
       void append(Attribute &attr);
@@ -215,6 +233,9 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       Attribute operator[](int pos);
       void write(H5::H5File &f, std::string &name);
       StringTree<Attribute*> getTree();
+      
+      //find all group nodes under filter
+      std::vector<std::string> listSubGroups(std::string parent);
       
     protected:
       std::vector<Attribute> attrs; 
@@ -301,6 +322,9 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
   std::vector<std::string> Datasets(H5::H5File &f);
 }
 
+//TODO organisation
+class Clif3DSubset;
+
 //specific (high-level) Clif handling - uses Dataset and Datastore to access
 //the attributes and the "main" dataStore
 //plus addtitional functions which interpret those.
@@ -337,21 +361,11 @@ public:
   
   bool valid() { return clif::Dataset::valid() && clif::Datastore::valid(); };
   
+  Clif3DSubset *get3DSubset(int idx = 0);
+  
   //TODO for future:
   //clif::Datastore calibrationImages;
 };
-
-/*
-class Cliff3DSubset {
-public:
-  Cliff3DSubset() {};
-  //takes the line'nth line definition found in calibration.extrinsincs
-  Cliff3DSubset(ClifDataset *data, int line = 0);
-  
-private:
-  ClifDataset *_data = NUL;
-  std::vector<std::pair<int,int>> indizes;
-};*/
 
 class ClifFile
 {
@@ -391,7 +405,7 @@ namespace clif_cv {
   DataType CvDepth2DataType(int cv_type);
   int DataType2CvDepth(DataType t);
 
-  cv::Size imgSize();
+  cv::Size imgSize(Datastore &store);
     
   void writeCvMat(Datastore &store, uint idx, cv::Mat &m);
   void readCvMat(Datastore &store, uint idx, cv::Mat &m, int flags = 0);

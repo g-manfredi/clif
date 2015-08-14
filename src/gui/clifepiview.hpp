@@ -31,7 +31,7 @@ class TEST_COMMON_DLLSPEC DlgFind : public QDialog
 public:
     DlgFind(ClifDataset *dataset, QWidget* parent = 0);
     
-    static double getHoropter(ClifDataset *dataset, QWidget *parent = 0);
+    static double getHoropterDepth(ClifDataset *dataset, QWidget *parent = 0);
 
 signals:
     void findNext(const QString& str, Qt::CaseSensitivity cs);
@@ -46,6 +46,7 @@ private slots:
 
 private:
     QVBoxLayout* createLayout();
+    void refreshEPI();
 
     QSlider *_slider;
     clifScaledImageView *_centerview;
@@ -54,9 +55,9 @@ private:
     QImage _center_img;
     QImage _epi_img;
     
-    double _horopter;
+    double _depth;
     int _line;
-    ClifDataset *_dataset;
+    Clif3DSubset *_3dslice;
 };
 
 }

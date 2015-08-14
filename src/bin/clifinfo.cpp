@@ -17,6 +17,8 @@
 
 #include "clif.hpp"
 
+#include "clif3dsubset.hpp"
+
 using namespace clif_cv;
 using namespace H5;
 using namespace std;
@@ -89,12 +91,15 @@ int main(const int argc, const char *argv[])
   vector<string> datasets = f.datasetList();
   
   for(int i=0;i<datasets.size();i++) {
-    Dataset set = f.openDataset(i);
+    ClifDataset set = f.openDataset(i);
     
     printf("Found dataset \"%s\" at index %d:\n", datasets[i].c_str(), i);
 
     set.getTree().print();
+    
+    set.get3DSubset();
   }
+  
 
   return EXIT_SUCCESS;
 }

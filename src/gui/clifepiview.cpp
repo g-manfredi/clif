@@ -7,11 +7,14 @@
 #include "clifepiview.hpp"
 #include "clifqt.hpp"
 
+#include "clif3dsubset.hpp"
+
 namespace clif_qt {
 
 DlgFind::DlgFind(ClifDataset *dataset, QWidget* parent)
-: QDialog(parent), _dataset(dataset)
+: QDialog(parent)
 {
+    _3dslice = dataset->get3DSubset();
     _centerview = new clifScaledImageView(this);
     _epiview = new clifScaledImageView(this);
     _slider = new QSlider(this);
@@ -28,11 +31,13 @@ DlgFind::DlgFind(ClifDataset *dataset, QWidget* parent)
     _centerview->setImage(_center_img);
     
     _line = _center_img.size().height()/2;
-    horopterChanged(0);
     
-    _slider->setMaximum(50);
-    _slider->setMinimum(-50);
-    _slider->setValue(0);
+    _depth = 1000;
+    _slider->blockSignals(true);
+    _slider->setMaximum(10000);
+    _slider->setMinimum(1);
+    _slider->blockSignals(false);
+    _slider->setValue(_depth);
     
     setWindowTitle("Find");
     //setFixedHeight(sizeHint().height()); // 6.
@@ -98,34 +103,34 @@ void DlgFind::enableBtnFind(const QString& text) // 9.
     btnFind->setEnabled(!text.isEmpty());
 }*/
 
-void DlgFind::horopterChanged(int value)
+void DlgFind::refreshEPI()
 {
   _slider->blockSignals(true);
-  _horopter = value;
-  readEPI(*_dataset, _epi_img, _line, _horopter);
+  readEPI(_3dslice, _epi_img, _line, _depth);
   _epiview->setImage(_epi_img);
   qApp->processEvents();
   _slider->blockSignals(false);
+}
+
+void DlgFind::horopterChanged(int value)
+{
+  _depth = value;
+  refreshEPI();
 }
 
 void DlgFind::lineChanged(QPointF *p)
 {
-  _slider->blockSignals(true);
   _line = p->y();
-  readEPI(*_dataset, _epi_img, _line, _horopter);
-  _epiview->setImage(_epi_img);
-  _epiview->centerOn(p->x(), 0);
-  qApp->processEvents();
-  _slider->blockSignals(false);
+  refreshEPI();
 }
 
-double DlgFind::getHoropter(ClifDataset *dataset, QWidget *parent)
+double DlgFind::getHoropterDepth(ClifDataset *dataset, QWidget *parent)
 {
   DlgFind *finder = new DlgFind(dataset, parent);
   
   finder->exec();
   
-  double h = finder->_horopter;
+  double h = finder->_depth;
   
   delete finder;
   

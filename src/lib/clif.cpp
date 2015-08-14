@@ -6,11 +6,14 @@
 
 #include <exception>
 #include <fstream>
+#include <fnmatch.h>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include "cliini.h"
+
+#include "clif3dsubset.hpp"
 
 static bool _hdf5_obj_exists(H5::H5File &f, const char * const group_str)
 {
@@ -174,6 +177,16 @@ namespace clif {
       return in;
     
     return in.substr(pos+1, in.npos);
+  }
+  
+  std::string get_first_part(std::string in, char c)
+  {
+    size_t pos = in.find(c);
+    
+    if (pos == std::string::npos)
+      return in;
+    
+    return in.substr(0, pos);
   }
   
   template<typename T> void ostreamInsertArrrayIdx(std::ostream *stream, void *val, int idx)
@@ -385,6 +398,11 @@ namespace clif {
   }
   
   
+  std::vector<std::string> Attributes::extrinsicGroups()
+  {
+    return listSubGroups("calibration/extrinsics");
+  }
+  
   void Attributes::write(H5::H5File &f, std::string &name)
   {
     for(int i=0;i<attrs.size();i++)
@@ -413,6 +431,31 @@ namespace clif {
   int Attributes::count()
   {
     return attrs.size();
+  }
+  
+  //FIXME this is ugly!
+  std::vector<std::string> Attributes::listSubGroups(std::string parent)
+  {
+    std::unordered_map<std::string,int> match_map;
+    std::string match;
+    std::vector<std::string> matches;
+    std::vector<std::string> matched_filters;
+    std::replace(parent.begin(), parent.end(), '.', '/');
+    parent = appendToPath(parent, "*");
+    
+    for(int i=0;i<attrs.size();i++) {
+      if (!fnmatch(parent.c_str(), attrs[i].name.c_str(), 0)) {
+        match = attrs[i].name.substr(parent.length()-1, attrs[i].name.length());
+        match = get_first_part(match, '/');
+        match_map[match] = 1;
+      }
+    }
+    
+    for(auto it = match_map.begin(); it != match_map.end(); ++it )
+      matches.push_back(it->first);
+
+    
+    return matches;
   }
   
   Attribute Attributes::operator[](int pos)
@@ -543,9 +586,9 @@ namespace clif {
   
   void Datastore::init_from_dataset(Dataset *dataset, hsize_t w, hsize_t h)
   {
-    dataset->readEnum("format/type",         _type);
-    dataset->readEnum("format/organisation", _org);
-    dataset->readEnum("format/order",        _order);
+    dataset->getEnum("format/type",         _type);
+    dataset->getEnum("format/organisation", _org);
+    dataset->getEnum("format/order",        _order);
     
     if (int(_type) == -1 || int(_org) == -1 || int(_order) == -1) {
       printf("ERROR: unsupported dataset format!\n");
@@ -605,9 +648,9 @@ namespace clif {
       return;
     }
     
-    dataset->readEnum("format/type",         _type);
-    dataset->readEnum("format/organisation", _org);
-    dataset->readEnum("format/order",        _order);
+    dataset->getEnum("format/type",         _type);
+    dataset->getEnum("format/organisation", _org);
+    dataset->getEnum("format/order",        _order);
 
     if (int(_type) == -1 || int(_org) == -1 || int(_order) == -1) {
       printf("ERROR: unsupported dataset format!\n");
@@ -977,6 +1020,10 @@ void ClifDataset::open(H5::H5File &f, std::string name)
   clif::Datastore::open(this, "data");
 }
 
+Clif3DSubset *ClifDataset::get3DSubset(int idx)
+{
+  return new Clif3DSubset(this, extrinsicGroups()[idx]);
+}
 
 void ClifDataset::writeRawImage(uint idx, hsize_t w, hsize_t h, void *data)
 {

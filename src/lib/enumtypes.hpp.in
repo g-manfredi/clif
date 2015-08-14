@@ -9,15 +9,18 @@ namespace clif {
   enum class DataType : int {${DataTypeEnums}};
   enum class DataOrg : int {${DataOrgEnums}};
   enum class DataOrder : int {${DataOrderEnums}};
+  enum class ExtrType : int {${ExtrTypeEnums}};
   
   const static char *DataTypeStr[] = {${DataTypeStrs}};
   const static char *DataOrgStr[] = {${DataOrgStrs}};
   const static char *DataOrderStr[] = {${DataOrderStrs}};
+  const static char *ExtrTypeStr[] = {${ExtrTypeStrs}};
   
   static std::unordered_map<std::type_index, const char **> enum_mappings = { 
     {std::type_index(typeid(DataType)), DataTypeStr},
     {std::type_index(typeid(DataOrg)), DataOrgStr},
-    {std::type_index(typeid(DataOrder)), DataOrderStr}
+    {std::type_index(typeid(DataOrder)), DataOrderStr},
+    {std::type_index(typeid(ExtrType)), ExtrTypeStr}
   };
   
   template<typename T> const char *enum_to_string(T val)
