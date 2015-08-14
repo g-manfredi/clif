@@ -255,9 +255,11 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
   
   //representation of a "raw" clif datset - mostly the images
   class Datastore {
-    public:      
+    public:
+      Datastore() {};
+      
       //create new datastore
-      void create(std::string path, Dataset *dataset = NULL, hsize_t w = 0, hsize_t h = 0);
+      void create(std::string path, Dataset *dataset);
       
       //open existing datastore
       void open(Dataset *dataset, std::string path);
@@ -273,7 +275,7 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       
       const std::string& getDatastorePath() const { return _path; };
       
-      const H5::DataSet & dataset() const { return _data; };
+      const H5::DataSet & H5DataSet() const { return _data; };
       const DataType & type() const { return _type; };
       const DataOrg & org() const { return _org; };
       const DataOrder & order() const { return _order; };
@@ -282,7 +284,7 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       void cache_set(uint64_t, void *data);
       
     protected:
-      void init_from_dataset(Dataset *dataset, hsize_t w, hsize_t h);
+      void init(hsize_t w, hsize_t h);
       
       DataType _type; 
       DataOrg _org;
@@ -293,6 +295,8 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       
   private:
     std::unordered_map<uint64_t,void*> image_cache;
+    
+    Dataset *_dataset = NULL;
   };
   
   class Dataset : public Attributes {
@@ -331,7 +335,7 @@ class Clif3DSubset;
 class ClifDataset : public clif::Dataset, public virtual clif::Datastore
 {
 public:
-  //TODO maybe no special constructors but open/create methods?
+  ClifDataset() {};
   //open existing dataset
   void open(H5::H5File &f, std::string name);
   //create new dataset
@@ -354,14 +358,18 @@ public:
   int imgCount() { clif::Datastore::count(); };
   int attributeCount() { clif::Attributes::count(); };
   
-  //TODO make this more generic?
-  //initializes datastore if necessary
-  void writeRawImage(uint idx, hsize_t w, hsize_t h, void *data);
-  void appendRawImage(hsize_t w, hsize_t h, void *data);
-  
   bool valid() { return clif::Dataset::valid() && clif::Datastore::valid(); };
   
   Clif3DSubset *get3DSubset(int idx = 0);
+  
+  clif::Datastore *getCalibStore();
+  clif::Datastore *createCalibStore();
+  
+private:
+  
+  ClifDataset(ClifDataset &other);
+  ClifDataset &operator=(ClifDataset &other);
+  Datastore *calib_images;
   
   //TODO for future:
   //clif::Datastore calibrationImages;
@@ -378,10 +386,10 @@ public:
   void create(std::string &filename);
   //void close();
   
-  ClifDataset openDataset(int idx);
-  ClifDataset openDataset(std::string name);
+  ClifDataset* openDataset(int idx);
+  ClifDataset* openDataset(std::string name);
 
-  ClifDataset createDataset(std::string name);
+  ClifDataset* createDataset(std::string name);
   
   int datasetCount();
   

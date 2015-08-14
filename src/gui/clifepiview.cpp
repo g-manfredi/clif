@@ -1,8 +1,10 @@
 #include <QtGui/QtGui>
 
 #include <QApplication>
-
 #include <QSplitter>
+#include <QGraphicsLineItem>
+
+#include <qwt_scale_engine.h>
 
 #include "clifepiview.hpp"
 #include "clifqt.hpp"
@@ -17,25 +19,27 @@ DlgFind::DlgFind(ClifDataset *dataset, QWidget* parent)
     _3dslice = dataset->get3DSubset();
     _centerview = new clifScaledImageView(this);
     _epiview = new clifScaledImageView(this);
-    _slider = new QSlider(this);
+    _slider = new QwtSlider(this);
     _slider->setOrientation(Qt::Horizontal);
+    
+    _slider->setScaleEngine(new QwtLogScaleEngine());
     
     /*connect(what, SIGNAL(textChanged(const QString&)), this, SLOT(enableBtnFind(const QString&)));
     connect(btnFind, SIGNAL(clicked()), this, SLOT(findClicked()));*/
-    connect(_slider, SIGNAL(valueChanged(int)), this, SLOT(horopterChanged(int)));
+    connect(_slider, SIGNAL(valueChanged(double)), this, SLOT(horopterChanged(double)));
     connect(_centerview, SIGNAL(imgClicked(QPointF*)), this, SLOT(lineChanged(QPointF*)));
 
     setLayout(createLayout());
     
     readQImage(*dataset, 0, _center_img, CLIF_DEMOSAIC);
-    _centerview->setImage(_center_img);
-    
     _line = _center_img.size().height()/2;
+    _centerview->setImage(_center_img);
+    _line_item = _centerview->scene.addLine(0, _line,  _center_img.size().width(),_line);
+    
     
     _depth = 1000;
     _slider->blockSignals(true);
-    _slider->setMaximum(10000);
-    _slider->setMinimum(1);
+    _slider->setScale(1,1e6);
     _slider->blockSignals(false);
     _slider->setValue(_depth);
     
@@ -112,7 +116,7 @@ void DlgFind::refreshEPI()
   _slider->blockSignals(false);
 }
 
-void DlgFind::horopterChanged(int value)
+void DlgFind::horopterChanged(double value)
 {
   _depth = value;
   refreshEPI();
@@ -121,6 +125,9 @@ void DlgFind::horopterChanged(int value)
 void DlgFind::lineChanged(QPointF *p)
 {
   _line = p->y();
+  _epiview->centerOn(p->x(), 0);
+  _epiview->setDragMode(QGraphicsView::ScrollHandDrag);
+  _line_item->setLine(0, _line,  _center_img.size().width(),_line);
   refreshEPI();
 }
 

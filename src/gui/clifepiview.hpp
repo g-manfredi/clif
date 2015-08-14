@@ -14,7 +14,7 @@
 #include <QCheckBox>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QSlider>
+#include <qwt_slider.h>
 
 #if defined WTF_HACK_QT_EXPORT
  #define TEST_COMMON_DLLSPEC Q_DECL_EXPORT
@@ -41,14 +41,14 @@ private slots:
     //void findClicked();
     //void enableBtnFind(const QString& text);
   
-    void horopterChanged(int value);
+    void horopterChanged(double value);
     void lineChanged(QPointF *p);
 
 private:
     QVBoxLayout* createLayout();
     void refreshEPI();
 
-    QSlider *_slider;
+    QwtSlider *_slider;
     clifScaledImageView *_centerview;
     clifScaledImageView *_epiview;
     
@@ -58,6 +58,8 @@ private:
     double _depth;
     int _line;
     Clif3DSubset *_3dslice;
+    
+    QGraphicsLineItem *_line_item;
 };
 
 }

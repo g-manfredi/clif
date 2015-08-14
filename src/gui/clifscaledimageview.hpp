@@ -21,6 +21,8 @@ public:
     
     void setImage(QImage &img);
     
+    QGraphicsScene scene;
+    
 signals:
     void imgClicked(QPointF *p);
  
@@ -30,7 +32,6 @@ protected:
     void wheelEvent(QWheelEvent * event);
 private:
     bool fit = true;
-    QGraphicsScene scene;
 };
 
 }

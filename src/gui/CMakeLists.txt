@@ -12,12 +12,11 @@ find_package(Qwt REQUIRED)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-
 include_directories(${Qt5Widgets_INCLUDE_DIRS})
-include_directories(${Qwt_INCLUDE_DIRS})
+include_directories(${QWT_INCLUDE_DIR})
 
 add_definitions(-DWTF_HACK_QT_EXPORT)
 add_library(clif-qt SHARED clifscaledimageview.cpp clifepiview.cpp clifqt.cpp)
 
 #TODO add clif
-target_link_libraries(clif-qt ${Qt5Widgets_LIBRARIES} ${Qwt_LIBRARIES})
+target_link_libraries(clif-qt ${Qt5Widgets_LIBRARIES} ${QWT_LIBRARY})

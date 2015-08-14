@@ -540,17 +540,17 @@ namespace clif {
   }
   
   //FIXME wether dataset already exists and overwrite?
-  void Datastore::create(std::string path, Dataset *dataset, hsize_t w, hsize_t h)
+  void Datastore::create(std::string path, Dataset *dataset)
   {
+    assert(dataset);
+    
     _type = DataType(-1); 
     _org = DataOrg(-1);
     _order = DataOrder(-1); 
       
     _data = H5::DataSet();
     _path = path;
-    
-    if (dataset && w && h)
-      init_from_dataset(dataset,w,h);
+    _dataset = dataset;
   }
   
   int combinedTypeElementCount(DataType type, DataOrg org, DataOrder order)
@@ -584,11 +584,11 @@ namespace clif {
   }
   
   
-  void Datastore::init_from_dataset(Dataset *dataset, hsize_t w, hsize_t h)
+  void Datastore::init(hsize_t w, hsize_t h)
   {
-    dataset->getEnum("format/type",         _type);
-    dataset->getEnum("format/organisation", _org);
-    dataset->getEnum("format/order",        _order);
+    _dataset->getEnum("format/type",         _type);
+    _dataset->getEnum("format/organisation", _org);
+    _dataset->getEnum("format/order",        _order);
     
     if (int(_type) == -1 || int(_org) == -1 || int(_order) == -1) {
       printf("ERROR: unsupported dataset format!\n");
@@ -600,15 +600,15 @@ namespace clif {
     
     hsize_t dims[3] = {comb_w,comb_h,0};
     hsize_t maxdims[3] = {comb_w,comb_h,H5S_UNLIMITED}; 
-    std::string dataset_str = dataset->name;
+    std::string dataset_str = _dataset->name;
     dataset_str = appendToPath(dataset_str, _path);
     
-    if (_hdf5_obj_exists(dataset->f, dataset_str.c_str())) {
-      _data = dataset->f.openDataSet(dataset_str);
+    if (_hdf5_obj_exists(_dataset->f, dataset_str.c_str())) {
+      _data = _dataset->f.openDataSet(dataset_str);
       return;
     }
     
-    _rec_make_groups(dataset->f, remove_last_part(dataset_str, '/').c_str());
+    _rec_make_groups(_dataset->f, remove_last_part(dataset_str, '/').c_str());
     
     //chunking fixed for now
     hsize_t chunk_dims[3] = {comb_w,comb_h,1};
@@ -617,7 +617,7 @@ namespace clif {
     
     H5::DataSpace space(3, dims, maxdims);
     
-    _data = dataset->f.createDataSet(dataset_str, 
+    _data = _dataset->f.createDataSet(dataset_str, 
 	               H5PredType(_type), space, prop);
   }
   
@@ -637,9 +637,9 @@ namespace clif {
   }
   
   void Datastore::open(Dataset *dataset, std::string path_)
-  {
+  {    
     //only fills in internal data
-    create(path_);
+    create(path_, dataset);
         
     std::string dataset_str = appendToPath(dataset->name, path_);
         
@@ -665,7 +665,8 @@ namespace clif {
   //FIXME chekc w,h?
   void Datastore::writeRawImage(uint idx, hsize_t w, hsize_t h, void *imgdata)
   {
-    assert(valid());
+    if (!valid())
+      init(w, h);
     
     H5::DataSpace space = _data.getSpace();
     hsize_t dims[3];
@@ -805,7 +806,7 @@ namespace clif_cv {
   
   cv::Size imgSize(Datastore &store)
   {
-    H5::DataSpace space = store.dataset().getSpace();
+    H5::DataSpace space = store.H5DataSet().getSpace();
     hsize_t dims[3];
     hsize_t maxdims[3];
     
@@ -971,21 +972,21 @@ int ClifFile::datasetCount()
 }
 
 
-ClifDataset ClifFile::openDataset(std::string name)
+ClifDataset* ClifFile::openDataset(std::string name)
 {
-  ClifDataset set;
-  set.open(f, name);
+  ClifDataset *set = new ClifDataset();
+  set->open(f, name);
   return set;
 }
 
-ClifDataset ClifFile::createDataset(std::string name)
+ClifDataset* ClifFile::createDataset(std::string name)
 {
-  ClifDataset set;
-  set.create(f, name);
+  ClifDataset *set = new ClifDataset();
+  set->create(f, name);
   return set;
 }
 
-ClifDataset ClifFile::openDataset(int idx)
+ClifDataset* ClifFile::openDataset(int idx)
 {
   return openDataset(datasets[idx]);
 }
@@ -1003,7 +1004,7 @@ void ClifDataset::create(H5::H5File &f, std::string set_name)
   //TODO create only
   static_cast<clif::Dataset&>(*this) = clif::Dataset(f, fullpath);
   
-  clif::Datastore::create("data");
+  clif::Datastore::create("data", this);
 }
 
 void ClifDataset::open(H5::H5File &f, std::string name)
@@ -1025,18 +1026,17 @@ Clif3DSubset *ClifDataset::get3DSubset(int idx)
   return new Clif3DSubset(this, extrinsicGroups()[idx]);
 }
 
-void ClifDataset::writeRawImage(uint idx, hsize_t w, hsize_t h, void *data)
+//return pointer to the calib image datastore - may be manipulated
+clif::Datastore *ClifDataset::getCalibStore()
 {
-  if (!Datastore::valid())
-    init_from_dataset(this, w, h);
-  
-  Datastore::writeRawImage(idx, w, h, data);
-    
+  return calib_images;
 }
-void ClifDataset::appendRawImage(hsize_t w, hsize_t h, void *data)
+
+clif::Datastore *ClifDataset::createCalibStore()
 {
-  if (!Datastore::valid())
-    init_from_dataset(this, w, h);
-  
-  Datastore::appendRawImage(w, h, data);
+  if (!calib_images) {
+    calib_images = new clif::Datastore();
+    calib_images->create("calibration/images/data", this);
+  }
+  return calib_images;
 }
