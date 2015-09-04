@@ -43,6 +43,7 @@ private slots:
   
     void horopterChanged(double value);
     void lineChanged(QPointF *p);
+    void refreshEPISlot();
 
 private:
     QVBoxLayout* createLayout();
@@ -58,6 +59,8 @@ private:
     double _depth;
     int _line;
     Clif3DSubset *_3dslice;
+    
+    QTimer *_timer = NULL;
     
     QGraphicsLineItem *_line_item;
 };

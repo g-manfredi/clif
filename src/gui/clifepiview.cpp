@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QSplitter>
 #include <QGraphicsLineItem>
+#include <QTimer>
 
 #include <qwt_scale_engine.h>
 
@@ -118,10 +119,28 @@ void DlgFind::refreshEPI()
   //_slider->blockSignals(false);
 }
 
+void DlgFind::refreshEPISlot()
+{
+  if (_timer) {
+    delete _timer;
+    _timer = NULL;
+  }
+  
+  refreshEPI();
+}
+
 void DlgFind::horopterChanged(double value)
 {
   _depth = value;
-  refreshEPI();
+  
+  if (!_timer) {
+    _timer = new QTimer(this);
+    connect(_timer, SIGNAL(timeout()), SLOT(refreshEPISlot()));
+    _timer->setSingleShot(true);
+    _timer->start(0);
+  }
+  
+  //refreshEPI();
 }
 
 void DlgFind::lineChanged(QPointF *p)
