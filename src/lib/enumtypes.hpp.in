@@ -10,17 +10,20 @@ namespace clif {
   enum class DataOrg : int {${DataOrgEnums}};
   enum class DataOrder : int {${DataOrderEnums}};
   enum class ExtrType : int {${ExtrTypeEnums}};
+  enum class CalibPattern : int {${CalibPatternEnums}};
   
   const static char *DataTypeStr[] = {${DataTypeStrs}};
   const static char *DataOrgStr[] = {${DataOrgStrs}};
   const static char *DataOrderStr[] = {${DataOrderStrs}};
   const static char *ExtrTypeStr[] = {${ExtrTypeStrs}};
+  const static char *CalibPatternStr[] = {${CalibPatternStrs}};
   
   static std::unordered_map<std::type_index, const char **> enum_mappings = { 
     {std::type_index(typeid(DataType)), DataTypeStr},
     {std::type_index(typeid(DataOrg)), DataOrgStr},
     {std::type_index(typeid(DataOrder)), DataOrderStr},
-    {std::type_index(typeid(ExtrType)), ExtrTypeStr}
+    {std::type_index(typeid(ExtrType)), ExtrTypeStr},
+    {std::type_index(typeid(CalibPattern)), CalibPatternStr}
   };
   
   template<typename T> const char *enum_to_string(T val)
@@ -38,8 +41,9 @@ namespace clif {
       throw std::invalid_argument("unknown Enum Type for template!");
       
     for(int i=0;strs[i];i++)
-      if (!strcmp(strs[i], str))
+      if (!strcmp(strs[i], str)) {
         return T(i);
+        }
 
     return T(-1);
   }

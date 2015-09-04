@@ -21,8 +21,10 @@ DlgFind::DlgFind(ClifDataset *dataset, QWidget* parent)
     _epiview = new clifScaledImageView(this);
     _slider = new QwtSlider(this);
     _slider->setOrientation(Qt::Horizontal);
-    
+    _slider->setStepAlignment(false);
     _slider->setScaleEngine(new QwtLogScaleEngine());
+    _slider->setScalePosition(QwtSlider::ScalePosition::TrailingScale);
+    
     
     /*connect(what, SIGNAL(textChanged(const QString&)), this, SLOT(enableBtnFind(const QString&)));
     connect(btnFind, SIGNAL(clicked()), this, SLOT(findClicked()));*/
@@ -31,7 +33,7 @@ DlgFind::DlgFind(ClifDataset *dataset, QWidget* parent)
 
     setLayout(createLayout());
     
-    readQImage(*dataset, 0, _center_img, CLIF_DEMOSAIC);
+    readQImage(dataset, 0, _center_img, CLIF_DEMOSAIC);
     _line = _center_img.size().height()/2;
     _centerview->setImage(_center_img);
     _line_item = _centerview->scene.addLine(0, _line,  _center_img.size().width(),_line);
@@ -109,11 +111,11 @@ void DlgFind::enableBtnFind(const QString& text) // 9.
 
 void DlgFind::refreshEPI()
 {
-  _slider->blockSignals(true);
+  //_slider->blockSignals(true);
   readEPI(_3dslice, _epi_img, _line, _depth);
   _epiview->setImage(_epi_img);
   qApp->processEvents();
-  _slider->blockSignals(false);
+  //_slider->blockSignals(false);
 }
 
 void DlgFind::horopterChanged(double value)

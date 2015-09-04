@@ -54,7 +54,7 @@ namespace clif_qt {
     return QImage();
 }
   
-  void readQImage(Datastore &store, uint idx, QImage &img, int flags)
+  void readQImage(Datastore *store, uint idx, QImage &img, int flags)
   {
     Mat m;
     readCvMat(store, idx, m, flags | CLIF_CVT_8U);

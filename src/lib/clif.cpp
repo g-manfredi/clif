@@ -15,28 +15,6 @@
 
 #include "clif3dsubset.hpp"
 
-static bool _hdf5_obj_exists(H5::H5File &f, const char * const group_str)
-{
-  H5E_auto2_t  oldfunc;
-  void *old_client_data;
-  
-  H5Eget_auto(H5E_DEFAULT, &oldfunc, &old_client_data);
-  H5Eset_auto(H5E_DEFAULT, NULL, NULL);
-  
-  int status = H5Gget_objinfo(f.getId(), group_str, 0, NULL);
-  
-  H5Eset_auto(H5E_DEFAULT, oldfunc, old_client_data);
-  
-  if (status == 0)
-    return true;
-  return false;
-}
-
-static bool _hdf5_obj_exists(H5::H5File &f, const std::string group_str)
-{
-  return _hdf5_obj_exists(f,group_str.c_str());
-}
-
 static void _rec_make_groups(H5::H5File &f, const char * const group_str) 
 {
   int last_pos = 0, next_pos;
@@ -52,7 +30,7 @@ static void _rec_make_groups(H5::H5File &f, const char * const group_str)
     buf[next_pos] = '\0';
     last_pos = next_pos;
 
-    if (!_hdf5_obj_exists(f, buf)) {
+    if (!clif::h5_obj_exists(f, buf)) {
       f.createGroup(buf);
     }
 
@@ -60,7 +38,7 @@ static void _rec_make_groups(H5::H5File &f, const char * const group_str)
   }
   
   buf[last_pos] = '/';
-  if (!_hdf5_obj_exists(f, buf))
+  if (!clif::h5_obj_exists(f, buf))
     f.createGroup(buf);
   
   free(buf);
@@ -116,13 +94,60 @@ namespace clif {
     abort();
   }
   
-    
   static std::string appendToPath(std::string str, std::string append)
   {
     if (str.back() != '/')
       str = str.append("/");
       
     return str.append(append);
+  }
+  
+  bool h5_obj_exists(H5::H5File &f, const char * const group_str)
+  {
+    H5E_auto2_t  oldfunc;
+    void *old_client_data;
+    
+    H5Eget_auto(H5E_DEFAULT, &oldfunc, &old_client_data);
+    H5Eset_auto(H5E_DEFAULT, NULL, NULL);
+    
+    int status = H5Gget_objinfo(f.getId(), group_str, 0, NULL);
+    
+    H5Eset_auto(H5E_DEFAULT, oldfunc, old_client_data);
+    
+    if (status == 0)
+      return true;
+    return false;
+  }
+  
+  bool h5_obj_exists(H5::H5File &f, const std::string group_str)
+  {
+    return h5_obj_exists(f,group_str.c_str());
+  }
+  
+  static void datasetlist_append_group(std::vector<std::string> &list, H5::Group &g,  std::string group_path)
+  {    
+    for(int i=0;i<g.getNumObjs();i++) {
+      H5G_obj_t type = g.getObjTypeByIdx(i);
+      
+      std::string name = appendToPath(group_path, g.getObjnameByIdx(hsize_t(i)));
+      
+      if (type == H5G_GROUP) {
+        H5::Group sub = g.openGroup(g.getObjnameByIdx(hsize_t(i)));
+        datasetlist_append_group(list, sub, name);
+      }
+      else if (type == H5G_DATASET)
+        list.push_back(name);
+    }
+  }
+  
+  std::vector<std::string> listH5Datasets(H5::H5File &f, std::string parent)
+  {
+    std::vector<std::string> list;
+    H5::Group group = f.openGroup(parent.c_str());
+    
+    datasetlist_append_group(list, group, parent);
+    
+    return list;
   }
 
   void save_string_attr(H5::Group &g, const char *name, const char *val)
@@ -466,7 +491,7 @@ namespace clif {
   Dataset::Dataset(H5::H5File &f_, std::string name_)
   : f(f_), name(name_)
   {
-    if (_hdf5_obj_exists(f, name.c_str())) {
+    if (h5_obj_exists(f, name.c_str())) {
       static_cast<Attributes&>(*this) = Attributes(f, name);
     }
   }
@@ -603,7 +628,7 @@ namespace clif {
     std::string dataset_str = _dataset->name;
     dataset_str = appendToPath(dataset_str, _path);
     
-    if (_hdf5_obj_exists(_dataset->f, dataset_str.c_str())) {
+    if (h5_obj_exists(_dataset->f, dataset_str.c_str())) {
       _data = _dataset->f.openDataSet(dataset_str);
       return;
     }
@@ -643,7 +668,7 @@ namespace clif {
         
     std::string dataset_str = appendToPath(dataset->name, path_);
         
-    if (!_hdf5_obj_exists(dataset->f, dataset_str.c_str())) {
+    if (!h5_obj_exists(dataset->f, dataset_str.c_str())) {
       printf("error: could not find requrested datset: %s\n", dataset_str.c_str());
       return;
     }
@@ -776,7 +801,7 @@ namespace clif {
   {
     std::vector<std::string> list(0);
     
-    if (!_hdf5_obj_exists(f, "/clif"))
+    if (!h5_obj_exists(f, "/clif"))
       return list;
     
     H5::Group g = f.openGroup("/clif");
@@ -794,9 +819,8 @@ namespace clif {
   {
     H5::DataSpace space = _data.getSpace();
     hsize_t dims[3];
-    hsize_t maxdims[3];
     
-    space.getSimpleExtentDims(dims, maxdims);
+    space.getSimpleExtentDims(dims);
     
     return dims[2];
   }
@@ -804,16 +828,16 @@ namespace clif {
 
 namespace clif_cv {
   
-  cv::Size imgSize(Datastore &store)
+  cv::Size imgSize(Datastore *store)
   {
-    H5::DataSpace space = store.H5DataSet().getSpace();
+    H5::DataSpace space = store->H5DataSet().getSpace();
     hsize_t dims[3];
     hsize_t maxdims[3];
     
     space.getSimpleExtentDims(dims, maxdims);
     
-    dims[0] /= combinedTypeElementCount(store.type(), store.org(), store.order());
-    dims[1] /= combinedTypePlaneCount(store.type(), store.org(), store.order());
+    dims[0] /= combinedTypeElementCount(store->type(), store->org(), store->order());
+    dims[1] /= combinedTypePlaneCount(store->type(), store->org(), store->order());
     
     return cv::Size(dims[0],dims[1]);
   }
@@ -840,7 +864,7 @@ namespace clif_cv {
   }
   
   
-  void readEPI(ClifDataset &lf, cv::Mat &m, int line, double depth, int flags)
+  /*void readEPI(ClifDataset *lf, cv::Mat &m, int line, double depth, int flags)
   {
 
     //TODO maybe easier to read on image and just use that type...
@@ -849,13 +873,13 @@ namespace clif_cv {
     cv::Mat tmp;
     readCvMat(lf, 0, tmp, flags | CLIF_DEMOSAIC);
 
-    m = cv::Mat::zeros(cv::Size(imgSize(lf).width, lf.imgCount()), tmp.type());
+    m = cv::Mat::zeros(cv::Size(imgSize(lf).width, lf->imgCount()), tmp.type());
     //tmp.row(line).copyTo(m.row(0));
     
-    for(int i=0;i<lf.imgCount();i++)
+    for(int i=0;i<lf->imgCount();i++)
     {      
       //FIXME rounding?
-      double d = depth*(i-lf.imgCount()/2);
+      double d = depth*(i-lf->imgCount()/2);
       readCvMat(lf, i, tmp, flags | CLIF_DEMOSAIC);
       if (d <= 0) {
         d = -d;
@@ -867,26 +891,26 @@ namespace clif_cv {
         tmp.row(line).colRange(0, w).copyTo(m.row(i).colRange(d, d+w));
       }
     }
-  }
+  }*/
     
-  void readCvMat(Datastore &store, uint idx, cv::Mat &outm, int flags)
+  void readCvMat(Datastore *store, uint idx, cv::Mat &outm, int flags)
   {   
     uint64_t key = idx*CLIF_PROCESS_FLAGS_MAX | flags;
     
-    cv::Mat *m = static_cast<cv::Mat*>(store.cache_get(key));
+    cv::Mat *m = static_cast<cv::Mat*>(store->cache_get(key));
     if (m) {
-      outm = m->clone();
+      outm = *m;//->clone();
       return;
     }
     
-    if (store.org() == DataOrg::BAYER_2x2) {
+    if (store->org() == DataOrg::BAYER_2x2) {
       //FIXME bayer only for now!
-      m = new cv::Mat(imgSize(store), DataType2CvDepth(store.type()));
+      m = new cv::Mat(imgSize(store), DataType2CvDepth(store->type()));
       
-      store.readRawImage(idx, m->size().width, m->size().height, m->data);
+      store->readRawImage(idx, m->size().width, m->size().height, m->data);
       
-      if (store.org() == DataOrg::BAYER_2x2 && flags & CLIF_DEMOSAIC) {
-        switch (store.order()) {
+      if (store->org() == DataOrg::BAYER_2x2 && flags & CLIF_DEMOSAIC) {
+        switch (store->order()) {
           case DataOrder::RGGB :
             cvtColor(*m, *m, CV_BayerBG2BGR);
             break;
@@ -902,9 +926,9 @@ namespace clif_cv {
         }
       }
     }
-    else if (store.org() == DataOrg::INTERLEAVED && store.order() == DataOrder::RGB) {
-      m = new cv::Mat(imgSize(store), CV_MAKETYPE(DataType2CvDepth(store.type()), 3));
-      store.readRawImage(idx, m->size().width, m->size().height, m->data);
+    else if (store->org() == DataOrg::INTERLEAVED && store->order() == DataOrder::RGB) {
+      m = new cv::Mat(imgSize(store), CV_MAKETYPE(DataType2CvDepth(store->type()), 3));
+      store->readRawImage(idx, m->size().width, m->size().height, m->data);
     }
     
     if (m->depth() == CV_16U && flags & CLIF_CVT_8U) {
@@ -912,7 +936,7 @@ namespace clif_cv {
       m->convertTo(*m, CV_8U);
     }
     
-    store.cache_set(key, m);
+    store->cache_set(key, m);
     
     outm = m->clone();
   }
@@ -928,7 +952,7 @@ void ClifFile::open(std::string &filename, unsigned int flags)
   if (f.getId() == H5I_INVALID_HID)
     return;
   
-  if (!_hdf5_obj_exists(f, "/clif"))
+  if (!clif::h5_obj_exists(f, "/clif"))
       return;
     
   H5::Group g = f.openGroup("/clif");
@@ -949,7 +973,7 @@ void ClifFile::create(std::string &filename)
   if (f.getId() == H5I_INVALID_HID)
     return;
   
-  if (!_hdf5_obj_exists(f, "/clif"))
+  if (!clif::h5_obj_exists(f, "/clif"))
       return;
     
   H5::Group g = f.openGroup("/clif");
@@ -1029,6 +1053,13 @@ Clif3DSubset *ClifDataset::get3DSubset(int idx)
 //return pointer to the calib image datastore - may be manipulated
 clif::Datastore *ClifDataset::getCalibStore()
 {
+  if (!calib_images) {
+    if (!clif::h5_obj_exists(f, "calibration/images/data"))
+      return NULL;
+    calib_images = new clif::Datastore();
+    calib_images->open(this, "calibration/images/data");
+  }
+  
   return calib_images;
 }
 

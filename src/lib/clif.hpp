@@ -11,8 +11,12 @@
 
 #include "stringtree.hpp"
 
+#include <boost/filesystem.hpp>
+
 namespace clif {
   
+bool h5_obj_exists(H5::H5File &f, const char * const group_str);
+bool h5_obj_exists(H5::H5File &f, const std::string group_str);
   
 class InvalidBaseType {};
   
@@ -69,6 +73,11 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       
       void setName(std::string name_) { name = name_; };
       
+      Attribute() {};
+      Attribute(std::string name_)  { name = name_; };
+      Attribute(const char *name_)  { name = std::string(name_); };
+      Attribute(boost::filesystem::path &name_)  { name = name_.c_str(); };
+      
       const char *getStr()
       {
         if (type != BaseType::STRING)
@@ -81,9 +90,11 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
         T val = string_to_enum<T>(getStr());
         if (int(val) == -1)
           throw std::invalid_argument("could not parse enum.");
+        
+        return val;
       };
       
-      template<typename T> void greadEnum(T &val)
+      template<typename T> void readEnum(T &val)
       {
         val = getEnum<T>();
       };
@@ -94,7 +105,6 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
           throw std::invalid_argument("Attribute type doesn't match requested type.");
         
         val = (T*)data;
-        
       };
       
       template<typename T> void get(T *val, int count)
@@ -192,6 +202,8 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       size[i] = size_[i];
     data = data_;
   }
+  
+  std::vector<std::string> listH5Datasets(H5::H5File &f, std::string parent);
       
   class Attributes {
     public:
@@ -203,6 +215,17 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       
       std::vector<std::string> extrinsicGroups();
       
+      //path type
+      Attribute *getAttribute(boost::filesystem::path name)
+      {    
+        for(int i=0;i<attrs.size();i++)
+          if (!attrs[i].name.compare(name.string()))
+            return &attrs[i];
+          
+          return NULL;
+      }
+      
+      //other types
       template<typename STRINGTYPE> Attribute *getAttribute(STRINGTYPE name)
       {    
         for(int i=0;i<attrs.size();i++)
@@ -220,11 +243,18 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       template<typename S, typename T1, typename ...TS> void getAttribute(S name, T1 a1, TS...args) { getAttribute(name)->get(a1, args...); };
       //template<typename T1, typename ...TS> void getAttribute(const char *name, T1 a1, TS...args) { getAttribute(name)->get(a1, args...); };
       
-      template<typename T> void setAttribute(const char *name, T &val);
-      template<typename T> void setAttribute(const char *name, std::vector<T> &val);
+      template<typename S, typename ...TS> void setAttribute(S name, TS...args)
+      {
+        Attribute *a = getAttribute(name);
+        
+        if (!a)
+          a = new Attribute(name);
+        
+        a->set(args...);
+      }
       
-      template<typename T> T getEnum(const char *name) { getAttribute(name)->getEnum<T>(); };
-      template<typename T> void getEnum(const char *name, T &val) { val = getEnum<T>(name); };
+      template<typename S, typename T> T getEnum(S name) { return getAttribute(name)->getEnum<T>(); };
+      template<typename S, typename T> void getEnum(S name, T &val) { val = getEnum<S,T>(name); };
       
       
       void append(Attribute &attr);
@@ -343,7 +373,6 @@ public:
   
   ClifDataset &operator=(const ClifDataset &other) { Dataset::operator=(other); Datastore::operator=(other); return *this; }
  
- 
   template<template<typename> class F, typename R, typename ... ArgTypes> R callFunctor(ArgTypes ... args)
   {
     switch (type) {
@@ -355,8 +384,8 @@ public:
     }
   }
   
-  int imgCount() { clif::Datastore::count(); };
-  int attributeCount() { clif::Attributes::count(); };
+  int imgCount() { return clif::Datastore::count(); };
+  int attributeCount() { return clif::Attributes::count(); };
   
   bool valid() { return clif::Dataset::valid() && clif::Datastore::valid(); };
   
@@ -396,9 +425,10 @@ public:
   bool valid();
   
   const std::vector<std::string> & datasetList() const {return datasets;};
-private:
   
   H5::H5File f;
+private:
+  
   std::vector<std::string> datasets;
 };
 
@@ -406,6 +436,7 @@ private:
 #include "opencv2/core/core.hpp"
 
 //only adds methods
+//TODO use clif namespace! (?)
 namespace clif_cv {
   
   using namespace clif;
@@ -413,14 +444,14 @@ namespace clif_cv {
   DataType CvDepth2DataType(int cv_type);
   int DataType2CvDepth(DataType t);
 
-  cv::Size imgSize(Datastore &store);
+  cv::Size imgSize(Datastore *store);
     
-  void writeCvMat(Datastore &store, uint idx, cv::Mat &m);
-  void readCvMat(Datastore &store, uint idx, cv::Mat &m, int flags = 0);
+  void writeCvMat(Datastore *store, uint idx, cv::Mat &m);
+  void readCvMat(Datastore *store, uint idx, cv::Mat &m, int flags = 0);
   
-  void readEPI(ClifDataset &lf, cv::Mat &m, int line, double depth = 0, int flags = 0);
+  //void readEPI(ClifDataset *lf, cv::Mat &m, int line, double depth = 0, int flags = 0);
 
-  void writeCvMat(Datastore &store, uint idx, hsize_t w, hsize_t h, void *data);
+  void writeCvMat(Datastore *store, uint idx, hsize_t w, hsize_t h, void *data);
 }
 
 #endif

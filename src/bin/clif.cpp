@@ -120,7 +120,7 @@ int main(const int argc, const char *argv[])
   //extract image/and or ini        1 x clif  1x init/ Nx img pattern
   
   vector<string> clif_append = extract_matching_strings(output, clif_extension_pattern);
-  vector<string> clif_extra_images = extract_matching_strings(output, img_extension_pattern);
+  vector<string> clif_extract_images = extract_matching_strings(output, img_extension_pattern);
   vector<string> clif_extract_attributes = extract_matching_strings(output, ini_extension_pattern);
   
   vector<string> input_clifs = extract_matching_strings(input, clif_extension_pattern);
@@ -144,12 +144,12 @@ int main(const int argc, const char *argv[])
       errorexit("FIXME add global type declaration!");
     if (clif_append.size() > 1)
       errorexit("only a single output clif file may be specififed!");
-    if (clif_extra_images.size() || clif_extract_attributes.size())
+    if (clif_extract_images.size() || clif_extract_attributes.size())
       errorexit("may not write to clif at the same time as extracting imgs/attributes!");
     output_clif = true;
   }
   else {
-    if (!clif_extra_images.size() && !clif_extract_attributes.size())
+    if (!clif_extract_images.size() && !clif_extract_attributes.size())
       errorexit("no valid output format found!");
     if (input_clifs.size() != 1)
       errorexit("only single input clif file allowed!");
@@ -176,8 +176,6 @@ int main(const int argc, const char *argv[])
       set = f_out.createDataset(output_set_name);
     }
     
-    
-    
     for(int i=0;i<input_clifs.size();i++) {
       ClifFile f_in(input_clifs[i], H5F_ACC_RDONLY);
       
@@ -186,11 +184,21 @@ int main(const int argc, const char *argv[])
         errorexit("FIXME: at the moment only files with a single dataset are supported by this program.");
       
       //FIXME implement dataset handling for datasets without datastore!
+      //TODO check: is ^ already working?
       ClifDataset *in_set = f_in.openDataset(0);
       set->append(static_cast<Attributes&>(*in_set));
-      delete in_set;
       
-      printf("FIXME: append image data/other datasets!");
+      vector<string> h5datasets = listH5Datasets(f_in.f, in_set->name);
+      for(int j=0;j<h5datasets.size();j++) {
+        cout << "copy " << h5datasets[j] << endl;
+        //FIXME handle dataset selection properly!
+        if (!h5_obj_exists(f_out.f, h5datasets[j]))
+          H5Ocopy(f_in.f.getId(), h5datasets[j].c_str(), f_out.f.getId(), h5datasets[j].c_str(), H5P_DEFAULT, H5P_DEFAULT);
+        else
+          printf("TODO: dataset %s already exists in output, skipping!\n", h5datasets[j]);
+      }
+      
+      delete in_set;
     }
     
     for(int i=0;i<input_inis.size();i++) {
@@ -241,7 +249,7 @@ int main(const int argc, const char *argv[])
         delete in_set;
     }
     
-    for(int i=0;i<clif_extra_images.size();i++) {
+    for(int i=0;i<clif_extract_images.size();i++) {
       ClifFile f_in(input_clifs[0], H5F_ACC_RDONLY);
       
       //FIXME input name handling/selection
@@ -254,9 +262,9 @@ int main(const int argc, const char *argv[])
       char buf[4096];
       for(int c=0;c<in_set->imgCount();c++) {
         Mat img;
-        sprintf(buf, clif_extra_images[i].c_str(), c);
+        sprintf(buf, clif_extract_images[i].c_str(), c);
         printf("store idx %d: %s\n", c, buf);
-        readCvMat(*in_set, c, img);
+        readCvMat(in_set, c, img);
         imwrite(buf, img);
       }
       delete in_set;
