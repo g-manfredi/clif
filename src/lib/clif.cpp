@@ -325,8 +325,6 @@ namespace clif {
     std::string grouppath = remove_last_part(fullpath, '/');
     std::string attr_name = get_last_part(fullpath, '/');
     
-    std::cout << "write " << attr_path << std::endl;
-    
     hsize_t dim[1];
     dim[0] = size[0];
     H5::DataSpace space(1, dim);
@@ -1036,8 +1034,33 @@ namespace clif_cv {
         curpoint += 4;
       }
       
-    set->setAttribute(set->path() / "calibration/images/sets" / calib_set_name / "pointdata", pointbuf, 4*pointcount);
-    set->setAttribute(set->path() / "calibration/images/sets" / calib_set_name / "pointcounts", sizebuf, imgpoints.size());
+    set->setAttribute(boost::filesystem::path() / "calibration/images/sets" / calib_set_name / "pointdata", pointbuf, 4*pointcount);
+    set->setAttribute(boost::filesystem::path() / "calibration/images/sets" / calib_set_name / "pointcounts", sizebuf, imgpoints.size());
+  }
+  
+  void readCalibPoints(ClifDataset *set, std::string calib_set_name, std::vector<std::vector<cv::Point2f>> &imgpoints, std::vector<std::vector<cv::Point2f>> &worldpoints)
+  {
+    std::vector<float> pointbuf;
+    std::vector<int> sizebuf;
+    
+    set->getAttribute(boost::filesystem::path() / "calibration/images/sets" / calib_set_name / "pointdata", pointbuf);  
+    set->getAttribute(boost::filesystem::path() / "calibration/images/sets" / calib_set_name / "pointcounts", sizebuf);
+    
+    imgpoints.clear();
+    imgpoints.resize(sizebuf.size());
+    worldpoints.clear();
+    worldpoints.resize(sizebuf.size());
+
+    int idx = 0;
+    for(int i=0;i<sizebuf.size();i++) {
+      imgpoints[i].resize(sizebuf[i]);
+      worldpoints[i].resize(sizebuf[i]);
+      for(int j=0;j<sizebuf[i];j++) {
+        imgpoints[i][j] = cv::Point2f(pointbuf[idx+0],pointbuf[idx+1]);
+        worldpoints[i][j] = cv::Point2f(pointbuf[idx+2],pointbuf[idx+3]);
+        idx += 4;
+      }
+    }
   }
 }
 

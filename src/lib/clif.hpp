@@ -142,7 +142,6 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
         val.resize(size[0]);
         for(int i=0;i<size[0];i++)
           val[i] = ((T*)data)[i];
-        
       };
       
       template<typename T> void set(T &val)
@@ -259,15 +258,18 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
 
       void writeIni(std::string &filename);
       
-      //template<typename T> void getAttribute(const char *name, T &val) { getAttribute(name)->get(val); };
-      //template<typename T> void getAttribute(const char *name, std::vector<T> &val) { getAttribute(name)->get(val); };
+      template<typename S, typename T1, typename ...TS> void getAttribute(S name, T1 &a1, TS...args)
+      {
+        Attribute *attr = getAttribute(name);
+        if (!attr)
+          throw std::invalid_argument("requested attribute does not exist!");
+        attr->get(a1, args...);
+      };
       
-      template<typename S, typename T1, typename ...TS> void getAttribute(S name, T1 a1, TS...args) { getAttribute(name)->get(a1, args...); };
-      //template<typename T1, typename ...TS> void getAttribute(const char *name, T1 a1, TS...args) { getAttribute(name)->get(a1, args...); };
       
       template<typename S, typename ...TS> void setAttribute(S name, TS...args)
       {
-        Attribute *a = getAttribute(name);
+        /*Attribute *a = getAttribute(name);
         
         //FIXME ugly!
         if (!a) {
@@ -277,7 +279,10 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
           a = getAttribute(name);
         }
         
-        a->set(args...);
+        a->set(args...);*/
+        Attribute a(name);
+        a.set(args...);
+        append(a);
       }
       
       template<typename S, typename T> T getEnum(S name) { return getAttribute(name)->getEnum<T>(); };

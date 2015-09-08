@@ -65,7 +65,13 @@ cliini_opt opts[] = {
     CLIINI_STRING
   },
   {
-    "filter",
+    "include",
+    1, //argcount
+    CLIINI_ARGCOUNT_ANY, //argcount
+    CLIINI_STRING
+  },
+  {
+    "exclude",
     1, //argcount
     CLIINI_ARGCOUNT_ANY, //argcount
     CLIINI_STRING
@@ -75,7 +81,7 @@ cliini_opt opts[] = {
     0,0
   },
   {
-    "calibrate",
+    "opencv-calibrate",
     0,0
   }
 };
@@ -125,7 +131,8 @@ int main(const int argc, const char *argv[])
   cliini_arg *output = cliargs_get(args, "output");
   cliini_arg *types = cliargs_get(args, "types");
   cliini_arg *calib_imgs = cliargs_get(args, "calib-images");
-  cliini_arg *filter = cliargs_get(args, "filter");
+  cliini_arg *include = cliargs_get(args, "include");
+  cliini_arg *exclude = cliargs_get(args, "exclude");
   
   if (!args || cliargs_get(args, "help\n") || !input || !output) {
     printf("TODO: print help!");
@@ -203,21 +210,32 @@ int main(const int argc, const char *argv[])
       //FIXME implement dataset handling for datasets without datastore!
       //TODO check: is ^ already working?
       ClifDataset *in_set = f_in.openDataset(0);
-      if (!filter)
-        set->append(in_set);
-      else {
+      if (include)
         for(int i=0;i<in_set->attributeCount();i++) {
           bool match_found = false;
           Attribute *a = in_set->getAttribute(i);
-          for(int j=0;j<cliarg_sum(filter);j++)
-            if (!fnmatch(cliarg_nth_str(filter, j), a->name.c_str(), FNM_PATHNAME)) {
+          for(int j=0;j<cliarg_sum(include);j++)
+            if (!fnmatch(cliarg_nth_str(include, j), a->name.c_str(), FNM_PATHNAME)) {
               match_found = true;
               break;
             }
           if (match_found)
             set->append(a);
         }
-      }
+      else if (exclude)
+        for(int i=0;i<in_set->attributeCount();i++) {
+          bool match_found = false;
+          Attribute *a = in_set->getAttribute(i);
+          for(int j=0;j<cliarg_sum(exclude);j++)
+            if (!fnmatch(cliarg_nth_str(exclude, j), a->name.c_str(), FNM_PATHNAME)) {
+              match_found = true;
+              break;
+            }
+          if (!match_found)
+            set->append(a);
+        }
+      else
+        set->append(in_set);
       
       vector<string> h5datasets = listH5Datasets(f_in.f, in_set->path().c_str());
       for(int j=0;j<h5datasets.size();j++) {
@@ -272,6 +290,11 @@ int main(const int argc, const char *argv[])
     
     if (cliargs_get(args, "detect-patterns")) {
       pattern_detect(set);
+      set->writeAttributes();
+    }
+    
+    if (cliargs_get(args, "opencv-calibrate")) {
+      opencv_calibrate(set);
       set->writeAttributes();
     }
   }

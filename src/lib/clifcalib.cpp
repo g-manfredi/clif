@@ -43,13 +43,15 @@ namespace clif {
           
           int succ = findChessboardCorners(img, Size(size[0],size[1]), corners, CV_CALIB_CB_ADAPTIVE_THRESH+CV_CALIB_CB_NORMALIZE_IMAGE+CALIB_CB_FAST_CHECK+CV_CALIB_CB_FILTER_QUADS);
           
-          if (succ)
+          if (succ) {
             printf("found %6d corners (img %d/%d)\n", corners.size(), j, imgs->count());
+            cornerSubPix(img, corners, Size(8,8), Size(-1,-1), TermCriteria(cv::TermCriteria::MAX_ITER | cv::TermCriteria::EPS,100,0.0001));
+          }
           else
             printf("found      0 corners (img %d/%d)\n", j, imgs->count());
             
-          ipoints.resize(ipoints.size()+1);
-          wpoints.resize(wpoints.size()+1);
+          ipoints.push_back(std::vector<Point2f>());
+          wpoints.push_back(std::vector<Point2f>());
           
           if (succ) {
             for(int y=0;y<size[1];y++)
@@ -59,32 +61,10 @@ namespace clif {
                 //pointcount++;
               }
           }
-          break;
         }
       }
       else
         abort();
-      
-      /*//save to hdf5, use single large array and a second info array for subarray, avoids all the dynamic array overhead from hdf5
-      float *pointbuf = new float[4*pointcount];
-      float *curpoint = pointbuf;
-      int *sizebuf = new int[ipoints.size()];
-      
-      for(int i=0;i<ipoints.size();i++)
-        for(int j=0;j<ipoints[i].size();j++) {
-          curpoint[0] = ipoints[i][j].x;
-          curpoint[1] = ipoints[i][j].y;
-          curpoint[2] = wpoints[i][j].x;
-          curpoint[3] = wpoints[i][j].y;
-          sizebuf[i] = ipoints[i].size();
-          curpoint += 4;
-        }
-        
-      s->setAttribute(cur_path / "pointdata", pointbuf, 4*pointcount);
-      s->setAttribute(cur_path / "pointcounts", sizebuf, ipoints.size());
-      
-      delete pointbuf;
-      delete sizebuf;*/
       
       writeCalibPoints(s, imgsets[i], ipoints, wpoints);
     }
@@ -92,8 +72,41 @@ namespace clif {
     return false;
   }
   
-  bool opencv_calibrate(ClifDataset *f, int flags, int imgset)
+  bool opencv_calibrate(ClifDataset *set, int flags, std::string imgset, std::string calibset)
   {
+    Mat cam;
+    vector<double> dist;
+    vector<Mat> rvecs;
+    vector<Mat> tvecs;
     
+    vector<vector<Point2f>> ipoints_read;
+    vector<vector<Point2f>> wpoints_read;
+    vector<vector<Point2f>> ipoints;
+    vector<vector<Point3f>> wpoints;
+    
+    if (!imgset.size()) {
+      vector<string> imgsets;
+      set->listSubGroups("calibration/images/sets", imgsets);
+      assert(imgsets.size());
+      imgset = imgsets[0];
+    }
+    
+    if (!calibset.size())
+      calibset = imgset;
+      
+    readCalibPoints(set, imgset, ipoints_read, wpoints_read);
+    for(int i=0;i<wpoints_read.size();i++) {
+      if (!wpoints_read[i].size())
+        continue;
+      ipoints.push_back(std::vector<Point2f>(wpoints_read[i].size()));
+      wpoints.push_back(std::vector<Point3f>(wpoints_read[i].size()));
+      for(int j=0;j<wpoints_read[i].size();j++) {
+        wpoints.back()[j] = Point3f(wpoints_read[i][j].x,wpoints_read[i][j].y,0);
+        ipoints.back()[j] = ipoints_read[i][j];
+      }
+    }
+    
+    double rms = calibrateCamera(wpoints, ipoints, imgSize(set), cam, dist, rvecs, tvecs, flags);
+    printf("opencv calibration rms %f\n", rms);
   }
 }
