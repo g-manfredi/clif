@@ -3,13 +3,15 @@
 
 #include "clif.hpp"
 
+#include <opencv2/imgproc/imgproc.hpp>
+
 class Clif3DSubset {
 public:
   Clif3DSubset() {};
   //takes the line'nth line definition found in calibration.extrinsincs
   Clif3DSubset(ClifDataset *data, std::string extr_group);
   
-  void readEPI(cv::Mat &m, int line, double depth, int flags = 0);
+  void readEPI(cv::Mat &m, int line, double depth, int flags = 0, int interp = CV_INTER_LANCZOS4);
   
 private:
   ClifDataset *_data = NULL;

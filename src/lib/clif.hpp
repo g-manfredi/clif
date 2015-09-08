@@ -15,19 +15,30 @@
 
 namespace clif {
   
-bool h5_obj_exists(H5::H5File &f, const char * const group_str);
-bool h5_obj_exists(H5::H5File &f, const std::string group_str);
+template<typename T> T clamp(T v, T l, T u)
+{
+  return std::min<T>(u, std::max<T>(v, l));
+}
+  
+bool h5_obj_exists(H5::H5File &f, const char * const path);
+bool h5_obj_exists(H5::H5File &f, const std::string path);
+bool h5_obj_exists(H5::H5File &f, const boost::filesystem::path path);
+
+void h5_create_path_groups(H5::H5File &f, boost::filesystem::path path);
+
+std::string path_element(boost::filesystem::path path, int idx);
   
 class InvalidBaseType {};
   
 //base type for elements
-enum class BaseType : int {INVALID,INT,DOUBLE,STRING};
+enum class BaseType : int {INVALID,INT,FLOAT,DOUBLE,STRING};
 
-static std::type_index BaseTypeTypes[] = {std::type_index(typeid(InvalidBaseType)), std::type_index(typeid(int)), std::type_index(typeid(double)), std::type_index(typeid(char))};
+static std::type_index BaseTypeTypes[] = {std::type_index(typeid(InvalidBaseType)), std::type_index(typeid(int)), std::type_index(typeid(float)), std::type_index(typeid(double)), std::type_index(typeid(char))};
 
 static std::unordered_map<std::type_index, BaseType> BaseTypeMap = { 
     {std::type_index(typeid(char)), BaseType::STRING},
     {std::type_index(typeid(int)), BaseType::INT},
+    {std::type_index(typeid(float)), BaseType::FLOAT},
     {std::type_index(typeid(double)), BaseType::DOUBLE}
 };
   
@@ -41,6 +52,7 @@ template<template<typename> class F, typename ... ArgTypes> void callByBaseType(
 {
   switch (type) {
     case BaseType::INT : F<int>()(args...); break;
+    case BaseType::FLOAT : F<float>()(args...); break;
     case BaseType::DOUBLE : F<double>()(args...); break;
     case BaseType::STRING : F<char>()(args...); break;
     default:
@@ -52,6 +64,7 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
 {
   switch (type) {
     case BaseType::INT : return F<int>()(args...); break;
+    case BaseType::FLOAT : return F<float>()(args...); break;
     case BaseType::DOUBLE : return F<double>()(args...); break;
     case BaseType::STRING : return F<char>()(args...); break;
     default:
@@ -63,6 +76,7 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
 #define CLIF_CVT_8U  2
 #define CLIF_UNDISTORT 4
 #define CLIF_PROCESS_FLAGS_MAX 8
+#define CLIF_CVT_GRAY 16
 
   int parse_string_enum(std::string &str, const char **enumstrs);
   int parse_string_enum(const char *str, const char **enumstrs);
@@ -134,6 +148,7 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       template<typename T> void set(T &val)
       {
         type = toBaseType<T>();
+        assert(type != BaseType::INVALID);
         
         data = new T[1];
         
@@ -147,6 +162,7 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       template<typename T> void set(std::vector<T> &val)
       {
         type = toBaseType<T>();
+        assert(type != BaseType::INVALID);
         
         //TODO n-D handling!
         
@@ -164,6 +180,7 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       template<typename T> void set(T *val, int count = 1)
       {
         type = toBaseType<T>();
+        assert(type != BaseType::INVALID);
 
         //FIXME delete!
         data = new T[count];
@@ -213,7 +230,7 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       Attributes(const char *inifile, const char *typefile);
       Attributes(H5::H5File &f, std::string &name);
       
-      std::vector<std::string> extrinsicGroups();
+      void extrinsicGroups(std::vector<std::string> &groups);
       
       //path type
       Attribute *getAttribute(boost::filesystem::path name)
@@ -223,6 +240,11 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
             return &attrs[i];
           
           return NULL;
+      }
+      
+      Attribute *getAttribute(int idx)
+      {    
+        return &attrs[idx];
       }
       
       //other types
@@ -247,8 +269,13 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       {
         Attribute *a = getAttribute(name);
         
-        if (!a)
+        //FIXME ugly!
+        if (!a) {
           a = new Attribute(name);
+          append(*a);
+          delete a;
+          a = getAttribute(name);
+        }
         
         a->set(args...);
       }
@@ -258,14 +285,18 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       
       
       void append(Attribute &attr);
+      void append(Attribute *attr);
       void append(Attributes &attrs);
+      void append(Attributes *attrs);
       int count();
       Attribute operator[](int pos);
       void write(H5::H5File &f, std::string &name);
       StringTree<Attribute*> getTree();
       
       //find all group nodes under filter
-      std::vector<std::string> listSubGroups(std::string parent);
+      void listSubGroups(std::string parent, std::vector<std::string> &matches);
+      void listSubGroups(boost::filesystem::path parent, std::vector<std::string> &matches) { listSubGroups(parent.generic_string(), matches); }
+      void listSubGroups(const char *parent, std::vector<std::string> &matches) {listSubGroups(std::string(parent),matches); };
       
     protected:
       std::vector<Attribute> attrs; 
@@ -301,6 +332,8 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       int imgMemSize();
       
       bool valid();
+      void size(int s[3]);
+      void imgsize(int s[2]);
       int count();
       
       const std::string& getDatastorePath() const { return _path; };
@@ -333,18 +366,20 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
     public:
       Dataset() {};
       //FIXME use open/create methods
-      Dataset(H5::H5File &f_, std::string name_);
+      Dataset(H5::H5File &f_, std::string path);
       
       //void set(Datastore &data_) { data = data_; };
       //TODO should this call writeAttributes (and we completely hide io?)
       void setAttributes(Attributes &attrs) { static_cast<Attributes&>(*this) = attrs; };   
       //writes only Attributes! FIXME hide Attributes::Write
-      void writeAttributes() { Attributes::write(f, name); }
+      void writeAttributes() { Attributes::write(f, _path); }
       
       bool valid();
       
+      boost::filesystem::path path();
+      
       H5::H5File f;
-      std::string name;
+      std::string _path;
       //Attributes attrs;
 
     private:
@@ -377,6 +412,7 @@ public:
   {
     switch (type) {
       case clif::BaseType::INT : return F<int>()(this, args...); break;
+      case clif::BaseType::FLOAT : return F<float>()(this, args...); break;
       case clif::BaseType::DOUBLE : return F<double>()(this, args...); break;
       case clif::BaseType::STRING : return F<char>()(this, args...); break;
       default:
@@ -394,11 +430,13 @@ public:
   clif::Datastore *getCalibStore();
   clif::Datastore *createCalibStore();
   
+  boost::filesystem::path getpath(boost::filesystem::path parent, int idx);
+  
 private:
   
   ClifDataset(ClifDataset &other);
   ClifDataset &operator=(ClifDataset &other);
-  Datastore *calib_images;
+  Datastore *calib_images = NULL;
   
   //TODO for future:
   //clif::Datastore calibrationImages;
@@ -448,6 +486,9 @@ namespace clif_cv {
     
   void writeCvMat(Datastore *store, uint idx, cv::Mat &m);
   void readCvMat(Datastore *store, uint idx, cv::Mat &m, int flags = 0);
+  
+  void readCalibPoints(ClifDataset *set, std::string calib_set_name, std::vector<std::vector<cv::Point2f>> &imgpoints, std::vector<std::vector<cv::Point2f>> &worldpoints);
+  void writeCalibPoints(Dataset *set, std::string calib_set_name, std::vector<std::vector<cv::Point2f>> &imgpoints, std::vector<std::vector<cv::Point2f>> &worldpoints);
   
   //void readEPI(ClifDataset *lf, cv::Mat &m, int line, double depth = 0, int flags = 0);
 

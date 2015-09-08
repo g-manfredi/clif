@@ -9,7 +9,6 @@
 #include <fnmatch.h>
 
 #include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 
 #include "cliini.h"
 
@@ -46,6 +45,31 @@ static void _rec_make_groups(H5::H5File &f, const char * const group_str)
 
 namespace clif {
   
+  std::string path_element(boost::filesystem::path path, int idx)
+  {    
+    auto it = path.begin();
+    for(int i=0;i<idx;i++,++it) {
+      if (it == path.end())
+        throw std::invalid_argument("requested path element too large");
+      if (!(*it).generic_string().compare("/"))
+        ++it;
+    }
+    
+    return (*it).generic_string();
+  }
+  
+  void h5_create_path_groups(H5::H5File &f, boost::filesystem::path path) 
+  {
+    boost::filesystem::path part;
+    
+    for(auto it = path.begin(); it != path.end(); ++it) {
+      part /= *it;
+      if (!clif::h5_obj_exists(f, part)) {
+        f.createGroup(part.c_str());
+      }
+    }
+  }
+  
   BaseType cliini_type_to_BaseType(int type)
   {
     switch (type) {
@@ -75,7 +99,12 @@ namespace clif {
     switch (H5Tget_class(type)) {
       case H5T_STRING : return BaseType::STRING;
       case H5T_INTEGER : return BaseType::INT;
-      case H5T_FLOAT: return BaseType::DOUBLE;
+      case H5T_FLOAT: 
+        if (H5Tget_size(type) == 4)
+          return BaseType::FLOAT;
+        else if (H5Tget_size(type) == 8)
+          return BaseType::DOUBLE;
+        break;
     }
     
     printf("ERROR: unknown argument type!\n");
@@ -87,6 +116,7 @@ namespace clif {
     switch (type) {
       case BaseType::STRING : return H5::PredType::C_S1;
       case BaseType::INT : return H5::PredType::NATIVE_INT;
+      case BaseType::FLOAT: return H5::PredType::NATIVE_FLOAT;
       case BaseType::DOUBLE: return H5::PredType::NATIVE_DOUBLE;
     }
     
@@ -102,7 +132,7 @@ namespace clif {
     return str.append(append);
   }
   
-  bool h5_obj_exists(H5::H5File &f, const char * const group_str)
+  bool h5_obj_exists(H5::H5File &f, const char * const path)
   {
     H5E_auto2_t  oldfunc;
     void *old_client_data;
@@ -110,7 +140,7 @@ namespace clif {
     H5Eget_auto(H5E_DEFAULT, &oldfunc, &old_client_data);
     H5Eset_auto(H5E_DEFAULT, NULL, NULL);
     
-    int status = H5Gget_objinfo(f.getId(), group_str, 0, NULL);
+    int status = H5Gget_objinfo(f.getId(), path, 0, NULL);
     
     H5Eset_auto(H5E_DEFAULT, oldfunc, old_client_data);
     
@@ -119,9 +149,14 @@ namespace clif {
     return false;
   }
   
-  bool h5_obj_exists(H5::H5File &f, const std::string group_str)
+  bool h5_obj_exists(H5::H5File &f, const std::string path)
   {
-    return h5_obj_exists(f,group_str.c_str());
+    return h5_obj_exists(f,path.c_str());
+  }
+  
+  bool h5_obj_exists(H5::H5File &f, const boost::filesystem::path path)
+  {
+    return h5_obj_exists(f, path.c_str());
   }
   
   static void datasetlist_append_group(std::vector<std::string> &list, H5::Group &g,  std::string group_path)
@@ -177,6 +212,7 @@ namespace clif {
     switch (type) {
       case BaseType::STRING : return sizeof(char);
       case BaseType::INT :    return sizeof(int);
+      case BaseType::FLOAT : return sizeof(float);
       case BaseType::DOUBLE : return sizeof(double);
       default:
         printf("invalid type!\n");
@@ -289,14 +325,15 @@ namespace clif {
     std::string grouppath = remove_last_part(fullpath, '/');
     std::string attr_name = get_last_part(fullpath, '/');
     
+    std::cout << "write " << attr_path << std::endl;
+    
     hsize_t dim[1];
     dim[0] = size[0];
     H5::DataSpace space(1, dim);
     H5::Attribute attr;
     H5::Group g;
-    bool attr_exists;
     
-    if (!attr_exists)
+    if (!h5_obj_exists(f, grouppath))
       _rec_make_groups(f, grouppath.c_str());
     
     g = f.openGroup(grouppath);
@@ -423,15 +460,17 @@ namespace clif {
   }
   
   
-  std::vector<std::string> Attributes::extrinsicGroups()
+  void Attributes::extrinsicGroups(std::vector<std::string> &groups)
   {
-    return listSubGroups("calibration/extrinsics");
+    listSubGroups("calibration/extrinsics", groups);
   }
   
   void Attributes::write(H5::H5File &f, std::string &name)
   {
     for(int i=0;i<attrs.size();i++)
       attrs[i].write(f, name);
+    
+    f.flush(H5F_SCOPE_GLOBAL);
   }
   
   void Attributes::writeIni(std::string &filename)
@@ -458,13 +497,11 @@ namespace clif {
     return attrs.size();
   }
   
-  //FIXME this is ugly!
-  std::vector<std::string> Attributes::listSubGroups(std::string parent)
+  //TODO this is ugly!
+  void Attributes::listSubGroups(std::string parent, std::vector<std::string> &matches)
   {
     std::unordered_map<std::string,int> match_map;
     std::string match;
-    std::vector<std::string> matches;
-    std::vector<std::string> matched_filters;
     std::replace(parent.begin(), parent.end(), '.', '/');
     parent = appendToPath(parent, "*");
     
@@ -478,9 +515,6 @@ namespace clif {
     
     for(auto it = match_map.begin(); it != match_map.end(); ++it )
       matches.push_back(it->first);
-
-    
-    return matches;
   }
   
   Attribute Attributes::operator[](int pos)
@@ -488,12 +522,17 @@ namespace clif {
     return attrs[pos];
   }
   
-  Dataset::Dataset(H5::H5File &f_, std::string name_)
-  : f(f_), name(name_)
+  Dataset::Dataset(H5::H5File &f_, std::string path)
+  : f(f_), _path(path)
   {
-    if (h5_obj_exists(f, name.c_str())) {
-      static_cast<Attributes&>(*this) = Attributes(f, name);
+    if (h5_obj_exists(f, _path.c_str())) {
+      static_cast<Attributes&>(*this) = Attributes(f, _path);
     }
+  }
+  
+  boost::filesystem::path Dataset::path()
+  {
+    return boost::filesystem::path(_path);
   }
   
   bool Dataset::valid()
@@ -547,21 +586,29 @@ namespace clif {
   
   void Attributes::append(Attribute &attr)
   {
-    attrs.push_back(attr);
+    Attribute *at = getAttribute(attr.name);
+    if (!at)
+      attrs.push_back(attr);
+    else 
+      *at = attr;
+  }
+  
+  void Attributes::append(Attribute *attr)
+  {
+    append(*attr);
   }
   
   //TODO document:
   //overwrites existing attributes of same name
   void Attributes::append(Attributes &other)
   {
-    Attribute *at;
-    for(int i=0;i<other.attrs.size();i++) {
-      at = getAttribute(other.attrs[i].name);
-      if (!at)
-        attrs.push_back(other.attrs[i]);
-      else
-        *at = other.attrs[i];
-    }
+    for(int i=0;i<other.attrs.size();i++)
+      append(other.attrs[i]);
+  }
+  
+  void Attributes::append(Attributes *other)
+  {
+    append(*other);
   }
   
   //FIXME wether dataset already exists and overwrite?
@@ -625,7 +672,7 @@ namespace clif {
     
     hsize_t dims[3] = {comb_w,comb_h,0};
     hsize_t maxdims[3] = {comb_w,comb_h,H5S_UNLIMITED}; 
-    std::string dataset_str = _dataset->name;
+    std::string dataset_str = _dataset->_path;
     dataset_str = appendToPath(dataset_str, _path);
     
     if (h5_obj_exists(_dataset->f, dataset_str.c_str())) {
@@ -666,7 +713,7 @@ namespace clif {
     //only fills in internal data
     create(path_, dataset);
         
-    std::string dataset_str = appendToPath(dataset->name, path_);
+    std::string dataset_str = appendToPath(dataset->_path, path_);
         
     if (!h5_obj_exists(dataset->f, dataset_str.c_str())) {
       printf("error: could not find requrested datset: %s\n", dataset_str.c_str());
@@ -683,6 +730,7 @@ namespace clif {
     }
     
     _data = dataset->f.openDataSet(dataset_str);
+    printf("opened h5 dataset %s\n", dataset_str.c_str());
     
     //printf("Datastore open %s: %s %s %s\n", dataset_str.c_str(), ClifEnumString(DataType,type),ClifEnumString(DataOrg,org),ClifEnumString(DataOrder,order));
   }
@@ -815,14 +863,33 @@ namespace clif {
     return list;
   }
   
-  int Datastore::count()
+  void Datastore::size(int s[3])
   {
     H5::DataSpace space = _data.getSpace();
     hsize_t dims[3];
     
     space.getSimpleExtentDims(dims);
     
-    return dims[2];
+    s[0] = dims[0];
+    s[1] = dims[1];
+    s[2] = dims[2];
+  }
+  
+  int Datastore::count()
+  {
+    int store_size[3];
+    size(store_size);
+    
+    return store_size[2];
+  }
+  
+  void Datastore::imgsize(int s[2])
+  {
+    int store_size[3];
+    size(store_size);
+    
+    s[0] = store_size[0]/combinedTypeElementCount(_type,_org,_order);
+    s[1] = store_size[1]/combinedTypePlaneCount(_type,_org,_order); 
   }
 }
 
@@ -936,9 +1003,41 @@ namespace clif_cv {
       m->convertTo(*m, CV_8U);
     }
     
+    if (m->channels() != 1 && flags & CLIF_CVT_GRAY) {
+      cvtColor(*m, *m, CV_BGR2GRAY);
+    }
+    
     store->cache_set(key, m);
     
-    outm = m->clone();
+    outm = *m;//->clone();
+  }
+  
+  
+  void writeCalibPoints(Dataset *set, std::string calib_set_name, std::vector<std::vector<cv::Point2f>> &imgpoints, std::vector<std::vector<cv::Point2f>> &worldpoints)
+  {
+    int pointcount = 0;
+    
+    for(int i=0;i<imgpoints.size();i++)
+      for(int j=0;j<imgpoints[i].size();j++)
+        pointcount++;
+      
+    float *pointbuf = new float[4*pointcount];
+    float *curpoint = pointbuf;
+    int *sizebuf = new int[imgpoints.size()];
+    
+    
+    for(int i=0;i<imgpoints.size();i++)
+      for(int j=0;j<imgpoints[i].size();j++) {
+        curpoint[0] = imgpoints[i][j].x;
+        curpoint[1] = imgpoints[i][j].y;
+        curpoint[2] = worldpoints[i][j].x;
+        curpoint[3] = worldpoints[i][j].y;
+        sizebuf[i] = imgpoints[i].size();
+        curpoint += 4;
+      }
+      
+    set->setAttribute(set->path() / "calibration/images/sets" / calib_set_name / "pointdata", pointbuf, 4*pointcount);
+    set->setAttribute(set->path() / "calibration/images/sets" / calib_set_name / "pointcounts", sizebuf, imgpoints.size());
   }
 }
 
@@ -1047,15 +1146,20 @@ void ClifDataset::open(H5::H5File &f, std::string name)
 
 Clif3DSubset *ClifDataset::get3DSubset(int idx)
 {
-  return new Clif3DSubset(this, extrinsicGroups()[idx]);
+  std::vector<std::string> groups;
+  extrinsicGroups(groups);
+  return new Clif3DSubset(this, groups[idx]);
 }
 
 //return pointer to the calib image datastore - may be manipulated
 clif::Datastore *ClifDataset::getCalibStore()
 {
-  if (!calib_images) {
-    if (!clif::h5_obj_exists(f, "calibration/images/data"))
-      return NULL;
+  boost::filesystem::path dataset_path;
+  dataset_path = path() / "calibration/images/data";
+  
+  std::cout << dataset_path << clif::h5_obj_exists(f, dataset_path) << calib_images << std::endl;
+  
+  if (!calib_images && clif::h5_obj_exists(f, dataset_path)) {
     calib_images = new clif::Datastore();
     calib_images->open(this, "calibration/images/data");
   }
@@ -1065,9 +1169,17 @@ clif::Datastore *ClifDataset::getCalibStore()
 
 clif::Datastore *ClifDataset::createCalibStore()
 {
-  if (!calib_images) {
-    calib_images = new clif::Datastore();
-    calib_images->create("calibration/images/data", this);
-  }
+  printf("create calib store\n");
+  
+  if (calib_images)
+    return calib_images;
+  
+  getCalibStore();
+  
+  if (calib_images)
+    return calib_images;
+    
+  calib_images = new clif::Datastore();
+  calib_images->create("calibration/images/data", this);
   return calib_images;
 }

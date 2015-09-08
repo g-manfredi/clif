@@ -16,12 +16,14 @@
 #include "opencv2/highgui/highgui.hpp"
 
 #include "clif.hpp"
+#include "clifcalib.hpp"
 #include "matio.hpp"
 
 using namespace clif_cv;
-using namespace H5;
 using namespace std;
 using namespace cv;
+using boost::filesystem::path;
+using H5::H5File;
 
 cliini_opt opts[] = {
   {
@@ -57,10 +59,24 @@ cliini_opt opts[] = {
     't'
   },
   {
-    "calib-images", //FIXME remove this
+    "calib-images",
     1, //argcount
     CLIINI_ARGCOUNT_ANY, //argcount
     CLIINI_STRING
+  },
+  {
+    "filter",
+    1, //argcount
+    CLIINI_ARGCOUNT_ANY, //argcount
+    CLIINI_STRING
+  },
+  {
+    "detect-patterns",
+    0,0
+  },
+  {
+    "calibrate",
+    0,0
   }
 };
 
@@ -109,6 +125,7 @@ int main(const int argc, const char *argv[])
   cliini_arg *output = cliargs_get(args, "output");
   cliini_arg *types = cliargs_get(args, "types");
   cliini_arg *calib_imgs = cliargs_get(args, "calib-images");
+  cliini_arg *filter = cliargs_get(args, "filter");
   
   if (!args || cliargs_get(args, "help\n") || !input || !output) {
     printf("TODO: print help!");
@@ -186,16 +203,33 @@ int main(const int argc, const char *argv[])
       //FIXME implement dataset handling for datasets without datastore!
       //TODO check: is ^ already working?
       ClifDataset *in_set = f_in.openDataset(0);
-      set->append(static_cast<Attributes&>(*in_set));
+      if (!filter)
+        set->append(in_set);
+      else {
+        for(int i=0;i<in_set->attributeCount();i++) {
+          bool match_found = false;
+          Attribute *a = in_set->getAttribute(i);
+          for(int j=0;j<cliarg_sum(filter);j++)
+            if (!fnmatch(cliarg_nth_str(filter, j), a->name.c_str(), FNM_PATHNAME)) {
+              match_found = true;
+              break;
+            }
+          if (match_found)
+            set->append(a);
+        }
+      }
       
-      vector<string> h5datasets = listH5Datasets(f_in.f, in_set->name);
+      vector<string> h5datasets = listH5Datasets(f_in.f, in_set->path().c_str());
       for(int j=0;j<h5datasets.size();j++) {
-        cout << "copy " << h5datasets[j] << endl;
+        cout << "copy dataset" << h5datasets[j] << endl;
         //FIXME handle dataset selection properly!
-        if (!h5_obj_exists(f_out.f, h5datasets[j]))
+        if (!h5_obj_exists(f_out.f, h5datasets[j])) {
+          h5_create_path_groups(f_out.f, path(h5datasets[j]).parent_path());
+          f_out.f.flush(H5F_SCOPE_GLOBAL);
           H5Ocopy(f_in.f.getId(), h5datasets[j].c_str(), f_out.f.getId(), h5datasets[j].c_str(), H5P_DEFAULT, H5P_DEFAULT);
+        }
         else
-          printf("TODO: dataset %s already exists in output, skipping!\n", h5datasets[j]);
+          printf("TODO: dataset %s already exists in output, skipping!\n", h5datasets[j].c_str());
       }
       
       delete in_set;
@@ -224,14 +258,21 @@ int main(const int argc, const char *argv[])
       set->appendRawImage(w, h, img.data);
     }
     
-    Datastore *calib_store = set->createCalibStore();
+    if (input_calib_imgs.size()) {
+      Datastore *calib_store = set->createCalibStore();
+      
+      for(int i=0;i<input_calib_imgs.size();i++) {
+        printf("store calib img %d: %s\n", i, input_calib_imgs[i].c_str());
+        Mat img = imread(input_calib_imgs[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+        int w = img.size().width;
+        int h = img.size().height;
+        calib_store->appendRawImage(w, h, img.data);
+      }
+    }
     
-    for(int i=0;i<input_calib_imgs.size();i++) {
-      printf("store calib img %d: %s\n", i, input_calib_imgs[i].c_str());
-      Mat img = imread(input_calib_imgs[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
-      int w = img.size().width;
-      int h = img.size().height;
-      calib_store->appendRawImage(w, h, img.data);
+    if (cliargs_get(args, "detect-patterns")) {
+      pattern_detect(set);
+      set->writeAttributes();
     }
   }
   else {
