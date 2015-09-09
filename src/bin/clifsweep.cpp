@@ -83,7 +83,7 @@ cliini_optgroup group = {
 typedef Vec<ushort, 3> Vec3us;
 
 int x_step = 1;
-int y_step = 16;
+int y_step = 1;
 
 int minx = 350/x_step*x_step;
 int maxx = 1150;
@@ -104,7 +104,7 @@ static inline int diffsum(Vec3i a, Vec3i b)
 
 static inline double score_range(Mat &epi, int x, int y_start, int y_end)
 {
-  double score = 1000000000000;
+  double score = 0;
   
   Vec3i avg(0,0,0);
   for(int j=y_start;j<=y_end;j++)
@@ -113,10 +113,10 @@ static inline double score_range(Mat &epi, int x, int y_start, int y_end)
   avg *= 1.0/(y_end-y_start+1);
 
   for(int j=y_start;j<=y_end;j++)
-    score -= norm(avg-(Vec3i)epi.at<Vec3us>(j,x), NORM_L1);
+    score += norm(avg-(Vec3i)epi.at<Vec3us>(j,x), NORM_L1);
   
   for(int j=y_start;j<=y_end-1;j++)
-    score -= diffsum(epi.at<Vec3us>(j,x), epi.at<Vec3us>(j+1,x));
+    score += diffsum(epi.at<Vec3us>(j,x), epi.at<Vec3us>(j+1,x));
 
   return score;
 }
@@ -164,16 +164,23 @@ void score_epi(Mat &epi, Mat &score_m, Mat &depth_m, double d, int l)
     for(int j=0;j<h-1;j++)
       score -= diffsum(epi.at<Vec3us>(j,i), epi.at<Vec3us>(j+1,i));*/
     
-    score = score_range(epi, i, 0, h/2);
+    score = score_range(epi, i, 0, h/2)*(2.0/h);
     
-    if (score > score_m.at<double>(l,i)) {
+    if (score < score_m.at<double>(l,i)) {
       score_m.at<double>(l,i) = score;
       depth_m.at<double>(l,i) = d;
     }
     
-    score = score_range(epi, i, h/2, h-1);
+    score = score_range(epi, i, h/2, h-1)*(2.0/h);
     
-    if (score > score_m.at<double>(l,i)) {
+    if (score < score_m.at<double>(l,i)) {
+      score_m.at<double>(l,i) = score;
+      depth_m.at<double>(l,i) = d;
+    }
+    
+    score = score_range(epi, i, 0, h-1)*(1.0/(2.0*h));
+    
+    if (score < score_m.at<double>(l,i)) {
       score_m.at<double>(l,i) = score;
       depth_m.at<double>(l,i) = d;
     }
@@ -228,13 +235,12 @@ void score_epi(Mat &epi, Mat &score_m, Mat &depth_m, double d, int l)
   }
 }
 
-void write_obj_depth(const char *name, Mat in_d, double f[2], int w, int h, Mat &view, int start, int l)
+void write_ply_depth(const char *name, Mat in_d, double f[2], int w, int h, Mat &view, int start, int l)
 {
   FILE *pointfile = fopen(name, "w");
   
   Mat d;
   in_d.convertTo(d, CV_32F);
-  //medianBlur(d, d, 3);
   
   int count = 0;
   
@@ -264,6 +270,48 @@ void write_obj_depth(const char *name, Mat in_d, double f[2], int w, int h, Mat 
       Vec3us col = view.at<Vec3us>(j,i);
       fprintf(pointfile, "%.3f %.3f %.3f %d %d %d\n", depth*(i-w/2)/f[0], depth*(j-h/2)/f[1], depth, col[2]/256, col[1]/256, col[0]/256);
     }
+  fprintf(pointfile,"\n");
+  fclose(pointfile);
+}
+
+
+void write_obj_depth(const char *name, Mat in_d, double f[2], int w, int h, Mat &view, int start, int l)
+{
+  FILE *pointfile = fopen(name, "w");
+  
+  Mat d;
+  in_d.convertTo(d, CV_32F);
+  
+  int buf1[w];
+  int buf2[w];
+  int *valid = buf1;
+  int *valid_last = buf2;
+  int *valid_tmp;
+  
+  fprintf(pointfile, "vn 0 0 -1\n");
+  
+  for(int i=0;i<w;i++)
+      valid[i] = 0;
+  
+  for(int j=0;j<l;j++) {
+    valid_tmp = valid_last;
+    valid_last = valid;
+    valid = valid_tmp;
+    for(int i=0;i<w;i++) {
+      float depth = d.at<float>(j,i);
+      if (depth == 0)
+        valid[i] = 0;
+      else
+        valid[i] = 1;
+      Vec3us col = view.at<Vec3us>(j,i);
+      fprintf(pointfile, "v %f %f %f %d %d %d\n", depth*(i-w/2)/f[0], depth*(j-h/2)/f[1], depth, col[2]/256, col[1]/256, col[0]/256);
+    }
+    if (j)
+      for(int i=0;i<w-1;i++)
+        if (valid[i] && valid[i+1] && valid_last[i] && valid_last[i+1])
+          fprintf(pointfile, "f %d %d %d %d\n", (j-1)*w+i,(j-1)*w+i+1,j*w+i+1,j*w+i);
+
+  }
   fprintf(pointfile,"\n");
   fclose(pointfile);
 }
@@ -298,29 +346,46 @@ int main(const int argc, const char *argv[])
   
   Mat epi;
   Mat depth = Mat::zeros(Size(size[0], size[1]), CV_64F);
-  Mat score = Mat::zeros(Size(size[0], size[1]), CV_64F);
+  Mat score(Size(size[0], size[1]), CV_64F, Scalar::all(std::numeric_limits<double>::max()));
   for(int l=230/y_step*y_step;l<size[1];l+=y_step) {
     printf("line %d\n", l);
-    for(double d=200;d<350;d+=d*0.0005) {
+    for(double d=200;d<1000;d+=d*d*0.000005) {
       slice->readEPI(epi, l, d, CLIF_DEMOSAIC, CV_INTER_LINEAR);
-      //GaussianBlur(epi, epi, Size(1, 3), 0);
+      GaussianBlur(epi, epi, Size(1, 5), 0);
       //blur(epi, epi, Size(1, 7));
       score_epi(epi, score, depth, d, l);
     }
-    for(double d=350;d<1000;d+=d*0.05) {
+    /*for(double d=350;d<1000;d+=d*0.05) {
       slice->readEPI(epi, l, d, CLIF_DEMOSAIC, CV_INTER_LINEAR);
-      //GaussianBlur(epi, epi, Size(1, 3), 0);
+      GaussianBlur(epi, epi, Size(1, 3), 0);
       //blur(epi, epi, Size(1, 7));
       score_epi(epi, score, depth, d, l);
-    }
-    if (l/y_step % 5 == 0) {
+    }*/
+    if (l/y_step % 10 == 0 && l < 300 || l/y_step % 50 == 0) {
       Mat d16;
       depth.convertTo(d16, CV_16U);
+      //resize(d16, d16, Size(depth.size().width/x_step, depth.size().height/y_step), cv::INTER_NEAREST);
       imwrite(out_name, d16);
       imwrite("out8bit.tif", depth*0.5);
       Mat img;
       readCvMat(in_set, in_set->imgCount()/2, img, CLIF_DEMOSAIC);
-      write_obj_depth("points.ply", depth, focal_length, size[0], size[1], img, 230/y_step*y_step, l);
+      
+      //resize(depth, depth, Size(depth.size().x/x_step, depth.size().y/y_step), CV_INTER_NEAREST);
+      
+      write_ply_depth("points.ply", depth, focal_length, size[0], size[1], img, 230/y_step*y_step, l);
+      write_obj_depth("points.obj", depth, focal_length, size[0], size[1], img, 230/y_step*y_step, l);
+      Mat med, fmat;
+      depth.convertTo(fmat, CV_32F);
+      medianBlur(fmat, med, 5);
+      write_ply_depth("points_m5.ply", med, focal_length, size[0], size[1], img, 230/y_step*y_step, l);
+      write_obj_depth("points_m5.obj", med, focal_length, size[0], size[1], img, 230/y_step*y_step, l);
+      GaussianBlur(med, med, Size(3,3), 0);
+      
+      write_ply_depth("points_m5_g3.ply", med, focal_length, size[0], size[1], img, 230/y_step*y_step, l);
+      write_obj_depth("points_m5_g3.obj", med, focal_length, size[0], size[1], img, 230/y_step*y_step, l);
+      //depth.convertTo(fmat, CV_32F);
+      //medianBlur(fmat, med, 7);
+     // write_ply_depth("points_m7.ply", med, focal_length, size[0], size[1], img, 230/y_step*y_step, l);
     }
   }
 
