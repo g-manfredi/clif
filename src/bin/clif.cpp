@@ -216,6 +216,7 @@ int main(const int argc, const char *argv[])
           Attribute *a = in_set->getAttribute(i);
           for(int j=0;j<cliarg_sum(include);j++)
             if (!fnmatch(cliarg_nth_str(include, j), a->name.c_str(), FNM_PATHNAME)) {
+              printf("include attribute: %s\n", a->name.c_str());
               match_found = true;
               break;
             }
@@ -228,6 +229,7 @@ int main(const int argc, const char *argv[])
           Attribute *a = in_set->getAttribute(i);
           for(int j=0;j<cliarg_sum(exclude);j++)
             if (!fnmatch(cliarg_nth_str(exclude, j), a->name.c_str(), FNM_PATHNAME)) {
+              printf("exclude attribute: %s\n", a->name.c_str());
               match_found = true;
               break;
             }

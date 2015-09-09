@@ -10,6 +10,8 @@
 
 #include <opencv2/core/core.hpp>
 
+#include <opencv2/highgui/highgui.hpp>
+
 #include "cliini.h"
 
 #include "clif3dsubset.hpp"
@@ -44,6 +46,40 @@ static void _rec_make_groups(H5::H5File &f, const char * const group_str)
 }
 
 namespace clif {
+  
+  void Intrinsics::load(Attributes *attrs, boost::filesystem::path path)
+  {
+    Attribute *a = attrs->getAttribute(path / "type");
+    
+    if (!a) {
+      printf("no valid intrinsic model! %s\n", path.c_str());
+      model = DistModel::INVALID;
+      return;
+    }
+    
+    a->readEnum(model);
+    
+    f[0] = 0;
+    f[1] = 0;
+    c[0] = 0;
+    c[1] = 0;
+    cv_cam = cv::Mat::eye(3,3,CV_64F);
+    cv_dist.resize(0);
+    
+    attrs->getAttribute(path / "projection", f, 2);
+    cv_cam.at<double>(0,0) = f[0];
+    cv_cam.at<double>(1,1) = f[1];
+    
+    a = attrs->getAttribute(path / "projection_center");
+    if (a) {
+      a->get(c, 2);
+      cv_cam.at<double>(0,2) = c[0];
+      cv_cam.at<double>(1,2) = c[1];
+    }
+    
+    if (model == DistModel::CV8)
+      attrs->getAttribute(path / "opencv_distortion", cv_dist);
+  }
   
   std::string path_element(boost::filesystem::path path, int idx)
   {    
@@ -283,11 +319,16 @@ namespace clif {
       //FIXME dims!
       int i;
       for(i=0;i<a.size[0]-1;i++) {
+        if (i == 10)
+          break;
         callByBaseType<insertionDispatcher>(a.type, &out, a.data, i);
         out << ",";
       }
       callByBaseType<insertionDispatcher>(a.type, &out, a.data, i);
-      out << "]";
+      if (i==10)
+        out << ", ... ]";
+      else
+        out << "]";
       return out;
     }
   }
@@ -525,6 +566,9 @@ namespace clif {
   {
     if (h5_obj_exists(f, _path.c_str())) {
       static_cast<Attributes&>(*this) = Attributes(f, _path);
+      
+      //FIXME specificy which one!
+      load_intrinsics();
     }
   }
   
@@ -538,6 +582,21 @@ namespace clif {
     if (count()) 
       return true;
     return false;
+  }
+  
+  void Dataset::load_intrinsics(std::string intrset)
+  {
+    std::vector<std::string> sets;
+    
+    if (!intrset.size()) {
+      listSubGroups("calibration/intrinsics", sets);
+      if (!sets.size())
+        return;
+      //TODO select with priority?!
+      intrset = sets[0];
+    }
+    
+    intrinsics.load(this, boost::filesystem::path() / "calibration/intrinsics" / intrset);
   }
   
   static void attributes_append_group(Attributes &attrs, H5::Group &g, std::string basename, std::string group_path)
@@ -960,11 +1019,14 @@ namespace clif_cv {
     
   void readCvMat(Datastore *store, uint idx, cv::Mat &outm, int flags)
   {   
+    if (flags & CLIF_UNDISTORT) {
+      flags |= CLIF_DEMOSAIC;
+    }
     uint64_t key = idx*CLIF_PROCESS_FLAGS_MAX | flags;
     
     cv::Mat *m = static_cast<cv::Mat*>(store->cache_get(key));
     if (m) {
-      outm = *m;//->clone();
+      outm = *m;
       return;
     }
     
@@ -1005,9 +1067,20 @@ namespace clif_cv {
       cvtColor(*m, *m, CV_BGR2GRAY);
     }
     
+    if (flags & CLIF_UNDISTORT) {
+      Intrinsics *i = &store->getDataset()->intrinsics;
+      if (i->model == DistModel::CV8) {
+        cv::Mat newm;
+        cv::undistort(*m,newm, i->cv_cam, i->cv_dist);
+        *m = newm;
+      }
+      else
+        printf("distortion model not supported: %s\n", enum_to_string(i->model));
+    }
+    
     store->cache_set(key, m);
     
-    outm = *m;//->clone();
+    outm = *m;
   }
   
   

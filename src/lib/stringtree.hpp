@@ -99,7 +99,7 @@ template<typename... TS> void StringTree<TS...>::add(std::string str, TS...args,
       
   for(int i=0;i<childs.size();i++)
     if (!name.compare(childs[i].val.first)) {
-      if (found < str.length()-1) { //don't point to last letter or beyond (npos)
+      if (found < str.length()-1) {
         childs[i].add(str.substr(found+1), args..., delim);
         return;
       }
@@ -128,7 +128,7 @@ template<typename... TS> std::pair<std::string, void*> *StringTree<TS...>::searc
   
   for(int i=0;i<childs.size();i++)
     if (!name.compare(childs[i].val.first)) {
-      if (found < str.length()-1) { //don't point to last letter or beyond (npos)
+      if (found < str.length()-1) {
         return childs[i].search(str.substr(found+1), delim);
       }
       else

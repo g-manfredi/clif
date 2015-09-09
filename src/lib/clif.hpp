@@ -13,6 +13,8 @@
 
 #include <boost/filesystem.hpp>
 
+#include "opencv2/core/core.hpp"
+
 namespace clif {
   
 template<typename T> T clamp(T v, T l, T u)
@@ -75,8 +77,8 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
 #define CLIF_DEMOSAIC  1
 #define CLIF_CVT_8U  2
 #define CLIF_UNDISTORT 4
-#define CLIF_PROCESS_FLAGS_MAX 8
-#define CLIF_CVT_GRAY 16
+#define CLIF_CVT_GRAY 8
+#define CLIF_PROCESS_FLAGS_MAX 16
 
   int parse_string_enum(std::string &str, const char **enumstrs);
   int parse_string_enum(const char *str, const char **enumstrs);
@@ -190,6 +192,22 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
         //TODO n-D handling!
         for(int i=0;i<count;i++)
           ((T*)data)[i] = val[i];
+      };
+      
+      void set(const char *val)
+      {
+        type = toBaseType<char>();
+        int count = strlen(val)+1;
+
+        //FIXME delete!
+        data = new char[count];
+        
+        size.resize(1);
+        size[0] = count;
+        
+        //TODO n-D handling!
+        for(int i=0;i<count;i++)
+          ((char*)data)[i] = val[i];
       };
 
       void write(H5::H5File &f, std::string dataset_name);
@@ -344,6 +362,7 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       const std::string& getDatastorePath() const { return _path; };
       
       const H5::DataSet & H5DataSet() const { return _data; };
+      Dataset *getDataset() { return _dataset; };
       const DataType & type() const { return _type; };
       const DataOrg & org() const { return _org; };
       const DataOrder & order() const { return _order; };
@@ -367,6 +386,19 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
     Dataset *_dataset = NULL;
   };
   
+  class Intrinsics {
+  public:
+    
+    Intrinsics() {};
+    Intrinsics(Attributes *attrs, boost::filesystem::path &path) { load(attrs, path); };
+    void load(Attributes *attrs, boost::filesystem::path path);
+    
+    double f[2], c[2];
+    DistModel model = DistModel::INVALID;
+    std::vector<double> cv_dist;
+    cv::Mat cv_cam;
+  };
+  
   class Dataset : public Attributes {
     public:
       Dataset() {};
@@ -381,14 +413,18 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       
       bool valid();
       
+      void load_intrinsics(std::string intrset = std::string());
+      
       boost::filesystem::path path();
       
       H5::H5File f;
       std::string _path;
       //Attributes attrs;
 
+      Intrinsics intrinsics;
+      
     private:
-      //Datastore data;
+      
   };
   
   H5::PredType H5PredType(DataType type);
@@ -476,7 +512,6 @@ private:
 };
 
 //TODO here start public cv stuff -> move to extra header files
-#include "opencv2/core/core.hpp"
 
 //only adds methods
 //TODO use clif namespace! (?)

@@ -95,7 +95,7 @@ int main(const int argc, const char *argv[])
     
     printf("Found dataset \"%s\" at index %d:\n", datasets[i].c_str(), i);
 
-    set->getTree().print();
+    set->getTree().print(10);
     delete set;
   }
   

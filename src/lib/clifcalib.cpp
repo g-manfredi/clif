@@ -107,6 +107,21 @@ namespace clif {
     }
     
     double rms = calibrateCamera(wpoints, ipoints, imgSize(set), cam, dist, rvecs, tvecs, flags);
+    
+    
     printf("opencv calibration rms %f\n", rms);
+    
+    std::cout << cam << std::endl;
+    
+    double f[2] = { cam.at<double>(0,0), cam.at<double>(1,1) };
+    double c[2] = { cam.at<double>(0,2), cam.at<double>(1,2) };
+    
+    //FIXME todo delete previous group!
+    boost::filesystem::path calib_path;
+    calib_path /= "calibration/intrinsics" / calibset;
+    set->setAttribute(calib_path / "type", "CV8");
+    set->setAttribute(calib_path / "projection", f, 2);
+    set->setAttribute(calib_path / "projection_center", c, 2);
+    set->setAttribute(calib_path / "opencv_distortion", dist);
   }
 }
