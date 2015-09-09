@@ -741,8 +741,12 @@ namespace clif {
     
     //chunking fixed for now
     hsize_t chunk_dims[3] = {comb_w,comb_h,1};
-    H5::DSetCreatPropList prop;
+    H5::DSetCreatPropList prop;    
     prop.setChunk(3, chunk_dims);
+    //prop.setDeflate(6);
+    /*unsigned int szip_options_mask = H5_SZIP_NN_OPTION_MASK;
+    unsigned int szip_pixels_per_block = 16;
+    prop.setSzip(szip_options_mask, szip_pixels_per_block);*/
     
     H5::DataSpace space(3, dims, maxdims);
     
@@ -1097,15 +1101,16 @@ namespace clif_cv {
     int *sizebuf = new int[imgpoints.size()];
     
     
-    for(int i=0;i<imgpoints.size();i++)
+    for(int i=0;i<imgpoints.size();i++) {
+      sizebuf[i] = imgpoints[i].size();
       for(int j=0;j<imgpoints[i].size();j++) {
         curpoint[0] = imgpoints[i][j].x;
         curpoint[1] = imgpoints[i][j].y;
         curpoint[2] = worldpoints[i][j].x;
         curpoint[3] = worldpoints[i][j].y;
-        sizebuf[i] = imgpoints[i].size();
         curpoint += 4;
       }
+    }
       
     set->setAttribute(boost::filesystem::path() / "calibration/images/sets" / calib_set_name / "pointdata", pointbuf, 4*pointcount);
     set->setAttribute(boost::filesystem::path() / "calibration/images/sets" / calib_set_name / "pointcounts", sizebuf, imgpoints.size());
