@@ -561,7 +561,7 @@ namespace clif {
     return attrs[pos];
   }
   
-  Dataset::Dataset(H5::H5File &f_, std::string path)
+  /*Dataset::Dataset(H5::H5File &f_, std::string path)
   : f(f_), _path(path)
   {
     if (h5_obj_exists(f, _path.c_str())) {
@@ -570,6 +570,40 @@ namespace clif {
       //FIXME specificy which one!
       load_intrinsics();
     }
+  }*/
+  
+  void Dataset::open(H5::H5File &f_, std::string name)
+  {
+    _path = std::string("/clif/").append(name);
+    f = f_;
+      
+    //static_cast<clif::Dataset&>(*this) = clif::Dataset(f, fullpath);
+    
+    if (h5_obj_exists(f, _path.c_str())) {
+      //static_cast<Attributes&>(*this) = Attributes(f, _path);
+      Attributes::open(f, _path);
+      
+      //FIXME specificy which one!?
+      load_intrinsics();
+    }
+    
+    if (!Dataset::valid()) {
+      printf("could not open dataset %s\n", _path.c_str());
+      return;
+    }
+    
+    Datastore::open(this, "data");
+  }
+  
+  
+  void Dataset::create(H5::H5File &f_, std::string name)
+  {
+    _path = std::string("/clif/").append(name);
+    f = f_;
+    
+    //TODO check if already exists and fail if it does?
+    
+    Datastore::create("data", this);
   }
   
   boost::filesystem::path Dataset::path()
@@ -577,11 +611,10 @@ namespace clif {
     return boost::filesystem::path(_path);
   }
   
+  //FIXME
   bool Dataset::valid()
   {
-    if (count()) 
-      return true;
-    return false;
+    return true;
   }
   
   void Dataset::load_intrinsics(std::string intrset)
@@ -633,8 +666,10 @@ namespace clif {
     }
   }
   
-  Attributes::Attributes(H5::H5File &f, std::string &name)
+  void Attributes::open(H5::H5File &f, std::string &name)
   {
+    attrs.resize(0);
+    
     H5::Group group = f.openGroup(name.c_str());
     
     attributes_append_group(*this, group, name, name);
@@ -1203,21 +1238,21 @@ int ClifFile::datasetCount()
 }
 
 
-ClifDataset* ClifFile::openDataset(std::string name)
+clif::Dataset* ClifFile::openDataset(std::string name)
 {
-  ClifDataset *set = new ClifDataset();
+  clif::Dataset *set = new clif::Dataset();
   set->open(f, name);
   return set;
 }
 
-ClifDataset* ClifFile::createDataset(std::string name)
+clif::Dataset* ClifFile::createDataset(std::string name)
 {
-  ClifDataset *set = new ClifDataset();
+  clif::Dataset *set = new clif::Dataset();
   set->create(f, name);
   return set;
 }
 
-ClifDataset* ClifFile::openDataset(int idx)
+clif::Dataset* ClifFile::openDataset(int idx)
 {
   return openDataset(datasets[idx]);
 }
@@ -1227,17 +1262,20 @@ bool ClifFile::valid()
   return f.getId() != H5I_INVALID_HID;
 }
 
+
+/*
 void ClifDataset::create(H5::H5File &f, std::string set_name)
 {
   std::string fullpath("/clif/");
   fullpath = fullpath.append(set_name);
   
   //TODO create only
-  static_cast<clif::Dataset&>(*this) = clif::Dataset(f, fullpath);
+  //static_cast<clif::Dataset&>(*this) = clif::Dataset(f, fullpath);
+  clif::Dataset::open(f, fullpath);
   
   clif::Datastore::create("data", this);
-}
-
+}*/
+/*
 void ClifDataset::open(H5::H5File &f, std::string name)
 {
   std::string fullpath("/clif/");
@@ -1250,7 +1288,7 @@ void ClifDataset::open(H5::H5File &f, std::string name)
   }
   
   clif::Datastore::open(this, "data");
-}
+}*/
 
 Clif3DSubset *ClifDataset::get3DSubset(int idx)
 {

@@ -346,7 +346,7 @@ int main(const int argc, const char *argv[])
   string in_name(cliarg_nth_str(input,0));
   string out_name(cliarg_nth_str(output,0));
   ClifFile f_in(in_name, H5F_ACC_RDONLY);
-  ClifDataset *in_set = f_in.openDataset(0);
+  Dataset *in_set = f_in.openDataset(0);
   
   Clif3DSubset *slice;
   slice = in_set->get3DSubset();

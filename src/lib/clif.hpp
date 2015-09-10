@@ -247,7 +247,9 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       
       //get attributes from ini file(s) TODO second represents types for now!
       Attributes(const char *inifile, const char *typefile);
-      Attributes(H5::H5File &f, std::string &name);
+      //Attributes(H5::H5File &f, std::string &name);
+      
+      void open(H5::H5File &f, std::string &name);
       
       void extrinsicGroups(std::vector<std::string> &groups);
       
@@ -401,11 +403,14 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
     cv::Mat cv_cam;
   };
   
-  class Dataset : public Attributes {
+  class Dataset : public Attributes, public Datastore {
     public:
       Dataset() {};
       //FIXME use open/create methods
       Dataset(H5::H5File &f_, std::string path);
+      
+      void open(H5::H5File &f_, std::string name);
+      void create(H5::H5File &f_, std::string name);
       
       //void set(Datastore &data_) { data = data_; };
       //TODO should this call writeAttributes (and we completely hide io?)
@@ -421,12 +426,11 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       
       H5::H5File f;
       std::string _path;
-      //Attributes attrs;
 
+      //TODO if attributes get changed automatically refresh intrinsics on getIntrinsics?
       Intrinsics intrinsics;
       
-    private:
-      
+      Datastore *calib_images = NULL;
   };
   
   H5::PredType H5PredType(DataType type);
@@ -440,12 +444,12 @@ class Clif3DSubset;
 //specific (high-level) Clif handling - uses Dataset and Datastore to access
 //the attributes and the "main" dataStore
 //plus addtitional functions which interpret those.
-class ClifDataset : public clif::Dataset, public virtual clif::Datastore
+class ClifDataset : public clif::Dataset
 {
 public:
   ClifDataset() {};
   //open existing dataset
-  void open(H5::H5File &f, std::string name);
+  //void open(H5::H5File &f, std::string name);
   //create new dataset
   void create(H5::H5File &f, std::string name);
   
@@ -479,7 +483,6 @@ private:
   
   ClifDataset(ClifDataset &other);
   ClifDataset &operator=(ClifDataset &other);
-  Datastore *calib_images = NULL;
   
   //TODO for future:
   //clif::Datastore calibrationImages;
@@ -496,10 +499,10 @@ public:
   void create(std::string &filename);
   //void close();
   
-  ClifDataset* openDataset(int idx);
-  ClifDataset* openDataset(std::string name);
+  clif::Dataset* openDataset(int idx);
+  clif::Dataset* openDataset(std::string name);
 
-  ClifDataset* createDataset(std::string name);
+  clif::Dataset* createDataset(std::string name);
   
   int datasetCount();
   

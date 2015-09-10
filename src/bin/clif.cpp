@@ -189,7 +189,7 @@ int main(const int argc, const char *argv[])
     else
       f_out.create(clif_append[0]);
     
-    ClifDataset *set;
+    Dataset *set;
     //FIXME multiple dataset handling!
     if (f_out.datasetCount()) {
       printf("INFO: appending to HDF5 DataSet %s\n", f_out.datasetList()[0].c_str());
@@ -209,9 +209,9 @@ int main(const int argc, const char *argv[])
       
       //FIXME implement dataset handling for datasets without datastore!
       //TODO check: is ^ already working?
-      ClifDataset *in_set = f_in.openDataset(0);
+      Dataset *in_set = f_in.openDataset(0);
       if (include)
-        for(int i=0;i<in_set->attributeCount();i++) {
+        for(int i=0;i<in_set->Attributes::count();i++) {
           bool match_found = false;
           Attribute *a = in_set->getAttribute(i);
           for(int j=0;j<cliarg_sum(include);j++)
@@ -224,7 +224,7 @@ int main(const int argc, const char *argv[])
             set->append(a);
         }
       else if (exclude)
-        for(int i=0;i<in_set->attributeCount();i++) {
+        for(int i=0;i<in_set->Attributes::count();i++) {
           bool match_found = false;
           Attribute *a = in_set->getAttribute(i);
           for(int j=0;j<cliarg_sum(exclude);j++)
@@ -278,6 +278,8 @@ int main(const int argc, const char *argv[])
       set->appendRawImage(w, h, img.data);
     }
     
+    //FIXME refactoring
+    /*
     if (input_calib_imgs.size()) {
       Datastore *calib_store = set->createCalibStore();
       
@@ -298,7 +300,7 @@ int main(const int argc, const char *argv[])
     if (cliargs_get(args, "opencv-calibrate")) {
       opencv_calibrate(set);
       set->writeAttributes();
-    }
+    }*/
   }
   else {
     
@@ -310,7 +312,7 @@ int main(const int argc, const char *argv[])
         errorexit("FIXME: at the moment only files with a single dataset are supported by this program.");
       
       //FIXME implement dataset handling for datasets without datastore!
-        ClifDataset *in_set = f_in.openDataset(0);
+        Dataset *in_set = f_in.openDataset(0);
         in_set->writeIni(clif_extract_attributes[i]);
         delete in_set;
     }
@@ -323,10 +325,10 @@ int main(const int argc, const char *argv[])
         errorexit("FIXME: at the moment only files with a single dataset are supported by this program.");
       
       //FIXME implement dataset handling for datasets without datastore!
-      ClifDataset *in_set = f_in.openDataset(0);
+      Dataset *in_set = f_in.openDataset(0);
         
       char buf[4096];
-      for(int c=0;c<in_set->imgCount();c++) {
+      for(int c=0;c<in_set->Datastore::count();c++) {
         Mat img;
         sprintf(buf, clif_extract_images[i].c_str(), c);
         printf("store idx %d: %s\n", c, buf);
