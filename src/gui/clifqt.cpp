@@ -1,6 +1,6 @@
 #include "clifqt.hpp"
 
-#include "clif3dsubset.hpp"
+#include "subset3d.hpp"
 
 namespace clif_qt {
   
@@ -63,7 +63,7 @@ namespace clif_qt {
     img = cvMatToQImage(m).copy();
   }
   
-  void readEPI(Clif3DSubset *set, QImage &img, int line, double depth, int flags)
+  void readEPI(clif::Subset3d *set, QImage &img, int line, double depth, int flags)
   {
     Mat m;
     set->readEPI(m, line, depth, flags | CLIF_CVT_8U);

@@ -1,15 +1,17 @@
-#include "clif3dsubset.hpp"
+#include "subset3d.hpp"
 
 #include "opencv2/core/core.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
+
+namespace clif {
 
 using namespace std;
 using namespace clif;
 using namespace clif_cv;
 using namespace cv;
 
-Clif3DSubset::Clif3DSubset(Dataset *data, std::string extr_group)
+Subset3d::Subset3d(Dataset *data, std::string extr_group)
 : _data(data)
 {  
   path root = data->subGroupPath("calibration/extrinsics", extr_group);
@@ -68,7 +70,7 @@ template<typename V> void warp_1d_linear_int(Mat in, Mat out, double offset)
 }
 
 
-void Clif3DSubset::readEPI(cv::Mat &m, int line, double depth, int flags, int interp, float scale, ClifUnit unit)
+void Subset3d::readEPI(cv::Mat &m, int line, double depth, int flags, int interp, float scale, ClifUnit unit)
 {      
   double step = f[0]*step_length/depth*scale;
   
@@ -94,4 +96,6 @@ void Clif3DSubset::readEPI(cv::Mat &m, int line, double depth, int flags, int in
     //Matx23d warp(1,0,d, 0,1,0);
     //warpAffine(tmp.row(line), m.row(i), warp, m.row(i).size(), CV_INTER_LANCZOS4);
   }
+}
+
 }

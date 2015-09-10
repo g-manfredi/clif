@@ -10,14 +10,16 @@
 #include "clifepiview.hpp"
 #include "clifqt.hpp"
 
-#include "clif3dsubset.hpp"
+#include "subset3d.hpp"
 
 namespace clif_qt {
+  
+  using namespace clif;
 
-DlgFind::DlgFind(clif::Dataset *dataset, QWidget* parent)
+DlgFind::DlgFind(Dataset *dataset, QWidget* parent)
 : QDialog(parent)
 {
-    _3dslice = new Clif3DSubset(dataset);
+    _3dslice = new Subset3d(dataset);
     _centerview = new clifScaledImageView(this);
     _epiview = new clifScaledImageView(this);
     _slider = new QwtSlider(this);
@@ -152,7 +154,7 @@ void DlgFind::lineChanged(QPointF *p)
   refreshEPI();
 }
 
-double DlgFind::getHoropterDepth(clif::Dataset *dataset, QWidget *parent)
+double DlgFind::getHoropterDepth(Dataset *dataset, QWidget *parent)
 {
   DlgFind *finder = new DlgFind(dataset, parent);
   

@@ -2,6 +2,7 @@
 #define _CLIFEPIDIALOG
 
 #include "clif.hpp"
+#include "subset3d.hpp"
 
 #include "clifscaledimageview.hpp"
 
@@ -58,7 +59,7 @@ private:
     
     double _depth;
     int _line;
-    Clif3DSubset *_3dslice;
+    clif::Subset3d *_3dslice;
     
     QTimer *_timer = NULL;
     

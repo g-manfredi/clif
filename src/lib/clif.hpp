@@ -445,56 +445,6 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
   std::vector<std::string> Datasets(H5::H5File &f);
 }
 
-//TODO organisation
-class Clif3DSubset;
-
-//specific (high-level) Clif handling - uses Dataset and Datastore to access
-//the attributes and the "main" dataStore
-//plus addtitional functions which interpret those.
-class ClifDataset : public clif::Dataset
-{
-public:
-  ClifDataset() {};
-  //open existing dataset
-  //void open(H5::H5File &f, std::string name);
-  //create new dataset
-  void create(H5::H5File &f, std::string name);
-  
-  ClifDataset &operator=(const ClifDataset &other) { Dataset::operator=(other); Datastore::operator=(other); return *this; }
- 
-  template<template<typename> class F, typename R, typename ... ArgTypes> R callFunctor(ArgTypes ... args)
-  {
-    switch (type) {
-      case clif::BaseType::INT : return F<int>()(this, args...); break;
-      case clif::BaseType::FLOAT : return F<float>()(this, args...); break;
-      case clif::BaseType::DOUBLE : return F<double>()(this, args...); break;
-      case clif::BaseType::STRING : return F<char>()(this, args...); break;
-      default:
-        abort();
-    }
-  }
-  
-  int imgCount() { return clif::Datastore::count(); };
-  int attributeCount() { return clif::Attributes::count(); };
-  
-  bool valid() { return clif::Dataset::valid() && clif::Datastore::valid(); };
-  
-  //Clif3DSubset *get3DSubset(int idx = 0);
-  
-  clif::Datastore *getCalibStore();
-  clif::Datastore *createCalibStore();
-  
-  boost::filesystem::path getpath(boost::filesystem::path parent, int idx);
-  
-private:
-  
-  ClifDataset(ClifDataset &other);
-  ClifDataset &operator=(ClifDataset &other);
-  
-  //TODO for future:
-  //clif::Datastore calibrationImages;
-};
-
 class ClifFile
 {
 public:

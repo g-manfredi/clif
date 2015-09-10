@@ -14,7 +14,7 @@
 
 #include "cliini.h"
 
-#include "clif3dsubset.hpp"
+#include "subset3d.hpp"
 
 static void _rec_make_groups(H5::H5File &f, const char * const group_str) 
 {
@@ -1071,36 +1071,6 @@ namespace clif_cv {
         abort();
     }
   }
-  
-  
-  /*void readEPI(ClifDataset *lf, cv::Mat &m, int line, double depth, int flags)
-  {
-
-    //TODO maybe easier to read on image and just use that type...
-    //or create a extra function to calc type in clif_cv
-    
-    cv::Mat tmp;
-    readCvMat(lf, 0, tmp, flags | CLIF_DEMOSAIC);
-
-    m = cv::Mat::zeros(cv::Size(imgSize(lf).width, lf->imgCount()), tmp.type());
-    //tmp.row(line).copyTo(m.row(0));
-    
-    for(int i=0;i<lf->imgCount();i++)
-    {      
-      //FIXME rounding?
-      double d = depth*(i-lf->imgCount()/2);
-      readCvMat(lf, i, tmp, flags | CLIF_DEMOSAIC);
-      if (d <= 0) {
-        d = -d;
-        int w = tmp.size().width - d;
-        tmp.row(line).colRange(d, d+w).copyTo(m.row(i).colRange(0, w));
-      }
-      else {
-        int w = tmp.size().width - d;
-        tmp.row(line).colRange(0, w).copyTo(m.row(i).colRange(d, d+w));
-      }
-    }
-  }*/
     
   void readCvMat(Datastore *store, uint idx, cv::Mat &outm, int flags, float scale)
   {
@@ -1306,72 +1276,4 @@ clif::Dataset* ClifFile::openDataset(int idx)
 bool ClifFile::valid()
 {
   return f.getId() != H5I_INVALID_HID;
-}
-
-
-/*
-void ClifDataset::create(H5::H5File &f, std::string set_name)
-{
-  std::string fullpath("/clif/");
-  fullpath = fullpath.append(set_name);
-  
-  //TODO create only
-  //static_cast<clif::Dataset&>(*this) = clif::Dataset(f, fullpath);
-  clif::Dataset::open(f, fullpath);
-  
-  clif::Datastore::create("data", this);
-}*/
-/*
-void ClifDataset::open(H5::H5File &f, std::string name)
-{
-  std::string fullpath("/clif/");
-  fullpath = fullpath.append(name);
-    
-  static_cast<clif::Dataset&>(*this) = clif::Dataset(f, fullpath);
-  if (!clif::Dataset::valid()) {
-    printf("could not open dataset %s\n", fullpath.c_str());
-    return;
-  }
-  
-  clif::Datastore::open(this, "data");
-}*/
-/*
-Clif3DSubset *ClifDataset::get3DSubset(int idx)
-{
-  std::vector<std::string> groups;
-  extrinsicGroups(groups);
-  return new Clif3DSubset(this, groups[idx]);
-}*/
-
-//return pointer to the calib image datastore - may be manipulated
-clif::Datastore *ClifDataset::getCalibStore()
-{
-  boost::filesystem::path dataset_path;
-  dataset_path = path() / "calibration/images/data";
-  
-  std::cout << dataset_path << clif::h5_obj_exists(f, dataset_path) << calib_images << std::endl;
-  
-  if (!calib_images && clif::h5_obj_exists(f, dataset_path)) {
-    calib_images = new clif::Datastore();
-    calib_images->open(this, "calibration/images/data");
-  }
-  
-  return calib_images;
-}
-
-clif::Datastore *ClifDataset::createCalibStore()
-{
-  printf("create calib store\n");
-  
-  if (calib_images)
-    return calib_images;
-  
-  getCalibStore();
-  
-  if (calib_images)
-    return calib_images;
-    
-  calib_images = new clif::Datastore();
-  calib_images->create("calibration/images/data", this);
-  return calib_images;
 }

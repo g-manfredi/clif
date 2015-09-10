@@ -16,7 +16,7 @@
 #include "opencv2/highgui/highgui.hpp"
 
 #include "clif.hpp"
-#include "clif3dsubset.hpp"
+#include "subset3d.hpp"
 
 using namespace clif_cv;
 using namespace H5;
@@ -348,8 +348,8 @@ int main(const int argc, const char *argv[])
   ClifFile f_in(in_name, H5F_ACC_RDONLY);
   Dataset *in_set = f_in.openDataset(0);
   
-  Clif3DSubset *slice;
-  slice = new Clif3DSubset(in_set);
+  Subset3d *slice;
+  slice = new Subset3d(in_set);
   
   int size[2];
   

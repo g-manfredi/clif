@@ -17,8 +17,6 @@
 
 #include "clif.hpp"
 
-#include "clif3dsubset.hpp"
-
 using namespace clif_cv;
 using namespace H5;
 using namespace std;
