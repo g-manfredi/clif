@@ -15,6 +15,8 @@
 
 #include "opencv2/core/core.hpp"
 
+enum class ClifUnit : int {INVALID,MM,PIXELS};
+
 namespace clif {
   
 template<typename T> T clamp(T v, T l, T u)
@@ -525,7 +527,7 @@ namespace clif_cv {
   cv::Size imgSize(Datastore *store);
     
   void writeCvMat(Datastore *store, uint idx, cv::Mat &m);
-  void readCvMat(Datastore *store, uint idx, cv::Mat &m, int flags = 0);
+  void readCvMat(Datastore *store, uint idx, cv::Mat &m, int flags = 0, float scale = 1.0);
   
   void readCalibPoints(ClifDataset *set, std::string calib_set_name, std::vector<std::vector<cv::Point2f>> &imgpoints, std::vector<std::vector<cv::Point2f>> &worldpoints);
   void writeCalibPoints(Dataset *set, std::string calib_set_name, std::vector<std::vector<cv::Point2f>> &imgpoints, std::vector<std::vector<cv::Point2f>> &worldpoints);

@@ -73,14 +73,14 @@ template<typename V> void warp_1d_linear_int(Mat in, Mat out, double offset)
 }
 
 
-void Clif3DSubset::readEPI(cv::Mat &m, int line, double depth, int flags, int interp)
+void Clif3DSubset::readEPI(cv::Mat &m, int line, double depth, int flags, int interp, float scale, ClifUnit unit)
 {      
-  double step = f[0]*step_length/depth;
+  double step = f[0]*step_length/depth*scale;
   
   cv::Mat tmp;
-  readCvMat(_data, 0, tmp, flags | CLIF_DEMOSAIC);
+  readCvMat(_data, 0, tmp, flags | CLIF_UNDISTORT, scale);
 
-  m = cv::Mat::zeros(cv::Size(imgSize(_data).width, _data->imgCount()), tmp.type());
+  m = cv::Mat::zeros(cv::Size(tmp.size().width, _data->imgCount()), tmp.type());
   
   for(int i=0;i<_data->imgCount();i++)
   {      
@@ -90,7 +90,7 @@ void Clif3DSubset::readEPI(cv::Mat &m, int line, double depth, int flags, int in
     if (abs(d) >= tmp.size().width)
       continue;
     
-    readCvMat(_data, i, tmp, flags | CLIF_DEMOSAIC);
+    readCvMat(_data, i, tmp, flags | CLIF_UNDISTORT, scale);
     
     if (tmp.type() == CV_16UC3)
       warp_1d_linear_int<Vec3us>(tmp.row(line), m.row(i), d);

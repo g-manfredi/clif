@@ -1021,12 +1021,13 @@ namespace clif_cv {
     }
   }*/
     
-  void readCvMat(Datastore *store, uint idx, cv::Mat &outm, int flags)
-  {   
+  void readCvMat(Datastore *store, uint idx, cv::Mat &outm, int flags, float scale)
+  {
     if (flags & CLIF_UNDISTORT) {
       flags |= CLIF_DEMOSAIC;
     }
-    uint64_t key = idx*CLIF_PROCESS_FLAGS_MAX | flags;
+    //FIXME scale is a BAAAAAD hack!
+    uint64_t key = idx*CLIF_PROCESS_FLAGS_MAX | flags | (((uint64_t)((uint32_t*)&scale)) << 32);
     
     cv::Mat *m = static_cast<cv::Mat*>(store->cache_get(key));
     if (m) {
@@ -1080,6 +1081,12 @@ namespace clif_cv {
       }
       else
         printf("distortion model not supported: %s\n", enum_to_string(i->model));
+    }
+    
+    if (scale != 1.0) {
+      int iscale = 1/scale;
+      cv::GaussianBlur(*m,*m,cv::Size(iscale*2+1,iscale*2+1), 0);
+      cv::resize(*m,*m,cv::Point2i(m->size())*scale, cv::INTER_NEAREST);
     }
     
     store->cache_set(key, m);
