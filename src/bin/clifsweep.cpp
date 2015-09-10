@@ -367,7 +367,7 @@ int main(const int argc, const char *argv[])
   
   
   Mat img;
-  readCvMat(in_set, in_set->Datastore::count()/2, img, CLIF_UNDISTORT, scale);
+  readCvMat(in_set, in_set->Datastore::count()/2, img, UNDISTORT, scale);
   
   Mat epi;
   Mat depth = Mat::zeros(Size(size[0], size[1]), CV_64F);
@@ -375,7 +375,7 @@ int main(const int argc, const char *argv[])
   for(int l=0/y_step*y_step;l<size[1];l+=y_step) {
     printf("line %d\n", l);
     for(double d=200;d<1000;d+=d*d*0.000005/scale) {
-      slice->readEPI(epi, l, d, CLIF_UNDISTORT, CV_INTER_LINEAR, scale);
+      slice->readEPI(epi, l, d, UNDISTORT, CV_INTER_LINEAR, scale);
       //GaussianBlur(epi, epi, Size(1, 3), 0);
       //blur(epi, epi, Size(1, 7));
       score_epi(epi, score, depth, d, l);

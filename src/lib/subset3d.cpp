@@ -75,7 +75,7 @@ void Subset3d::readEPI(cv::Mat &m, int line, double depth, int flags, int interp
   double step = f[0]*step_length/depth*scale;
   
   cv::Mat tmp;
-  readCvMat(_data, 0, tmp, flags | CLIF_UNDISTORT, scale);
+  readCvMat(_data, 0, tmp, flags | UNDISTORT, scale);
 
   m = cv::Mat::zeros(cv::Size(tmp.size().width, _data->clif::Datastore::count()), tmp.type());
   
@@ -87,7 +87,7 @@ void Subset3d::readEPI(cv::Mat &m, int line, double depth, int flags, int interp
     if (abs(d) >= tmp.size().width)
       continue;
     
-    readCvMat(_data, i, tmp, flags | CLIF_UNDISTORT, scale);
+    readCvMat(_data, i, tmp, flags | UNDISTORT, scale);
     
     if (tmp.type() == CV_16UC3)
       warp_1d_linear_int<Vec3us>(tmp.row(line), m.row(i), d);

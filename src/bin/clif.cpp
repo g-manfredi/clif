@@ -16,7 +16,7 @@
 #include "opencv2/highgui/highgui.hpp"
 
 #include "clif.hpp"
-#include "clifcalib.hpp"
+#include "calib.hpp"
 #include "matio.hpp"
 
 using namespace clif_cv;

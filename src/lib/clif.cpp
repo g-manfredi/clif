@@ -47,41 +47,8 @@ static void _rec_make_groups(H5::H5File &f, const char * const group_str)
 
 namespace clif {
   
-  void Intrinsics::load(Attributes *attrs, boost::filesystem::path path)
-  {
-    Attribute *a = attrs->getAttribute(path / "type");
-    
-    if (!a) {
-      printf("no valid intrinsic model! %s\n", path.c_str());
-      model = DistModel::INVALID;
-      return;
-    }
-    
-    a->readEnum(model);
-    
-    f[0] = 0;
-    f[1] = 0;
-    c[0] = 0;
-    c[1] = 0;
-    cv_cam = cv::Mat::eye(3,3,CV_64F);
-    cv_dist.resize(0);
-    
-    attrs->getAttribute(path / "projection", f, 2);
-    cv_cam.at<double>(0,0) = f[0];
-    cv_cam.at<double>(1,1) = f[1];
-    
-    a = attrs->getAttribute(path / "projection_center");
-    if (a) {
-      a->get(c, 2);
-      cv_cam.at<double>(0,2) = c[0];
-      cv_cam.at<double>(1,2) = c[1];
-    }
-    
-    if (model == DistModel::CV8)
-      attrs->getAttribute(path / "opencv_distortion", cv_dist);
-  }
   
-  std::string path_element(boost::filesystem::path path, int idx)
+  /*std::string path_element(boost::filesystem::path path, int idx)
   {    
     auto it = path.begin();
     for(int i=0;i<idx;i++,++it) {
@@ -92,7 +59,7 @@ namespace clif {
     }
     
     return (*it).generic_string();
-  }
+  }*/
   
   void h5_create_path_groups(H5::H5File &f, boost::filesystem::path path) 
   {
@@ -159,67 +126,6 @@ namespace clif {
     printf("ERROR: unknown argument type!\n");
     abort();
   }
-  
-  static std::string appendToPath(std::string str, std::string append)
-  {
-    if (str.back() != '/')
-      str = str.append("/");
-      
-    return str.append(append);
-  }
-  
-  bool h5_obj_exists(H5::H5File &f, const char * const path)
-  {
-    H5E_auto2_t  oldfunc;
-    void *old_client_data;
-    
-    H5Eget_auto(H5E_DEFAULT, &oldfunc, &old_client_data);
-    H5Eset_auto(H5E_DEFAULT, NULL, NULL);
-    
-    int status = H5Gget_objinfo(f.getId(), path, 0, NULL);
-    
-    H5Eset_auto(H5E_DEFAULT, oldfunc, old_client_data);
-    
-    if (status == 0)
-      return true;
-    return false;
-  }
-  
-  bool h5_obj_exists(H5::H5File &f, const std::string path)
-  {
-    return h5_obj_exists(f,path.c_str());
-  }
-  
-  bool h5_obj_exists(H5::H5File &f, const boost::filesystem::path path)
-  {
-    return h5_obj_exists(f, path.c_str());
-  }
-  
-  static void datasetlist_append_group(std::vector<std::string> &list, H5::Group &g,  std::string group_path)
-  {    
-    for(int i=0;i<g.getNumObjs();i++) {
-      H5G_obj_t type = g.getObjTypeByIdx(i);
-      
-      std::string name = appendToPath(group_path, g.getObjnameByIdx(hsize_t(i)));
-      
-      if (type == H5G_GROUP) {
-        H5::Group sub = g.openGroup(g.getObjnameByIdx(hsize_t(i)));
-        datasetlist_append_group(list, sub, name);
-      }
-      else if (type == H5G_DATASET)
-        list.push_back(name);
-    }
-  }
-  
-  std::vector<std::string> listH5Datasets(H5::H5File &f, std::string parent)
-  {
-    std::vector<std::string> list;
-    H5::Group group = f.openGroup(parent.c_str());
-    
-    datasetlist_append_group(list, group, parent);
-    
-    return list;
-  }
 
   void save_string_attr(H5::Group &g, const char *name, const char *val)
   {
@@ -254,36 +160,6 @@ namespace clif {
         printf("invalid type!\n");
         abort();
     }
-  }
-  
-  std::string remove_last_part(std::string in, char c)
-  {
-    size_t pos = in.rfind(c);
-    
-    if (pos == std::string::npos)
-      return std::string("");
-    
-    return in.substr(0, pos);
-  }
-  
-  std::string get_last_part(std::string in, char c)
-  {
-    size_t pos = in.rfind(c);
-    
-    if (pos == std::string::npos)
-      return in;
-    
-    return in.substr(pos+1, in.npos);
-  }
-  
-  std::string get_first_part(std::string in, char c)
-  {
-    size_t pos = in.find(c);
-    
-    if (pos == std::string::npos)
-      return in;
-    
-    return in.substr(0, pos);
   }
   
   template<typename T> void ostreamInsertArrrayIdx(std::ostream *stream, void *val, int idx)
@@ -416,7 +292,7 @@ namespace clif {
     return read_string_attr(f, group, name);
   }
 
-  int parse_string_enum(const char *str, const char **enumstrs)
+  /*int parse_string_enum(const char *str, const char **enumstrs)
   {
     int i=0;
     while (enumstrs[i]) {
@@ -438,7 +314,7 @@ namespace clif {
     }
     
     return -1;
-  }
+  }*/
   
   Attributes::Attributes(const char *inifile, const char *typefile) 
   {
@@ -572,111 +448,7 @@ namespace clif {
     }
   }*/
   
-  void Dataset::open(H5::H5File &f_, std::string name)
-  {
-    _path = std::string("/clif/").append(name);
-    f = f_;
-      
-    //static_cast<clif::Dataset&>(*this) = clif::Dataset(f, fullpath);
-    
-    if (h5_obj_exists(f, _path.c_str())) {
-      //static_cast<Attributes&>(*this) = Attributes(f, _path);
-      Attributes::open(f, _path);
-      
-      //FIXME specificy which one!?
-      load_intrinsics();
-    }
-    
-    if (!Dataset::valid()) {
-      printf("could not open dataset %s\n", _path.c_str());
-      return;
-    }
-    
-    Datastore::open(this, "data");
-  }
   
-  //TODO use priority!
-  boost::filesystem::path Dataset::subGroupPath(boost::filesystem::path parent, std::string child)
-  {
-    std::vector<std::string> list;
-    
-    if (child.size())
-      return parent / child;
-  
-    listSubGroups(parent, list);
-    assert(list.size());
-    
-    return parent / list[0];
-  }
-  
-  Datastore *Dataset::createCalibStore()
-  {
-    printf("create calib store\n");
-    
-    if (calib_images)
-      return calib_images;
-    
-    getCalibStore();
-    
-    if (calib_images)
-      return calib_images;
-      
-    calib_images = new clif::Datastore();
-    calib_images->create("calibration/images/data", this);
-    return calib_images;
-  }
-  
-  //return pointer to the calib image datastore - may be manipulated
-  Datastore *Dataset::getCalibStore()
-  {
-    boost::filesystem::path dataset_path;
-    dataset_path = path() / "calibration/images/data";
-    
-    std::cout << dataset_path << clif::h5_obj_exists(f, dataset_path) << calib_images << std::endl;
-    
-    if (!calib_images && clif::h5_obj_exists(f, dataset_path)) {
-      calib_images = new clif::Datastore();
-      calib_images->open(this, "calibration/images/data");
-    }
-    
-    return calib_images;
-  }
-  
-  void Dataset::create(H5::H5File &f_, std::string name)
-  {
-    _path = std::string("/clif/").append(name);
-    f = f_;
-    
-    //TODO check if already exists and fail if it does?
-    
-    Datastore::create("data", this);
-  }
-  
-  boost::filesystem::path Dataset::path()
-  {
-    return boost::filesystem::path(_path);
-  }
-  
-  //FIXME
-  bool Dataset::valid()
-  {
-    return true;
-  }
-  
-  void Dataset::load_intrinsics(std::string intrset)
-  {
-    std::vector<std::string> sets;
-    
-    if (!intrset.size()) {
-      listSubGroups("calibration/intrinsics", sets);
-      if (!sets.size())
-        return;
-      //TODO select with priority?!
-      intrset = sets[0];
-    }
-    
-    intrinsics.load(this, boost::filesystem::path() / "calibration/intrinsics" / intrset);
-  }
   
   static void attributes_append_group(Attributes &attrs, H5::Group &g, std::string basename, std::string group_path)
   {    
@@ -749,204 +521,8 @@ namespace clif {
     append(*other);
   }
   
-  //FIXME wether dataset already exists and overwrite?
-  void Datastore::create(std::string path, Dataset *dataset)
-  {
-    assert(dataset);
-    
-    _type = DataType(-1); 
-    _org = DataOrg(-1);
-    _order = DataOrder(-1); 
-      
-    _data = H5::DataSet();
-    _path = path;
-    _dataset = dataset;
-  }
-  
-  int combinedTypeElementCount(DataType type, DataOrg org, DataOrder order)
-  {
-    switch (org) {
-      case DataOrg::PLANAR : return 1;
-      case DataOrg::INTERLEAVED :
-        switch (order) {
-          case DataOrder::RGB : return 3;
-          default:
-            abort();
-        }
-      case DataOrg::BAYER_2x2 : return 1;
-      default :
-        abort();
-    }
-  }
-  
-  int combinedTypePlaneCount(DataType type, DataOrg org, DataOrder order)
-  {
-    switch (org) {
-      case DataOrg::PLANAR :
-        switch (order) {
-          case DataOrder::RGB   : return 3;
-          default:
-            abort();
-        }
-      case DataOrg::INTERLEAVED : return 1;
-      case DataOrg::BAYER_2x2   : return 1;
-    }
-  }
   
   
-  void Datastore::init(hsize_t w, hsize_t h)
-  {
-    _dataset->getEnum("format/type",         _type);
-    _dataset->getEnum("format/organisation", _org);
-    _dataset->getEnum("format/order",        _order);
-    
-    if (int(_type) == -1 || int(_org) == -1 || int(_order) == -1) {
-      printf("ERROR: unsupported dataset format!\n");
-      return;
-    }
-    
-    hsize_t comb_w = w*combinedTypeElementCount(_type,_org,_order);
-    hsize_t comb_h = h*combinedTypePlaneCount(_type,_org,_order);
-    
-    hsize_t dims[3] = {comb_w,comb_h,0};
-    hsize_t maxdims[3] = {comb_w,comb_h,H5S_UNLIMITED}; 
-    std::string dataset_str = _dataset->_path;
-    dataset_str = appendToPath(dataset_str, _path);
-    
-    if (h5_obj_exists(_dataset->f, dataset_str.c_str())) {
-      _data = _dataset->f.openDataSet(dataset_str);
-      return;
-    }
-    
-    _rec_make_groups(_dataset->f, remove_last_part(dataset_str, '/').c_str());
-    
-    //chunking fixed for now
-    hsize_t chunk_dims[3] = {comb_w,comb_h,1};
-    H5::DSetCreatPropList prop;    
-    prop.setChunk(3, chunk_dims);
-    //prop.setDeflate(6);
-    /*unsigned int szip_options_mask = H5_SZIP_NN_OPTION_MASK;
-    unsigned int szip_pixels_per_block = 16;
-    prop.setSzip(szip_options_mask, szip_pixels_per_block);*/
-    
-    H5::DataSpace space(3, dims, maxdims);
-    
-    _data = _dataset->f.createDataSet(dataset_str, 
-	               H5PredType(_type), space, prop);
-  }
-  
-  void * Datastore::cache_get(uint64_t key)
-  {
-    auto it_find = image_cache.find(key);
-    
-    if (it_find == image_cache.end())
-      return NULL;
-    else
-      return it_find->second;
-  }
-  
-  void Datastore::cache_set(uint64_t key, void *data)
-  {
-    image_cache[key] = data;
-  }
-  
-  void Datastore::open(Dataset *dataset, std::string path_)
-  {    
-    //only fills in internal data
-    create(path_, dataset);
-        
-    std::string dataset_str = appendToPath(dataset->_path, path_);
-        
-    if (!h5_obj_exists(dataset->f, dataset_str.c_str())) {
-      printf("error: could not find requrested datset: %s\n", dataset_str.c_str());
-      return;
-    }
-    
-    dataset->getEnum("format/type",         _type);
-    dataset->getEnum("format/organisation", _org);
-    dataset->getEnum("format/order",        _order);
-
-    if (int(_type) == -1 || int(_org) == -1 || int(_order) == -1) {
-      printf("ERROR: unsupported dataset format!\n");
-      return;
-    }
-    
-    _data = dataset->f.openDataSet(dataset_str);
-    printf("opened h5 dataset %s\n", dataset_str.c_str());
-    
-    //printf("Datastore open %s: %s %s %s\n", dataset_str.c_str(), ClifEnumString(DataType,type),ClifEnumString(DataOrg,org),ClifEnumString(DataOrder,order));
-  }
-  
-  //FIXME chekc w,h?
-  void Datastore::writeRawImage(uint idx, hsize_t w, hsize_t h, void *imgdata)
-  {
-    if (!valid())
-      init(w, h);
-    
-    H5::DataSpace space = _data.getSpace();
-    hsize_t dims[3];
-    hsize_t maxdims[3];
-    
-    space.getSimpleExtentDims(dims, maxdims);
-    
-    if (dims[2] <= idx) {
-      dims[2] = idx+1;
-      _data.extend(dims);
-      space = _data.getSpace();
-    }
-    
-    hsize_t size[3] = {dims[0],dims[1],1};
-    hsize_t start[3] = {0,0,idx};
-    space.selectHyperslab(H5S_SELECT_SET, size, start);
-    
-    H5::DataSpace imgspace(3, size);
-    
-    _data.write(imgdata, H5PredType(_type), imgspace, space);
-  }
-  
-  void Datastore::appendRawImage(hsize_t w, hsize_t h, void *imgdata)
-  {
-    int idx = 0;
-    if (valid()) {
-      H5::DataSpace space = _data.getSpace();
-      hsize_t dims[3];
-      hsize_t maxdims[3];
-      
-      space.getSimpleExtentDims(dims, maxdims);
-      
-      idx = dims[2];
-    }
-    
-    writeRawImage(idx, w, h, imgdata);
-  }
-  
-  //FIXME implement 8-bit conversion if requested
-  void Datastore::readRawImage(uint idx, hsize_t w, hsize_t h, void *imgdata)
-  {
-    H5::DataSpace space = _data.getSpace();
-    hsize_t dims[3];
-    hsize_t maxdims[3];
-    
-    space.getSimpleExtentDims(dims, maxdims);
-    
-    if (dims[2] <= idx)
-      throw std::invalid_argument("requested index out or range");
-    
-    hsize_t size[3] = {dims[0],dims[1],1};
-    hsize_t start[3] = {0,0,idx};
-    space.selectHyperslab(H5S_SELECT_SET, size, start);
-    
-    H5::DataSpace imgspace(3, size);
-    
-    _data.read(imgdata, H5PredType(_type), imgspace, space);
-  }
-  
-  bool Datastore::valid()
-  {
-    if (_data.getId() == H5I_INVALID_HID)
-      return false;
-    return true;
-  }
   
   
   /*void readOpenCvMat(uint idx, Mat &m);
@@ -976,17 +552,6 @@ namespace clif {
     return size*dims[0]*dims[1];
   }*/
   
-  H5::PredType H5PredType(DataType type)
-  {
-    switch (type) {
-      case DataType::UINT8 : return H5::PredType::STD_U8LE;
-      case DataType::UINT16 : return H5::PredType::STD_U16LE;
-      default :
-        assert(type != DataType::UINT16);
-        abort();
-    }
-  }
-  
   std::vector<std::string> Datasets(H5::H5File &f)
   {
     std::vector<std::string> list(0);
@@ -1003,35 +568,6 @@ namespace clif {
       list[i] = g.getObjnameByIdx(i);
     
     return list;
-  }
-  
-  void Datastore::size(int s[3])
-  {
-    H5::DataSpace space = _data.getSpace();
-    hsize_t dims[3];
-    
-    space.getSimpleExtentDims(dims);
-    
-    s[0] = dims[0];
-    s[1] = dims[1];
-    s[2] = dims[2];
-  }
-  
-  int Datastore::count()
-  {
-    int store_size[3];
-    size(store_size);
-    
-    return store_size[2];
-  }
-  
-  void Datastore::imgsize(int s[2])
-  {
-    int store_size[3];
-    size(store_size);
-    
-    s[0] = store_size[0]/combinedTypeElementCount(_type,_org,_order);
-    s[1] = store_size[1]/combinedTypePlaneCount(_type,_org,_order); 
   }
 }
 
@@ -1074,11 +610,11 @@ namespace clif_cv {
     
   void readCvMat(Datastore *store, uint idx, cv::Mat &outm, int flags, float scale)
   {
-    if (flags & CLIF_UNDISTORT) {
-      flags |= CLIF_DEMOSAIC;
+    if (flags & UNDISTORT) {
+      flags |= DEMOSAIC;
     }
     //FIXME scale is a BAAAAAD hack!
-    uint64_t key = idx*CLIF_PROCESS_FLAGS_MAX | flags | (((uint64_t)((uint32_t*)&scale)) << 32);
+    uint64_t key = idx*PROCESS_FLAGS_MAX | flags | (((uint64_t)((uint32_t*)&scale)) << 32);
     
     cv::Mat *m = static_cast<cv::Mat*>(store->cache_get(key));
     if (m) {
@@ -1092,7 +628,7 @@ namespace clif_cv {
       
       store->readRawImage(idx, m->size().width, m->size().height, m->data);
       
-      if (store->org() == DataOrg::BAYER_2x2 && flags & CLIF_DEMOSAIC) {
+      if (store->org() == DataOrg::BAYER_2x2 && flags & DEMOSAIC) {
         switch (store->order()) {
           case DataOrder::RGGB :
             cvtColor(*m, *m, CV_BayerBG2BGR);
@@ -1114,16 +650,16 @@ namespace clif_cv {
       store->readRawImage(idx, m->size().width, m->size().height, m->data);
     }
     
-    if (m->depth() == CV_16U && flags & CLIF_CVT_8U) {
+    if (m->depth() == CV_16U && flags & CVT_8U) {
       *m *= 1.0/256.0;
       m->convertTo(*m, CV_8U);
     }
     
-    if (m->channels() != 1 && flags & CLIF_CVT_GRAY) {
+    if (m->channels() != 1 && flags & CVT_GRAY) {
       cvtColor(*m, *m, CV_BGR2GRAY);
     }
     
-    if (flags & CLIF_UNDISTORT) {
+    if (flags & UNDISTORT) {
       Intrinsics *i = &store->getDataset()->intrinsics;
       if (i->model == DistModel::CV8) {
         cv::Mat newm;

@@ -1,4 +1,4 @@
-#include "clifcalib.hpp"
+#include "calib.hpp"
 
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -39,7 +39,7 @@ namespace clif {
         //FIXME range!
         for(int j=0;j<imgs->count();j++) {
           vector<Point2f> corners;
-          readCvMat(imgs, j, img, CLIF_CVT_8U | CLIF_CVT_GRAY | CLIF_DEMOSAIC);    
+          readCvMat(imgs, j, img, CVT_8U | CVT_GRAY | DEMOSAIC);    
           
           int succ = findChessboardCorners(img, Size(size[0],size[1]), corners, CV_CALIB_CB_ADAPTIVE_THRESH+CV_CALIB_CB_NORMALIZE_IMAGE+CALIB_CB_FAST_CHECK+CV_CALIB_CB_FILTER_QUADS);
           
