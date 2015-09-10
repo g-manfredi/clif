@@ -10,7 +10,6 @@
 #include "datastore.hpp"
 #include "dataset.hpp"
 
-#include <opencv2/core/core.hpp>
 
 namespace clif {
   
@@ -25,11 +24,9 @@ namespace clif {
 #define CVT_GRAY 8
 #define PROCESS_FLAGS_MAX 16
 
-
+H5::PredType H5PredType(DataType type);
   
-  H5::PredType H5PredType(DataType type);
-  
-  std::vector<std::string> Datasets(H5::H5File &f);
+std::vector<std::string> Datasets(H5::H5File &f);
 }
 
 class ClifFile
@@ -64,24 +61,5 @@ private:
 
 //only adds methods
 //TODO use clif namespace! (?)
-namespace clif_cv {
-  
-  using namespace clif;
-  
-  DataType CvDepth2DataType(int cv_type);
-  int DataType2CvDepth(DataType t);
-
-  cv::Size imgSize(Datastore *store);
-    
-  void writeCvMat(Datastore *store, uint idx, cv::Mat &m);
-  void readCvMat(Datastore *store, uint idx, cv::Mat &m, int flags = 0, float scale = 1.0);
-  
-  void readCalibPoints(Dataset *set, std::string calib_set_name, std::vector<std::vector<cv::Point2f>> &imgpoints, std::vector<std::vector<cv::Point2f>> &worldpoints);
-  void writeCalibPoints(Dataset *set, std::string calib_set_name, std::vector<std::vector<cv::Point2f>> &imgpoints, std::vector<std::vector<cv::Point2f>> &worldpoints);
-  
-  //void readEPI(ClifDataset *lf, cv::Mat &m, int line, double depth = 0, int flags = 0);
-
-  void writeCvMat(Datastore *store, uint idx, hsize_t w, hsize_t h, void *data);
-}
 
 #endif

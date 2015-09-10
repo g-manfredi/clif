@@ -17,7 +17,7 @@
 
 #include "clif.hpp"
 
-using namespace clif_cv;
+using namespace clif;
 using namespace H5;
 using namespace std;
 using namespace cv;

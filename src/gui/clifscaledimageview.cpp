@@ -3,7 +3,7 @@
 #include <QMouseEvent>
 #include <QPixmap>
 
-namespace clif_qt {
+namespace clif {
 
 clifScaledImageView::clifScaledImageView(QWidget *parent)
     : QGraphicsView(parent)

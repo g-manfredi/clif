@@ -15,10 +15,10 @@
 #include "H5File.h"
 #include "opencv2/highgui/highgui.hpp"
 
-#include "clif.hpp"
+#include "clif_cv.hpp"
 #include "subset3d.hpp"
 
-using namespace clif_cv;
+using namespace clif;
 using namespace H5;
 using namespace std;
 using namespace cv;

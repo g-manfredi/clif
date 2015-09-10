@@ -35,7 +35,7 @@ createEnumStrings(DistModel)
 
 configure_file(enumtypes.hpp.in enumtypes.hpp)
 
-add_library(clif SHARED clif.cpp matio.cpp subset3d.cpp calib.cpp hdf5.cpp attribute.cpp helpers.cpp datastore.cpp dataset.cpp)
+add_library(clif SHARED clif.cpp matio.cpp subset3d.cpp calib.cpp hdf5.cpp attribute.cpp helpers.cpp datastore.cpp dataset.cpp core.cpp clif_cv.cpp)
 #add_library(clifcalib SHARED clifcalib.cpp)
 
 target_link_libraries(clif ${HDF5_CXX_LIBRARIES} ${Boost_LIBRARIES} ${OPENCV_LIBRARIES} ${MATIO_LIBRARIES})

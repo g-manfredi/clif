@@ -1,7 +1,7 @@
 #ifndef _CLIF3DSUBSET_H
 #define _CLIF3DSUBSET_H
 
-#include "clif.hpp"
+#include "clif_cv.hpp"
 
 #include <opencv2/imgproc/imgproc.hpp>
 

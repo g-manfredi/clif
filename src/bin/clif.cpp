@@ -15,11 +15,11 @@
 #include "H5File.h"
 #include "opencv2/highgui/highgui.hpp"
 
-#include "clif.hpp"
+#include "clif_cv.hpp"
 #include "calib.hpp"
 #include "matio.hpp"
 
-using namespace clif_cv;
+using namespace clif;
 using namespace std;
 using namespace cv;
 using boost::filesystem::path;

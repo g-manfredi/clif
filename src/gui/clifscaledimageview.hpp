@@ -10,7 +10,7 @@
  #define TEST_COMMON_DLLSPEC Q_DECL_IMPORT
 #endif
 
-namespace clif_qt {
+namespace clif {
   
 class TEST_COMMON_DLLSPEC clifScaledImageView : public QGraphicsView
 {

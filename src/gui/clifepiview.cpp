@@ -12,9 +12,7 @@
 
 #include "subset3d.hpp"
 
-namespace clif_qt {
-  
-  using namespace clif;
+namespace clif {
 
 DlgFind::DlgFind(Dataset *dataset, QWidget* parent)
 : QDialog(parent)
@@ -36,7 +34,7 @@ DlgFind::DlgFind(Dataset *dataset, QWidget* parent)
 
     setLayout(createLayout());
     
-    readQImage(dataset, 0, _center_img, CLIF_DEMOSAIC);
+    readQImage(dataset, 0, _center_img, DEMOSAIC);
     _line = _center_img.size().height()/2;
     _centerview->setImage(_center_img);
     _line_item = _centerview->scene.addLine(0, _line,  _center_img.size().width(),_line);

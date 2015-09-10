@@ -8,7 +8,6 @@ namespace clif {
 
 using namespace std;
 using namespace clif;
-using namespace clif_cv;
 using namespace cv;
 
 Subset3d::Subset3d(Dataset *data, std::string extr_group)

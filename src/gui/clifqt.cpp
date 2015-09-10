@@ -2,9 +2,8 @@
 
 #include "subset3d.hpp"
 
-namespace clif_qt {
+namespace clif {
   
-  using namespace clif_cv;
   using namespace cv;
   
   QImage  cvMatToQImage( const cv::Mat &inMat )
@@ -57,7 +56,7 @@ namespace clif_qt {
   void readQImage(Datastore *store, uint idx, QImage &img, int flags)
   {
     Mat m;
-    readCvMat(store, idx, m, flags | CLIF_CVT_8U);
+    readCvMat(store, idx, m, flags | CVT_8U);
     
     //FIXME zero copy memory handling?
     img = cvMatToQImage(m).copy();
@@ -66,7 +65,7 @@ namespace clif_qt {
   void readEPI(clif::Subset3d *set, QImage &img, int line, double depth, int flags)
   {
     Mat m;
-    set->readEPI(m, line, depth, flags | CLIF_CVT_8U);
+    set->readEPI(m, line, depth, flags | CVT_8U);
     
     //FIXME zero copy memory handling?
     img = cvMatToQImage(m).copy();
