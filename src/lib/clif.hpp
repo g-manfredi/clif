@@ -19,6 +19,8 @@ enum class ClifUnit : int {INVALID,MM,PIXELS};
 
 namespace clif {
   
+using boost::filesystem::path;
+  
 template<typename T> T clamp(T v, T l, T u)
 {
   return std::min<T>(u, std::max<T>(v, l));
@@ -418,9 +420,14 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
       //writes only Attributes! FIXME hide Attributes::Write
       void writeAttributes() { Attributes::write(f, _path); }
       
+      Datastore *getCalibStore();
+      Datastore *createCalibStore();
+      
       bool valid();
       
       void load_intrinsics(std::string intrset = std::string());
+      
+      boost::filesystem::path subGroupPath(boost::filesystem::path parent, std::string child = std::string());
       
       boost::filesystem::path path();
       
@@ -472,7 +479,7 @@ public:
   
   bool valid() { return clif::Dataset::valid() && clif::Datastore::valid(); };
   
-  Clif3DSubset *get3DSubset(int idx = 0);
+  //Clif3DSubset *get3DSubset(int idx = 0);
   
   clif::Datastore *getCalibStore();
   clif::Datastore *createCalibStore();
@@ -532,7 +539,7 @@ namespace clif_cv {
   void writeCvMat(Datastore *store, uint idx, cv::Mat &m);
   void readCvMat(Datastore *store, uint idx, cv::Mat &m, int flags = 0, float scale = 1.0);
   
-  void readCalibPoints(ClifDataset *set, std::string calib_set_name, std::vector<std::vector<cv::Point2f>> &imgpoints, std::vector<std::vector<cv::Point2f>> &worldpoints);
+  void readCalibPoints(Dataset *set, std::string calib_set_name, std::vector<std::vector<cv::Point2f>> &imgpoints, std::vector<std::vector<cv::Point2f>> &worldpoints);
   void writeCalibPoints(Dataset *set, std::string calib_set_name, std::vector<std::vector<cv::Point2f>> &imgpoints, std::vector<std::vector<cv::Point2f>> &worldpoints);
   
   //void readEPI(ClifDataset *lf, cv::Mat &m, int line, double depth = 0, int flags = 0);

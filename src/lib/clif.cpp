@@ -595,6 +595,52 @@ namespace clif {
     Datastore::open(this, "data");
   }
   
+  //TODO use priority!
+  boost::filesystem::path Dataset::subGroupPath(boost::filesystem::path parent, std::string child)
+  {
+    std::vector<std::string> list;
+    
+    if (child.size())
+      return parent / child;
+  
+    listSubGroups(parent, list);
+    assert(list.size());
+    
+    return parent / list[0];
+  }
+  
+  Datastore *Dataset::createCalibStore()
+  {
+    printf("create calib store\n");
+    
+    if (calib_images)
+      return calib_images;
+    
+    getCalibStore();
+    
+    if (calib_images)
+      return calib_images;
+      
+    calib_images = new clif::Datastore();
+    calib_images->create("calibration/images/data", this);
+    return calib_images;
+  }
+  
+  //return pointer to the calib image datastore - may be manipulated
+  Datastore *Dataset::getCalibStore()
+  {
+    boost::filesystem::path dataset_path;
+    dataset_path = path() / "calibration/images/data";
+    
+    std::cout << dataset_path << clif::h5_obj_exists(f, dataset_path) << calib_images << std::endl;
+    
+    if (!calib_images && clif::h5_obj_exists(f, dataset_path)) {
+      calib_images = new clif::Datastore();
+      calib_images->open(this, "calibration/images/data");
+    }
+    
+    return calib_images;
+  }
   
   void Dataset::create(H5::H5File &f_, std::string name)
   {
@@ -1158,7 +1204,7 @@ namespace clif_cv {
     set->setAttribute(boost::filesystem::path() / "calibration/images/sets" / calib_set_name / "pointcounts", sizebuf, imgpoints.size());
   }
   
-  void readCalibPoints(ClifDataset *set, std::string calib_set_name, std::vector<std::vector<cv::Point2f>> &imgpoints, std::vector<std::vector<cv::Point2f>> &worldpoints)
+  void readCalibPoints(Dataset *set, std::string calib_set_name, std::vector<std::vector<cv::Point2f>> &imgpoints, std::vector<std::vector<cv::Point2f>> &worldpoints)
   {
     std::vector<float> pointbuf;
     std::vector<int> sizebuf;
@@ -1289,13 +1335,13 @@ void ClifDataset::open(H5::H5File &f, std::string name)
   
   clif::Datastore::open(this, "data");
 }*/
-
+/*
 Clif3DSubset *ClifDataset::get3DSubset(int idx)
 {
   std::vector<std::string> groups;
   extrinsicGroups(groups);
   return new Clif3DSubset(this, groups[idx]);
-}
+}*/
 
 //return pointer to the calib image datastore - may be manipulated
 clif::Datastore *ClifDataset::getCalibStore()

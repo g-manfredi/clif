@@ -349,7 +349,7 @@ int main(const int argc, const char *argv[])
   Dataset *in_set = f_in.openDataset(0);
   
   Clif3DSubset *slice;
-  slice = in_set->get3DSubset();
+  slice = new Clif3DSubset(in_set);
   
   int size[2];
   
@@ -367,7 +367,7 @@ int main(const int argc, const char *argv[])
   
   
   Mat img;
-  readCvMat(in_set, in_set->imgCount()/2, img, CLIF_UNDISTORT, scale);
+  readCvMat(in_set, in_set->Datastore::count()/2, img, CLIF_UNDISTORT, scale);
   
   Mat epi;
   Mat depth = Mat::zeros(Size(size[0], size[1]), CV_64F);

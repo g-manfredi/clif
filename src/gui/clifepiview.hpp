@@ -29,9 +29,9 @@ class TEST_COMMON_DLLSPEC DlgFind : public QDialog
     Q_OBJECT
 
 public:
-    DlgFind(ClifDataset *dataset, QWidget* parent = 0);
+    DlgFind(clif::Dataset *dataset, QWidget* parent = 0);
     
-    static double getHoropterDepth(ClifDataset *dataset, QWidget *parent = 0);
+    static double getHoropterDepth(clif::Dataset *dataset, QWidget *parent = 0);
 
 signals:
     void findNext(const QString& str, Qt::CaseSensitivity cs);

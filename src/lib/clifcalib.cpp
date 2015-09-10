@@ -11,7 +11,7 @@ using namespace clif_cv;
 
 namespace clif {
     
-  bool pattern_detect(ClifDataset *s, int imgset)
+  bool pattern_detect(Dataset *s, int imgset)
   {
     path calib_path("calibration/images/sets");
     CalibPattern pattern;
@@ -72,7 +72,7 @@ namespace clif {
     return false;
   }
   
-  bool opencv_calibrate(ClifDataset *set, int flags, std::string imgset, std::string calibset)
+  bool opencv_calibrate(Dataset *set, int flags, std::string imgset, std::string calibset)
   {
     Mat cam;
     vector<double> dist;

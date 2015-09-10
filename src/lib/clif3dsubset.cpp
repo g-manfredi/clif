@@ -9,21 +9,20 @@ using namespace clif;
 using namespace clif_cv;
 using namespace cv;
 
-Clif3DSubset::Clif3DSubset(ClifDataset *data, std::string extr_group)
+Clif3DSubset::Clif3DSubset(Dataset *data, std::string extr_group)
 : _data(data)
-{
-  string root("calibration/extrinsics/");
-  root = root.append(extr_group);
+{  
+  path root = data->subGroupPath("calibration/extrinsics", extr_group);
   
   ExtrType type;
   
-  data->getEnum((root+"/type").c_str(), type);
+  data->getEnum((root/"type"), type);
   
   assert(type == ExtrType::LINE);
   
   double line_step[3];
   
-  data->getAttribute(root+"/line_step", line_step, 3);
+  data->getAttribute(root/"/line_step", line_step, 3);
   
   //TODO for now we only support horizontal lines!
   assert(line_step[0] != 0.0);
@@ -33,11 +32,7 @@ Clif3DSubset::Clif3DSubset(ClifDataset *data, std::string extr_group)
   step_length = line_step[0];
   
   //TODO which intrinsic to select!
-  
-  vector<string> intrs;
-  data->listSubGroups("calibration/intrinsics", intrs);
-  
-  data->getAttribute("calibration/intrinsics/"+intrs[0]+"/projection", f, 2);
+  data->getAttribute(data->subGroupPath("calibration/intrinsics/")/"/projection", f, 2);
 }
 
 
@@ -80,12 +75,12 @@ void Clif3DSubset::readEPI(cv::Mat &m, int line, double depth, int flags, int in
   cv::Mat tmp;
   readCvMat(_data, 0, tmp, flags | CLIF_UNDISTORT, scale);
 
-  m = cv::Mat::zeros(cv::Size(tmp.size().width, _data->imgCount()), tmp.type());
+  m = cv::Mat::zeros(cv::Size(tmp.size().width, _data->clif::Datastore::count()), tmp.type());
   
-  for(int i=0;i<_data->imgCount();i++)
+  for(int i=0;i<_data->clif::Datastore::count();i++)
   {      
     //FIXME rounding?
-    double d = step*(i-_data->imgCount()/2);
+    double d = step*(i-_data->clif::Datastore::count()/2);
     
     if (abs(d) >= tmp.size().width)
       continue;

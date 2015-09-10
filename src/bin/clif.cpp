@@ -278,8 +278,6 @@ int main(const int argc, const char *argv[])
       set->appendRawImage(w, h, img.data);
     }
     
-    //FIXME refactoring
-    /*
     if (input_calib_imgs.size()) {
       Datastore *calib_store = set->createCalibStore();
       
@@ -300,7 +298,7 @@ int main(const int argc, const char *argv[])
     if (cliargs_get(args, "opencv-calibrate")) {
       opencv_calibrate(set);
       set->writeAttributes();
-    }*/
+    }
   }
   else {
     

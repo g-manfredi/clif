@@ -8,10 +8,10 @@
 namespace clif {
   
   //detect and store the specified calibration pattern
-  bool pattern_detect(ClifDataset *f, int imgset = 0);
+  bool pattern_detect(Dataset *f, int imgset = 0);
   
   //calibrate a stored flat calibration target (img/world correspondance) using opencv
-  bool opencv_calibrate(ClifDataset *f, int flags = 0, std::string imgset = std::string(), std::string calibset = std::string());
+  bool opencv_calibrate(Dataset *f, int flags = 0, std::string imgset = std::string(), std::string calibset = std::string());
 }
 
 #endif
