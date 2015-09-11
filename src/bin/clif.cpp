@@ -259,7 +259,8 @@ int main(const int argc, const char *argv[])
     for(int i=0;i<input_inis.size();i++) {
       printf("append ini file!\n");
       //FIXME multiple type files?
-      Attributes others = Attributes(input_inis[i].c_str(), cliarg_str(types));
+      Attributes others;
+      others.open(input_inis[i].c_str(), cliarg_str(types));
       set->append(others);
     }
     

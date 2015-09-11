@@ -14,7 +14,13 @@ namespace clif {
 using boost::filesystem::path;
 
 
-class InvalidBaseType {};
+/*
+ * \cond invalid type for BaseType lookup
+ */
+struct InvalidBaseType {};
+/*
+ * \endcond
+ */
   
 //base type for elements
 enum class BaseType : int {INVALID,INT,FLOAT,DOUBLE,STRING};

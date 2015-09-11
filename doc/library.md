@@ -43,7 +43,7 @@ The attribute path in normally specified using boost::filesystem::path.
 
 ## Examples {#examples}
 
-The following examples show several use-cases, together with a detailed explanation.
+The following examples show several use-cases, together with links to the respective documentation.
 
 ### Open CLIF file and get a dataset
 
@@ -56,23 +56,38 @@ using namespace clif;
 
 ClifFile f("somefile.clif", H5F_ACC_RDONLY);
 
-Dataset *set = f.open();
+Dataset *set = f.openDataset();
 ~~~~~~~~~~~~~
 
 
-### Read attribute from dataset
+### Read attributes from dataset {#getattribute_example}
 
 ~~~~~~~~~~~~~{.cpp}
+using namespace clif;
+
 Dataset *set;
-vector<double> focal_length; //focal length in pixels
-double pixel_pitch;
 
 ...
 
-set->getAttribute("calibration/intrinsics/calib1/projection", focal_length);
-set->getAttribute("camera_info/pixel_pitch", pixel_pitch);
+vector<double> focal_length_vector;  //focal length in pixels
+double focal_length_ptr[2];          //focal length in pixels
+double pixel_pitch;
 
-printf("focal length in mm: %f %f\n", focal_length[0]*pixel_pitch, focal_length[1]*pixel_pitch);
+set->getAttribute("calibration/intrinsics/calib1/projection", focal_length_vector);
+set->getAttribute("camera_info/pixel_pitch", &pixel_pitch);
+
+// alternative access using pointer:
+set->getAttribute("camera_info/pixel_pitch", &pixel_pitch);
+
+printf("focal length in mm: %f %f\n", focal_length_vector[0]*pixel_pitch, focal_length_vector[1]*pixel_pitch);
+
+...
+
+//enum type
+CalibPattern pattern;
+
+//getAttribute automatically parses the stored attribute to get enum type
+set->getAttribute("calibration/images/sets/calib1/type", pattern);
 ~~~~~~~~~~~~~
 
 ### select first alternative from a set
@@ -88,24 +103,27 @@ set->getAttribute(set->subGroupPath("calibration/intrinsics)/"projection", focal
 ~~~~~~~~~~~~~
 
 
-### read 1st image from a dataset 
+### read image from a dataset 
 
 ~~~~~~~~~~~~~{.cpp}
-...
 Mat img;
+
+//first image has index 0
 readCvMat(set, 0, img);
 ...
 ~~~~~~~~~~~~~
 
 
-### read epi image from line 42 
+### read epi image
 
 ~~~~~~~~~~~~~{.cpp}
 using namespace clif;
 ...
+
 Mat img;
 Subset3d subset = new Subset3d(set);
 
+//epi for line 42
 //use depth of 300mm
 subset->readEPI(img, 42, 300, ClifUnit::MM);
 
