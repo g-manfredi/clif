@@ -16,7 +16,7 @@ include_directories(${Qt5Widgets_INCLUDE_DIRS})
 include_directories(${QWT_INCLUDE_DIR})
 
 add_definitions(-DWTF_HACK_QT_EXPORT)
-add_library(clif-qt SHARED clifscaledimageview.cpp clifepiview.cpp clifqt.cpp)
+add_library(clif-qt SHARED clifscaledimageview.cpp clifepiview.cpp clif_qt.cpp)
 
 #TODO add clif
 target_link_libraries(clif-qt ${Qt5Widgets_LIBRARIES} ${QWT_LIBRARY})

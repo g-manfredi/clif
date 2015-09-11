@@ -27,7 +27,6 @@ namespace clif {
 H5::PredType H5PredType(DataType type);
   
 std::vector<std::string> Datasets(H5::H5File &f);
-}
 
 class ClifFile
 {
@@ -41,7 +40,7 @@ public:
   //void close();
   
   clif::Dataset* openDataset(int idx);
-  clif::Dataset* openDataset(std::string name);
+  clif::Dataset* openDataset(std::string name = std::string());
 
   clif::Dataset* createDataset(std::string name);
   
@@ -57,9 +56,6 @@ private:
   std::vector<std::string> datasets;
 };
 
-//TODO here start public cv stuff -> move to extra header files
-
-//only adds methods
-//TODO use clif namespace! (?)
+}
 
 #endif

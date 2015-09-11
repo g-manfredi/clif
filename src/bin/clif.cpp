@@ -14,6 +14,7 @@
 #include "H5Cpp.h"
 #include "H5File.h"
 #include "opencv2/highgui/highgui.hpp"
+#include "opencv2/calib3d/calib3d.hpp"
 
 #include "clif_cv.hpp"
 #include "calib.hpp"

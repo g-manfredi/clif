@@ -8,7 +8,7 @@
 #include <qwt_scale_engine.h>
 
 #include "clifepiview.hpp"
-#include "clifqt.hpp"
+#include "clif_qt.hpp"
 
 #include "subset3d.hpp"
 

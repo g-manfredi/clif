@@ -1,4 +1,4 @@
-#include "clifqt.hpp"
+#include "clif_qt.hpp"
 
 #include "subset3d.hpp"
 

@@ -13,7 +13,7 @@ public:
   //takes the line'nth line definition found in calibration.extrinsincs
   Subset3d(clif::Dataset *data, std::string extr_group = std::string());
   
-  void readEPI(cv::Mat &m, int line, double depth, int flags = 0, int interp = CV_INTER_LANCZOS4, float scale = 1.0, ClifUnit unit = ClifUnit::PIXELS);
+  void readEPI(cv::Mat &m, int line, double disparity, ClifUnit unit = ClifUnit::PIXELS, int flags = 0, int interp = CV_INTER_LANCZOS4, float scale = 1.0);
   
 private:
   clif::Dataset *_data = NULL;

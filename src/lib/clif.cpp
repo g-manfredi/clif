@@ -13,36 +13,6 @@
 
 #include "cliini.h"
 
-#include "subset3d.hpp"
-
-static void _rec_make_groups(H5::H5File &f, const char * const group_str) 
-{
-  int last_pos = 0, next_pos;
-  char *buf = strdup(group_str);
-  const char *next_ptr = strchr(group_str+1, '/');
-  herr_t status;
-  
-  while(next_ptr != NULL) {
-    next_pos = next_ptr-group_str;
-    //restore
-    buf[last_pos] = '/';
-    //limit
-    buf[next_pos] = '\0';
-    last_pos = next_pos;
-
-    if (!clif::h5_obj_exists(f, buf)) {
-      f.createGroup(buf);
-    }
-
-    next_ptr = strchr(next_ptr+1, '/');
-  }
-  
-  buf[last_pos] = '/';
-  if (!clif::h5_obj_exists(f, buf))
-    f.createGroup(buf);
-  
-  free(buf);
-}
 
 namespace clif {
   
@@ -248,7 +218,7 @@ namespace clif {
     H5::Group g;
     
     if (!h5_obj_exists(f, grouppath))
-      _rec_make_groups(f, grouppath.c_str());
+      h5_create_path_groups(f, grouppath);
     
     g = f.openGroup(grouppath);
     
@@ -568,8 +538,6 @@ namespace clif {
     
     return list;
   }
-}
-
 
 
 void ClifFile::open(std::string &filename, unsigned int flags)
@@ -647,4 +615,6 @@ clif::Dataset* ClifFile::openDataset(int idx)
 bool ClifFile::valid()
 {
   return f.getId() != H5I_INVALID_HID;
+}
+
 }

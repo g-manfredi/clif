@@ -69,9 +69,14 @@ template<typename V> void warp_1d_linear_int(Mat in, Mat out, double offset)
 }
 
 
-void Subset3d::readEPI(cv::Mat &m, int line, double depth, int flags, int interp, float scale, ClifUnit unit)
+void readEPI(cv::Mat &m, int line, double disparity, ClifUnit unit, int flags, int interp, float scale)
 {      
-  double step = f[0]*step_length/depth*scale;
+  double step;
+  
+  if (unit == ClifUnit::PIXELS)
+    step = disparity;
+  else
+    step = f[0]*step_length/disparity*scale;
   
   cv::Mat tmp;
   readCvMat(_data, 0, tmp, flags | UNDISTORT, scale);
