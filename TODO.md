@@ -2,7 +2,7 @@
 
 # TODO {#todo}
 
-## introduce priorities for selection  {#todo_priority}
+## Introduce priorities for selection  {#todo_priority}
 
 ## string attribute handling  {#todo_attribute_string}
 for example for comments (atm only read/write with known size is possible)

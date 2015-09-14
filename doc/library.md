@@ -109,7 +109,8 @@ set->getAttribute(set->subGroupPath("calibration/intrinsics)/"projection", focal
 Mat img;
 
 //first image has index 0
-readCvMat(set, 0, img);
+//clif::UNDISTORT implies demosaicing
+readCvMat(set, 0, img, clif::UNDISTORT);
 ...
 ~~~~~~~~~~~~~
 
