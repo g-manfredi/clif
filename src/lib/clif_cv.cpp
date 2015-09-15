@@ -53,6 +53,8 @@ namespace clif {
       return;
     }
     
+    printf("load idx %d\n", idx);
+    
     if (store->org() == DataOrg::BAYER_2x2) {
       //FIXME bayer only for now!
       m = new cv::Mat(imgSize(store), DataType2CvDepth(store->type()));
@@ -92,9 +94,13 @@ namespace clif {
     
     if (flags & UNDISTORT) {
       Intrinsics *i = &store->getDataset()->intrinsics;
+      //FIXMe getundistmap (should be) generic!
       if (i->model == DistModel::CV8) {
         cv::Mat newm;
-        cv::undistort(*m,newm, i->cv_cam, i->cv_dist);
+        cv::Mat *map = i->getUndistMap(0, imgSize(store).width, imgSize(store).height);
+        //cv::undistort(*m,newm, i->cv_cam, i->cv_dist);
+        //cv::setNumThreads(0);
+        remap(*m, newm, *map, cv::noArray(), cv::INTER_LANCZOS4);
         *m = newm;
       }
       else

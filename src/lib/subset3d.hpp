@@ -15,6 +15,16 @@ public:
   
   void readEPI(cv::Mat &m, int line, double disparity, ClifUnit unit = ClifUnit::PIXELS, int flags = 0, int interp = CV_INTER_LANCZOS4, float scale = 1.0);
   
+  double depth2disparity(double depth, double scale = 1.0)
+  {
+    return f[0]*step_length/depth*scale;
+  }
+  
+  double disparity2depth(double disparity, double scale = 1.0)
+  {
+    return f[0]*step_length/disparity/scale;
+  }
+  
 private:
   clif::Dataset *_data = NULL;
   std::vector<std::pair<int,int>> indizes;

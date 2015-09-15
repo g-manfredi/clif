@@ -15,11 +15,15 @@ class Intrinsics {
     Intrinsics() {};
     Intrinsics(Attributes *attrs, boost::filesystem::path &path) { load(attrs, path); };
     void load(Attributes *attrs, boost::filesystem::path path);
+    cv::Mat* getUndistMap(double depth, int w, int h);
     
     double f[2], c[2];
     DistModel model = DistModel::INVALID;
     std::vector<double> cv_dist;
     cv::Mat cv_cam;
+
+  private:
+    cv::Mat _undist_map;
 };
   
 class Dataset : public Attributes, public Datastore {

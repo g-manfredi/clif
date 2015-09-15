@@ -1,9 +1,13 @@
 #include "dataset.hpp"
 
+#include <opencv2/imgproc/imgproc.hpp>
+
 namespace clif {
 void Intrinsics::load(Attributes *attrs, boost::filesystem::path path)
 {
   Attribute *a = attrs->getAttribute(path / "type");
+  
+  _undist_map = cv::Mat();
   
   if (!a) {
     printf("no valid intrinsic model! %s\n", path.c_str());
@@ -33,6 +37,18 @@ void Intrinsics::load(Attributes *attrs, boost::filesystem::path path)
   
   if (model == DistModel::CV8)
     attrs->getAttribute(path / "opencv_distortion", cv_dist);
+}
+
+cv::Mat* Intrinsics::getUndistMap(double depth, int w, int h)
+{
+  if (_undist_map.total())
+    return &_undist_map;
+  
+  cv::Mat tmp;
+  
+  cv::initUndistortRectifyMap(cv_cam, cv_dist, cv::noArray(), cv::noArray(), cv::Size(w, h), CV_32FC2, _undist_map, tmp);
+  
+  return &_undist_map;
 }
 
 void Dataset::open(H5::H5File &f_, std::string name)

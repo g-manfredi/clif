@@ -139,8 +139,6 @@ void DlgFind::horopterChanged(double value)
     _timer->setSingleShot(true);
     _timer->start(0);
   }
-  
-  //refreshEPI();
 }
 
 void DlgFind::lineChanged(QPointF *p)
