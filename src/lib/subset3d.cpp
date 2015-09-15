@@ -76,7 +76,7 @@ void Subset3d::readEPI(cv::Mat &m, int line, double disparity, ClifUnit unit, in
   if (unit == ClifUnit::PIXELS)
     step = disparity;
   else
-    step = f[0]*step_length/disparity*scale;
+    step = depth2disparity(disparity, scale); //f[0]*step_length/disparity*scale;
   
   cv::Mat tmp;
   readCvMat(_data, 0, tmp, flags | UNDISTORT, scale);

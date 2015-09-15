@@ -17,12 +17,12 @@ public:
   
   double depth2disparity(double depth, double scale = 1.0)
   {
-    return f[0]*step_length/depth*scale;
+    return f[0]*step_length/depth/scale;
   }
   
   double disparity2depth(double disparity, double scale = 1.0)
   {
-    return f[0]*step_length/disparity/scale;
+    return f[0]*step_length/disparity*scale;
   }
   
 private:

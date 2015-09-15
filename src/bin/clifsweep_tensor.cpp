@@ -82,7 +82,7 @@ cliini_optgroup group = {
 
 typedef Vec<ushort, 3> Vec3us;
 
-float scale = 1.0;
+float scale = 0.5;
 
 int x_step = 1;
 int y_step = 1;
@@ -273,9 +273,9 @@ void structure_tensor_depth(Mat &epi, Mat &score_m, Mat &depth_m, double d, int 
     dx = dx.mul(dx);
     dy = dy.mul(dy);
     
-    GaussianBlur(dx, dx, Size(3,11), 0);
-    GaussianBlur(dy, dy, Size(3,11), 0);
-    GaussianBlur(dxy, dxy, Size(3,11), 0);
+    GaussianBlur(dx, dx, Size(3,15), 0);
+    GaussianBlur(dy, dy, Size(3,15), 0);
+    GaussianBlur(dxy, dxy, Size(3,15), 0);
     
     /*imwrite("dx.tif", dx*256);
     imwrite("dy.tif", dy*256);
@@ -321,7 +321,7 @@ void structure_tensor_depth(Mat &epi, Mat &score_m, Mat &depth_m, double d, int 
         double disp = tan(0.5*atan2(2*sxy, sxx-syy));
         
         if (abs(disp) < 1.0 && coherence > score_m.at<double>(l,i)) {
-          depth_m.at<double>(l,i) = subset->disparity2depth(d+disp);
+          depth_m.at<double>(l,i) = subset->disparity2depth(d+disp, scale);
           score_m.at<double>(l,i) = coherence;
         }
         
@@ -458,20 +458,18 @@ int main(const int argc, const char *argv[])
   Mat depth = Mat::zeros(Size(size[0], size[1]), CV_64F);
   //Mat score(Size(size[0], size[1]), CV_64F, Scalar::all(std::numeric_limits<double>::max()));
   Mat score = Mat::zeros(Size(size[0], size[1]), CV_64F);
-  for(int l=500/y_step*y_step;l<size[1];l+=y_step) {
+  for(int l=0/y_step*y_step;l<size[1];l+=y_step) {
     printf("line %d\n", l);
     //double d = 3;
-    for(double d=9.0;d>=1.0;d-=0.5) {
+    for(double d=10*scale;d>=1*scale;d-=0.5) {
       slice->readEPI(epi, l, d, ClifUnit::PIXELS, UNDISTORT, CV_INTER_LINEAR, scale);
-      GaussianBlur(epi, epi, Size(3, 3), 0);
+      //GaussianBlur(epi, epi, Size(3, 3), 0);
       //blur(epi, epi, Size(1, 7));
       //score_epi(epi, score, depth, d, l);
-      printf("depth %f\n", slice->disparity2depth(d,scale));
+      //printf("depth %f\n", slice->disparity2depth(d,scale));
       structure_tensor_depth(epi, score, depth, d, l, (focal_length[0]+focal_length[1])/2, slice);
     }
     
-    if (l == 650)
-      break;
     /*for(double d=350;d<1000;d+=d*0.05) {
       slice->readEPI(epi, l, d, CLIF_UNDISTORT, CV_INTER_LINEAR);
       GaussianBlur(epi, epi, Size(1, 3), 0);
