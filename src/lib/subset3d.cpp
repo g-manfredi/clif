@@ -83,7 +83,7 @@ void Subset3d::readEPI(cv::Mat &m, int line, double disparity, ClifUnit unit, in
 
   m = cv::Mat::zeros(cv::Size(tmp.size().width, _data->clif::Datastore::count()), tmp.type());
   
-  for(int i=0;i_data->clif::Datastore::count();i++)
+  for(int i=0;i<_data->clif::Datastore::count();i++)
   {      
     //FIXME rounding?
     double d = step*(i-_data->clif::Datastore::count()/2);

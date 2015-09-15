@@ -6,6 +6,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -O3 -fno-omit-frame-pointer -std=c++11 
 add_executable(clif-bin clif.cpp)
 add_executable(clifinfo clifinfo.cpp)
 add_executable(clifsweep clifsweep.cpp)
+add_executable(clifsweep_tensor clifsweep_tensor.cpp)
 
 SET_TARGET_PROPERTIES(clif-bin
   PROPERTIES OUTPUT_NAME clif)
@@ -13,3 +14,4 @@ SET_TARGET_PROPERTIES(clif-bin
 target_link_libraries(clif-bin clif cliini ${OpenCV_LIBRARIES})
 target_link_libraries(clifinfo clif cliini ${OpenCV_LIBRARIES})
 target_link_libraries(clifsweep clif cliini ${OpenCV_LIBRARIES})
+target_link_libraries(clifsweep_tensor clif cliini ${OpenCV_LIBRARIES})

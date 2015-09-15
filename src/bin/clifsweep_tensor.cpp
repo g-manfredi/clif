@@ -265,25 +265,28 @@ void structure_tensor_depth(Mat &epi, Mat &score_m, Mat &depth_m, double d, int 
     Scharr(channel, dx, CV_32F, 1, 0);
     Scharr(channel, dy, CV_32F, 0, 1);
     
-    dx *= 1.0/131072;
-    dy *= 1.0/131072;
+    //dx *= 1.0/131072;
+    //dy *= 1.0/131072;
     Mat dxy;
     
-    multiply(dx,dy,dxy);
-    multiply(dx,dx,dx);
-    multiply(dy,dy,dy);
+    dxy = dx.mul(dy);
+    dx = dx.mul(dx);
+    dy = dy.mul(dy);
     
-    GaussianBlur(dx, dx, Size(5,11), 0);
-    GaussianBlur(dy, dy, Size(5,11), 0);
-    GaussianBlur(dxy, dxy, Size(5,11), 0);
+    GaussianBlur(dx, dx, Size(3,11), 0);
+    GaussianBlur(dy, dy, Size(3,11), 0);
+    GaussianBlur(dxy, dxy, Size(3,11), 0);
     
     /*imwrite("dx.tif", dx*256);
     imwrite("dy.tif", dy*256);
     imwrite("dxy.tif", dxy*256);
     
     exit(0);*/
-    if (l == 500)
-      imwrite("epi.tif", epi);
+    if (l == 500) {
+      imwrite("epi.tif", channel);
+      imwrite("dx.tif", dx/256);
+      imwrite("dy.tif", dy/256);
+    }
     
     int j = epi.size().height/2;
     for(int i=1;i<epi.size().width-1;i++) {
@@ -293,7 +296,9 @@ void structure_tensor_depth(Mat &epi, Mat &score_m, Mat &depth_m, double d, int 
       double d_y2_x2 = syy-sxx;
       double xy2 = sxy*sxy;
       double a_y2_x2 = syy+sxx;
-      double disp = d+tan(0.5*atan2((syy-sxx),(2*sxy)));
+      //double disp = d+tan(0.5*atan2((syy-sxx),(2*sxy)));
+      
+      //printf("orientation: %f %f (%d/%d)\n", 0.5*atan2((syy-sxx),(2*sxy)), tan(0.5*atan2((syy-sxx),(2*sxy))), i,l);
       
       
       /*z = -f*s/x;
@@ -308,11 +313,24 @@ void structure_tensor_depth(Mat &epi, Mat &score_m, Mat &depth_m, double d, int 
       //printf("coherence: %f disp %f\n", coherence, disp);
       //printf("%f\n", subset->disparity2depth(disp, scale));
       
-      
-      if (coherence > score_m.at<double>(l,i)) {
-        score_m.at<double>(l,i) = coherence;
-        depth_m.at<double>(l,i) = subset->disparity2depth(disp, scale);
-      }
+      //double depth = subset->disparity2depth(disp, scale);
+      //if (depth > 0 && depth < 1000 && coherence > score_m.at<double>(l,i)) {
+        //score_m.at<double>(l,i) = coherence;
+        //depth_m.at<double>(l,i) = 127+atan2(syy,sxx)*50;
+        //printf("store: %f\n", 127+atan2((syy-sxx),(2*sxy))*50);
+        double disp = tan(0.5*atan2(2*sxy, sxx-syy));
+        
+        if (abs(disp) < 1.0 && coherence > score_m.at<double>(l,i)) {
+          depth_m.at<double>(l,i) = subset->disparity2depth(d+disp);
+          score_m.at<double>(l,i) = coherence;
+        }
+        
+        /*
+         * 0.5*atan2((syy-sxx),(2*sxy)) = -1.94 (ziel 45 grad)
+                                   -2.18 (ziel 10 grad)
+                                   -1.34 (ziel -60 grad)
+                                   */
+      //}
     }
   }
 }
@@ -443,7 +461,7 @@ int main(const int argc, const char *argv[])
   for(int l=500/y_step*y_step;l<size[1];l+=y_step) {
     printf("line %d\n", l);
     //double d = 3;
-    for(double d=5;d>=5;d-=2) {
+    for(double d=9.0;d>=1.0;d-=0.5) {
       slice->readEPI(epi, l, d, ClifUnit::PIXELS, UNDISTORT, CV_INTER_LINEAR, scale);
       GaussianBlur(epi, epi, Size(3, 3), 0);
       //blur(epi, epi, Size(1, 7));
@@ -451,14 +469,17 @@ int main(const int argc, const char *argv[])
       printf("depth %f\n", slice->disparity2depth(d,scale));
       structure_tensor_depth(epi, score, depth, d, l, (focal_length[0]+focal_length[1])/2, slice);
     }
+    
+    if (l == 650)
+      break;
     /*for(double d=350;d<1000;d+=d*0.05) {
       slice->readEPI(epi, l, d, CLIF_UNDISTORT, CV_INTER_LINEAR);
       GaussianBlur(epi, epi, Size(1, 3), 0);
       //blur(epi, epi, Size(1, 7));
       score_epi(epi, score, depth, d, l);
     }*/
-  //}
-    if (l/y_step % 400 == 0) {
+  }
+    //if (l/y_step % 1024 == 0) {
       Mat d16;
       depth.convertTo(d16, CV_16U);
       //resize(d16, d16, Size(depth.size().width/x_step, depth.size().height/y_step), cv::INTER_NEAREST);
@@ -482,8 +503,8 @@ int main(const int argc, const char *argv[])
       //depth.convertTo(fmat, CV_32F);
       //medianBlur(fmat, med, 7);
      // write_ply_depth("points_m7.ply", med, focal_length, size[0], size[1], img, 230/y_step*y_step, l);
-    }
-  }
+    //}
+  //}
 
   return EXIT_SUCCESS;
 }

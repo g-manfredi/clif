@@ -117,6 +117,9 @@ void DlgFind::refreshEPI()
   _epiview->setImage(_epi_img);
   qApp->processEvents();
   //_slider->blockSignals(false);
+  
+  printf("depth %f\n", _depth);
+  printf("disp %f\n", _3dslice->depth2disparity(_depth));
 }
 
 void DlgFind::refreshEPISlot()

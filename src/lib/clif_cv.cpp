@@ -1,6 +1,8 @@
 #include "clif_cv.hpp"
 
+#include <sstream>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 namespace clif {
   
@@ -39,13 +41,14 @@ namespace clif {
     }
   }
     
+  //FIXME only power to scales at the moment
+  //FIXME store file and dataset name in cache!
   void readCvMat(Datastore *store, uint idx, cv::Mat &outm, int flags, float scale)
   {
     if (flags & UNDISTORT) {
       flags |= DEMOSAIC;
     }
-    //FIXME scale is a BAAAAAD hack!
-    uint64_t key = idx*PROCESS_FLAGS_MAX | flags | (((uint64_t)((uint32_t*)&scale)) << 32);
+    uint64_t key = idx*PROCESS_FLAGS_MAX | flags | (((uint64_t)(1.0/scale)) << 32);
     
     cv::Mat *m = static_cast<cv::Mat*>(store->cache_get(key));
     if (m) {
@@ -53,7 +56,41 @@ namespace clif {
       return;
     }
     
+    bool check_cache = true;
+    char *xdg_cache = getenv("XDG_CACHE_HOME");
+    path cache_path;
+    
+    if (xdg_cache)
+      cache_path = xdg_cache;
+    else {
+      char *home = getenv("HOME");
+      if (home) {
+        cache_path = home;
+        cache_path /= ".cache";
+      }
+      else
+        check_cache = false;
+    }
+    
     printf("load idx %d\n", idx);
+    
+    if (check_cache) {
+      //printf("cache dir %s\n", cache_path.c_str());
+      cache_path /= "clif/v0.0/cached_imgs";
+      cache_path /= (static_cast<std::ostringstream*>( &(std::ostringstream() << key) )->str()+".pgm");
+
+      
+      //std::cout << "check " << cache_path << std::endl;
+      
+      if (boost::filesystem::exists(cache_path)) {
+        //printf("cache file!\n");
+        m = new cv::Mat();
+        *m = cv::imread(cache_path.c_str(), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+        outm = *m;
+        store->cache_set(key, m);
+        return;
+      }
+    }
     
     if (store->org() == DataOrg::BAYER_2x2) {
       //FIXME bayer only for now!
@@ -114,6 +151,11 @@ namespace clif {
     }
     
     store->cache_set(key, m);
+    
+    if (check_cache) {
+      create_directories(cache_path.parent_path());
+      *m = cv::imwrite(cache_path.c_str(), *m);
+    }
     
     outm = *m;
   }

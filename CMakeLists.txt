@@ -13,3 +13,17 @@ include_directories(src/lib)
 
 add_subdirectory(src/bin)
 add_subdirectory(src/gui)
+
+
+message("")
+message("build info:")
+message("  optional components:")
+
+if(CLIF_BUILD_QT)
+  message("    qt-widgets   -   yes")
+else()
+  message("    qt-widgets   -   no - ${CLIF_BUILD_QT_REASON}")
+endif()
+
+
+message("")
