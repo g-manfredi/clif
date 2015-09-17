@@ -14,6 +14,7 @@ public:
   Subset3d(clif::Dataset *data, std::string extr_group = std::string());
   
   void readEPI(cv::Mat &m, int line, double disparity, ClifUnit unit = ClifUnit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0);
+  void readEPI(std::vector<cv::Mat> &channels, int line, double disparity, ClifUnit unit = ClifUnit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0);
   
   double depth2disparity(double depth, double scale = 1.0)
   {
@@ -24,6 +25,8 @@ public:
   {
     return f[0]*step_length/disparity*scale;
   }
+  
+  clif::Dataset *getDataset() { return _data; }
   
 private:
   clif::Dataset *_data = NULL;

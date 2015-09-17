@@ -60,11 +60,15 @@ int main(const int argc, const char *argv[])
   string in_name(cliarg_nth_str(input,0));
   ClifFile f_in(in_name, H5F_ACC_RDONLY);
   Dataset *in_set = f_in.openDataset(0);
+  Subset3d *subset = new Subset3d(in_set);
   
   void *channels = NULL;
   
-  for(int i=0;i<in_set->Datastore::count();i++)
-    readView(in_set, i, &channels, UNDISTORT);
+  /*for(int i=0;i<in_set->Datastore::count();i++)
+    readImage(in_set, i, &channels, UNDISTORT);*/
+  
+  for(int i=0;i<1000;i++)
+    readEPI(subset, &channels, i % in_set->Datastore::count(), subset->depth2disparity(500));
 
   return EXIT_SUCCESS;
 }

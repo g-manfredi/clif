@@ -39,7 +39,7 @@ Subset3d::Subset3d(Dataset *data, std::string extr_group)
 
 typedef Vec<ushort, 3> Vec3us;
 
-template<typename V> void warp_1d_linear_int(Mat in, Mat out, double offset)
+template<typename V> void warp_1d_linear_rgb(Mat in, Mat out, double offset)
 {
   
   if (abs(offset) >= in.size().width) {
@@ -69,8 +69,35 @@ template<typename V> void warp_1d_linear_int(Mat in, Mat out, double offset)
 }
 
 
+template<typename T> void warp_1d_linear(Mat in, Mat out, double offset)
+{
+  
+  if (abs(offset) >= in.size().width) {
+    return;
+  }
+  
+  T *in_ptr = in.ptr<T>(0);
+  T *out_ptr = out.ptr<T>(0);
+  
+  int off_i;
+  int f1, f2;
+  
+  if (offset >= 0)
+    off_i = offset;
+  else
+    off_i = offset-1;
+  
+  f1 = (offset - (double)off_i)*1024;
+  f2 = 1024 - f1;
+  
+  for(int i=clamp<int>(off_i, 1, out.size().width-1);i<clamp<int>(out.size().width+off_i, 1, out.size().width-1);i++) {
+    out_ptr[i] = (f1*(int)in_ptr[i-off_i] + f2*(int)in_ptr[i-off_i+1])/1024;
+  }
+}
+
+
 void Subset3d::readEPI(cv::Mat &m, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
-{      
+{
   double step;
   
   if (unit == ClifUnit::PIXELS)
@@ -94,11 +121,53 @@ void Subset3d::readEPI(cv::Mat &m, int line, double disparity, ClifUnit unit, in
     readCvMat(_data, i, tmp, flags | UNDISTORT, scale);
     
     if (tmp.type() == CV_16UC3)
-      warp_1d_linear_int<Vec3us>(tmp.row(line), m.row(i), d);
+      warp_1d_linear_rgb<Vec3us>(tmp.row(line), m.row(i), d);
     else if (tmp.type() == CV_8UC3)
-      warp_1d_linear_int<Vec3b>(tmp.row(line), m.row(i), d);
+      warp_1d_linear_rgb<Vec3b>(tmp.row(line), m.row(i), d);
     //Matx23d warp(1,0,d, 0,1,0);
     //warpAffine(tmp.row(line), m.row(i), warp, m.row(i).size(), CV_INTER_LANCZOS4);
+  }
+}
+
+
+void Subset3d::readEPI(std::vector<cv::Mat> &channels, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
+{
+  int w, h;
+  double step;
+  
+  if (unit == ClifUnit::PIXELS)
+    step = disparity;
+  else
+    step = depth2disparity(disparity, scale); //f[0]*step_length/disparity*scale;
+  
+  std::vector<cv::Mat> tmp;
+  readCvMat(_data, 0, tmp, flags | UNDISTORT, scale);
+  w = tmp[0].size().width;
+  h = _data->clif::Datastore::count();
+
+  channels.resize(tmp.size());
+  
+  for(int c=0;c<channels.size();c++) {
+    channels[c] = cv::Mat::zeros(cv::Size(w, h), tmp[0].type());
+    Mat *ch = &channels[c];
+    
+    for(int i=0;i<h;i++)
+    {      
+      //FIXME rounding?
+      double d = step*(i-h/2);
+      
+      if (abs(d) >= w)
+        continue;
+      
+      if (tmp[c].type() == CV_16UC1)
+        warp_1d_linear<uint16_t>(tmp[c].row(line), ch->row(i), d);
+      else if (tmp[c].type() == CV_8UC1)
+        warp_1d_linear<uint8_t>(tmp[c].row(line), ch->row(i), d);
+      else
+        abort();
+      //Matx23d warp(1,0,d, 0,1,0);
+      //warpAffine(tmp.row(line), m.row(i), warp, m.row(i).size(), CV_INTER_LANCZOS4);
+    }
   }
 }
 
