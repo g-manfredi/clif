@@ -11,6 +11,8 @@ pkg_search_module(MATIO REQUIRED matio)
 
 #set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -O3 -std=c++11 -Wall")
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+
 
 function(createEnumStrings ENUMSTR)
   set(${ENUMSTR}Enums ${${ENUMSTR}} PARENT_SCOPE)

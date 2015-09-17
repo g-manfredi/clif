@@ -14,6 +14,7 @@ namespace clif {
     
   void writeCvMat(Datastore *store, uint idx, cv::Mat &m);
   void readCvMat(Datastore *store, uint idx, cv::Mat &m, int flags = 0, float scale = 1.0);
+  void readCvMat(Datastore *store, uint idx, std::vector<cv::Mat> &outm, int flags = 0, float scale = 1.0);
   
   void readCalibPoints(Dataset *set, std::string calib_set_name, std::vector<std::vector<cv::Point2f>> &imgpoints, std::vector<std::vector<cv::Point2f>> &worldpoints);
   void writeCalibPoints(Dataset *set, std::string calib_set_name, std::vector<std::vector<cv::Point2f>> &imgpoints, std::vector<std::vector<cv::Point2f>> &worldpoints);

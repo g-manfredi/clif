@@ -26,6 +26,7 @@ class Datastore {
     bool valid();
     void size(int s[3]);
     void imgsize(int s[2]);
+    int  channels() { return 3; } //FIXME grayscale!?
     int count();
     
     const std::string& getDatastorePath() const { return _path; };
@@ -35,6 +36,8 @@ class Datastore {
     const DataType & type() const { return _type; };
     const DataOrg & org() const { return _org; };
     const DataOrder & order() const { return _order; };
+    
+    //FIXME delete cache contents on desctructor
     
     void *cache_get(std::string key);
     void cache_set(std::string, void *data);
