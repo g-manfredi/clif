@@ -36,8 +36,8 @@ class Datastore {
     const DataOrg & org() const { return _org; };
     const DataOrder & order() const { return _order; };
     
-    void *cache_get(uint64_t key);
-    void cache_set(uint64_t, void *data);
+    void *cache_get(std::string key);
+    void cache_set(std::string, void *data);
     
   protected:
     void init(hsize_t w, hsize_t h);
@@ -50,7 +50,7 @@ class Datastore {
     std::string _path;
     
 private:
-  std::unordered_map<uint64_t,void*> image_cache;
+  std::unordered_map<std::string,void*> image_cache;
   
   Dataset *_dataset = NULL;
 };

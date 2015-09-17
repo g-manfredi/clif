@@ -60,7 +60,7 @@ void Datastore::init(hsize_t w, hsize_t h)
                       H5PredType(_type), space, prop);
 }
 
-void * Datastore::cache_get(uint64_t key)
+void * Datastore::cache_get(std::string key)
 {
   auto it_find = image_cache.find(key);
   
@@ -70,7 +70,7 @@ void * Datastore::cache_get(uint64_t key)
     return it_find->second;
 }
 
-void Datastore::cache_set(uint64_t key, void *data)
+void Datastore::cache_set(std::string key, void *data)
 {
   image_cache[key] = data;
 }

@@ -1,6 +1,7 @@
 #include "clif_cv.hpp"
 
 #include <sstream>
+#include <string>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
@@ -48,13 +49,20 @@ namespace clif {
     if (flags & UNDISTORT) {
       flags |= DEMOSAIC;
     }
-    uint64_t key = idx*PROCESS_FLAGS_MAX | flags | (((uint64_t)(1.0/scale)) << 32);
+    std::ostringstream shortkey_stream;
+    std::string shortkey;
     
-    cv::Mat *m = static_cast<cv::Mat*>(store->cache_get(key));
+    shortkey_stream << " " << idx << " " << flags << " " << scale;
+    shortkey = shortkey_stream.str();
+    
+    cv::Mat *m = static_cast<cv::Mat*>(store->cache_get(shortkey));
     if (m) {
       outm = *m;
       return;
     }
+    
+    std::ostringstream longkey_stream;
+    std::string longkey;
     
     bool check_cache = true;
     char *xdg_cache = getenv("XDG_CACHE_HOME");
@@ -77,7 +85,11 @@ namespace clif {
     if (check_cache) {
       //printf("cache dir %s\n", cache_path.c_str());
       cache_path /= "clif/v0.0/cached_imgs";
-      cache_path /= (static_cast<std::ostringstream*>( &(std::ostringstream() << key) )->str()+".pgm");
+      std::hash<std::string> hasher;
+      std::string dset_path = store->getDataset()->path().string();
+      longkey_stream << hasher(dset_path) << "_" << hasher(store->getDatastorePath()) << "_" << hasher(shortkey);
+      longkey = longkey_stream.str();
+      cache_path /= longkey+".pgm";
 
       
       //std::cout << "check " << cache_path << std::endl;
@@ -87,7 +99,7 @@ namespace clif {
         m = new cv::Mat();
         *m = cv::imread(cache_path.c_str(), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
         outm = *m;
-        store->cache_set(key, m);
+        store->cache_set(shortkey, m);
         return;
       }
     }
@@ -150,11 +162,11 @@ namespace clif {
       cv::resize(*m,*m,cv::Point2i(m->size())*scale, cv::INTER_NEAREST);
     }
     
-    store->cache_set(key, m);
+    store->cache_set(shortkey, m);
     
     if (check_cache) {
       create_directories(cache_path.parent_path());
-      *m = cv::imwrite(cache_path.c_str(), *m);
+      cv::imwrite(cache_path.c_str(), *m);
     }
     
     outm = *m;
