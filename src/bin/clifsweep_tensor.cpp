@@ -82,177 +82,14 @@ cliini_optgroup group = {
 
 typedef Vec<ushort, 3> Vec3us;
 
-float scale = 0.5;
+float scale = 0.25;
 
 int x_step = 1;
 int y_step = 1;
 
-int minx = 350*scale;
-int maxx = 1150*scale;
-
-int grad_f_thres = 50000;
-
-static inline int diffsum_2(Vec3us a, Vec3us b)
-{
-  Vec3i d(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
-  
-  return d[0]*d[0]+d[1]*d[1]+d[2]*d[2];
-}
-
-static inline int diffsum(Vec3i a, Vec3i b)
-{
-  return abs(a[0]-b[0]) + abs(a[1]-b[1]) + abs(a[2]-b[2]);
-}
-
-static inline double score_range(Mat &epi, int x, int y_start, int y_end, int c, double *weight_lu)
-{
-  double score = 0;
-  double d;
-  
-  Vec3i avg(0,0,0);
-  for(int j=y_start;j<=y_end;j++)
-    avg += epi.at<Vec3us>(j,x);
-  
-  avg *= 1.0/(y_end-y_start+1);
-
-  for(int j=y_start;j<=y_end;j++) {
-    d = (1.0/(abs(c-j)+1));
-    score += norm(avg-(Vec3i)epi.at<Vec3us>(j,x), NORM_L1)*d;// *weight_lu[j];
-  }
-  
-  for(int j=y_start;j<=y_end-1;j++){
-    d = (1.0/(abs(c-j)+1));
-    //score += diffsum(epi.at<Vec3us>(j,x), epi.at<Vec3us>(j+1,x))*weight_lu[j];
-    score += diffsum(epi.at<Vec3us>(j,x), epi.at<Vec3us>(j+1,x))*d;// *weight_lu[j];
-  }
-  return score;
-}
-
-void score_epi(Mat &epi, Mat &score_m, Mat &depth_m, double d, int l)
-{
-  int h = 81;//epi.size().height;
-  
-  double weight_lu[h];
-  
-  for(int i=0;i<h;i++) {
-    double d = h/2-i;
-    d = 0.5*0.5*d*d/(h*h*0.2*0.2);
-    weight_lu[i] = exp(-d);
-  }
-  
-#pragma omp parallel for schedule(dynamic)
-  for(int i=std::max(minx/x_step*x_step,x_step);i<std::min(epi.size().width-1, maxx);i+=x_step) {
-    Vec3i vx(0,0,0);
-    double gy = 0;
-    double score = 1000000000000;
-    int count = 0;
-    
-    /*  Vec3i ref = (Vec3i)epi.at<Vec3us>(h/2,i) - (Vec3i)epi.at<Vec3us>(h/2,i+1);
-    
-    for(int j=0;j<=h-1;j++) {
-      if (diffsum_i(ref, (Vec3i)epi.at<Vec3us>(j,i)-(Vec3i)epi.at<Vec3us>(j,i+1)) < grad_f_thres) {
-        gx = diffsum(epi.at<Vec3us>(j,i), epi.at<Vec3us>(j,i+1));
-        gy = diffsum(epi.at<Vec3us>(j,i), epi.at<Vec3us>(j+1,i));
-        score += gx/(gy+1);
-        count++;
-      }
-    }
-    
-    score /= count;*/
-    
-    /*for(int j=0;j<=h-1;j++) {
-      vx += (Vec3i)epi.at<Vec3us>(j,i)-(Vec3i)epi.at<Vec3us>(j,i+1);
-      gy += diffsum(epi.at<Vec3us>(j,i), epi.at<Vec3us>(j+1,i));
-    }
-     
-    score = (abs(vx[0])+abs(vx[1])+abs(vx[2]))/(gy+h*1000);*/
-    
-    /*Vec3i avg(0,0,0);
-    for(int j=0;j<h;j++)
-      avg += epi.at<Vec3us>(j,i);
-    
-    avg *= 1.0/h;
-
-    for(int j=0;j<h;j++)
-      score -= norm(avg-(Vec3i)epi.at<Vec3us>(j,i), NORM_L1);
-    
-    for(int j=0;j<h-1;j++)
-      score -= diffsum(epi.at<Vec3us>(j,i), epi.at<Vec3us>(j+1,i));*/
-    
-    score = score_range(epi, i, 0, h/2,h/2,weight_lu)*(2.0/h);
-    
-    if (score < score_m.at<double>(l,i)) {
-      score_m.at<double>(l,i) = score;
-      depth_m.at<double>(l,i) = d;
-    }
-    
-    score = score_range(epi, i, h/2, h-1,h/2,weight_lu)*(2.0/h);
-    
-    if (score < score_m.at<double>(l,i)) {
-      score_m.at<double>(l,i) = score;
-      depth_m.at<double>(l,i) = d;
-    }
-    
-    score = score_range(epi, i, 0, h-1,h/2,weight_lu)*(1.0/(2.0*h));
-    
-    if (score < score_m.at<double>(l,i)) {
-      score_m.at<double>(l,i) = score;
-      depth_m.at<double>(l,i) = d;
-    }
-    
-    /*for(int j=h/4;j<=h/2;j++) {
-      gx = abs(norm((Vec3i)epi.at<Vec3us>(j,i-1) - (Vec3i)epi.at<Vec3us>(j,i+1), NORM_L1));
-      gy = abs(norm((Vec3i)epi.at<Vec3us>(j-1,i) - (Vec3i)epi.at<Vec3us>(j+1,i), NORM_L1));
-      score += gx/(gy+1);
-    }
-     
-     
-    //score = gx/(gy+0.01);
-//#pragma omp critical
-    if (score > score_m.at<double>(l,i)) {
-      score_m.at<double>(l,i) = score;
-      depth_m.at<double>(l,i) = d;
-    }
-    
-    gx = 0;
-    gy = 0;
-    score = 0;
-    for(int j=h*3/8;j<=h*5/8;j++) {
-      gx = abs(norm((Vec3i)epi.at<Vec3us>(j,i-1) - (Vec3i)epi.at<Vec3us>(j,i+1), NORM_L1));
-      gy = abs(norm((Vec3i)epi.at<Vec3us>(j-1,i) - (Vec3i)epi.at<Vec3us>(j+1,i), NORM_L1));
-      score += gx/(gy+1);
-    }
-     
-    score = gx/(gy+0.01);
-//#pragma omp critical
-    if (score > score_m.at<double>(l,i)) {
-      score_m.at<double>(l,i) = score;
-      depth_m.at<double>(l,i) = d;
-    }
-    
-    gx = 0;
-    gy = 0;
-    score = 0;
-    for(int j=h/2;j<=h-h/4;j++) {
-      gx = abs(norm((Vec3i)epi.at<Vec3us>(j,i-1) - (Vec3i)epi.at<Vec3us>(j,i+1), NORM_L1));
-      gy = abs(norm((Vec3i)epi.at<Vec3us>(j-1,i) - (Vec3i)epi.at<Vec3us>(j+1,i), NORM_L1));
-      score += gx/(gy+1);
-    }
-     
-     
-    score = gx/(gy+0.01);
-//#pragma omp critical
-    if (score > score_m.at<double>(l,i)) {
-      score_m.at<double>(l,i) = score;
-      depth_m.at<double>(l,i) = d;
-    }*/
-    
-  }
-}
-
-
 void structure_tensor_depth(Mat &epi, Mat &score_m, Mat &depth_m, double d, int l, double f, Subset3d *subset)
 {
+  int h = epi.size().height;
   vector<Mat> channels;
   
   Mat dx,dy;
@@ -273,9 +110,9 @@ void structure_tensor_depth(Mat &epi, Mat &score_m, Mat &depth_m, double d, int 
     dx = dx.mul(dx);
     dy = dy.mul(dy);
     
-    GaussianBlur(dx, dx, Size(3,15), 0);
-    GaussianBlur(dy, dy, Size(3,15), 0);
-    GaussianBlur(dxy, dxy, Size(3,15), 0);
+    GaussianBlur(dx, dx, Size(3,h-2), 0);
+    GaussianBlur(dy, dy, Size(3,h-2), 0);
+    GaussianBlur(dxy, dxy, Size(3,h-2), 0);
     
     /*imwrite("dx.tif", dx*256);
     imwrite("dy.tif", dy*256);
@@ -296,41 +133,15 @@ void structure_tensor_depth(Mat &epi, Mat &score_m, Mat &depth_m, double d, int 
       double d_y2_x2 = syy-sxx;
       double xy2 = sxy*sxy;
       double a_y2_x2 = syy+sxx;
-      //double disp = d+tan(0.5*atan2((syy-sxx),(2*sxy)));
+
+      double coherence = (d_y2_x2*d_y2_x2+4.0*xy2)/(a_y2_x2*a_y2_x2);
       
-      //printf("orientation: %f %f (%d/%d)\n", 0.5*atan2((syy-sxx),(2*sxy)), tan(0.5*atan2((syy-sxx),(2*sxy))), i,l);
+      double disp = tan(0.5*atan2(2*sxy, sxx-syy));
       
-      
-      /*z = -f*s/x;
-      
-      -x/s+d = f/z
-      
-      z = -f/(x/s+d);*/
-      
-      //double depth = -f/(x/s+d); //-f*s/x;5
-      double coherence = ((syy-sxx)*(syy-sxx)+4.0*xy2)/(a_y2_x2*a_y2_x2);
-      
-      //printf("coherence: %f disp %f\n", coherence, disp);
-      //printf("%f\n", subset->disparity2depth(disp, scale));
-      
-      //double depth = subset->disparity2depth(disp, scale);
-      //if (depth > 0 && depth < 1000 && coherence > score_m.at<double>(l,i)) {
-        //score_m.at<double>(l,i) = coherence;
-        //depth_m.at<double>(l,i) = 127+atan2(syy,sxx)*50;
-        //printf("store: %f\n", 127+atan2((syy-sxx),(2*sxy))*50);
-        double disp = tan(0.5*atan2(2*sxy, sxx-syy));
-        
-        if (abs(disp) < 1.0 && coherence > score_m.at<double>(l,i)) {
-          depth_m.at<double>(l,i) = subset->disparity2depth(d+disp, scale);
-          score_m.at<double>(l,i) = coherence;
-        }
-        
-        /*
-         * 0.5*atan2((syy-sxx),(2*sxy)) = -1.94 (ziel 45 grad)
-                                   -2.18 (ziel 10 grad)
-                                   -1.34 (ziel -60 grad)
-                                   */
-      //}
+      if (abs(disp) < 1.0 && coherence > score_m.at<double>(l,i)) {
+        depth_m.at<double>(l,i) = subset->disparity2depth(d+disp, scale);
+        score_m.at<double>(l,i) = coherence;
+      }
     }
   }
 }
@@ -456,53 +267,33 @@ int main(const int argc, const char *argv[])
   
   Mat epi;
   Mat depth = Mat::zeros(Size(size[0], size[1]), CV_64F);
-  //Mat score(Size(size[0], size[1]), CV_64F, Scalar::all(std::numeric_limits<double>::max()));
   Mat score = Mat::zeros(Size(size[0], size[1]), CV_64F);
   for(int l=0/y_step*y_step;l<size[1];l+=y_step) {
     printf("line %d\n", l);
-    //double d = 3;
-    for(double d=10*scale;d>=1*scale;d-=0.5) {
+    for(double d=10*scale;d>=1*scale;d-=1) {
       slice->readEPI(epi, l, d, ClifUnit::PIXELS, UNDISTORT, CV_INTER_LINEAR, scale);
-      //GaussianBlur(epi, epi, Size(3, 3), 0);
-      //blur(epi, epi, Size(1, 7));
-      //score_epi(epi, score, depth, d, l);
-      //printf("depth %f\n", slice->disparity2depth(d,scale));
       structure_tensor_depth(epi, score, depth, d, l, (focal_length[0]+focal_length[1])/2, slice);
     }
-    
-    /*for(double d=350;d<1000;d+=d*0.05) {
-      slice->readEPI(epi, l, d, CLIF_UNDISTORT, CV_INTER_LINEAR);
-      GaussianBlur(epi, epi, Size(1, 3), 0);
-      //blur(epi, epi, Size(1, 7));
-      score_epi(epi, score, depth, d, l);
-    }*/
   }
-    //if (l/y_step % 1024 == 0) {
-      Mat d16;
-      depth.convertTo(d16, CV_16U);
-      //resize(d16, d16, Size(depth.size().width/x_step, depth.size().height/y_step), cv::INTER_NEAREST);
-      imwrite(out_name, d16);
-      imwrite("out8bit.tif", depth*0.25);
-      
-      //resize(depth, depth, Size(depth.size().x/x_step, depth.size().y/y_step), CV_INTER_NEAREST);
-      
-      int l = size[1];
-      write_ply_depth("points.ply", depth, focal_length, size[0], size[1], img, 0, l);
-      write_obj_depth("points.obj", depth, focal_length, size[0], size[1], img, 0, l);
-      Mat med, fmat;
-      depth.convertTo(fmat, CV_32F);
-      medianBlur(fmat, med, 5);
-      write_ply_depth("points_m5.ply", med, focal_length, size[0], size[1], img, 0, l);
-      write_obj_depth("points_m5.obj", med, focal_length, size[0], size[1], img, 0, l);
-      GaussianBlur(med, med, Size(3,3), 0);
-      
-      write_ply_depth("points_m5_g3.ply", med, focal_length, size[0], size[1], img, 0, l);
-      write_obj_depth("points_m5_g3.obj", med, focal_length, size[0], size[1], img, 0, l);
-      //depth.convertTo(fmat, CV_32F);
-      //medianBlur(fmat, med, 7);
-     // write_ply_depth("points_m7.ply", med, focal_length, size[0], size[1], img, 230/y_step*y_step, l);
-    //}
-  //}
+  
+  Mat d16;
+  depth.convertTo(d16, CV_16U);
+  imwrite(out_name, d16);
+  imwrite("out8bit.tif", depth*0.25);
+  
+  
+  int l = size[1];
+  write_ply_depth("points.ply", depth, focal_length, size[0], size[1], img, 0, l);
+  write_obj_depth("points.obj", depth, focal_length, size[0], size[1], img, 0, l);
+  Mat med, fmat;
+  depth.convertTo(fmat, CV_32F);
+  medianBlur(fmat, med, 5);
+  write_ply_depth("points_m5.ply", med, focal_length, size[0], size[1], img, 0, l);
+  write_obj_depth("points_m5.obj", med, focal_length, size[0], size[1], img, 0, l);
+  GaussianBlur(med, med, Size(3,3), 0);
+  
+  write_ply_depth("points_m5_g3.ply", med, focal_length, size[0], size[1], img, 0, l);
+  write_obj_depth("points_m5_g3.obj", med, focal_length, size[0], size[1], img, 0, l);
 
   return EXIT_SUCCESS;
 }
