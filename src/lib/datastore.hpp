@@ -33,7 +33,7 @@ class Datastore {
     
     const H5::DataSet & H5DataSet() const { return _data; };
     Dataset *getDataset() { return _dataset; };
-    const DataType & type() const { return _type; };
+    const BaseType & type() const { return _type; };
     const DataOrg & org() const { return _org; };
     const DataOrder & order() const { return _order; };
     
@@ -45,7 +45,7 @@ class Datastore {
   protected:
     void init(hsize_t w, hsize_t h);
     
-    DataType _type; 
+    BaseType _type; 
     DataOrg _org;
     DataOrder _order;
     

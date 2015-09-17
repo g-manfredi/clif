@@ -25,7 +25,7 @@ namespace clif {
 #define NO_DISK_CACHE 16
 #define PROCESS_FLAGS_MAX 32
 
-H5::PredType H5PredType(DataType type);
+H5::PredType H5PredType(BaseType type);
   
 std::vector<std::string> Datasets(H5::H5File &f);
 

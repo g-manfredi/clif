@@ -20,3 +20,5 @@ need to store dataste root in attributes ... is this desired?
 
 ## document file format
 ## better tools / ini-file types handling
+
+## threadsafety (hdf5 mainly)

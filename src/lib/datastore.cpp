@@ -9,7 +9,7 @@ void Datastore::create(std::string path, Dataset *dataset)
 {
   assert(dataset);
   
-  _type = DataType(-1); 
+  _type = BaseType(-1); 
   _org = DataOrg(-1);
   _order = DataOrder(-1); 
     

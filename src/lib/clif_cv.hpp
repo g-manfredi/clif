@@ -7,8 +7,8 @@
 
 namespace clif {
   
-  DataType CvDepth2DataType(int cv_type);
-  int DataType2CvDepth(DataType t);
+  BaseType CvDepth2DataType(int cv_type);
+  int DataType2CvDepth(BaseType t);
 
   cv::Size imgSize(Datastore *store);
     
