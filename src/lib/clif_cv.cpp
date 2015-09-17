@@ -187,7 +187,7 @@ namespace clif {
   static void init_planar_mats(Datastore *store, std::vector<cv::Mat> *channels)
   {
     for(int i=0;i<channels->size();i++)
-      (*channels)[0].create(imgSize(store), DataType2CvDepth(store->type()));
+      (*channels)[i].create(imgSize(store), DataType2CvDepth(store->type()));
   }
   
   static std::vector<cv::Mat> *new_planar_mats(Datastore *store, int channels)
@@ -327,7 +327,9 @@ namespace clif {
         ch->convertTo(*ch, CV_8U);
       }
       
+      //TODO FIXME!
       if (ch->channels() != 1 && flags & CVT_GRAY) {
+        abort();
         cvtColor(*ch, *ch, CV_BGR2GRAY);
       }
       

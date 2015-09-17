@@ -271,7 +271,7 @@ int main(const int argc, const char *argv[])
   for(int l=0/y_step*y_step;l<size[1];l+=y_step) {
     printf("line %d\n", l);
     for(double d=10*scale;d>=1*scale;d-=1) {
-      slice->readEPI(epi, l, d, ClifUnit::PIXELS, UNDISTORT, CV_INTER_LINEAR, scale);
+      slice->readEPI(epi, l, d, ClifUnit::PIXELS, UNDISTORT, Interpolation::LINEAR, scale);
       structure_tensor_depth(epi, score, depth, d, l, (focal_length[0]+focal_length[1])/2, slice);
     }
   }

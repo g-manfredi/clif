@@ -13,6 +13,8 @@ namespace clif {
   
 using boost::filesystem::path;
 
+enum class Interpolation : int {INVALID,NEAREST,LINEAR}; //TODO lanczos etc.
+
 int baseType_size(BaseType t);
 
 int combinedTypeElementCount(BaseType type, DataOrg org, DataOrder order);

@@ -69,7 +69,7 @@ template<typename V> void warp_1d_linear_int(Mat in, Mat out, double offset)
 }
 
 
-void Subset3d::readEPI(cv::Mat &m, int line, double disparity, ClifUnit unit, int flags, int interp, float scale)
+void Subset3d::readEPI(cv::Mat &m, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
 {      
   double step;
   

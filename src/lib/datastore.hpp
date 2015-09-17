@@ -41,6 +41,16 @@ class Datastore {
     
     void *cache_get(std::string key);
     void cache_set(std::string, void *data);
+
+    template<template<typename> class F, typename R, typename ... ArgTypes> R call(ArgTypes ... args)
+    {
+      return callByBaseType<F>(_type, args...);
+    }
+    
+    template<template<typename> class F, typename ... ArgTypes> void call(ArgTypes ... args)
+    {
+      callByBaseType<F>(_type, args...);
+    }
     
   protected:
     void init(hsize_t w, hsize_t h);
