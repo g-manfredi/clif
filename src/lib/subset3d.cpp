@@ -68,15 +68,15 @@ template<typename V> void warp_1d_linear_rgb(Mat in, Mat out, double offset)
   }*/
 }
 
-template<typename T> void warp_1d_linear(Mat in, Mat out, double offset)
+template<typename T> void warp_1d_linear(Mat *in, Mat *out, double offset)
 {
   
-  if (abs(offset) >= in.size().width) {
+  if (abs(offset) >= in->size().width) {
     return;
   }
   
-  T *in_ptr = in.ptr<T>(0);
-  T *out_ptr = out.ptr<T>(0);
+  T *in_ptr = in->ptr<T>(0);
+  T *out_ptr = out->ptr<T>(0);
   
   int off_i;
   int f1, f2;
@@ -89,11 +89,43 @@ template<typename T> void warp_1d_linear(Mat in, Mat out, double offset)
   f1 = (offset - (double)off_i)*1024;
   f2 = 1024 - f1;
   
-  for(int i=clamp<int>(off_i, 1, out.size().width-1);i<clamp<int>(out.size().width+off_i, 1, out.size().width-1);i++) {
+  for(int i=clamp<int>(off_i, 1, out->size().width-1);i<clamp<int>(out->size().width+off_i, 1, out->size().width-1);i++) {
     out_ptr[i] = (f1*(int)in_ptr[i-off_i] + f2*(int)in_ptr[i-off_i+1])/1024;
   }
 }
 
+template<typename T> class warp_1d_linear_dispatcher {
+public:
+  void operator()(Mat *in, Mat *out, int offset)
+  {
+    warp_1d_linear<T>(in, out, offset);
+  }
+};
+
+template<typename T> void warp_1d_nearest(Mat *in, Mat *out, int offset)
+{
+  
+  if (abs(offset) >= in->size().width) {
+    return;
+  }
+  
+  T *in_ptr = (T*)in->data;
+  T *out_ptr = (T*)out->data;
+  
+  int start = clamp<int>(offset, 0, out->size().width-1);
+  int size = clamp<int>(out->size().width+offset, 0, out->size().width-1) - start;
+  
+  memcpy(out_ptr+start, in_ptr+start-offset, size*sizeof(T));
+}
+
+template<typename T> class warp_1d_nearest_dispatcher {
+public:
+  void operator()(Mat *in, Mat *out, int offset)
+  {
+    warp_1d_nearest<T>(in, out, offset);
+  }
+};
+/*
 template<typename T> void warp_1d_nearest(Mat in, Mat out, int offset)
 {
   
@@ -108,7 +140,7 @@ template<typename T> void warp_1d_nearest(Mat in, Mat out, int offset)
   int size = clamp<int>(out.size().width+offset, 0, out.size().width) * sizeof(T) - start;
   
   memcpy(out_ptr+start, in_ptr+start-offset, size);
-}
+}*/
 
 void Subset3d::readEPI(cv::Mat &m, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
 {
@@ -154,6 +186,10 @@ void Subset3d::readEPI(std::vector<cv::Mat> &channels, int line, double disparit
   else
     step = depth2disparity(disparity, scale); //f[0]*step_length/disparity*scale;
   
+  int i_step = step;
+  if (abs(i_step - step) < 1.0/512.0)
+    interp = Interpolation::NEAREST;
+  
   std::vector<cv::Mat> tmp;
   readCvMat(_data, 0, tmp, flags | UNDISTORT, scale);
   w = tmp[0].size().width;
@@ -173,13 +209,24 @@ void Subset3d::readEPI(std::vector<cv::Mat> &channels, int line, double disparit
       if (abs(d) >= w)
         continue;
       
-      if (tmp[c].type() == CV_16UC1)
+      Mat line_in = tmp[c].row(line);
+      Mat line_out = ch->row(i);
+      
+      switch (interp) {
+        case Interpolation::LINEAR :
+          _data->call<warp_1d_linear_dispatcher>(&line_in, &line_out, d);
+        case Interpolation::NEAREST :
+        default :
+          _data->call<warp_1d_nearest_dispatcher>(&line_in, &line_out, d);
+      }
+      
+      /*if (tmp[c].type() == CV_16UC1)
         //warp_1d_nearest<uint16_t>(tmp[c].row(line), ch->row(i), d);
         warp_1d_linear<uint16_t>(tmp[c].row(line), ch->row(i), d);
       else if (tmp[c].type() == CV_8UC1)
         warp_1d_linear<uint8_t>(tmp[c].row(line), ch->row(i), d);
       else
-        abort();
+        abort();*/
       //Matx23d warp(1,0,d, 0,1,0);
       //warpAffine(tmp.row(line), m.row(i), warp, m.row(i).size(), CV_INTER_LANCZOS4);
     }

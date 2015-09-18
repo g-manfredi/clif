@@ -62,13 +62,10 @@ int main(const int argc, const char *argv[])
   Dataset *in_set = f_in.openDataset(0);
   Subset3d *subset = new Subset3d(in_set);
   
-  void *channels = NULL;
-  
-  /*for(int i=0;i<in_set->Datastore::count();i++)
-    readImage(in_set, i, &channels, UNDISTORT);*/
-  
-  for(int i=0;i<10;i++)
-    readEPI(subset, &channels, i % in_set->Datastore::count(), subset->depth2disparity(500));
+  FlexMAV<2> img;
+
+  for(int i=0;i<100;i++)
+    readEPI(subset, img, i % in_set->Datastore::count(), 5.0, ClifUnit::PIXELS, 0, Interpolation::LINEAR);
 
   return EXIT_SUCCESS;
 }

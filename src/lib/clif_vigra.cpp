@@ -64,7 +64,7 @@ public:
     
     //allocate correct type
     if (*channels == NULL)
-      *channels = new std::vector<vigra::MultiArray<2, T>>(subset->getDataset()->channels());
+      *channels = new std::vector<vigra::MultiArray<2, T>>(subset->dataset()->channels());
     
     //read
     std::vector<cv::Mat> cv_channels;
@@ -83,7 +83,17 @@ public:
 
 void readEPI(clif::Subset3d *subset, void **channels, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
 {
-  subset->getDataset()->call<readepi_dispatcher>(subset, channels, line, disparity, unit, flags, interp, scale);
+  subset->dataset()->call<readepi_dispatcher>(subset, channels, line, disparity, unit, flags, interp, scale);
+}
+
+void readEPI(clif::Subset3d *subset, FlexMAV<2> &channels, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
+{
+  std::vector<cv::Mat> cv_channels;
+  subset->readEPI(cv_channels, line, disparity, unit, flags, interp, scale);
+  
+  Shape2 shape(cv_channels[0].size().width, cv_channels[0].size().height);
+  
+  channels.create(shape, subset->dataset()->type(), cv_channels);
 }
 
 }

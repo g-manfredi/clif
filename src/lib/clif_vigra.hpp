@@ -53,7 +53,6 @@ namespace clif {
       void * operator()(FlexMAV<DIM> &mav, std::vector<cv::Mat> &inputs)
       {
         auto channels = new std::vector<vigra::MultiArrayView<DIM,T>>(inputs.size());
-        printf("new channels!\n");
         for(int i=0;i<inputs.size();i++)
           (*channels)[i] = vigra::MultiArrayView<DIM,T>(mav.shape(), (T*)inputs[i].data);
         
@@ -113,6 +112,8 @@ namespace clif {
   void readImage(Datastore *store, uint idx, FlexMAV<2> &channels, int flags = 0, float scale = 1.0);
   
   void readEPI(Subset3d *subset, void **channels, int line, double disparity, ClifUnit unit = ClifUnit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0);
+  
+  void readEPI(Subset3d *subset, FlexMAV<2> &channels, int line, double disparity, ClifUnit unit = ClifUnit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0);
   
   //void readSubset3d(Datastore *store, uint idx, void **volume, int flags = 0, float scale = 1.0);
   

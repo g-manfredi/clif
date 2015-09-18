@@ -26,7 +26,7 @@ public:
     return f[0]*step_length/disparity*scale;
   }
   
-  clif::Dataset *getDataset() { return _data; }
+  clif::Dataset *dataset() { return _data; }
   
 private:
   clif::Dataset *_data = NULL;
