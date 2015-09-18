@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 2.6)
 project(clif-bin)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -O3 -fno-omit-frame-pointer -std=c++11 -Wall -fopenmp")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -O0 -fno-omit-frame-pointer -std=c++11 -Wall -fopenmp")
 
 add_executable(loadbench loadbench.cpp)
 add_executable(clif-bin clif.cpp)
@@ -20,4 +20,5 @@ target_link_libraries(clifinfo clif cliini ${OpenCV_LIBRARIES})
 target_link_libraries(clifsweep clif cliini ${OpenCV_LIBRARIES})
 target_link_libraries(clifsweep_tensor clif cliini ${OpenCV_LIBRARIES})
 target_link_libraries(loadbench_vigra clif_vigra cliini ${OpenCV_LIBRARIES})
-target_link_libraries(loadbench_vigra2 clif_vigra cliini ${OpenCV_LIBRARIES})
+#FIXME vigraimpex?
+target_link_libraries(loadbench_vigra2 clif_vigra cliini ${OpenCV_LIBRARIES} vigraimpex)
