@@ -68,7 +68,6 @@ template<typename V> void warp_1d_linear_rgb(Mat in, Mat out, double offset)
   }*/
 }
 
-
 template<typename T> void warp_1d_linear(Mat in, Mat out, double offset)
 {
   
@@ -95,6 +94,21 @@ template<typename T> void warp_1d_linear(Mat in, Mat out, double offset)
   }
 }
 
+template<typename T> void warp_1d_nearest(Mat in, Mat out, int offset)
+{
+  
+  if (abs(offset) >= in.size().width) {
+    return;
+  }
+  
+  T *in_ptr = in.ptr<T>(0);
+  T *out_ptr = out.ptr<T>(0);
+  
+  int start = clamp<int>(offset, 1, out.size().width-1) * sizeof(T);
+  int size = clamp<int>(out.size().width+offset, 0, out.size().width) * sizeof(T) - start;
+  
+  memcpy(out_ptr+start, in_ptr+start-offset, size);
+}
 
 void Subset3d::readEPI(cv::Mat &m, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
 {
@@ -160,6 +174,7 @@ void Subset3d::readEPI(std::vector<cv::Mat> &channels, int line, double disparit
         continue;
       
       if (tmp[c].type() == CV_16UC1)
+        //warp_1d_nearest<uint16_t>(tmp[c].row(line), ch->row(i), d);
         warp_1d_linear<uint16_t>(tmp[c].row(line), ch->row(i), d);
       else if (tmp[c].type() == CV_8UC1)
         warp_1d_linear<uint8_t>(tmp[c].row(line), ch->row(i), d);

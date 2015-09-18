@@ -12,6 +12,7 @@
 namespace clif {
   
 using namespace vigra;
+
   
 Shape2 imgShape(Datastore *store)
 {
@@ -44,6 +45,14 @@ public:
 void readImage(Datastore *store, uint idx, void **channels, int flags, float scale)
 {
   store->call<readimage_dispatcher>(store, idx, channels, flags, scale);
+}
+
+void readImage(Datastore *store, uint idx, FlexMAV<2> &channels, int flags, float scale)
+{
+  std::vector<cv::Mat> cv_channels;
+  readCvMat(store, idx, cv_channels, flags, scale);
+  
+  channels.create(imgShape(store), store->type(), cv_channels);
 }
 
 template<typename T> class readepi_dispatcher {

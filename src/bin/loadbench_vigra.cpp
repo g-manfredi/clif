@@ -67,7 +67,7 @@ int main(const int argc, const char *argv[])
   /*for(int i=0;i<in_set->Datastore::count();i++)
     readImage(in_set, i, &channels, UNDISTORT);*/
   
-  for(int i=0;i<1000;i++)
+  for(int i=0;i<10;i++)
     readEPI(subset, &channels, i % in_set->Datastore::count(), subset->depth2disparity(500));
 
   return EXIT_SUCCESS;
