@@ -64,7 +64,7 @@ int main(const int argc, const char *argv[])
   
   FlexMAV<2> img;
 
-  for(int i=0;i<100;i++)
+  for(int i=0;i<10000;i++)
     readEPI(subset, img, i % in_set->Datastore::count(), 5.0, ClifUnit::PIXELS, 0, Interpolation::LINEAR);
 
   return EXIT_SUCCESS;
