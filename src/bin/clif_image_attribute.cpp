@@ -77,7 +77,7 @@ void errorexit(const char *msg)
 
 int main(const int argc, const char *argv[])
 {
-  /*cliini_args *args = cliini_parsopts(argc, argv, &group);
+  cliini_args *args = cliini_parsopts(argc, argv, &group);
 
   cliini_arg *input = cliargs_get(args, "input");
   cliini_arg *output = cliargs_get(args, "output");
@@ -98,7 +98,7 @@ int main(const int argc, const char *argv[])
   
   Mat img = imread(cliarg_str(input));
   
-  */
+  
     
 
   return EXIT_SUCCESS;

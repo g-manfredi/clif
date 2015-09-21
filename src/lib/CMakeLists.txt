@@ -37,7 +37,7 @@ createEnumStrings(DistModel)
 
 configure_file(enumtypes.hpp.in enumtypes.hpp)
 
-add_library(clif SHARED clif.cpp matio.cpp subset3d.cpp calib.cpp hdf5.cpp attribute.cpp helpers.cpp datastore.cpp dataset.cpp core.cpp clif_cv.cpp clif_vigra.cpp enumtypes.cpp)
+add_library(clif SHARED clif.cpp subset3d.cpp calib.cpp hdf5.cpp attribute.cpp helpers.cpp datastore.cpp dataset.cpp core.cpp clif_cv.cpp clif_vigra.cpp enumtypes.cpp)
 
 add_library(clif_vigra SHARED clif_vigra.cpp)
 
