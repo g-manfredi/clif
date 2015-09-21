@@ -66,6 +66,15 @@ namespace clif {
       }
     };
     
+    template<typename T> class destruct_channels_dispatcher {
+    public:
+      void operator()(FlexMAV<DIM> &mav)
+      {
+        std::vector<vigra::MultiArrayView<DIM,T>> *channels = mav.template channels<T>();
+        delete channels;
+      }
+    };
+    
     void create(difference_type shape, BaseType type, std::vector<cv::Mat> inputs)
     { 
       _shape = shape;
@@ -74,7 +83,7 @@ namespace clif {
       _ch_count = inputs.size();
       //_mems.resize(0);
       if (_channels)
-        delete _channels;
+        call<destruct_channels_dispatcher>(*this);
       _channels = call_r<new_channels_dispatcher,void*>(*this, inputs);
     }
     
