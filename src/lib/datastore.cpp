@@ -34,16 +34,14 @@ void Datastore::init(hsize_t w, hsize_t h)
   
   hsize_t dims[3] = {comb_w,comb_h,0};
   hsize_t maxdims[3] = {comb_w,comb_h,H5S_UNLIMITED}; 
-  std::string dataset_str = _dataset->_path;
-  dataset_str = appendToPath(dataset_str, _path);
+  path dataset_path = _dataset->path() / _path;
   
-  if (h5_obj_exists(_dataset->f, dataset_str.c_str())) {
-    _data = _dataset->f.openDataSet(dataset_str);
+  if (h5_obj_exists(_dataset->f, dataset_path.c_str())) {
+    _data = _dataset->f.openDataSet(dataset_path.c_str());
     return;
   }
   
-  h5_create_path_groups(_dataset->f, path(dataset_str).parent_path());
-  //_rec_make_groups(_dataset->f, remove_last_part(dataset_str, '/').c_str());
+  h5_create_path_groups(_dataset->f, path(dataset_path.c_str()).parent_path());
   
   //chunking fixed for now
   hsize_t chunk_dims[3] = {comb_w,comb_h,1};
@@ -56,7 +54,7 @@ void Datastore::init(hsize_t w, hsize_t h)
   
   H5::DataSpace space(3, dims, maxdims);
   
-  _data = _dataset->f.createDataSet(dataset_str, 
+  _data = _dataset->f.createDataSet(dataset_path.c_str(), 
                       H5PredType(_type), space, prop);
 }
 
@@ -80,10 +78,10 @@ void Datastore::open(Dataset *dataset, std::string path_)
   //only fills in internal data
   create(path_, dataset);
       
-  std::string dataset_str = appendToPath(dataset->_path, path_);
+  path dataset_path = dataset->path() / path_;
       
-  if (!h5_obj_exists(dataset->f, dataset_str.c_str())) {
-    printf("error: could not find requrested datset: %s\n", dataset_str.c_str());
+  if (!h5_obj_exists(dataset->f, dataset_path.c_str())) {
+    printf("error: could not find requrested datset: %s\n", dataset_path.c_str());
     return;
   }
   
@@ -92,12 +90,12 @@ void Datastore::open(Dataset *dataset, std::string path_)
   dataset->getEnum("format/order",        _order);
 
   if (int(_type) == -1 || int(_org) == -1 || int(_order) == -1) {
-    printf("ERROR: unsupported dataset format!\n");
+    printf("ERROR: unsupported datastore format!\n");
     return;
   }
   
-  _data = dataset->f.openDataSet(dataset_str);
-  printf("opened h5 dataset %s\n", dataset_str.c_str());
+  _data = dataset->f.openDataSet(dataset_path.c_str());
+  printf("opened h5 dataset %s\n", dataset_path.c_str());
   
   //printf("Datastore open %s: %s %s %s\n", dataset_str.c_str(), ClifEnumString(DataType,type),ClifEnumString(DataOrg,org),ClifEnumString(DataOrder,order));
 }

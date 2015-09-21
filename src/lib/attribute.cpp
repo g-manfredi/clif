@@ -76,29 +76,31 @@ H5::PredType BaseType_to_PredType(BaseType type)
   abort();
 }
   
-static void *read_attr(H5::Group g, std::string name, BaseType &type, int *size)
+static void *read_attr(Attribute *attr, H5::Group g, std::string basename, std::string group_path, std::string name, BaseType &type)
 {
-  H5::Attribute attr = g.openAttribute(name);
+  int total = 1;
+  H5::Attribute h5attr = g.openAttribute(name);
   
-  type =  hid_t_to_native_BaseType(H5Aget_type(attr.getId()));
+  type =  hid_t_to_native_BaseType(H5Aget_type(h5attr.getId()));
   
-  //FIXME 1D only atm!
-  
-  H5::DataSpace space = attr.getSpace();
+  H5::DataSpace space = h5attr.getSpace();
   int dimcount = space.getSimpleExtentNdims();
-  assert(dimcount == 1);
-  hsize_t dims[1];
-  hsize_t maxdims[1];
+
+  hsize_t dims[dimcount];
+  hsize_t maxdims[dimcount];
+  
   space.getSimpleExtentDims(dims, maxdims);
+  for(int i=0;i<dimcount;i++)
+    total *= dims[i];
   
-  void *buf = malloc(basetype_size(type)*dims[0]);
+  void *buf = malloc(basetype_size(type)*total);
   
-  //FIXME 1D only atm
-  *size = dims[0];
+  h5attr.read(BaseType_to_PredType(type), buf);
   
-  attr.read(BaseType_to_PredType(type), buf);
+  group_path = group_path.substr(basename.length()+1, group_path.length()-basename.length()-1);
+  name = group_path + '/' + name;
   
-  return buf;
+  attr->set<hsize_t>(name, dimcount, dims, type, buf);
 }
   
 void Attributes::open(const char *inifile, const char *typefile) 
@@ -128,7 +130,6 @@ void Attributes::open(const char *inifile, const char *typefile)
     
     attrs[i].setName(arg->opt->longflag);
       
-    //FIXME nice enum type conversion
     switch (arg->opt->type) {
       case CLIINI_ENUM:
       case CLIINI_STRING :
@@ -256,11 +257,8 @@ static void attributes_append_group(Attributes &attrs, H5::Group &g, std::string
 
     std::string name = appendToPath(group_path, h5attr.getName());
     
-    data = read_attr(g, h5attr.getName(),type,size);
+    data = read_attr(&attr, g, basename, group_path, h5attr.getName(),type);
           
-    name = name.substr(basename.length()+1, name.length()-basename.length()-1);
-    
-    attr.Set<int>(name, 1, size, type, data);
     attrs.append(attr);
   }
 }
@@ -277,7 +275,7 @@ void Attributes::open(H5::H5File &f, std::string &path)
 
 void Attributes::append(Attribute &attr)
 {
-  Attribute *at = getAttribute(attr.name);
+  Attribute *at = get(attr.name);
   if (!at)
     attrs.push_back(attr);
   else 
@@ -403,9 +401,10 @@ void Attribute::write(H5::H5File &f, std::string dataset_name)
   std::string grouppath = remove_last_part(fullpath, '/');
   std::string attr_name = get_last_part(fullpath, '/');
   
-  hsize_t dim[1];
-  dim[0] = size[0];
-  H5::DataSpace space(1, dim);
+  hsize_t dim[size.size()];
+  for(int i=0;i<size.size();i++)
+    dim[i] = size[i];
+  H5::DataSpace space(size.size(), dim);
   H5::Attribute attr;
   H5::Group g;
   

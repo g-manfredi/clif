@@ -20,28 +20,6 @@ namespace clif {
     
     return cv::Size(dims[0],dims[1]);
   }
-  
-  //TODO create mappings with cmake?
-  //FIXME other types!
-  BaseType CvDepth2DataType(int cv_type)
-  {
-    switch (cv_type) {
-      case CV_8U : return clif::BaseType::UINT8;
-      case CV_16U : return clif::BaseType::UINT16;
-      default :
-        abort();
-    }
-  }
-  
-  int DataType2CvDepth(BaseType t)
-  {
-    switch (t) {
-      case clif::BaseType::UINT8 : return CV_8U;
-      case clif::BaseType::UINT16 : return CV_16U;
-      default :
-        abort();
-    }
-  }
     
   //FIXME only power to scales at the moment
   //FIXME store file and dataset name in cache!
@@ -111,7 +89,7 @@ namespace clif {
     
     if (store->org() == DataOrg::BAYER_2x2) {
       //FIXME bayer only for now!
-      m = new cv::Mat(imgSize(store), DataType2CvDepth(store->type()));
+      m = new cv::Mat(imgSize(store), BaseType2CvDepth(store->type()));
       
       store->readRawImage(idx, m->size().width, m->size().height, m->data);
       
@@ -133,7 +111,7 @@ namespace clif {
       }
     }
     else if (store->org() == DataOrg::INTERLEAVED && store->order() == DataOrder::RGB) {
-      m = new cv::Mat(imgSize(store), CV_MAKETYPE(DataType2CvDepth(store->type()), 3));
+      m = new cv::Mat(imgSize(store), CV_MAKETYPE(BaseType2CvDepth(store->type()), 3));
       store->readRawImage(idx, m->size().width, m->size().height, m->data);
     }
     
@@ -187,7 +165,7 @@ namespace clif {
   static void init_planar_mats(Datastore *store, std::vector<cv::Mat> *channels)
   {
     for(int i=0;i<channels->size();i++)
-      (*channels)[i].create(imgSize(store), DataType2CvDepth(store->type()));
+      (*channels)[i].create(imgSize(store), BaseType2CvDepth(store->type()));
   }
   
   static std::vector<cv::Mat> *new_planar_mats(Datastore *store, int channels)
@@ -288,7 +266,7 @@ namespace clif {
     
     if (store->org() == DataOrg::BAYER_2x2) {
       m = new_planar_mats(store, ch_count);
-      cv::Mat tmp(size, DataType2CvDepth(store->type()));
+      cv::Mat tmp(size, BaseType2CvDepth(store->type()));
       
       store->readRawImage(idx, tmp.size().width, tmp.size().height, tmp.data);
       
@@ -312,7 +290,7 @@ namespace clif {
     }
     else if (store->org() == DataOrg::INTERLEAVED && store->order() == DataOrder::RGB) {
       m = new_planar_mats(store, ch_count);
-      cv::Mat tmp (size, CV_MAKETYPE(DataType2CvDepth(store->type()), 3));
+      cv::Mat tmp (size, CV_MAKETYPE(BaseType2CvDepth(store->type()), 3));
       store->readRawImage(idx, tmp.size().width, tmp.size().height, tmp.data);
       cv::split(tmp,*m);
     }
@@ -390,8 +368,8 @@ namespace clif {
       }
     }
       
-    set->setAttribute(boost::filesystem::path() / "calibration/images/sets" / calib_set_name / "pointdata", pointbuf, 4*pointcount);
-    set->setAttribute(boost::filesystem::path() / "calibration/images/sets" / calib_set_name / "pointcounts", sizebuf, imgpoints.size());
+    set->setAttribute(path() / "calibration/images/sets" / calib_set_name / "pointdata", pointbuf, 4*pointcount);
+    set->setAttribute(path() / "calibration/images/sets" / calib_set_name / "pointcounts", sizebuf, imgpoints.size());
   }
   
   void readCalibPoints(Dataset *set, std::string calib_set_name, std::vector<std::vector<cv::Point2f>> &imgpoints, std::vector<std::vector<cv::Point2f>> &worldpoints)
@@ -399,8 +377,8 @@ namespace clif {
     std::vector<float> pointbuf;
     std::vector<int> sizebuf;
     
-    set->getAttribute(boost::filesystem::path() / "calibration/images/sets" / calib_set_name / "pointdata", pointbuf);  
-    set->getAttribute(boost::filesystem::path() / "calibration/images/sets" / calib_set_name / "pointcounts", sizebuf);
+    set->get(path() / "calibration/images/sets" / calib_set_name / "pointdata", pointbuf);  
+    set->get(path() / "calibration/images/sets" / calib_set_name / "pointcounts", sizebuf);
     
     imgpoints.clear();
     imgpoints.resize(sizebuf.size());

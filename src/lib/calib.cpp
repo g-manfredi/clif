@@ -32,7 +32,7 @@ namespace clif {
         int size[2];
         Datastore *imgs = s->getCalibStore();
         
-        s->getAttribute(cur_path / "size", size, 2);
+        s->get(cur_path / "size", size, 2);
         
         assert(imgs);
         

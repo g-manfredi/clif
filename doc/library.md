@@ -37,7 +37,7 @@ The following will mostly be a list of examples to show how to access clif files
 The [clif](@ref fileformat) file format in many places allows the storage of several alternatives datasets/calibrations/image-sets. To simplify access in this case, most functions allow to specify the respective selection via the name, if an empty string is passed the selection is done automatically (at the moment the fist is choosen, [TODO](@ref todo_priority) for later: introduce priorities).
 
 Most functionality is directly implemented in the library, for example [readEPI](@ref clif::readEPI) can automatically derive extrinsics from the attributes stored in the file and no manual access is necessary by a library user.
-However if direct inspection of attributes is desired the templated [getAttribute](@ref clif::Attributes::getAttribute) provide easy, type-safe access. 
+However if direct inspection of attributes is desired the templated [get](@ref clif::Attributes::get) provide easy, type-safe access. 
 The attribute path in normally specified using boost::filesystem::path.
 
 ## Examples {#examples}
@@ -72,11 +72,11 @@ vector<double> focal_length_vector;  //focal length in pixels
 double focal_length_ptr[2];          //focal length in pixels
 double pixel_pitch;
 
-set->getAttribute("calibration/intrinsics/calib1/projection", focal_length_vector);
-set->getAttribute("camera_info/pixel_pitch", &pixel_pitch);
+set->get("calibration/intrinsics/calib1/projection", focal_length_vector);
+set->get("camera_info/pixel_pitch", &pixel_pitch);
 
 // alternative access using pointer:
-set->getAttribute("camera_info/pixel_pitch", &pixel_pitch);
+set->get("camera_info/pixel_pitch", &pixel_pitch);
 
 printf("focal length in mm: %f %f\n", focal_length_vector[0]*pixel_pitch, focal_length_vector[1]*pixel_pitch);
 
@@ -85,19 +85,15 @@ printf("focal length in mm: %f %f\n", focal_length_vector[0]*pixel_pitch, focal_
 //enum type
 CalibPattern pattern;
 
-//getAttribute automatically parses the stored attribute to get enum type
-set->getAttribute("calibration/images/sets/calib1/type", pattern);
+//get automatically parses the stored attribute to get enum type
+set->get("calibration/images/sets/calib1/type", pattern);
 ~~~~~~~~~~~~~
 
 ### select first alternative from a set
 
-
-
-[getAttribute]: http://www.example.com "Optional title"
-
 ~~~~~~~~~~~~~{.cpp}
 ...
-set->getAttribute(set->subGroupPath("calibration/intrinsics)/"projection", focal_length);
+set->get(set->subGroupPath("calibration/intrinsics)/"projection", focal_length);
 ...
 ~~~~~~~~~~~~~
 

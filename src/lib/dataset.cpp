@@ -5,7 +5,7 @@
 namespace clif {
 void Intrinsics::load(Attributes *attrs, boost::filesystem::path path)
 {
-  Attribute *a = attrs->getAttribute(path / "type");
+  Attribute *a = attrs->get(path / "type");
   
   _undist_map = cv::Mat();
   
@@ -24,11 +24,11 @@ void Intrinsics::load(Attributes *attrs, boost::filesystem::path path)
   cv_cam = cv::Mat::eye(3,3,CV_64F);
   cv_dist.resize(0);
   
-  attrs->getAttribute(path / "projection", f, 2);
+  attrs->get(path / "projection", f, 2);
   cv_cam.at<double>(0,0) = f[0];
   cv_cam.at<double>(1,1) = f[1];
   
-  a = attrs->getAttribute(path / "projection_center");
+  a = attrs->get(path / "projection_center");
   if (a) {
     a->get(c, 2);
     cv_cam.at<double>(0,2) = c[0];
@@ -36,7 +36,7 @@ void Intrinsics::load(Attributes *attrs, boost::filesystem::path path)
   }
   
   if (model == DistModel::CV8)
-    attrs->getAttribute(path / "opencv_distortion", cv_dist);
+    attrs->get(path / "opencv_distortion", cv_dist);
 }
 
 cv::Mat* Intrinsics::getUndistMap(double depth, int w, int h)

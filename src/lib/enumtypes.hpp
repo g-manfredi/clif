@@ -107,6 +107,9 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
     return T(-1);
   }
   
+  BaseType CvDepth2BaseType(int cv_type);
+  int BaseType2CvDepth(BaseType t);
+  
 }
 
 #define ClifEnumString(Type,Var) Type ## Str[ static_cast<int>(Var) ]

@@ -10,6 +10,7 @@ add_executable(clifsweep clifsweep.cpp)
 add_executable(clifsweep_tensor clifsweep_tensor.cpp)
 add_executable(loadbench_vigra loadbench_vigra.cpp)
 add_executable(loadbench_vigra2 loadbench_vigra2.cpp)
+add_executable(clif_image_attribute clif_image_attribute.cpp)
 
 SET_TARGET_PROPERTIES(clif-bin
   PROPERTIES OUTPUT_NAME clif)
@@ -19,6 +20,7 @@ target_link_libraries(clif-bin clif cliini ${OpenCV_LIBRARIES})
 target_link_libraries(clifinfo clif cliini ${OpenCV_LIBRARIES})
 target_link_libraries(clifsweep clif cliini ${OpenCV_LIBRARIES})
 target_link_libraries(clifsweep_tensor clif cliini ${OpenCV_LIBRARIES})
+target_link_libraries(clif_image_attribute clif cliini ${OpenCV_LIBRARIES})
 target_link_libraries(loadbench_vigra clif_vigra cliini ${OpenCV_LIBRARIES})
 #FIXME vigraimpex?
 target_link_libraries(loadbench_vigra2 clif_vigra cliini ${OpenCV_LIBRARIES} vigraimpex)

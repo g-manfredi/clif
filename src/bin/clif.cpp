@@ -214,7 +214,7 @@ int main(const int argc, const char *argv[])
       if (include)
         for(int i=0;i<in_set->Attributes::count();i++) {
           bool match_found = false;
-          Attribute *a = in_set->getAttribute(i);
+          Attribute *a = in_set->get(i);
           for(int j=0;j<cliarg_sum(include);j++)
             if (!fnmatch(cliarg_nth_str(include, j), a->name.c_str(), FNM_PATHNAME)) {
               printf("include attribute: %s\n", a->name.c_str());
@@ -227,7 +227,7 @@ int main(const int argc, const char *argv[])
       else if (exclude)
         for(int i=0;i<in_set->Attributes::count();i++) {
           bool match_found = false;
-          Attribute *a = in_set->getAttribute(i);
+          Attribute *a = in_set->get(i);
           for(int j=0;j<cliarg_sum(exclude);j++)
             if (!fnmatch(cliarg_nth_str(exclude, j), a->name.c_str(), FNM_PATHNAME)) {
               printf("exclude attribute: %s\n", a->name.c_str());

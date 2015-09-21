@@ -1,8 +1,6 @@
 #ifndef _CLIF_DATASET_H
 #define _CLIF_DATASET_H
 
-#include <opencv2/core/core.hpp>
-
 #include "attribute.hpp"
 #include "datastore.hpp"
 
@@ -75,13 +73,15 @@ class Dataset : public Attributes, public Datastore {
      */
     boost::filesystem::path path();
     
+    /** The internal HDF5 reference
+     */
+    H5::H5File f;
 
     //TODO if attributes get changed automatically refresh intrinsics on getIntrinsics?
     //TODO hide and create accessor
     Intrinsics intrinsics;
 private:
     Datastore *calib_images = NULL;
-    H5::H5File f;
     std::string _path;
 };
   

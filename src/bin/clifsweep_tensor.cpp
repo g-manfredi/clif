@@ -256,7 +256,7 @@ int main(const int argc, const char *argv[])
   
   double focal_length[2];
   
-  in_set->getAttribute("calibration/intrinsics/checkers/projection", focal_length, 2);
+  in_set->get("calibration/intrinsics/checkers/projection", focal_length, 2);
   
   focal_length[0] *= scale;
   focal_length[1] *= scale;

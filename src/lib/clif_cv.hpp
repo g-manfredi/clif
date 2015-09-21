@@ -3,17 +3,11 @@
 
 #include "clif.hpp"
 
-#include <opencv2/core/core.hpp>
-
 namespace clif {
   
 /** \defgroup clif_cv OpenCV Bindings
 *  @{
 */
-  
-  BaseType CvDepth2DataType(int cv_type);
-  int DataType2CvDepth(BaseType t);
-
   cv::Size imgSize(Datastore *store);
     
   void writeCvMat(Datastore *store, uint idx, cv::Mat &m);

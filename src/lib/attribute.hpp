@@ -1,6 +1,8 @@
 #ifndef _CLIF_ATTRIBUTE_H
 #define _CLIF_ATTRIBUTE_H
 
+#include <opencv2/core/core.hpp>
+
 #include "core.hpp"
 #include "stringtree.hpp"
 
@@ -11,7 +13,7 @@ This class implements templated attribute access. Most times access will be trou
 */
 class Attribute {
   public:
-    template<typename T> void Set(std::string name_, int dims_, T *size_, BaseType type_, void *data_);
+    template<typename T> void set(std::string name_, int dims_, T *size_, BaseType type_, void *data_);
     
     void setName(std::string name_) { name = name_; };
     
@@ -72,6 +74,15 @@ class Attribute {
         val[i] = ((T*)data)[i];
     };
     
+    void get(cv::Mat &val)
+    {
+      int sizes[size.size()];
+      for(int i=0;i<size.size();i++)
+        sizes[i] = size[i];
+      
+      val = cv::Mat(size.size(), sizes, BaseType2CvDepth(type), data);
+    };
+    
     template<typename T> void set(T &val)
     {
       type = toBaseType<T>();
@@ -102,6 +113,20 @@ class Attribute {
       for(int i=0;i<size[0];i++)
         ((T*)data)[i] = val[i];
       
+    };
+    
+    void set(cv::Mat &val)
+    {
+      type = CvDepth2BaseType(val.depth());
+      assert(type != BaseType::INVALID);
+      
+      data = malloc(val.total()*val.elemSize());
+      
+      size.resize(val.dims);
+      for(int i=0;i<size.size();i++)
+        size[i] = val.size[i];
+      
+      memcpy(data, val.data, val.total()*val.elemSize());
     };
     
     template<typename T> void set(T *val, int count = 1)
@@ -153,7 +178,7 @@ class Attribute {
 };
 
 /** Main class for metadata handling.
- Stores an Attribute list and provides path based access. The [setAttribute](@ref Attributes::setAttribute) and [getAttribute](@ref getattribute_group) methods are templated and of the form <tt>function(pathtype, array_reference)</tt>, using the following types:
+ Stores an Attribute list and provides path based access. The [setAttribute](@ref Attributes::setAttribute) and [get](@ref getattribute_group) methods are templated and of the form <tt>function(pathtype, array_reference)</tt>, using the following types:
 
 \anchor getattribute_table
 pathtype                | Notes
@@ -191,7 +216,7 @@ class Attributes {
      * @name Read Attributes
      */
     //@{
-    Attribute *getAttribute(boost::filesystem::path name)
+    Attribute *get(boost::filesystem::path name)
     {    
       for(int i=0;i<attrs.size();i++)
         if (!attrs[i].name.compare(name.string()))
@@ -199,12 +224,12 @@ class Attributes {
         
         return NULL;
     }
-    Attribute *getAttribute(int idx)
+    Attribute *get(int idx)
     {    
       return &attrs[idx];
     }
     //other types
-    template<typename STRINGTYPE> Attribute *getAttribute(STRINGTYPE name)
+    template<typename STRINGTYPE> Attribute *get(STRINGTYPE name)
     {    
       for(int i=0;i<attrs.size();i++)
         if (!attrs[i].name.compare(name))
@@ -225,15 +250,15 @@ class Attributes {
      *  @param a1 is the actual array_reference (\c vector<T>  or <tt>T *</tt>)
      *  @param args array element count (as \c int) if \b a1 is of type <tt>T*</tt>.
      */
-    template<typename S, typename T1, typename ...TS> void getAttribute(S name, T1 &a1, TS...args)
+    template<typename S, typename T1, typename ...TS> void get(S name, T1 &a1, TS...args)
     {
-      Attribute *attr = getAttribute(name);
+      Attribute *attr = get(name);
       if (!attr)
         throw std::invalid_argument("requested attribute does not exist!");
       attr->get(a1, args...);
     };
     
-    /** replace or add an attribute. Same usage as [getAttribute](@ref getattribute_group)
+    /** replace or add an attribute. Same usage as [get](@ref getattribute_group)
      */
     template<typename S, typename ...TS> void setAttribute(S name, TS...args)
     {
@@ -250,7 +275,7 @@ class Attributes {
      * @name Reading Enums
      */
     //@{
-    template<typename S, typename T> T getEnum(S name) { return getAttribute(name)->getEnum<T>(); };
+    template<typename S, typename T> T getEnum(S name) { return get(name)->getEnum<T>(); };
     template<typename S, typename T> void getEnum(S name, T &val) { val = getEnum<S,T>(name); };
     //@}
     
@@ -302,7 +327,7 @@ inline StringTree<Attribute*> Attributes::getTree()
   return tree;
 }
 
-template<typename T> void Attribute::Set(std::string name_, int dims_, T *size_, BaseType type_, void *data_)
+template<typename T> void Attribute::set(std::string name_, int dims_, T *size_, BaseType type_, void *data_)
 {
   name = name_;
   type = type_;

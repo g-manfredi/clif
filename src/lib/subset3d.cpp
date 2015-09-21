@@ -23,7 +23,7 @@ Subset3d::Subset3d(Dataset *data, std::string extr_group)
   
   double line_step[3];
   
-  data->getAttribute(root/"/line_step", line_step, 3);
+  data->get(root/"/line_step", line_step, 3);
   
   //TODO for now we only support horizontal lines!
   assert(line_step[0] != 0.0);
@@ -33,7 +33,7 @@ Subset3d::Subset3d(Dataset *data, std::string extr_group)
   step_length = line_step[0];
   
   //TODO which intrinsic to select!
-  data->getAttribute(data->subGroupPath("calibration/intrinsics/")/"/projection", f, 2);
+  data->get(data->subGroupPath("calibration/intrinsics/")/"/projection", f, 2);
 }
 
 
