@@ -411,9 +411,7 @@ void Attribute::write(H5::H5File &f, std::string dataset_name)
   if (!h5_obj_exists(f, grouppath))
     h5_create_path_groups(f, grouppath);
   
-  g = f.openGroup(grouppath);
-  
-  if (g.attrExists(attr_name))
+  if (H5Aexists(g.getId(), attr_name.c_str()))
     g.removeAttr(attr_name);
     
   attr = g.createAttribute(attr_name, BaseType_to_PredType(type), space);
