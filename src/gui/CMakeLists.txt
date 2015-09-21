@@ -5,8 +5,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/mod
 
 #set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -std=c++11 -Wall")
 
-find_package(Qt5Widgets)
-find_package(Qwt)
+find_package(Qt5Widgets QUIET)
+find_package(Qwt QUIET)
 
 set(CLIF_BUILD_QT TRUE)
 set(CLIF_BUILD_QT_REASON "")
