@@ -43,6 +43,6 @@ add_library(clif_vigra SHARED clif_vigra.cpp)
 
 #add_library(clifcalib SHARED clifcalib.cpp)
 
-target_link_libraries(clif ${HDF5_CXX_LIBRARIES} ${Boost_LIBRARIES} ${OPENCV_LIBRARIES})
+target_link_libraries(clif ${HDF5_CXX_LIBRARIES} ${Boost_LIBRARIES} ${OpenCV_LIBRARIES})
 target_link_libraries(clif_vigra clif ${Vigra_LIBRARIES})
 #target_link_libraries(clifcalib clif)
