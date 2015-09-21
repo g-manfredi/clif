@@ -18,7 +18,6 @@
 
 #include "clif_cv.hpp"
 #include "calib.hpp"
-#include "matio.hpp"
 
 using namespace clif;
 using namespace std;
