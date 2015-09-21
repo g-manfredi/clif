@@ -8,8 +8,14 @@
 
 namespace clif {
   
+/** \defgroup clif_cv OpenCV Bindings
+*  @{
+*/
   void readQImage(clif::Datastore *store, uint idx, QImage &img, int flags = 0);
   void readEPI(clif::Subset3d *set, QImage &img, int line, double depth, int flags = 0);
+/**
+ *  @}
+ */
     
 }
 

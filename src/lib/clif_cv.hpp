@@ -7,6 +7,10 @@
 
 namespace clif {
   
+/** \defgroup clif_cv OpenCV Bindings
+*  @{
+*/
+  
   BaseType CvDepth2DataType(int cv_type);
   int DataType2CvDepth(BaseType t);
 
@@ -23,6 +27,9 @@ namespace clif {
 
   void writeCvMat(Datastore *store, uint idx, hsize_t w, hsize_t h, void *data);
   
+/**
+ *  @}
+ */
 }
 
 #endif

@@ -1,7 +1,6 @@
-[TOC]
-
 # The CLIF Library {#library}
 
+[TOC]
 
 The following will give a brief overview over the core classes used in the clif library and show usage with a few code snippets.
 
@@ -103,7 +102,7 @@ set->getAttribute(set->subGroupPath("calibration/intrinsics)/"projection", focal
 ~~~~~~~~~~~~~
 
 
-### read image from a dataset 
+### read image from a dataset
 
 ~~~~~~~~~~~~~{.cpp}
 Mat img;

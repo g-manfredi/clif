@@ -90,8 +90,6 @@ boost::filesystem::path Dataset::subGroupPath(boost::filesystem::path parent, st
 
 Datastore *Dataset::createCalibStore()
 {
-  printf("create calib store\n");
-  
   if (calib_images)
     return calib_images;
   

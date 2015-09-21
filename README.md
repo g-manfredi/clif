@@ -4,8 +4,11 @@ CLIF is a file format and corresponding library based on hdf5, to simplify light
 
 # Documentation Overview
 
-Documentation is grouped into three parts:
-- [Library Documentation](@ref clif)
+- [Library Documentation (whole clif namespace)](@ref clif)
+  - **Bindings**
+    - [OpenCV Bindings](@ref clif_cv)
+    - [Vigra Bindings](@ref clif_vigra)
+    - [QT Bindings](@ref clif_qt)
 - [File Format](\ref file_format)
 - [Tools and File Handling](\ref tools)
 

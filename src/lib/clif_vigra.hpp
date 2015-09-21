@@ -9,6 +9,10 @@
 
 namespace clif {
   
+/** \defgroup clif_vigra Vigra Bindings
+ *  @{
+ */
+  
   //same as callByBaseType but without char (cause vigra doesn't like it :-))
   template<template<typename> class F, typename ... ArgTypes> void callByBaseType_Vigra(BaseType type, ArgTypes & ... args)
   {
@@ -33,7 +37,9 @@ namespace clif {
       case BaseType::DOUBLE : return F<double>()(args...); break;
       default:
         abort();
-    }
+    }/** \defgroup clif_vigra Vigra Bindings
+ *  @{
+ */
   }
   
   template<uint DIM> class FlexMAV;
@@ -116,6 +122,10 @@ namespace clif {
   void readEPI(Subset3d *subset, FlexMAV<2> &channels, int line, double disparity, ClifUnit unit = ClifUnit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0);
   
   //void readSubset3d(Datastore *store, uint idx, void **volume, int flags = 0, float scale = 1.0);
+  
+/**
+ *  @}
+ */
   
 }
 
