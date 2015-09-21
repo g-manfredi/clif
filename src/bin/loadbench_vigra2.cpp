@@ -50,7 +50,7 @@ cliini_optgroup group = {
 
 template<typename T> class save_channel_functor {
 public:
-void operator()(int ch, FlexMAV<2> &img, const char *fmt = "%03d.tif")
+void operator()(int ch, FlexChannels<2> &img, const char *fmt = "%03d.tif")
 {
   char buf[64];
   sprintf(buf, fmt, ch);
@@ -78,7 +78,7 @@ int main(const int argc, const char *argv[])
   Dataset *in_set = f_in.openDataset(0);
   Subset3d *subset = new Subset3d(in_set);
   
-  FlexMAV<2> img;
+  FlexChannels<2> img;
 
   //read first image from dataset
   readImage(in_set, 0, img);

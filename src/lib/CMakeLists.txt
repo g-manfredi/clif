@@ -3,8 +3,6 @@ project(clif)
 
 find_package(HDF5 REQUIRED CXX)
 
-find_package(Boost REQUIRED COMPONENTS filesystem system)
-
 find_package(PkgConfig REQUIRED)
 #TODO make optional
 #pkg_search_module(MATIO REQUIRED matio)
@@ -46,3 +44,11 @@ add_library(clif_vigra SHARED clif_vigra.cpp)
 target_link_libraries(clif ${HDF5_CXX_LIBRARIES} ${Boost_LIBRARIES} ${OpenCV_LIBRARIES})
 target_link_libraries(clif_vigra clif ${Vigra_LIBRARIES})
 #target_link_libraries(clifcalib clif)
+
+set(HEADERS attribute.hpp calib.hpp clif_cv.hpp clif.hpp clif_vigra.hpp core.hpp dataset.hpp datastore.hpp enumtypes.hpp enumtypes.hpp.in flexmav.hpp hdf5.hpp helpers.hpp matio.hpp stringtree.hpp subset3d.hpp)
+
+install(TARGETS clif clif_vigra
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib/static)
+install(FILES ${HEADERS} DESTINATION include/clif)

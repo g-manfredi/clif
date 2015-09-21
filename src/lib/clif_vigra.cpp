@@ -1,13 +1,8 @@
 #include "clif_vigra.hpp"
 
 #include <cstddef>
-
 #include <sstream>
 #include <string>
-
-#include "clif_cv.hpp"
-
-#include "opencv2/highgui/highgui.hpp"
 
 namespace clif {
 
@@ -44,7 +39,7 @@ void readImage(Datastore *store, uint idx, void **channels, int flags, float sca
   store->call<readimage_dispatcher>(store, idx, channels, flags, scale);
 }
 
-void readImage(Datastore *store, uint idx, FlexMAV<2> &channels, int flags, float scale)
+void readImage(Datastore *store, uint idx, FlexChannels<2> &channels, int flags, float scale)
 {
   std::vector<cv::Mat> cv_channels;
   readCvMat(store, idx, cv_channels, flags, scale);
@@ -54,7 +49,7 @@ void readImage(Datastore *store, uint idx, FlexMAV<2> &channels, int flags, floa
 
 template<typename T> class readepi_dispatcher {
 public:
-  void operator()(clif::Subset3d *subset, void **raw_channels, int line, double disparity, ClifUnit unit = ClifUnit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0)
+  void operator()(Subset3d *subset, void **raw_channels, int line, double disparity, ClifUnit unit = ClifUnit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0)
   {
     //cast
     std::vector<vigra::MultiArray<2, T>> **channels = reinterpret_cast<std::vector<vigra::MultiArray<2, T>> **>(raw_channels);
@@ -78,12 +73,12 @@ public:
   }
 };
 
-void readEPI(clif::Subset3d *subset, void **channels, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
+void readEPI(Subset3d *subset, void **channels, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
 {
   subset->dataset()->call<readepi_dispatcher>(subset, channels, line, disparity, unit, flags, interp, scale);
 }
 
-void readEPI(clif::Subset3d *subset, FlexMAV<2> &channels, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
+void readEPI(Subset3d *subset, FlexChannels<2> &channels, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
 {
   std::vector<cv::Mat> cv_channels;
   subset->readEPI(cv_channels, line, disparity, unit, flags, interp, scale);

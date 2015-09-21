@@ -62,7 +62,7 @@ int main(const int argc, const char *argv[])
   Dataset *in_set = f_in.openDataset(0);
   Subset3d *subset = new Subset3d(in_set);
   
-  FlexMAV<2> img;
+  FlexChannels<2> img;
 
   for(int i=0;i<10000;i++)
     readEPI(subset, img, i % in_set->Datastore::count(), 5.0, ClifUnit::PIXELS, 0, Interpolation::LINEAR);

@@ -7,6 +7,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -O3 -fno-omit-frame-pointer -std=c++11 
 
 find_package(OpenCV REQUIRED)
 find_package(Vigra REQUIRED)
+find_package(Boost REQUIRED COMPONENTS filesystem system)
 
 add_subdirectory(external/cliini)
 include_directories(external/cliini)

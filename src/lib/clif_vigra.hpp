@@ -4,6 +4,8 @@
 #include "clif.hpp"
 #include "subset3d.hpp"
 
+#include "flexmav.hpp"
+
 #include <vigra/multi_array.hxx>
 #include <vigra/multi_shape.hxx>
 
@@ -42,21 +44,21 @@ namespace clif {
  */
   }
   
-  template<uint DIM> class FlexMAV;
-  template <uint DIM, typename T, uint IDX> vigra::MultiArrayView<DIM,T> getFixedChannel(FlexMAV<DIM> &a);
+  template<uint DIM> class FlexChannels;
+  template <uint DIM, typename T, uint IDX> vigra::MultiArrayView<DIM,T> getFixedChannel(FlexChannels<DIM> &a);
   
-  template<uint DIM> class FlexMAV {
+  template<uint DIM> class FlexChannels {
   public:
     
     typedef vigra::TinyVector<vigra::MultiArrayIndex, DIM> difference_type;
     
-    FlexMAV() {};
-    //FlexMAV(const difference_type &shape, BaseType type) : _shape(shape), _type(type) {}
-    FlexMAV(const difference_type &shape, BaseType type, std::vector<cv::Mat> inputs) { create(shape,type,inputs); };
+    FlexChannels() {};
+    //FlexChannels(const difference_type &shape, BaseType type) : _shape(shape), _type(type) {}
+    FlexChannels(const difference_type &shape, BaseType type, std::vector<cv::Mat> inputs) { create(shape,type,inputs); };
     
     template<typename T> class new_channels_dispatcher {
     public:
-      void * operator()(FlexMAV<DIM> &mav, std::vector<cv::Mat> &inputs)
+      void * operator()(FlexChannels<DIM> &mav, std::vector<cv::Mat> &inputs)
       {
         auto channels = new std::vector<vigra::MultiArrayView<DIM,T>>(inputs.size());
         for(int i=0;i<inputs.size();i++)
@@ -68,7 +70,7 @@ namespace clif {
     
     template<typename T> class destruct_channels_dispatcher {
     public:
-      void operator()(FlexMAV<DIM> &mav)
+      void operator()(FlexChannels<DIM> &mav)
       {
         std::vector<vigra::MultiArrayView<DIM,T>> *channels = mav.template channels<T>();
         delete channels;
@@ -116,7 +118,7 @@ namespace clif {
     BaseType _type = BaseType::INVALID;
   };
 
-  template <uint DIM, typename T, uint IDX> vigra::MultiArrayView<DIM,T>* getFixedChannel(FlexMAV<DIM> &a)
+  template <uint DIM, typename T, uint IDX> vigra::MultiArrayView<DIM,T>* getFixedChannel(FlexChannels<DIM> &a)
   {
     return a.channels()[IDX];
   }
@@ -124,11 +126,11 @@ namespace clif {
   vigra::Shape2 imgShape(Datastore *store);
   
   void readImage(Datastore *store, uint idx, void **channels, int flags = 0, float scale = 1.0);
-  void readImage(Datastore *store, uint idx, FlexMAV<2> &channels, int flags = 0, float scale = 1.0);
+  void readImage(Datastore *store, uint idx, FlexChannels<2> &channels, int flags = 0, float scale = 1.0);
   
   void readEPI(Subset3d *subset, void **channels, int line, double disparity, ClifUnit unit = ClifUnit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0);
   
-  void readEPI(Subset3d *subset, FlexMAV<2> &channels, int line, double disparity, ClifUnit unit = ClifUnit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0);
+  void readEPI(Subset3d *subset, FlexChannels<2> &channels, int line, double disparity, ClifUnit unit = ClifUnit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0);
   
   //void readSubset3d(Datastore *store, uint idx, void **volume, int flags = 0, float scale = 1.0);
   

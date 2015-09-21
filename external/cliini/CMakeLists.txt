@@ -12,3 +12,8 @@ add_executable(cliini_types testini_types.c)
 target_link_libraries(cliini_test cliini)
 target_link_libraries(cliini_initest cliini)
 target_link_libraries(cliini_types cliini)
+
+install(TARGETS cliini
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib/static)

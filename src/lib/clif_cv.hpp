@@ -2,6 +2,7 @@
 #define _CLIF_CV_H
 
 #include "clif.hpp"
+#include "opencv2/core/core.hpp"
 
 namespace clif {
   
