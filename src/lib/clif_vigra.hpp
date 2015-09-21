@@ -1,13 +1,14 @@
 #ifndef _CLIF_VIGRA_H
 #define _CLIF_VIGRA_H
 
+#include <vigra/multi_array.hxx>
+#include <vigra/multi_shape.hxx>
+
 #include "clif.hpp"
 #include "subset3d.hpp"
 
 #include "flexmav.hpp"
 
-#include <vigra/multi_array.hxx>
-#include <vigra/multi_shape.hxx>
 
 namespace clif {
   
