@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 2.6)
 project(cliini)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -std=c99")
 
 add_library(cliini SHARED cliini.c)
 
