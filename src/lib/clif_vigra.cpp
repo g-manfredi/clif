@@ -10,15 +10,12 @@
 #include "opencv2/highgui/highgui.hpp"
 
 namespace clif {
-  
-using namespace vigra;
 
-  
-Shape2 imgShape(Datastore *store)
+vigra::Shape2 imgShape(Datastore *store)
 {
   cv::Size size = imgSize(store);
   
-  return Shape2(size.width, size.height);
+  return vigra::Shape2(size.width, size.height);
 }
   
 template<typename T> class readimage_dispatcher {
@@ -26,7 +23,7 @@ public:
   void operator()(Datastore *store, uint idx, void **raw_channels, int flags = 0, float scale = 1.0)
   {
     //cast
-    std::vector<MultiArrayView<2, T>> **channels = reinterpret_cast<std::vector<MultiArrayView<2, T>> **>(raw_channels);
+    std::vector<vigra::MultiArrayView<2, T>> **channels = reinterpret_cast<std::vector<vigra::MultiArrayView<2, T>> **>(raw_channels);
     
     //allocate correct type
     if (*channels == NULL)
@@ -60,7 +57,7 @@ public:
   void operator()(clif::Subset3d *subset, void **raw_channels, int line, double disparity, ClifUnit unit = ClifUnit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0)
   {
     //cast
-    std::vector<MultiArray<2, T>> **channels = reinterpret_cast<std::vector<MultiArray<2, T>> **>(raw_channels);
+    std::vector<vigra::MultiArray<2, T>> **channels = reinterpret_cast<std::vector<vigra::MultiArray<2, T>> **>(raw_channels);
     
     //allocate correct type
     if (*channels == NULL)
@@ -70,13 +67,13 @@ public:
     std::vector<cv::Mat> cv_channels;
     subset->readEPI(cv_channels, line, disparity, unit, flags, interp, scale);
     
-    Shape2 shape(cv_channels[0].size().width, cv_channels[0].size().height);
+    vigra::Shape2 shape(cv_channels[0].size().width, cv_channels[0].size().height);
     
     //store in multiarrayview
     for(int c=0;c<(*channels)->size();c++) {
       //TODO implement somw form of zero copy...
       (**channels)[c].reshape(shape);
-      (**channels)[c] = MultiArrayView<2, T>(shape, (T*)cv_channels[c].data);
+      (**channels)[c] = vigra::MultiArrayView<2, T>(shape, (T*)cv_channels[c].data);
     }
   }
 };
@@ -91,7 +88,7 @@ void readEPI(clif::Subset3d *subset, FlexMAV<2> &channels, int line, double disp
   std::vector<cv::Mat> cv_channels;
   subset->readEPI(cv_channels, line, disparity, unit, flags, interp, scale);
   
-  Shape2 shape(cv_channels[0].size().width, cv_channels[0].size().height);
+  vigra::Shape2 shape(cv_channels[0].size().width, cv_channels[0].size().height);
   
   channels.create(shape, subset->dataset()->type(), cv_channels);
 }
