@@ -7,11 +7,11 @@ find_package(Boost REQUIRED COMPONENTS filesystem system)
 
 find_package(PkgConfig REQUIRED)
 #TODO make optional
-pkg_search_module(MATIO REQUIRED matio)
+#pkg_search_module(MATIO REQUIRED matio)
 
 #set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -O3 -std=c++11 -Wall")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -O0")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -O0")
 
 
 function(createEnumStrings ENUMSTR)
@@ -43,6 +43,6 @@ add_library(clif_vigra SHARED clif_vigra.cpp)
 
 #add_library(clifcalib SHARED clifcalib.cpp)
 
-target_link_libraries(clif ${HDF5_CXX_LIBRARIES} ${Boost_LIBRARIES} ${OPENCV_LIBRARIES} ${MATIO_LIBRARIES})
+target_link_libraries(clif ${HDF5_CXX_LIBRARIES} ${Boost_LIBRARIES} ${OPENCV_LIBRARIES})
 target_link_libraries(clif_vigra clif ${Vigra_LIBRARIES})
 #target_link_libraries(clifcalib clif)

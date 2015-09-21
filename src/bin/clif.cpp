@@ -150,14 +150,14 @@ int main(const int argc, const char *argv[])
   vector<string> input_clifs = extract_matching_strings(input, clif_extension_pattern);
   vector<string> input_imgs  = extract_matching_strings(input, img_extension_pattern);
   vector<string> input_inis  = extract_matching_strings(input, ini_extension_pattern);
-  vector<string> input_mats  = extract_matching_strings(input, mat_extension_pattern);
+  //vector<string> input_mats  = extract_matching_strings(input, mat_extension_pattern);
   vector<string> input_calib_imgs = extract_matching_strings(calib_imgs, img_extension_pattern);
   
-  if (input_mats.size()) {
+  /*if (input_mats.size()) {
     for(int i=0;i<input_mats.size();i++)
       list_mat(input_mats[i]);
     return EXIT_SUCCESS;
-  }
+  }*/
   
   bool output_clif;
   //std::string input_set_name;
