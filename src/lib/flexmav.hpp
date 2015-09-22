@@ -91,7 +91,10 @@ namespace clif {
       _shape = shape;
       _type = type;
       //TODO n-d!
-      _mat = cv::Mat(cv::Size(shape[0], shape[1]), BaseType2CvDepth(_type));
+      int size[DIM];
+      for(int i=0;i<DIM;i++)
+        size[i] = shape[i];
+      _mat = cv::Mat(DIM, size, BaseType2CvDepth(_type));
       _data = call_r<new_dispatcher,void*>(*this, _mat);
     }
     
