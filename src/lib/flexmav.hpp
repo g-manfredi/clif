@@ -83,8 +83,17 @@ namespace clif {
     public:
         void operator()(FlexMAV<DIM> &mav, std::string name)
         {
-            vigra::MultiArrayView<DIM,T> *img = mav.template get<T>();
-            vigra::importImage(name,mav);
+          vigra::MultiArrayView<DIM,T> *img = mav.template get<T>();
+          vigra::importImage(name,mav);
+        }
+    };
+
+    template<typename T> class exportImage_dispatcher {
+    public:
+        void operator()(FlexMAV<DIM> &mav, std::string name)
+        {
+          vigra::MultiArrayView<DIM,T> *img = mav.template get<T>();
+          vigra::exportImage(mav,name);
         }
     };
     
@@ -127,8 +136,7 @@ namespace clif {
       create(shape, _type);
     }
 
-    void importImage(std::string filename)
-    {
+    void importImage(std::string filename) {
       vigra::ImageImportInfo info(filename.c_str());
 
       //Getting image shape
@@ -141,6 +149,11 @@ namespace clif {
       create(shape,type);
       call<importImage_dispatcher>(this, filename);
     }
+
+    void exportImage(std::string filename){
+      call<exportImage_dispatcher>(this, filename);
+    }
+
     
     template<template<typename> class F, typename ... ArgTypes> void call(ArgTypes & ... args) { callByBaseType_flexmav<F>(_type, args...); }
     template<template<typename> class F, typename R, typename ... ArgTypes> R call_r(ArgTypes & ... args) { return callByBaseType_flexmav_r<F,R>(_type, args...); }
