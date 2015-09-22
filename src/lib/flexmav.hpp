@@ -11,7 +11,7 @@
 namespace clif {
   
   //same as callByBaseType but without char (cause vigra doesn't like it :-))
-  template<template<typename> class F, typename ... ArgTypes> void callByBaseType_flexmav(BaseType type, ArgTypes & ... args)
+  template<template<typename> class F, typename ... ArgTypes> void callByBaseType_flexmav(BaseType type, ArgTypes ... args)
   {
     switch (type) {
       case BaseType::UINT8 :  F<uint8_t>()(args...); break;
@@ -24,7 +24,7 @@ namespace clif {
     }
   }
   
-  template<template<typename> class F, typename R, typename ... ArgTypes> R callByBaseType_flexmav_r(BaseType type, ArgTypes & ... args)
+  template<template<typename> class F, typename R, typename ... ArgTypes> R callByBaseType_flexmav_r(BaseType type, ArgTypes ... args)
   {
     switch (type) {
       case BaseType::UINT8 :  return F<uint8_t>()(args...); break;
@@ -103,8 +103,8 @@ namespace clif {
       create(shape, _type);
     }
     
-    template<template<typename> class F, typename ... ArgTypes> void call(ArgTypes & ... args) { callByBaseType_flexmav<F>(_type, args...); }
-    template<template<typename> class F, typename R, typename ... ArgTypes> R call_r(ArgTypes & ... args) { return callByBaseType_flexmav_r<F,R>(_type, args...); }
+    template<template<typename> class F, typename ... ArgTypes> void call(ArgTypes ... args) { callByBaseType_flexmav<F>(_type, args...); }
+    template<template<typename> class F, typename R, typename ... ArgTypes> R call_r(ArgTypes ... args) { return callByBaseType_flexmav_r<F,R>(_type, args...); }
     
     
     template<typename T> vigra::MultiArrayView<DIM,T> *get() { return static_cast<vigra::MultiArrayView<DIM,T>*>(_data); }
