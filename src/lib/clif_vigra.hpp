@@ -133,6 +133,8 @@ namespace clif {
   
   void readEPI(Subset3d *subset, FlexChannels<2> &channels, int line, double disparity, ClifUnit unit = ClifUnit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0);
   
+  void readEPI(Subset3d *subset, int channel, FlexMAV<2> &img, int line, double disparity, ClifUnit unit = ClifUnit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0);
+  
   //void readSubset3d(Datastore *store, uint idx, void **volume, int flags = 0, float scale = 1.0);
   
 /**

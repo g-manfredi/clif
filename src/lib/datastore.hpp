@@ -26,7 +26,7 @@ class Datastore {
     bool valid();
     void size(int s[3]);
     void imgsize(int s[2]);
-    int  channels() { return 3; } //FIXME grayscale!?
+    int channels() { return 3; } //FIXME grayscale!?
     int count();
     
     const std::string& getDatastorePath() const { return _path; };

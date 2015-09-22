@@ -88,4 +88,14 @@ void readEPI(Subset3d *subset, FlexChannels<2> &channels, int line, double dispa
   channels.create(shape, subset->dataset()->type(), cv_channels);
 }
 
+void readEPI(Subset3d *subset, int channel, FlexMAV<2> &img, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
+{
+  std::vector<cv::Mat> cv_channels;
+  subset->readEPI(cv_channels, line, disparity, unit, flags, interp, scale);
+  
+  vigra::Shape2 shape(cv_channels[0].size().width, cv_channels[0].size().height);
+  
+  img.create(shape, subset->dataset()->type(), cv_channels[channel]);
+}
+
 }

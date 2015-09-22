@@ -34,10 +34,10 @@ class ClifFile
 public:
   ClifFile() {};
   //TODO create file if not existing?
-  ClifFile(std::string &filename, unsigned int flags = H5F_ACC_RDONLY);
+  ClifFile(const std::string &filename, unsigned int flags = H5F_ACC_RDONLY);
   
-  void open(std::string &filename, unsigned int flags = H5F_ACC_RDONLY);
-  void create(std::string &filename);
+  void open(const std::string &filename, unsigned int flags = H5F_ACC_RDONLY);
+  void create(const std::string &filename);
   //void close();
   
   clif::Dataset* openDataset(int idx);

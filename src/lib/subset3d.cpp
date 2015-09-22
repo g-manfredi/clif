@@ -13,17 +13,17 @@ using namespace cv;
 Subset3d::Subset3d(Dataset *data, std::string extr_group)
 : _data(data)
 {  
-  path root = data->subGroupPath("calibration/extrinsics", extr_group);
+  path root = _data->subGroupPath("calibration/extrinsics", extr_group);
   
   ExtrType type;
   
-  data->getEnum((root/"type"), type);
+  _data->getEnum((root/"type"), type);
   
   assert(type == ExtrType::LINE);
   
   double line_step[3];
   
-  data->get(root/"/line_step", line_step, 3);
+  _data->get(root/"/line_step", line_step, 3);
   
   //TODO for now we only support horizontal lines!
   assert(line_step[0] != 0.0);
@@ -33,7 +33,18 @@ Subset3d::Subset3d(Dataset *data, std::string extr_group)
   step_length = line_step[0];
   
   //TODO which intrinsic to select!
-  data->get(data->subGroupPath("calibration/intrinsics/")/"/projection", f, 2);
+  _data->get(_data->subGroupPath("calibration/intrinsics/")/"/projection", f, 2);
+}
+
+Subset3d::Subset3d(clif::Dataset *data, const int idx)
+{
+  std::vector<std::string> subs;
+  
+  data->listSubGroups("calibration/extrinsics", subs);
+  
+  assert(subs.size() >= idx);
+  
+  Subset3d(data, subs[idx]);
 }
 
 
@@ -240,6 +251,27 @@ void Subset3d::readEPI(std::vector<cv::Mat> &channels, int line, double disparit
       //warpAffine(tmp.row(line), m.row(i), warp, m.row(i).size(), CV_INTER_LANCZOS4);
     }
   }
+}
+
+int Subset3d::EPICount()
+{
+  //FIXME use extrinsics group size! (for cross type...)
+  return _data->clif::Datastore::count();
+}
+
+int Subset3d::EPIWidth()
+{
+  int size[2];
+  
+  _data->imgsize(size);
+  
+  //FIXME depends on rotation!
+  return size[0];
+}
+
+int Subset3d::EPIHeight()
+{
+  return _data->clif::Datastore::count();
 }
 
 }

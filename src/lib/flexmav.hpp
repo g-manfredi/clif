@@ -52,7 +52,7 @@ namespace clif {
     public:
       void * operator()(FlexMAV<DIM> &mav, cv::Mat &input)
       {
-        return new vigra::MultiArrayView<DIM,T>(shape(), (T*)input.data);
+        return new vigra::MultiArrayView<DIM,T>(mav.shape(), (T*)input.data);
       }
     };
     
@@ -65,6 +65,15 @@ namespace clif {
       }
     };
     
+    /*template<typename T> class reshape_dispatcher {
+    public:
+      void operator()(FlexMAV<DIM> &mav, difference_type &shape)
+      {
+        vigra::MultiArrayView<DIM,T> *img = mav.template get<T>();
+        mav->reshape(shape);
+      }
+    };*/
+    
     void create(difference_type shape, BaseType type, cv::Mat &input)
     { 
       if (_data)
@@ -75,12 +84,30 @@ namespace clif {
       _data = call_r<new_dispatcher,void*>(*this, input);
     }
     
+    void create(difference_type shape, BaseType type)
+    { 
+      if (_data)
+        call<delete_dispatcher>(*this);
+      _shape = shape;
+      _type = type;
+      //TODO n-d!
+      _mat = cv::Mat(cv::Size(shape[0], shape[1]), BaseType2CvDepth(_type));
+      _data = call_r<new_dispatcher,void*>(*this, _mat);
+    }
+    
+    void reshape(difference_type shape)
+    { 
+      create(shape, _type);
+    }
+    
     template<template<typename> class F, typename ... ArgTypes> void call(ArgTypes & ... args) { callByBaseType_flexmav<F>(_type, args...); }
     template<template<typename> class F, typename R, typename ... ArgTypes> R call_r(ArgTypes & ... args) { return callByBaseType_flexmav_r<F,R>(_type, args...); }
     
     
     template<typename T> vigra::MultiArrayView<DIM,T> *get() { return static_cast<vigra::MultiArrayView<DIM,T>*>(_data); }
     difference_type shape() { return _shape; };
+    
+    BaseType type() { return _type; }
     
   private:
     BaseType _type = BaseType::INVALID;

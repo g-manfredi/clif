@@ -115,7 +115,7 @@ namespace clif {
   }
 
 
-void ClifFile::open(std::string &filename, unsigned int flags)
+void ClifFile::open(const std::string &filename, unsigned int flags)
 {
   f.openFile(filename, flags);
   
@@ -136,7 +136,7 @@ void ClifFile::open(std::string &filename, unsigned int flags)
     datasets[i] = g.getObjnameByIdx(i);
 }
 
-void ClifFile::create(std::string &filename)
+void ClifFile::create(const std::string &filename)
 {
   f = H5::H5File(filename, H5F_ACC_TRUNC);
   
@@ -157,7 +157,7 @@ void ClifFile::create(std::string &filename)
     datasets[i] = g.getObjnameByIdx(i);
 }
 
-ClifFile::ClifFile(std::string &filename, unsigned int flags)
+ClifFile::ClifFile(const std::string &filename, unsigned int flags)
 {
   open(filename, flags);
 }
@@ -168,14 +168,19 @@ int ClifFile::datasetCount()
 }
 
 
-clif::Dataset* ClifFile::openDataset(std::string name)
+clif::Dataset* ClifFile::openDataset(const std::string name)
 {
   clif::Dataset *set = new clif::Dataset();
-  set->open(f, name);
+  
+  if (name.size())
+    set->open(f, name);
+  else
+    set->open(f, datasets[0]);
+
   return set;
 }
 
-clif::Dataset* ClifFile::createDataset(std::string name)
+clif::Dataset* ClifFile::createDataset(const std::string name)
 {
   clif::Dataset *set = new clif::Dataset();
   set->create(f, name);
