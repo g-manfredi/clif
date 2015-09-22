@@ -3,6 +3,8 @@
 
 #include <vigra/multi_array.hxx>
 #include <vigra/multi_shape.hxx>
+#include <vigra/imageinfo.hxx>
+#include <vigra/impex.hxx>
 
 #include <opencv2/core/core.hpp>
 
@@ -36,6 +38,18 @@ namespace clif {
         abort();
     }
   }
+
+  BaseType vigraPixelType2BaseType(vigra::ImageImportInfo::PixelType type){
+    switch (type) {
+      case vigra::ImageImportInfo::PixelType::UINT8 : return BaseType::UINT8; break;
+      case vigra::ImageImportInfo::PixelType::UINT16 : return BaseType::UINT16; break;
+      case vigra::ImageImportInfo::PixelType::INT32 : return BaseType::INT; break;
+      case vigra::ImageImportInfo::PixelType::FLOAT : return BaseType::FLOAT; break;
+      case vigra::ImageImportInfo::PixelType::DOUBLE : return BaseType::DOUBLE; break;
+      default:
+        BaseType::INVALID;
+    }
+  }
   
   template<uint DIM> class FlexMAV;
   template <uint DIM, typename T, uint IDX> vigra::MultiArrayView<DIM,T> getFixedChannel(FlexMAV<DIM> &a);
@@ -63,6 +77,24 @@ namespace clif {
         vigra::MultiArrayView<DIM,T> *img = mav->template get<T>();
         delete img;
       }
+    };
+
+    template<typename T> class importImage_dispatcher {
+    public:
+        void operator()(FlexMAV<DIM> &mav, std::string name)
+        {
+          vigra::MultiArrayView<DIM,T> *img = mav.template get<T>();
+          vigra::importImage(name,mav);
+        }
+    };
+
+    template<typename T> class exportImage_dispatcher {
+    public:
+        void operator()(FlexMAV<DIM> &mav, std::string name)
+        {
+          vigra::MultiArrayView<DIM,T> *img = mav.template get<T>();
+          vigra::exportImage(mav,name);
+        }
     };
     
     /*template<typename T> class reshape_dispatcher {
@@ -104,6 +136,25 @@ namespace clif {
     { 
       create(shape, _type);
     }
+
+    void importImage(std::string filename) {
+      vigra::ImageImportInfo info(filename.c_str());
+
+      //Getting image shape
+      vigra::Shape2 shape(info.width() , info.height() );
+
+      //Getting data type and converting to BaseType
+      BaseType type = vigraPixelType2BaseType(info.pixelType());
+
+
+      create(shape,type);
+      call<importImage_dispatcher>(this, filename);
+    }
+
+    void exportImage(std::string filename){
+      call<exportImage_dispatcher>(this, filename);
+    }
+
     
     template<template<typename> class F, typename ... ArgTypes> void call(ArgTypes ... args) { callByBaseType_flexmav<F>(_type, args...); }
     template<template<typename> class F, typename R, typename ... ArgTypes> R call_r(ArgTypes ... args) { return callByBaseType_flexmav_r<F,R>(_type, args...); }
