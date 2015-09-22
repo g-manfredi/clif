@@ -39,7 +39,7 @@ namespace clif {
     }
   }
 
-  BaseType vigraPixelType2BaseType(vigra::ImageImportInfo::PixelType type){
+  /*static BaseType vigraPixelType2BaseType(vigra::ImageImportInfo::PixelType type){
     switch (type) {
       case vigra::ImageImportInfo::PixelType::UINT8 : return BaseType::UINT8; break;
       case vigra::ImageImportInfo::PixelType::UINT16 : return BaseType::UINT16; break;
@@ -49,7 +49,7 @@ namespace clif {
       default:
         BaseType::INVALID;
     }
-  }
+  }*/
   
   template<uint DIM> class FlexMAV;
   template <uint DIM, typename T, uint IDX> vigra::MultiArrayView<DIM,T> getFixedChannel(FlexMAV<DIM> &a);
@@ -79,7 +79,7 @@ namespace clif {
       }
     };
 
-    template<typename T> class importImage_dispatcher {
+    /*template<typename T> class importImage_dispatcher {
     public:
         void operator()(FlexMAV<DIM> &mav, std::string name)
         {
@@ -95,7 +95,7 @@ namespace clif {
           vigra::MultiArrayView<DIM,T> *img = mav.template get<T>();
           vigra::exportImage(mav,name);
         }
-    };
+    };*/
     
     /*template<typename T> class reshape_dispatcher {
     public:
@@ -137,7 +137,7 @@ namespace clif {
       create(shape, _type);
     }
 
-    void importImage(std::string filename) {
+    /*void importImage(std::string filename) {
       vigra::ImageImportInfo info(filename.c_str());
 
       //Getting image shape
@@ -153,7 +153,7 @@ namespace clif {
 
     void exportImage(std::string filename){
       call<exportImage_dispatcher>(this, filename);
-    }
+    }*/
 
     
     template<template<typename> class F, typename ... ArgTypes> void call(ArgTypes ... args) { callByBaseType_flexmav<F>(_type, args...); }
