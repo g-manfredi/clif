@@ -50,17 +50,17 @@ namespace clif {
     
     template<typename T> class new_dispatcher {
     public:
-      void * operator()(FlexMAV<DIM> &mav, cv::Mat &input)
+      void * operator()(FlexMAV<DIM> *mav, cv::Mat *input)
       {
-        return new vigra::MultiArrayView<DIM,T>(mav.shape(), (T*)input.data);
+        return new vigra::MultiArrayView<DIM,T>(mav->shape(), (T*)input->data);
       }
     };
     
     template<typename T> class delete_dispatcher {
     public:
-      void operator()(FlexMAV<DIM> &mav)
+      void operator()(FlexMAV<DIM> *mav)
       {
-        vigra::MultiArrayView<DIM,T> *img = mav.template get<T>();
+        vigra::MultiArrayView<DIM,T> *img = mav->template get<T>();
         delete img;
       }
     };
@@ -77,26 +77,27 @@ namespace clif {
     void create(difference_type shape, BaseType type, cv::Mat &input)
     {
       if (_data)
-        call<delete_dispatcher>(*this);
+        call<delete_dispatcher>(this);
       _shape = shape;
       _type = type;
       _mat = input;
-      _data = call_r<new_dispatcher,void*>(*this, input);
+      _data = call_r<new_dispatcher,void*>(this, &input);
     }
     
     void create(difference_type shape, BaseType type)
     {
-      if(_type == type || _shape == shape)
-        return;
+      //if(_type == type || _shape == shape)
+        //return;
 
       if (_data)
-        call<delete_dispatcher>(*this);
-      //TODO n-d!
+        call<delete_dispatcher>(this);
+      
       int size[DIM];
       for (int i = 0; i < DIM; i++)
         size[i] = shape[i];
+      
       _mat = cv::Mat(DIM, size, BaseType2CvDepth(_type));
-      _data = call_r<new_dispatcher, void *>(*this, _mat);
+      _data = call_r<new_dispatcher, void *>(this, &_mat);
     }
     
     void reshape(difference_type shape)
