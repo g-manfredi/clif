@@ -75,7 +75,7 @@ namespace clif {
     };*/
     
     void create(difference_type shape, BaseType type, cv::Mat &input)
-    { 
+    {
       if (_data)
         call<delete_dispatcher>(*this);
       _shape = shape;
@@ -85,17 +85,18 @@ namespace clif {
     }
     
     void create(difference_type shape, BaseType type)
-    { 
+    {
+      if(_type == type || _shape == shape)
+        return;
+
       if (_data)
         call<delete_dispatcher>(*this);
-      _shape = shape;
-      _type = type;
       //TODO n-d!
       int size[DIM];
-      for(int i=0;i<DIM;i++)
+      for (int i = 0; i < DIM; i++)
         size[i] = shape[i];
       _mat = cv::Mat(DIM, size, BaseType2CvDepth(_type));
-      _data = call_r<new_dispatcher,void*>(*this, _mat);
+      _data = call_r<new_dispatcher, void *>(*this, _mat);
     }
     
     void reshape(difference_type shape)
