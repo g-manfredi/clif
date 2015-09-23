@@ -18,6 +18,30 @@ void Datastore::create(std::string path, Dataset *dataset)
   _dataset = dataset;
 }
 
+void Datastore::link(const Datastore *other, Dataset *dataset)
+{
+  assert(dataset);
+  
+  readonly = true;
+  
+  _type = BaseType(-1); 
+  _org = DataOrg(-1);
+  _order = DataOrder(-1); 
+    
+  _data = H5::DataSet();
+  _path = other->_path;
+  _dataset = dataset;
+  
+  //create link
+  
+  path full_path = dataset->path() / other->_path;
+  
+  h5_create_path_groups(dataset->f, full_path.parent_path().c_str());
+  
+  //FIXME check wether the dataset is itself a link and then link against the original!
+  H5Lcreate_external(other->_dataset->f.getFileName().c_str(), full_path.c_str(), dataset->f.getId(), full_path.c_str(), H5P_DEFAULT, H5P_DEFAULT);
+}
+
 void Datastore::init(hsize_t w, hsize_t h)
 {
   _dataset->getEnum("format/type",         _type);
@@ -103,6 +127,8 @@ void Datastore::open(Dataset *dataset, std::string path_)
 //FIXME chekc w,h?
 void Datastore::writeRawImage(uint idx, hsize_t w, hsize_t h, void *imgdata)
 {
+  assert(!readonly);
+  
   if (!valid())
     init(w, h);
   

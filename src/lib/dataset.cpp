@@ -129,6 +129,21 @@ void Dataset::create(H5::H5File &f_, std::string name)
   Datastore::create("data", this);
 }
 
+//link second dataset into the place of current dataset
+void Dataset::link(H5::H5File &f_, const Dataset *other)
+{
+  f = f_;
+  
+  assert(f.getId() != H5I_INVALID_HID);
+  
+  attrs = other->attrs;
+  
+  _path = other->_path;
+  
+  Datastore::link(static_cast<const Datastore*>(other), this);
+  //TODO link other datastores (hdf5 datasets) in other->dataset->f
+}
+
 boost::filesystem::path Dataset::path()
 {
   return boost::filesystem::path(_path);
@@ -154,4 +169,26 @@ void Dataset::load_intrinsics(std::string intrset)
   
   intrinsics.load(this, boost::filesystem::path() / "calibration/intrinsics" / intrset);
 }
-}
+/*
+Dataset& Dataset::operator=(const Dataset& other)
+{
+  if (this == &other)
+    return *this;
+  
+  this->Attributes::reset();
+  
+  assert(f.getId() != H5I_INVALID_HID);
+  
+  //use this file!
+  H5::H5File f;
+
+  //TODO reset intrinsics
+  
+  calib_images = NULL;
+  
+  _path = other._path;;
+  
+  return *this;
+}*/
+
+} //namespace clif

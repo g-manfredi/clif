@@ -14,6 +14,9 @@ class Datastore {
     //create new datastore
     void create(std::string path, Dataset *dataset);
     
+    //create this datastore as a link to other in dataset - dataset is then readonly!
+    void link(const Datastore *other, Dataset *dataset);
+    
     //open existing datastore
     void open(Dataset *dataset, std::string path);
     
@@ -66,6 +69,7 @@ private:
   std::unordered_map<std::string,void*> image_cache;
   
   Dataset *_dataset = NULL;
+  bool readonly = false;
 };
 
 }

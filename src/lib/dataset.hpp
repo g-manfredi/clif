@@ -33,10 +33,14 @@ class Dataset : public Attributes, public Datastore {
   public:
     Dataset() {};
     //FIXME use only open/create methods?
-    Dataset(H5::H5File &f_, std::string path);
+    //Dataset(H5::H5File &f_, std::string path);
     
     /** Open the dataset \a name from file \a f_ */
     void open(H5::H5File &f_, std::string name);
+    
+    //link other into this file, attributes are copied, "main" datastore is linked read-only
+    //TODO link other existing datastores!
+    void link(H5::H5File &f_, const Dataset *other);
     
     /** Create or open (if existing) the dataset \a name in file \a f_ */
     void create(H5::H5File &f_, std::string name);
@@ -73,6 +77,7 @@ class Dataset : public Attributes, public Datastore {
      */
     boost::filesystem::path path();
     
+    
     /** The internal HDF5 reference
      */
     H5::H5File f;
@@ -83,6 +88,9 @@ class Dataset : public Attributes, public Datastore {
 private:
     Datastore *calib_images = NULL;
     std::string _path;
+    
+    //hide copy assignment operator
+    Dataset& operator=(const Dataset& other);
 };
   
 }

@@ -313,6 +313,8 @@ class Attributes {
     void listSubGroups(const char *parent, std::vector<std::string> &matches) {listSubGroups(std::string(parent),matches); };
     //@}
     
+    void reset();
+    
   protected:
     std::vector<Attribute> attrs; 
 };

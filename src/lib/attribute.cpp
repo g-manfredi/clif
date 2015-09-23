@@ -162,6 +162,12 @@ void Attributes::open(const char *inifile, const char *typefile)
   //FIXME free cliini allocated memory!
 }
 
+void Attributes::reset()
+{
+  attrs.resize(0);
+}
+
+
 void Attributes::write(H5::H5File &f, std::string &name)
 {
   for(int i=0;i<attrs.size();i++)
@@ -411,9 +417,10 @@ void Attribute::write(H5::H5File &f, std::string dataset_name)
   if (!h5_obj_exists(f, grouppath))
     h5_create_path_groups(f, grouppath);
   
-  //FIXME directly overwrite?
-  //if (H5Aexists(g.getId(), attr_name.c_str()))
-    //g.removeAttr(attr_name);
+  g = f.openGroup(grouppath);
+  
+  if (H5Aexists(g.getId(), attr_name.c_str()))
+    g.removeAttr(attr_name);
     
   attr = g.createAttribute(attr_name, BaseType_to_PredType(type), space);
       
