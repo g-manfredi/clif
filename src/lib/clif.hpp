@@ -41,9 +41,9 @@ public:
   //void close();
   
   clif::Dataset* openDataset(int idx);
-  clif::Dataset* openDataset(std::string name = std::string());
+  clif::Dataset* openDataset(const std::string name = std::string());
 
-  clif::Dataset* createDataset(std::string name);
+  clif::Dataset* createDataset(const std::string name);
   
   int datasetCount();
   
