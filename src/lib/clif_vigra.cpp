@@ -4,6 +4,9 @@
 #include <sstream>
 #include <string>
 
+
+#include "opencv2/highgui/highgui.hpp"
+
 namespace clif {
 
 vigra::Shape2 imgShape(Datastore *store)
@@ -108,7 +111,7 @@ void readEPI(Subset3d *subset, FlexMAV<3> &img, int line, double disparity, Clif
   int size[3] = {cv_channels[0].size().width, cv_channels[0].size().height, cv_channels.size() };
   
   cv::Mat img_3d(3, size, cv_channels[0].depth());
-  cv::Mat img_2d(cv::Size(size[0], size[1]), cv_channels[0].depth());
+  /*cv::Mat img_2d(cv::Size(size[0], size[1]), cv_channels[0].depth());
   
   cv::Range range[3];
   range[0] = cv::Range::all(); 
@@ -116,8 +119,17 @@ void readEPI(Subset3d *subset, FlexMAV<3> &img, int line, double disparity, Clif
   
   for(int c=0;c<cv_channels.size();c++) {
     range[2] = cv::Range(c,c+1);
-    img_2d = cv::Mat(cv::Size(size[0], size[1]), cv_channels[0].depth(), img_3d(range).data);
-    cv_channels[c].copyTo(img_2d);
+    img_2d = cv::Mat(cv_channels[0].size(), cv_channels[0].depth(), img_3d(range).data);
+    //cv_channels[c].copyTo(img_2d);
+    //memcpy(img_2d.data, cv_channels[c].data, cv_channels[c].elemSize()*cv_channels[c].total());
+    memcpy(img_2d.data, cv_channels[c].data, cv_channels[c].elemSize()*cv_channels[c].total());
+    cv::imwrite("debug.tiff", img_2d);
+  }
+  
+  memset(img_3d.data, 127, cv_channels[0].elemSize()*cv_channels[0].total()*cv_channels.size());*/
+  
+  for(int c=0;c<cv_channels.size();c++) {
+    memcpy(img_3d.data+c*cv_channels[0].elemSize()*cv_channels[0].total(), cv_channels[c].data, cv_channels[c].elemSize()*cv_channels[c].total());
   }
   
   img.create(shape, subset->dataset()->type(), img_3d);
