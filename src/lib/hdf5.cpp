@@ -67,5 +67,17 @@ H5::H5File h5_memory_file()
   acc_plist.setCore(16*1024, false);
   return H5File("/tmp/hdf5placeholder", H5F_ACC_TRUNC, FileCreatPropList::DEFAULT, acc_plist);
 }
+
+void h5_create_path_groups(H5::H5File &f, boost::filesystem::path path) 
+{
+  boost::filesystem::path part;
+  
+  for(auto it = path.begin(); it != path.end(); ++it) {
+    part /= *it;
+    if (!clif::h5_obj_exists(f, part)) {
+      f.createGroup(part.c_str());
+    }
+  }
+}
   
 }

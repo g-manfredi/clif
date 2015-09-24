@@ -57,4 +57,16 @@ H5::PredType H5PredType(BaseType type)
   }
 }
 
+//FIXME other types!
+H5::PredType H5PredType_Native(BaseType type)
+{
+  switch (type) {
+    case BaseType::UINT8 : return H5::PredType::NATIVE_UINT8;
+    case BaseType::UINT16 : return H5::PredType::NATIVE_UINT16;
+    default :
+      assert(type != BaseType::UINT16);
+      abort();
+  }
+}
+
 }

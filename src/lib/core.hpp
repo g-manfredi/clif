@@ -21,6 +21,7 @@ int combinedTypeElementCount(BaseType type, DataOrg org, DataOrder order);
 int combinedTypePlaneCount(BaseType type, DataOrg org, DataOrder order);
 
 H5::PredType H5PredType(BaseType type);
+H5::PredType H5PredType_Native(BaseType type);
 
 }
 

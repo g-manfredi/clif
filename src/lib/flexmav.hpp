@@ -7,8 +7,11 @@
 #include <vigra/impex.hxx>
 
 #include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 #include "enumtypes.hpp"
+#include "clif.hpp"
+#include "hdf5.hpp"
 
 namespace clif {
   
@@ -91,10 +94,10 @@ namespace clif {
 
     template<typename T> class exportImage_dispatcher {
     public:
-        void operator()(FlexMAV<DIM> &mav, std::string name)
+        void operator()(FlexMAV<DIM> *mav, const char *name)
         {
-          vigra::MultiArrayView<DIM,T> *img = mav.template get<T>();
-          vigra::exportImage(mav,name);
+          vigra::MultiArrayView<DIM,T> *img = mav->get<T>();
+          vigra::exportImage(*img,name);
         }
     };
     
@@ -118,7 +121,7 @@ namespace clif {
       
       int size[DIM];
       for (int i = 0; i < DIM; i++)
-        size[i] = shape[i];
+        size[i] = shape[DIM-i-1];
       
       _type = type;
       _shape = shape;
@@ -146,34 +149,43 @@ namespace clif {
       call<importImage_dispatcher>(this, filename);
     }
 
-    void exportImage(std::string filename)
+    void exportImage(const char *filename)
     {
       call<exportImage_dispatcher>(this, filename);
     }
     
-    /*void write(Dataset *set, path path)
+    void write(Dataset *set, path path)
     {
-      path fullpath = set->path() / path;
+      boost::filesystem::path fullpath = set->path() / path;
       
-      if (h5_obj_exists(set->f, fullpath) {
+      if (h5_obj_exists(set->f, fullpath)) {
         printf("TODO overwrite!\n");
         abort();
       }
       
-      h5_create_path_groups(fullpath.parent_path());
+      h5_create_path_groups(set->f, fullpath.parent_path());
       
       hsize_t dims[DIM];
-      for(int i=0;i<DIMS;i++)
-        dims[i] = _shape[i];
+      for(int i=0;i<DIM;i++)
+        dims[i] = _shape[DIM-i-1];
       
       //H5::DSetCreatPropList prop;    
       //prop.setChunk(dimcount, chunk_dims);
       
-      H5::DataSpace space(DIMS, dims, dims);
+      H5::DataSpace space(DIM, dims, dims);
       
       H5::DataSet h5set = set->f.createDataSet(fullpath.c_str(), 
                           H5PredType(_type), space);
-    }*/
+      
+      h5set.write(_mat.data, H5::DataType(H5PredType_Native(_type)), space, space);
+      /*
+      if (DIM == 2)
+        cv::imwrite("debug_cv.tiff", _mat);
+      else
+        printf("dim: %d\n", DIM);
+      
+      exportImage("debug_vigra.tiff");*/
+    }
 
     
     template<template<typename> class F, typename ... ArgTypes> void call(ArgTypes ... args) { callByBaseType_flexmav<F>(_type, args...); }
