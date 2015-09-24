@@ -150,6 +150,8 @@ namespace clif {
     {
       call<exportImage_dispatcher>(this, filename);
     }
+    
+    void write(Dataset *set, path path);
 
     
     template<template<typename> class F, typename ... ArgTypes> void call(ArgTypes ... args) { callByBaseType_flexmav<F>(_type, args...); }

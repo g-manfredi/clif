@@ -14,6 +14,9 @@ class Datastore {
     //create new datastore
     void create(std::string path, Dataset *dataset);
     
+    //create new datastore with specified size and type
+    void create(std::string path, Dataset *dataset, BaseType type, int dims, int *size);
+    
     //create this datastore as a link to other in dataset - dataset is then readonly!
     void link(const Datastore *other, Dataset *dataset);
     

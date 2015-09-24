@@ -22,6 +22,55 @@ void Datastore::create(std::string path, Dataset *dataset)
   _dataset = dataset;
 }
 
+
+//create new datastore with specified size and type
+void Datastore::create(std::string path, Dataset *dataset, BaseType type, const int dimcount, const int *size)
+{
+  assert(dataset);
+  
+  _type = BaseType(type); 
+  _org = DataOrg(-1);
+  _order = DataOrder(-1); 
+    
+  _data = H5::DataSet();
+  _path = path;
+  _dataset = dataset;
+  
+  //TODO create the hdf5 dataset
+    
+  hsize_t dims[dimcount];
+  
+  for(int i=0;i<dimcount;i++)
+   dims[i] = size[i];
+
+  path dataset_path = _dataset->path() / _path;
+  
+  if (h5_obj_exists(_dataset->f, dataset_path.c_str())) {
+    printf("TODO overwrite!\n");
+    abort();
+    _data = _dataset->f.openDataSet(dataset_path.c_str());
+    return;
+  }
+  
+  h5_create_path_groups(_dataset->f, path(dataset_path.c_str()).parent_path());
+  
+  //chunking fixed as image now
+  hsize_t chunk_dims[dimcount];
+  chunk_dims[0] = dims[0];
+  chunk_dims[1] = dims[1];
+  
+  for(int i=2;i<dimcount;i++)
+    dims[i] = 1;
+  
+  H5::DSetCreatPropList prop;    
+  prop.setChunk(dimcount, chunk_dims);
+  
+  H5::DataSpace space(dimcount, dims, dims);
+  
+  _data = _dataset->f.createDataSet(dataset_path.c_str(), 
+                      H5PredType(_type), space, prop);
+}
+
 void Datastore::link(const Datastore *other, Dataset *dataset)
 {
   assert(dataset);
