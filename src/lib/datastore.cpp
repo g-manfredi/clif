@@ -22,7 +22,7 @@ void Datastore::link(const Datastore *other, Dataset *dataset)
 {
   assert(dataset);
   
-  readonly = true;
+  _readonly = true;
   
   _type = BaseType(-1); 
   _org = DataOrg(-1);
@@ -34,12 +34,18 @@ void Datastore::link(const Datastore *other, Dataset *dataset)
   
   //create link
   
-  path full_path = dataset->path() / other->_path;
+  if (other->_link_file.size()) {
+    _link_file = other->_link_file;
+    _link_path = other->_link_path;
+  }
+  else {
+    _link_file = other->_dataset->f.getFileName().c_str();
+    _link_path = (other->_dataset->path() / other->_path).string();
+  }
   
-  h5_create_path_groups(dataset->f, full_path.parent_path().c_str());
+  h5_create_path_groups(dataset->f, path(_link_path).parent_path().c_str());
   
-  //FIXME check wether the dataset is itself a link and then link against the original!
-  H5Lcreate_external(other->_dataset->f.getFileName().c_str(), full_path.c_str(), dataset->f.getId(), full_path.c_str(), H5P_DEFAULT, H5P_DEFAULT);
+  H5Lcreate_external(_link_file.c_str(), _link_path.c_str(), dataset->f.getId(), _link_path.c_str(), H5P_DEFAULT, H5P_DEFAULT);
 }
 
 void Datastore::init(hsize_t w, hsize_t h)
@@ -127,7 +133,7 @@ void Datastore::open(Dataset *dataset, std::string path_)
 //FIXME chekc w,h?
 void Datastore::writeRawImage(uint idx, hsize_t w, hsize_t h, void *imgdata)
 {
-  assert(!readonly);
+  assert(!_readonly);
   
   if (!valid())
     init(w, h);

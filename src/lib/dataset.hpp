@@ -40,7 +40,12 @@ class Dataset : public Attributes, public Datastore {
     
     //link other into this file, attributes are copied, "main" datastore is linked read-only
     //TODO link other existing datastores!
+    void link(const Dataset *other);
     void link(H5::H5File &f_, const Dataset *other);
+    
+    //create memory backed file and link other into this file, attributes are copied, "main" datastore is linked read-only
+    //TODO link other existing datastores!
+    void memory_link(const Dataset *other);
     
     /** Create or open (if existing) the dataset \a name in file \a f_ */
     void create(H5::H5File &f_, std::string name);

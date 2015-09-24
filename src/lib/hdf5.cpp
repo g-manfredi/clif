@@ -1,5 +1,11 @@
 #include "hdf5.hpp"
 
+#include <H5File.h>
+#include <H5FaccProp.h>
+#include <H5FcreatProp.h>
+
+using namespace H5;
+
 namespace clif {
 
 bool h5_obj_exists(H5::H5File &f, const char * const path)
@@ -53,6 +59,13 @@ std::vector<std::string> listH5Datasets(H5::H5File &f, std::string parent)
   datasetlist_append_group(list, group, parent);
   
   return list;
+}
+  
+H5::H5File h5_memory_file()
+{
+  FileAccPropList acc_plist;
+  acc_plist.setCore(16*1024, false);
+  return H5File("/tmp/hdf5placeholder", H5F_ACC_TRUNC, FileCreatPropList::DEFAULT, acc_plist);
 }
   
 }

@@ -69,7 +69,9 @@ private:
   std::unordered_map<std::string,void*> image_cache;
   
   Dataset *_dataset = NULL;
-  bool readonly = false;
+  bool _readonly = false;
+  std::string _link_file;
+  std::string _link_path;
 };
 
 }

@@ -2,6 +2,8 @@
 
 #include <opencv2/imgproc/imgproc.hpp>
 
+#include "hdf5.hpp"
+
 namespace clif {
 void Intrinsics::load(Attributes *attrs, boost::filesystem::path path)
 {
@@ -130,10 +132,8 @@ void Dataset::create(H5::H5File &f_, std::string name)
 }
 
 //link second dataset into the place of current dataset
-void Dataset::link(H5::H5File &f_, const Dataset *other)
-{
-  f = f_;
-  
+void Dataset::link(const Dataset *other)
+{  
   assert(f.getId() != H5I_INVALID_HID);
   
   attrs = other->attrs;
@@ -142,6 +142,21 @@ void Dataset::link(H5::H5File &f_, const Dataset *other)
   
   Datastore::link(static_cast<const Datastore*>(other), this);
   //TODO link other datastores (hdf5 datasets) in other->dataset->f
+}
+
+//link second dataset into the place of current dataset
+void Dataset::link(H5::H5File &f_, const Dataset *other)
+{
+  f = f_;
+  
+  link(other);
+}
+
+//link second dataset into the place of current dataset
+void Dataset::memory_link(const Dataset *other)
+{ 
+  f = h5_memory_file();
+  link(other);
 }
 
 boost::filesystem::path Dataset::path()
