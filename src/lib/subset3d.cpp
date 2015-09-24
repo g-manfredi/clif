@@ -268,7 +268,7 @@ int Subset3d::EPICount()
 
   int size[2];
   
-  _data->imgsize(size);
+  _data->imgSize(size);
   
   //FIXME depends on rotation!
   return size[1];
@@ -278,7 +278,7 @@ int Subset3d::EPIWidth()
 {
   int size[2];
   
-  _data->imgsize(size);
+  _data->imgSize(size);
   
   //FIXME depends on rotation!
   return size[0];

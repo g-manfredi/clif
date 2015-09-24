@@ -230,7 +230,7 @@ int Datastore::count()
   return store_size[2];
 }
 
-void Datastore::imgsize(int s[2])
+void Datastore::imgSize(int s[2])
 {
   if (_imgsize[0] == -1) {
     int store_size[3];

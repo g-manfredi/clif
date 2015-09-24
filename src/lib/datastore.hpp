@@ -28,7 +28,7 @@ class Datastore {
     
     bool valid();
     void size(int s[3]);
-    void imgsize(int s[2]);
+    void imgSize(int s[2]);
     int channels() { return 3; } //FIXME grayscale!?
     int count();
     

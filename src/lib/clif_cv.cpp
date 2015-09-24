@@ -8,17 +8,12 @@
 namespace clif {
   
   cv::Size imgSize(Datastore *store)
-  {
-    H5::DataSpace space = store->H5DataSet().getSpace();
-    hsize_t dims[3];
-    hsize_t maxdims[3];
+  {    
+    int size[2];
     
-    space.getSimpleExtentDims(dims, maxdims);
+    store->imgSize(size);
     
-    dims[0] /= combinedTypeElementCount(store->type(), store->org(), store->order());
-    dims[1] /= combinedTypePlaneCount(store->type(), store->org(), store->order());
-    
-    return cv::Size(dims[0],dims[1]);
+    return cv::Size(size[0],size[1]);
   }
     
   //FIXME only power to scales at the moment

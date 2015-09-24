@@ -249,7 +249,7 @@ int main(const int argc, const char *argv[])
   
   int size[2];
   
-  in_set->imgsize(size);
+  in_set->imgSize(size);
   
   size[0] *= scale;
   size[1] *= scale;
