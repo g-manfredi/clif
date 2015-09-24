@@ -225,11 +225,19 @@ int Datastore::count()
 
 void Datastore::imgsize(int s[2])
 {
-  int store_size[3];
-  size(store_size);
-  
-  s[0] = store_size[0]/combinedTypeElementCount(_type,_org,_order);
-  s[1] = store_size[1]/combinedTypePlaneCount(_type,_org,_order); 
+  if (_imgsize[0] == -1) {
+    int store_size[3];
+    size(store_size);
+    
+    s[0] = store_size[0]/combinedTypeElementCount(_type,_org,_order);
+    s[1] = store_size[1]/combinedTypePlaneCount(_type,_org,_order); 
+    _imgsize[0] = s[0];
+    _imgsize[1] = s[1];
+  }
+  else {
+    s[0] = _imgsize[0];
+    s[1] = _imgsize[1];
+  }
 }
 
 }

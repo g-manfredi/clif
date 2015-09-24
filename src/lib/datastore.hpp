@@ -72,6 +72,8 @@ private:
   bool _readonly = false;
   std::string _link_file;
   std::string _link_path;
+  
+  int _imgsize[2] = {-1, -1};
 };
 
 }
