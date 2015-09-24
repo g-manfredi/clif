@@ -125,9 +125,9 @@ void Datastore::open(Dataset *dataset, std::string path_)
   }
   
   _data = dataset->f.openDataSet(dataset_path.c_str());
-  printf("opened h5 dataset %s\n", dataset_path.c_str());
+  printf("opened h5 dataset %s id %d\n", dataset_path.c_str(), _data.getId());
   
-  //printf("Datastore open %s: %s %s %s\n", dataset_str.c_str(), ClifEnumString(DataType,type),ClifEnumString(DataOrg,org),ClifEnumString(DataOrder,order));
+  printf("Datastore open %s: %s %s %s\n", dataset_path.c_str(), ClifEnumString(BaseType,_type),ClifEnumString(DataOrg,_org),ClifEnumString(DataOrder,_order));
 }
 
 //FIXME chekc w,h?

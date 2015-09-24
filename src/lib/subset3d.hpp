@@ -13,6 +13,7 @@ public:
   //takes the line'nth line definition found in calibration.extrinsincs
   Subset3d(clif::Dataset *data, const int idx);
   Subset3d(clif::Dataset *data, std::string extr_group = std::string());
+  void create(clif::Dataset *data, std::string extr_group = std::string());
   
   void readEPI(cv::Mat &m, int line, double disparity, ClifUnit unit = ClifUnit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0);
   void readEPI(std::vector<cv::Mat> &channels, int line, double disparity, ClifUnit unit = ClifUnit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0);

@@ -10,9 +10,10 @@ using namespace std;
 using namespace clif;
 using namespace cv;
 
-Subset3d::Subset3d(Dataset *data, std::string extr_group)
-: _data(data)
-{  
+void Subset3d::create(Dataset *data, std::string extr_group)
+{
+  _data = data;
+  
   path root = _data->subGroupPath("calibration/extrinsics", extr_group);
   
   ExtrType type;
@@ -36,6 +37,12 @@ Subset3d::Subset3d(Dataset *data, std::string extr_group)
   _data->get(_data->subGroupPath("calibration/intrinsics/")/"/projection", f, 2);
 }
 
+
+Subset3d::Subset3d(Dataset *data, std::string extr_group)
+{  
+  create(data, extr_group);
+}
+
 Subset3d::Subset3d(clif::Dataset *data, const int idx)
 {
   std::vector<std::string> subs;
@@ -44,7 +51,7 @@ Subset3d::Subset3d(clif::Dataset *data, const int idx)
   
   assert(subs.size() >= idx);
   
-  Subset3d(data, subs[idx]);
+  create(data, subs[idx]);
 }
 
 
@@ -212,7 +219,7 @@ void Subset3d::readEPI(std::vector<cv::Mat> &channels, int line, double disparit
 
   channels.resize(tmp.size());
   
-  for(int c=0;c<channels.size();c++) {
+  for(int c=0;c<channels.size();c++) {    
     channels[c] = cv::Mat(cv::Size(w, h), tmp[0].type());
     Mat *ch = &channels[c];
     
@@ -222,6 +229,8 @@ void Subset3d::readEPI(std::vector<cv::Mat> &channels, int line, double disparit
     
     for(int i=0;i<h;i++)
     {      
+      readCvMat(_data, i, tmp, flags | UNDISTORT, scale);
+      
       //FIXME rounding?
       double d = step*(i-h/2);
       
