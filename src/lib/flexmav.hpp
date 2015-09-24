@@ -61,6 +61,7 @@ namespace clif {
     
     FlexMAV() {};
     FlexMAV(const difference_type &shape, BaseType type, std::vector<cv::Mat> inputs) { create(shape,type,inputs); };
+    FlexMAV(const difference_type &shape, BaseType type) { create(shape,type); };
     
     template<typename T> class new_dispatcher {
     public:
