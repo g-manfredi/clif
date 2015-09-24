@@ -28,13 +28,8 @@ namespace clif {
     if (flags & UNDISTORT) {
       flags |= DEMOSAIC;
     }
-    std::ostringstream shortkey_stream;
-    std::string shortkey;
     
-    shortkey_stream << " " << idx << " " << flags << " " << scale;
-    shortkey = shortkey_stream.str();
-    
-    cv::Mat *m = static_cast<cv::Mat*>(store->cache_get(shortkey));
+    cv::Mat *m = static_cast<cv::Mat*>(store->cache_get(idx,flags,scale));
     if (m) {
       outm = *m;
       return;
@@ -66,6 +61,14 @@ namespace clif {
     printf("load idx %d\n", idx);
     
     if (check_cache) {
+      
+      
+    std::ostringstream shortkey_stream;
+    std::string shortkey;
+    
+    shortkey_stream << " " << idx << " " << flags << " " << scale;
+    shortkey = shortkey_stream.str();
+      
       //printf("cache dir %s\n", cache_path.c_str());
       cache_path /= "clif/v0.0/cached_imgs";
       std::hash<std::string> hasher;
@@ -82,7 +85,7 @@ namespace clif {
         m = new cv::Mat();
         *m = cv::imread(cache_path.c_str(), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
         outm = *m;
-        store->cache_set(shortkey, m);
+        store->cache_set(idx,flags,scale, m);
         return;
       }
     }
@@ -145,7 +148,7 @@ namespace clif {
       cv::resize(*m,*m,cv::Point2i(m->size())*scale, cv::INTER_NEAREST);
     }
     
-    store->cache_set(shortkey, m);
+    store->cache_set(idx,flags,scale, m);
     
     if (check_cache) {
       create_directories(cache_path.parent_path());
@@ -207,13 +210,13 @@ namespace clif {
       flags |= DEMOSAIC;
     }
     
-    std::ostringstream shortkey_stream;
-    std::string shortkey;
+    //std::ostringstream shortkey_stream;
+    //std::string shortkey;
     
-    shortkey_stream << "_" << idx << "_" << flags << " " << scale;
-    shortkey = shortkey_stream.str();
+    //shortkey_stream << "_" << idx << "_" << flags << " " << scale;
+    //shortkey = shortkey_stream.str();
     
-    std::vector<cv::Mat> *m = static_cast<std::vector<cv::Mat>*>(store->cache_get(shortkey));
+    std::vector<cv::Mat> *m = static_cast<std::vector<cv::Mat>*>(store->cache_get(idx,flags,scale));
     if (m) {
       outm = *m;
       return;
@@ -247,6 +250,12 @@ namespace clif {
     printf("load idx %d\n", idx);
     
     if (check_cache) {
+          std::ostringstream shortkey_stream;
+    std::string shortkey;
+    
+    shortkey_stream << "_" << idx << "_" << flags << " " << scale;
+    shortkey = shortkey_stream.str();
+      
       //printf("cache dir %s\n", cache_path.c_str());
       cache_path /= "clif/v0.0/cached_imgs";
       std::hash<std::string> hasher;
@@ -259,7 +268,7 @@ namespace clif {
         m = new_planar_mats(store, ch_count);
         readMatV(m, cache_path.c_str());
         outm = *m;
-        store->cache_set(shortkey, m);
+        store->cache_set(idx,flags,scale, m);
         return;
       }
     }
@@ -333,7 +342,7 @@ namespace clif {
       }
     }
     
-    store->cache_set(shortkey, m);
+    store->cache_set(idx,flags,scale, m);
     
     if (check_cache) {
       create_directories(cache_path.parent_path());

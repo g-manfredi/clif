@@ -1,6 +1,10 @@
 #include "datastore.hpp"
 
+#include "clif.hpp"
+
 #include "dataset.hpp"
+
+//#include "clif.hpp"
 
 namespace clif {
 
@@ -88,8 +92,10 @@ void Datastore::init(hsize_t w, hsize_t h)
                       H5PredType(_type), space, prop);
 }
 
-void * Datastore::cache_get(std::string key)
+//FIXME scale!
+void * Datastore::cache_get(int idx, int flags, float scale)
 {
+  uint64_t key = (idx * PROCESS_FLAGS_MAX) | flags;
   auto it_find = image_cache.find(key);
   
   if (it_find == image_cache.end())
@@ -98,8 +104,9 @@ void * Datastore::cache_get(std::string key)
     return it_find->second;
 }
 
-void Datastore::cache_set(std::string key, void *data)
+void Datastore::cache_set(int idx, int flags, float scale, void *data)
 {
+  uint64_t key = (idx * PROCESS_FLAGS_MAX) | flags;
   image_cache[key] = data;
 }
 

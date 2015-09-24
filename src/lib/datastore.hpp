@@ -42,8 +42,8 @@ class Datastore {
     
     //FIXME delete cache contents on desctructor
     
-    void *cache_get(std::string key);
-    void cache_set(std::string, void *data);
+    void *cache_get(int idx, int flags, float scale);
+    void cache_set(int idx, int flags, float scale, void *data);
 
     template<template<typename> class F, typename R, typename ... ArgTypes> R call(ArgTypes ... args)
     {
@@ -66,7 +66,7 @@ class Datastore {
     std::string _path;
     
 private:
-  std::unordered_map<std::string,void*> image_cache;
+  std::unordered_map<uint64_t,void*> image_cache;
   
   Dataset *_dataset = NULL;
   bool _readonly = false;

@@ -23,6 +23,8 @@ namespace clif {
 #define UNDISTORT 4
 #define CVT_GRAY 8
 #define NO_DISK_CACHE 16
+
+
 #define PROCESS_FLAGS_MAX 32
 
 H5::PredType H5PredType(BaseType type);
