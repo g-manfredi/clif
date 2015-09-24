@@ -24,7 +24,7 @@ void Datastore::create(std::string path, Dataset *dataset)
 
 
 //create new datastore with specified size and type
-void Datastore::create(std::string path, Dataset *dataset, BaseType type, const int dimcount, const int *size)
+/*void Datastore::create(std::string path, Dataset *dataset, BaseType type, const int dimcount, const int *size)
 {
   assert(dataset);
   
@@ -69,7 +69,7 @@ void Datastore::create(std::string path, Dataset *dataset, BaseType type, const 
   
   _data = _dataset->f.createDataSet(dataset_path.c_str(), 
                       H5PredType(_type), space, prop);
-}
+}*/
 
 void Datastore::link(const Datastore *other, Dataset *dataset)
 {

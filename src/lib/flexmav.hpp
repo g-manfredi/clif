@@ -151,7 +151,29 @@ namespace clif {
       call<exportImage_dispatcher>(this, filename);
     }
     
-    void write(Dataset *set, path path);
+    /*void write(Dataset *set, path path)
+    {
+      path fullpath = set->path() / path;
+      
+      if (h5_obj_exists(set->f, fullpath) {
+        printf("TODO overwrite!\n");
+        abort();
+      }
+      
+      h5_create_path_groups(fullpath.parent_path());
+      
+      hsize_t dims[DIM];
+      for(int i=0;i<DIMS;i++)
+        dims[i] = _shape[i];
+      
+      //H5::DSetCreatPropList prop;    
+      //prop.setChunk(dimcount, chunk_dims);
+      
+      H5::DataSpace space(DIMS, dims, dims);
+      
+      H5::DataSet h5set = set->f.createDataSet(fullpath.c_str(), 
+                          H5PredType(_type), space);
+    }*/
 
     
     template<template<typename> class F, typename ... ArgTypes> void call(ArgTypes ... args) { callByBaseType_flexmav<F>(_type, args...); }
