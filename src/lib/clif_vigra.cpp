@@ -128,8 +128,6 @@ void readEPI(Subset3d *subset, FlexMAV<3> &img, int line, double disparity, Clif
   
   memset(img_3d.data, 127, cv_channels[0].elemSize()*cv_channels[0].total()*cv_channels.size());*/
   
-  cv::imwrite("debug.tiff",cv_channels[1]);
-  
   for(int c=0;c<cv_channels.size();c++) {
     memcpy(img_3d.data+c*cv_channels[0].elemSize()*cv_channels[0].total(), cv_channels[c].data, cv_channels[c].elemSize()*cv_channels[c].total());
   }

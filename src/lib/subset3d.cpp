@@ -265,7 +265,13 @@ void Subset3d::readEPI(std::vector<cv::Mat> &channels, int line, double disparit
 int Subset3d::EPICount()
 {
   //FIXME use extrinsics group size! (for cross type...)
-  return _data->clif::Datastore::count();
+
+  int size[2];
+  
+  _data->imgsize(size);
+  
+  //FIXME depends on rotation!
+  return size[1];
 }
 
 int Subset3d::EPIWidth()
