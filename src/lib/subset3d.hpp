@@ -34,13 +34,13 @@ public:
   
   clif::Dataset *dataset() { return _data; }
   
+  double f[2];
 private:
   clif::Dataset *_data = NULL;
   std::vector<std::pair<int,int>> indizes;
   
   //TODO more generic model!
   double step_length;
-  double f[2];
 };
 
 }

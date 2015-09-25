@@ -122,7 +122,8 @@ void Datastore::link(const Datastore *other, Dataset *dataset)
   _org = other->_org;
   _order = other->_order; 
     
-  _data = H5::DataSet();
+  //TODO is this ok?
+  _data = other->_data;
   _path = other->_path;
   _dataset = dataset;
   

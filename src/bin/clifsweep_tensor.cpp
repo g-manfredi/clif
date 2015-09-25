@@ -82,7 +82,7 @@ cliini_optgroup group = {
 
 typedef Vec<ushort, 3> Vec3us;
 
-float scale = 0.25;
+float scale = 1.0;
 
 int x_step = 1;
 int y_step = 1;
@@ -270,10 +270,11 @@ int main(const int argc, const char *argv[])
   Mat score = Mat::zeros(Size(size[0], size[1]), CV_64F);
   for(int l=0/y_step*y_step;l<size[1];l+=y_step) {
     printf("line %d\n", l);
-    for(double d=10*scale;d>=1*scale;d-=1) {
+    //for(double d=10*scale;d>=1*scale;d-=1) {
+    double d = 6.0;
       slice->readEPI(epi, l, d, ClifUnit::PIXELS, UNDISTORT, Interpolation::LINEAR, scale);
       structure_tensor_depth(epi, score, depth, d, l, (focal_length[0]+focal_length[1])/2, slice);
-    }
+    //}
   }
   
   Mat d16;

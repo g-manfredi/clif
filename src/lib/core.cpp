@@ -51,6 +51,7 @@ H5::PredType H5PredType(BaseType type)
   switch (type) {
     case BaseType::UINT8 : return H5::PredType::STD_U8LE;
     case BaseType::UINT16 : return H5::PredType::STD_U16LE;
+    case BaseType::FLOAT : return H5::PredType::IEEE_F32LE;
     default :
       assert(type != BaseType::UINT16);
       abort();
@@ -63,6 +64,7 @@ H5::PredType H5PredType_Native(BaseType type)
   switch (type) {
     case BaseType::UINT8 : return H5::PredType::NATIVE_UINT8;
     case BaseType::UINT16 : return H5::PredType::NATIVE_UINT16;
+    case BaseType::FLOAT : return H5::PredType::NATIVE_FLOAT;
     default :
       assert(type != BaseType::UINT16);
       abort();
