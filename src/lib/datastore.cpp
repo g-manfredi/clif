@@ -9,11 +9,12 @@
 namespace clif {
 
 //FIXME wether dataset already exists and overwrite?
+//FIXME set remaining members!
 void Datastore::create(std::string path, Dataset *dataset)
 {
   assert(dataset);
   
-  _type = BaseType(-1); 
+  _type = BaseType::INVALID; 
   _org = DataOrg(-1);
   _order = DataOrder(-1); 
     
@@ -71,36 +72,83 @@ void Datastore::create(std::string path, Dataset *dataset)
                       H5PredType(_type), space, prop);
 }*/
 
+void Datastore::create(std::string path, Dataset *dataset, cv::Mat &m)
+{  
+  _type = BaseType(CvDepth2BaseType(m.depth())); 
+  _org = DataOrg(-1);
+  _order = DataOrder(-1); 
+    
+  _data = H5::DataSet();
+  _path = path;
+  _dataset = dataset;
+  
+  _readonly = false;
+  _memonly = true;
+  
+  _mat = m;
+}
+
+//read store into m 
+void Datastore::read(cv::Mat &m)
+{
+  assert(_memonly);
+  
+  m = _mat;
+}
+    
+//write m into store
+void Datastore::write(cv::Mat &m)
+{
+  assert(!_readonly);
+  
+  if (!_memonly) {
+    assert(_type == BaseType::INVALID);
+    
+    _memonly = true;
+    
+    _type = CvDepth2BaseType(m.depth());
+  }
+  
+  _mat = m;
+}
+
 void Datastore::link(const Datastore *other, Dataset *dataset)
 {
   assert(dataset);
   
   _readonly = true;
   
-  _type = BaseType(-1); 
-  _org = DataOrg(-1);
-  _order = DataOrder(-1); 
+  _type = other->_type; 
+  _org = other->_org;
+  _order = other->_order; 
     
   _data = H5::DataSet();
   _path = other->_path;
   _dataset = dataset;
   
-  //create link
-  
-  if (other->_link_file.size()) {
-    _link_file = other->_link_file;
-    _link_path = other->_link_path;
+  //just copy opencv matrix - storage is shared (data must no be written from original owner afterwards!)
+  if (other->_memonly) {
+    _mat = other->_mat;
+    _readonly = true;
+    _memonly = true;
   }
-  else {
-    _link_file = other->_dataset->f.getFileName().c_str();
-    _link_path = (other->_dataset->path() / other->_path).string();
-  }
-  
-  h5_create_path_groups(dataset->f, path(_link_path).parent_path().c_str());
-  
-  H5Lcreate_external(_link_file.c_str(), _link_path.c_str(), dataset->f.getId(), _link_path.c_str(), H5P_DEFAULT, H5P_DEFAULT);
+  else { //link to an actual dataset in a file
+    if (other->_link_file.size()) {
+      _link_file = other->_link_file;
+      _link_path = other->_link_path;
+    }
+    else {
+      _link_file = other->_dataset->f.getFileName().c_str();
+      _link_path = (other->_dataset->path() / other->_path).string();
+    }
+    
+    h5_create_path_groups(dataset->f, path(_link_path).parent_path().c_str());
+    
+    H5Lcreate_external(_link_file.c_str(), _link_path.c_str(), dataset->f.getId(), _link_path.c_str(), H5P_DEFAULT, H5P_DEFAULT);
+  }  
 }
 
+//FIXME set all members!
 void Datastore::init(hsize_t w, hsize_t h)
 {
   _dataset->getEnum("format/type",         _type);
@@ -160,7 +208,7 @@ void Datastore::cache_set(int idx, int flags, float scale, void *data)
 }
 
 void Datastore::open(Dataset *dataset, std::string path_)
-{    
+{
   //only fills in internal data
   create(path_, dataset);
       

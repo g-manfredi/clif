@@ -141,7 +141,12 @@ void Dataset::link(const Dataset *other)
   _path = other->_path;
   
   Datastore::link(static_cast<const Datastore*>(other), this);
-  //TODO link other datastores (hdf5 datasets) in other->dataset->f
+ 
+  //iterate stores...
+  for(auto iter : other->_stores) {
+    addStore(iter.first);
+    _stores[iter.first]->link(iter.second, this);
+  }
 }
 
 //link second dataset into the place of current dataset
@@ -184,6 +189,28 @@ void Dataset::load_intrinsics(std::string intrset)
   
   intrinsics.load(this, boost::filesystem::path() / "calibration/intrinsics" / intrset);
 }
+
+Datastore *Dataset::getStore(const std::string &path)
+{
+  auto it_find = _stores.find(path);
+  
+  if (it_find == _stores.end())
+    return NULL;
+  else
+    return it_find->second;
+}
+
+Datastore *Dataset::addStore(const std::string &path)
+{
+  Datastore *store = new Datastore;
+  store->create(path, this);
+  //FIXME delete previous store!
+  assert(store);
+  _stores[store->getDatastorePath()] = store;
+  
+  return store;
+}
+
 /*
 Dataset& Dataset::operator=(const Dataset& other)
 {

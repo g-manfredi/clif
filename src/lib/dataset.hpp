@@ -63,6 +63,9 @@ class Dataset : public Attributes, public Datastore {
      */
     Datastore *createCalibStore();
     
+    Datastore *getStore(const std::string &path);
+    Datastore *addStore(const std::string &path);
+    
     //FIXME fix or remove this method
     bool valid();
     
@@ -96,6 +99,9 @@ private:
     
     //hide copy assignment operator
     Dataset& operator=(const Dataset& other);
+    
+    //FIXME delete on destruct!
+    std::unordered_map<std::string,Datastore*> _stores;
 };
   
 }

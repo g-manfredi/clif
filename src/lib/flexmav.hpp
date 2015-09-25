@@ -108,9 +108,35 @@ namespace clif {
       _shape = shape;
       _type = type;
       _mat = input;
-      _data = call_r<new_dispatcher,void*>(this, &input);
+      _data = call_r<new_dispatcher,void*>(this, &_mat);
     }
     
+    //read from datastore
+    void read(Datastore *store)
+    {
+      if (_data)
+        call<delete_dispatcher>(this);
+      
+      store->read(_mat);
+      assert(_mat.dims == DIM);
+      
+      _type = CvDepth2BaseType(_mat.depth());
+    
+      for (int i=0;i<DIM;i++)
+        _shape[i] = _mat.size[DIM-i-1];
+      
+      _data = call_r<new_dispatcher,void*>(this, &_mat);
+    }
+    
+    //write to datastore
+    void write(Datastore *store)
+    {
+      assert(_data);
+      
+      store->write(_mat);
+    }
+    
+    //TODO delay actual creation until first needed (may save malloc)
     void create(difference_type shape, BaseType type)
     {
       if(_type == type || _shape == shape)

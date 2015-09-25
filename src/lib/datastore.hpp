@@ -1,6 +1,8 @@
 #ifndef _CLIF_DATASTORE_H
 #define _CLIF_DATASTORE_H
 
+#include "opencv2/core/core.hpp"
+
 #include "core.hpp"
 
 namespace clif {
@@ -16,6 +18,8 @@ class Datastore {
     
     //create new datastore with specified size and type
     //void create(std::string path, Dataset *dataset, BaseType type, int dims, int *size);
+    //create from opencv matrix
+    void create(std::string path, Dataset *dataset, cv::Mat &m);
     
     //create this datastore as a link to other in dataset - dataset is then readonly!
     void link(const Datastore *other, Dataset *dataset);
@@ -26,6 +30,11 @@ class Datastore {
     void writeRawImage(uint idx, hsize_t w, hsize_t h, void *data);
     void appendRawImage(hsize_t w, hsize_t h, void *data);
     void readRawImage(uint idx, hsize_t w, hsize_t h, void *data);
+    
+    //read store into m 
+    void read(cv::Mat &m);
+    //write m into store
+    void write(cv::Mat &m);
     
     int imgMemSize();
     
@@ -72,9 +81,12 @@ private:
   std::unordered_map<uint64_t,void*> image_cache;
   
   Dataset *_dataset = NULL;
-  bool _readonly = false;
+  bool _readonly = false; //linked dataset - convert to not-linked data to make read/write (no doing this implicitly may save a copy)
+  bool _memonly = false; //dataset may be in memory and linked or not linked - TODO check all possible cases and uses
   std::string _link_file;
   std::string _link_path;
+  
+  cv::Mat _mat;
   
   int _imgsize[2] = {-1, -1};
 };
