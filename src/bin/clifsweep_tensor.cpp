@@ -268,13 +268,13 @@ int main(const int argc, const char *argv[])
   Mat epi;
   Mat depth = Mat::zeros(Size(size[0], size[1]), CV_64F);
   Mat score = Mat::zeros(Size(size[0], size[1]), CV_64F);
-  for(int l=0/y_step*y_step;l<size[1];l+=y_step) {
+  for(int l=500/y_step*y_step;l<550/*size[1]*/;l+=y_step) {
     printf("line %d\n", l);
-    //for(double d=10*scale;d>=1*scale;d-=1) {
-    double d = 6.0;
+    for(double d=6.5*scale;d>=5.0*scale;d-=0.5) {
+    //double d = 6.0;
       slice->readEPI(epi, l, d, ClifUnit::PIXELS, UNDISTORT, Interpolation::LINEAR, scale);
       structure_tensor_depth(epi, score, depth, d, l, (focal_length[0]+focal_length[1])/2, slice);
-    //}
+    }
   }
   
   Mat d16;
