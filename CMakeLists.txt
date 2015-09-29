@@ -4,8 +4,11 @@ project(clif)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -O3 -fno-omit-frame-pointer -std=c++11 -Wall -march=native")
 
+find_package(Vigra REQUIRED)
 find_package(OpenCV)
-if (NOT OpenCV_FOUND)
+
+
+if ((NOT OpenCV_FOUND) OR (NOT Vigra_FOUND))
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
   message(WARNING "WARNING: using internal cmake find macros!")
 endif()
