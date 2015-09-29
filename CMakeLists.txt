@@ -4,7 +4,7 @@ project(clif)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -O3 -fno-omit-frame-pointer -std=c++11 -Wall -march=native")
 
-find_package(Vigra REQUIRED)
+find_package(Vigra)
 find_package(OpenCV)
 
 
