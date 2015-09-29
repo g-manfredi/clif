@@ -39,11 +39,6 @@ add_library(clif SHARED clif.cpp subset3d.cpp calib.cpp hdf5.cpp attribute.cpp h
 
 add_library(clif_vigra SHARED clif_vigra.cpp)
 
-#add_library(clifcalib SHARED clifcalib.cpp)
-
-message(DEBUG "vigra1: ${VIGRA_LIBRARIES}")
-message(DEBUG "vigra2: ${Vigra_LIBRARIES}")
-
 target_link_libraries(clif cliini ${HDF5_CXX_LIBRARIES} ${Boost_LIBRARIES} ${OpenCV_LIBRARIES} ${CLIF_LINK_LIBRARIES})
 target_link_libraries(clif_vigra clif ${VIGRA_LIBRARIES})
 #target_link_libraries(clifcalib clif)

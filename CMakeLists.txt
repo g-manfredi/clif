@@ -1,9 +1,14 @@
 cmake_minimum_required (VERSION 2.6)
 project(clif)
 
-#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -O3 -fno-omit-frame-pointer -std=c++11 -Wall -march=native")
+
+find_package(OpenCV)
+if (NOT OpenCV_FOUND)
+  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
+  message(WARNING "WARNING: using internal cmake find macros!")
+endif()
 
 find_package(OpenCV REQUIRED)
 
