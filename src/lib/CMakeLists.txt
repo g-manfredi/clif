@@ -3,7 +3,7 @@ project(clif)
 
 find_package(HDF5 REQUIRED CXX)
 
-find_package(PkgConfig REQUIRED)
+#find_package(PkgConfig REQUIRED)
 #TODO make optional
 #pkg_search_module(MATIO REQUIRED matio)
 
