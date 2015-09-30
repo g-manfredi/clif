@@ -8,9 +8,12 @@
 
 
 const int maxsize = 1024*1024;
-const int section_maxlen = 4096;
 
-cliini_opt *cliini_opt_new(const char *longflag,
+
+#define MAXPARTS 1000
+#define SECTION_MAXLEN 4096
+
+CLIF_EXPORT cliini_opt *cliini_opt_new(const char *longflag,
                            int argcount_min,
                            int argcount_max,
                            int type,
@@ -18,7 +21,7 @@ cliini_opt *cliini_opt_new(const char *longflag,
                            char flag,
                            char **enums)
 {
-  cliini_opt *opt = calloc(sizeof(cliini_opt), 1);
+	cliini_opt *opt = (cliini_opt*)calloc(sizeof(cliini_opt), 1);
   
   opt->longflag = longflag;
   opt->argcount_min = argcount_min;
@@ -110,23 +113,24 @@ static int _cliini_opt_arg_invalid(cliini_opt *opt, const char *arg)
         else
           len++;
         break;
-    case CLIINI_ENUM : 
-      if (!opt->enums)
-        return 1;
-      char **checkval = opt->enums;
-      while (*checkval)
-        if (!strcmp(arg, *checkval))
-          return 0;
-        else
-          checkval++;
-      return 1;
+	case CLIINI_ENUM: {
+		if (!opt->enums)
+			return 1;
+		char **checkval = opt->enums;
+		while (*checkval)
+			if (!strcmp(arg, *checkval))
+				return 0;
+			else
+				checkval++;
+		return 1;
+	}
     default:
       printf("invalid opt specification!\n");
       abort();
   }
 }
 
-int _type_size(int type)
+static int _type_size(int type)
 { 
   switch (type) {
     case CLIINI_NONE :   return 0;
@@ -140,7 +144,7 @@ int _type_size(int type)
   }
 }
 
-void _cliini_opt_arg_store_val(cliini_opt *opt, const char *arg, void *val)
+CLIF_EXPORT void _cliini_opt_arg_store_val(cliini_opt *opt, const char *arg, void *val)
 {  
   switch (opt->type) {
     //FIXME duplicate string?
@@ -162,18 +166,20 @@ static int _isopt(const char *str)
   return 0;
 }
 
-cliini_args *cliini_args_new()
+CLIF_EXPORT cliini_args *cliini_args_new()
 {
-  cliini_args *args = calloc(1, sizeof(cliini_args));
+  cliini_args *args = (cliini_args*)calloc(1, sizeof(cliini_args));
   
   args->max = 16;
-  args->args = calloc(sizeof(cliini_arg)*args->max, 1);
+  args->args = (cliini_arg*)calloc(sizeof(cliini_arg)*args->max, 1);
+
+  return args;
 }
 
-cliini_arg *cliini_args_add(cliini_args *args, cliini_opt *opt)
+CLIF_EXPORT cliini_arg *cliini_args_add(cliini_args *args, cliini_opt *opt)
 {
   while (args->count >= args->max) {
-    args->args = realloc(args->args, sizeof(cliini_arg)*args->max*2);
+    args->args = (cliini_arg*)realloc(args->args, sizeof(cliini_arg)*args->max*2);
     memset(args->args+args->max, 0, sizeof(cliini_arg)*args->max);
     args->max *= 2;
   }
@@ -184,7 +190,7 @@ cliini_arg *cliini_args_add(cliini_args *args, cliini_opt *opt)
 }
 
 //get arg for option opt from args - if not yet existing then create it
-cliini_arg *cliini_args_get_add(cliini_args *args, cliini_opt *opt)
+CLIF_EXPORT cliini_arg *cliini_args_get_add(cliini_args *args, cliini_opt *opt)
 {
   int i;
   
@@ -196,7 +202,7 @@ cliini_arg *cliini_args_get_add(cliini_args *args, cliini_opt *opt)
 }
 
 //int blind: assume all argv[] are args
-int _cliini_opt_parse(const int argc, const char *argv[], int argpos, cliini_arg *arg, int *len, int blind)
+static int _cliini_opt_parse(const int argc, const char *argv[], int argpos, cliini_arg *arg, int *len, int blind)
 {
   int count;
   int i;
@@ -231,18 +237,18 @@ int _cliini_opt_parse(const int argc, const char *argv[], int argpos, cliini_arg
     count = i-1;
     *len = count+1;
     arg->sum += count;
-    arg->counts = realloc(arg->counts, sizeof(int)*arg->inst_count);
+    arg->counts = (int*)realloc(arg->counts, sizeof(int)*arg->inst_count);
     arg->counts[arg->inst_count-1] = count;
     arg->vals = realloc(arg->vals, _type_size(opt->type)*arg->sum);
     for(i=1;i<=count;i++) {
-      _cliini_opt_arg_store_val(opt, argv[argpos+i], arg->vals + _type_size(opt->type)*(arg->sum-count+i-1));
+      _cliini_opt_arg_store_val(opt, argv[argpos+i], (char*)arg->vals + _type_size(opt->type)*(arg->sum-count+i-1));
     }
   }
   
   return errors;
 }
 
-cliini_args *cliini_parsopts(const int argc, const char *argv[], cliini_optgroup *group)
+CLIF_EXPORT cliini_args *cliini_parsopts(const int argc, const char *argv[], cliini_optgroup *group)
 {
   int error = 0;
   int i = 1;
@@ -285,7 +291,7 @@ cliini_args *cliini_parsopts(const int argc, const char *argv[], cliini_optgroup
 char *static_equal_sign = "=";
 
 //changes line!
-int split_string(char *line, char **parts, int maxparts)
+static int split_string(char *line, char **parts, int maxparts)
 {
   int count = 0;
   char *eq_found = strchr(line, '=');
@@ -308,7 +314,7 @@ int split_string(char *line, char **parts, int maxparts)
   return count;
 }
 
-char *parse_parts_section(int count, char **parts)
+static char *parse_parts_section(int count, char **parts)
 {
   if (count == 1) {
     if (parts[0][strlen(parts[0])-1] != ']') return NULL;
@@ -340,7 +346,7 @@ char *parse_parts_section(int count, char **parts)
 }
 
 
-int parts_option_valid(int count, char **parts)
+static int parts_option_valid(int count, char **parts)
 {
   if (count < 3)
     return 0;
@@ -351,7 +357,7 @@ int parts_option_valid(int count, char **parts)
   return 1;
 }
 
-void strreplacec(char *str, char search, char replace)
+static void strreplacec(char *str, char search, char replace)
 {
   while(*str) {
     if (*str == search)
@@ -360,17 +366,16 @@ void strreplacec(char *str, char search, char replace)
   }
 }
 
-int parse_line(char *line, cliini_args *args, cliini_optgroup *group, char *currsection)
+static int parse_line(char *line, cliini_args *args, cliini_optgroup *group, char *currsection)
 {
   int len;
   int error = 0;
   int count;
-  const int maxparts = 1000;
-  char *parts[maxparts];
+  char *parts[MAXPARTS];
   char *section;
-  char optsstring[section_maxlen];
+  char optsstring[SECTION_MAXLEN];
   
-  count = split_string(line, parts, maxparts);
+  count = split_string(line, parts, MAXPARTS);
   
   if (count == -1) {
     printf("FIXME: error: max line argument count reached!");
@@ -465,12 +470,14 @@ int parse_line(char *line, cliini_args *args, cliini_optgroup *group, char *curr
   return error;
 }
 
-cliini_args *cliini_parsefile(const char *filename, cliini_optgroup *group)
+#undef MAXPARTS
+
+CLIF_EXPORT cliini_args *cliini_parsefile(const char *filename, cliini_optgroup *group)
 {
   FILE *f = fopen(filename, "r");
-  char *buf = malloc(maxsize);
+  char *buf = (char*)malloc(maxsize);
   char *line_end;
-  char currsection[section_maxlen];
+  char currsection[SECTION_MAXLEN];
   
   int error = 0;
   int filepos = 0;
@@ -486,7 +493,7 @@ cliini_args *cliini_parsefile(const char *filename, cliini_optgroup *group)
   currsection[0] = '\0';
   
   while(1) {
-    line_end = memchr(buf+bufpos,'\n',curlen-bufpos);
+    line_end = (char*)memchr(buf+bufpos,'\n',curlen-bufpos);
     if (!line_end) {
       if (curlen && bufpos == 0) {
         printf("FIXME: error: max line size reached");
@@ -526,7 +533,7 @@ cliini_args *cliini_parsefile(const char *filename, cliini_optgroup *group)
   return args;
 }
 
-int gettype_string(char *str)
+static int gettype_string(char *str)
 {
   if (!strcmp(str, "STRING"))
     return CLIINI_STRING;
@@ -540,7 +547,7 @@ int gettype_string(char *str)
   return -1;
 }
 
-char *type_str(int type)
+static char *type_str(int type)
 {
   switch (type) {
     case CLIINI_STRING : return "STRING";
@@ -550,7 +557,7 @@ char *type_str(int type)
   return "UNKNOWN";
 }
 
-char *print_arg_val(int type)
+static char *print_arg_val(int type)
 {
   switch (type) {
     case CLIINI_STRING : return "STRING";
@@ -560,28 +567,28 @@ char *print_arg_val(int type)
   return "UNKNOWN";
 }
 
-void print_strs(char **vals, int count)
+static void print_strs(char **vals, int count)
 {
   int i;
   for(i=0;i<count;i++)
     printf(" %s", vals[i]);
 }
 
-void print_ints(int *vals, int count)
+static void print_ints(int *vals, int count)
 {
   int i;
   for(i=0;i<count;i++)
     printf(" %d", vals[i]);
 }
 
-void print_doubles(double *vals, int count)
+static void print_doubles(double *vals, int count)
 {
   int i;
   for(i=0;i<count;i++)
     printf(" %f", vals[i]);
 }
 
-void print_arg(cliini_arg *arg)
+static void print_arg(cliini_arg *arg)
 {
   int i;
   
@@ -589,20 +596,20 @@ void print_arg(cliini_arg *arg)
   
   switch (arg->opt->type) {
     case CLIINI_STRING : 
-      print_strs(arg->vals, arg->sum);
+      print_strs((char**)arg->vals, arg->sum);
       break;
     case CLIINI_INT : 
-      print_ints(arg->vals, arg->sum);
+      print_ints((int*)arg->vals, arg->sum);
       break;
     case CLIINI_DOUBLE : 
-      print_doubles(arg->vals, arg->sum);
+      print_doubles((double*)arg->vals, arg->sum);
       break;
   }
   
   printf("\n");
 }
 
-int cliini_fit_typeopts(cliini_args *args, cliini_args *typeargs)
+static int cliini_fit_typeopts(cliini_args *args, cliini_args *typeargs)
 {
   int i;
   int error = 0;
@@ -633,12 +640,12 @@ int cliini_fit_typeopts(cliini_args *args, cliini_args *typeargs)
     
     arg->opt->type = type;
     
-    char **oldvals = arg->vals;
+    char **oldvals = (char**)arg->vals;
     
     //TODO duplicate strings for ENUM and STRING?
     if (type == CLIINI_ENUM) {
       printf("possible enum values for %s: ", arg->opt->longflag);
-      arg->opt->enums = calloc(_type_size(type)*(cliarg_sum(typearg)-1), 1);
+	  arg->opt->enums = (char**)calloc(_type_size(type)*(cliarg_sum(typearg) - 1), 1);
       for(int i=1;i<cliarg_sum(typearg);i++) {
         arg->opt->enums[i-1] = cliarg_nth_str(typearg, i);
         printf("%s ", cliarg_nth_str(typearg, i));
@@ -658,13 +665,13 @@ int cliini_fit_typeopts(cliini_args *args, cliini_args *typeargs)
       continue;
     
     for(int i=0;i<cliarg_sum(arg);i++)
-      _cliini_opt_arg_store_val(arg->opt, oldvals[i], arg->vals + _type_size(type)*i);
+      _cliini_opt_arg_store_val(arg->opt, oldvals[i], (char*)arg->vals + _type_size(type)*i);
   }
   
   return error;
 }
 
-cliini_arg *cliargs_get(cliini_args *args, const char *name)
+CLIF_EXPORT cliini_arg *cliargs_get(cliini_args *args, const char *name)
 {
   if (!args)
     return NULL;
@@ -676,7 +683,7 @@ cliini_arg *cliargs_get(cliini_args *args, const char *name)
   return NULL;
 }
 
-cliini_arg *cliargs_get_glob(cliini_args *args, const char *name)
+CLIF_EXPORT cliini_arg *cliargs_get_glob(cliini_args *args, const char *name)
 {
   if (!args)
     return NULL;
@@ -688,47 +695,47 @@ cliini_arg *cliargs_get_glob(cliini_args *args, const char *name)
   return NULL;
 }
 
-int cliargs_count(cliini_args *args)
+CLIF_EXPORT int cliargs_count(cliini_args *args)
 {
   return args->count;
 }
 
-cliini_arg *cliargs_nth(cliini_args *args, int n)
+CLIF_EXPORT cliini_arg *cliargs_nth(cliini_args *args, int n)
 {
   return &args->args[n];
 }
 
-int cliarg_sum(cliini_arg *arg)
+CLIF_EXPORT int cliarg_sum(cliini_arg *arg)
 {
   if (!arg)
     return 0;
   return arg->sum;
 }
 
-void cliarg_strs(cliini_arg *arg, char **vals)
+CLIF_EXPORT void cliarg_strs(cliini_arg *arg, char **vals)
 {
   int i;
   memcpy((void*)vals, arg->vals, sizeof(char*)*arg->sum);
 }
 
-void cliarg_doubles(cliini_arg *arg, double *vals)
+CLIF_EXPORT void cliarg_doubles(cliini_arg *arg, double *vals)
 {
   int i;
   memcpy((void*)vals, arg->vals, sizeof(double)*arg->sum);
 }
 
-void cliarg_ints(cliini_arg *arg, int *vals)
+CLIF_EXPORT void cliarg_ints(cliini_arg *arg, int *vals)
 {
   int i;
   memcpy((void*)vals, arg->vals, sizeof(int)*arg->sum);
 }
 
-char  *cliarg_str(cliini_arg *arg)
+CLIF_EXPORT char  *cliarg_str(cliini_arg *arg)
 {
   return ((char**)arg->vals)[0];
 }
 
-char  *cliarg_nth_str(cliini_arg *arg, int n)
+CLIF_EXPORT char  *cliarg_nth_str(cliini_arg *arg, int n)
 {
   return ((char**)arg->vals)[n];
 }

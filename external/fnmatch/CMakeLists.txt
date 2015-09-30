@@ -3,6 +3,11 @@ project(fnmatch)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -std=c99")
 
+#build as c++ with msvc
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /TP")
+#add_definitions(/D__STDC__)
+
+
 add_library(fnmatch SHARED fnmatch.c)
 
 install(TARGETS fnmatch

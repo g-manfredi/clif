@@ -3,11 +3,16 @@ project(cliini)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -std=c99")
 
+#build as c++ with msvc
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /TP")
+
 add_library(cliini SHARED cliini.c)
 
 add_executable(cliini_test test.c)
 add_executable(cliini_initest testini.c)
 add_executable(cliini_types testini_types.c)
+
+target_link_libraries(cliini ${CLIF_FNMATCH_LIBRARIES})
 
 target_link_libraries(cliini_test cliini)
 target_link_libraries(cliini_initest cliini)

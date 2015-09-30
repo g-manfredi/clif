@@ -1,0 +1,23 @@
+what to do for clif installation (for visual studio 2013 (vc12?)), x64:
+
+in cmake gui jeweils das verzeichnis (als _DIR) angeben in welchem die passende ..config.cmake liegt), also x64/x86 und vc11 oder vc12 (am besten 12)
+(für boost muss advanced angeklicked werden
+und dann:
+C:/Program Files (x86)/boost_1_59_0/lib64-msvc-12.0 als BOOST_LIBRARY_DIR_...
+
+opencv 2.4.11
+vigra (visual studio 2012?))  https://github.com/ukoethe/vigra/releases/download/Version-1-10-0/vigra-1.10.0-win64.exe
+
+für opencv: set opencv_dir auf build
+opencv_config_dir auf build/x64/vc12/lib
+
+boost http://sourceforge.net/projects/boost/files/boost-binaries/1.59.0/ 
+und da boost_1_59_0-msvc-12.0-64.exe
+
+
+hdf5 http://www.hdfgroup.org/ftp/HDF5/current/bin/windows/hdf5-1.8.15-patch1-win64-vs2013-shared.zip
+
+in visual studio configuration auf release ändern!
+
+check:
+use /MD for dynmamic linking?
