@@ -12,8 +12,6 @@ else() # "Clang" "GNU" "Intel" ...
   add_definitions(-DCLIF_EXPORT=)
 endif()
 
-message( "COMPILE_DEFINITIONS = ${DirDefs}" )
-
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -O3 -fno-omit-frame-pointer -std=c++11 -Wall -march=native")
 
 find_package(OpenCV)
@@ -57,6 +55,8 @@ endif()
 add_subdirectory(external/cliini)
 include_directories(external/cliini)
 
+#for generated header
+include_directories(${CMAKE_BINARY_DIR}/src/lib)
 add_subdirectory(src/lib)
 include_directories(src/lib)
 
