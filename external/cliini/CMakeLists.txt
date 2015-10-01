@@ -1,22 +1,29 @@
 cmake_minimum_required (VERSION 2.6)
 project(cliini)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -std=c99")
 
-#build as c++ with msvc
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /TP")
+if (CLIF_COMPILER_MSVC)
+  #use c++ compiler
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /TP")
+else ()
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -std=c99")
+endif()
 
 add_library(cliini cliini.c)
 
-#add_executable(cliini_test test.c)
-#add_executable(cliini_initest testini.c)
-#add_executable(cliini_types testini_types.c)
+if (NOT CLIF_COMPILER_MSVC)
+  add_executable(cliini_test test.c)
+  add_executable(cliini_initest testini.c)
+  add_executable(cliini_types testini_types.c)
+endif()
 
 target_link_libraries(cliini ${CLIF_FNMATCH_LIBRARIES})
 
-#target_link_libraries(cliini_test cliini)
-#target_link_libraries(cliini_initest cliini)
-#target_link_libraries(cliini_types cliini)
+if (NOT CLIF_COMPILER_MSVC)
+  target_link_libraries(cliini_test cliini)
+  target_link_libraries(cliini_initest cliini)
+  target_link_libraries(cliini_types cliini)
+endif()
 
 install(TARGETS cliini
         RUNTIME DESTINATION bin

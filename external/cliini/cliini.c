@@ -588,7 +588,7 @@ static void print_doubles(double *vals, int count)
     printf(" %f", vals[i]);
 }
 
-static void print_arg(cliini_arg *arg)
+CLIF_EXPORT void cliini_print_arg(cliini_arg *arg)
 {
   int i;
   

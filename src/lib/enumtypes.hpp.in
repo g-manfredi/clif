@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <typeindex>
 #include <string.h>
+#include <cstdint>
 
 namespace clif {
 /*

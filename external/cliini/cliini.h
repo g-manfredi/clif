@@ -57,7 +57,7 @@ CLIF_EXPORT int cliini_fit_typeopts(cliini_args *args, cliini_args *typeargs);
 CLIF_EXPORT int cliargs_count(cliini_args *args);
 CLIF_EXPORT cliini_arg *cliargs_nth(cliini_args *args, int n);
 
-CLIF_EXPORT void print_arg(cliini_arg *arg);
+CLIF_EXPORT void cliini_print_arg(cliini_arg *arg);
 
 CLIF_EXPORT cliini_arg *cliargs_get(cliini_args *args, const char *name);
 //assumes that the args flags are wildcard patterns

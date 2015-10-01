@@ -20,5 +20,5 @@ int main(const int argc, const char *argv[])
   
   int i;
   for(i=0;i<cliargs_count(args);i++)
-    print_arg(cliargs_nth(args, i));
+    cliini_print_arg(cliargs_nth(args, i));
 }
