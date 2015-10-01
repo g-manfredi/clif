@@ -8,7 +8,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /TP")
 #add_definitions(/D__STDC__)
 
 
-add_library(fnmatch SHARED fnmatch.c)
+add_library(fnmatch fnmatch.c)
 
 install(TARGETS fnmatch
         RUNTIME DESTINATION bin

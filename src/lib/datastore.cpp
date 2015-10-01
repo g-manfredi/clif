@@ -21,6 +21,9 @@ void Datastore::create(std::string path, Dataset *dataset)
   _data = H5::DataSet();
   _path = path;
   _dataset = dataset;
+
+  _imgsize[0] = -1;
+  _imgsize[1] = -1;
 }
 
 
@@ -86,6 +89,9 @@ void Datastore::create(std::string path, Dataset *dataset, cv::Mat &m)
   _memonly = true;
   
   _mat = m;
+
+  _imgsize[0] = -1;
+  _imgsize[1] = -1;
 }
 
 //read store into m 
@@ -168,8 +174,8 @@ void Datastore::init(hsize_t w, hsize_t h)
   hsize_t maxdims[3] = {comb_w,comb_h,H5S_UNLIMITED}; 
   path dataset_path = _dataset->path() / _path;
   
-  if (h5_obj_exists(_dataset->f, dataset_path.c_str())) {
-    _data = _dataset->f.openDataSet(dataset_path.c_str());
+  if (h5_obj_exists(_dataset->f, dataset_path.string())) {
+    _data = _dataset->f.openDataSet(dataset_path.string());
     return;
   }
   
@@ -186,7 +192,7 @@ void Datastore::init(hsize_t w, hsize_t h)
   
   H5::DataSpace space(3, dims, maxdims);
   
-  _data = _dataset->f.createDataSet(dataset_path.c_str(), 
+  _data = _dataset->f.createDataSet(dataset_path.string(), 
                       H5PredType(_type), space, prop);
 }
 
@@ -229,7 +235,7 @@ void Datastore::open(Dataset *dataset, std::string path_)
     return;
   }
   
-  _data = dataset->f.openDataSet(dataset_path.c_str());
+  _data = dataset->f.openDataSet(dataset_path.string());
   printf("opened h5 dataset %s id %d\n", dataset_path.c_str(), _data.getId());
   
   printf("Datastore open %s: %s %s %s\n", dataset_path.c_str(), ClifEnumString(BaseType,_type),ClifEnumString(DataOrg,_org),ClifEnumString(DataOrder,_order));

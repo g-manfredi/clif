@@ -31,7 +31,7 @@ H5::PredType H5PredType(BaseType type);
   
 std::vector<std::string> Datasets(H5::H5File &f);
 
-class ClifFile
+CLIF_EXPORT class ClifFile
 {
 public:
   ClifFile() {};

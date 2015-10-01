@@ -9,7 +9,9 @@
 #include <fnmatch.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef CLIF_COMPILER_MSVC
 #include <unistd.h>
+#endif
 
 #include "clif_vigra.hpp"
 #include "subset3d.hpp"

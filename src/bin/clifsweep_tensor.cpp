@@ -9,7 +9,9 @@
 #include <fnmatch.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef CLIF_COMPILER_MSVC
 #include <unistd.h>
+#endif
 
 #include "H5Cpp.h"
 #include "H5File.h"
@@ -193,8 +195,8 @@ void write_obj_depth(const char *name, Mat in_d, double f[2], int w, int h, Mat 
   Mat d;
   in_d.convertTo(d, CV_32F);
   
-  int buf1[w];
-  int buf2[w];
+  int *buf1 = new int[w];
+  int *buf2 = new int[w];
   int *valid = buf1;
   int *valid_last = buf2;
   int *valid_tmp;
@@ -225,6 +227,9 @@ void write_obj_depth(const char *name, Mat in_d, double f[2], int w, int h, Mat 
   }
   fprintf(pointfile,"\n");
   fclose(pointfile);
+
+  delete buf1;
+  delete buf2;
 }
 
 int main(const int argc, const char *argv[])

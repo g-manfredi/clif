@@ -20,7 +20,7 @@ class Attribute {
     Attribute() {};
     Attribute(std::string name_)  { name = name_; };
     Attribute(const char *name_)  { name = std::string(name_); };
-    Attribute(boost::filesystem::path &name_)  { name = name_.c_str(); };
+    Attribute(boost::filesystem::path &name_)  { name = name_.string(); };
     
     const char *getStr()
     {
@@ -76,11 +76,12 @@ class Attribute {
     
     void get(cv::Mat &val)
     {
-      int sizes[size.size()];
+      int *sizes = new int[size.size()+1];
       for(int i=0;i<size.size();i++)
         sizes[i] = size[i];
       
       val = cv::Mat(size.size(), sizes, BaseType2CvDepth(type), data);
+	  delete sizes;
     };
     
     template<typename T> void set(T &val)

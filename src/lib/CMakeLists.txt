@@ -1,7 +1,6 @@
 cmake_minimum_required (VERSION 2.6)
-project(clif)
+project(libclif)
 
-find_package(HDF5 REQUIRED CXX)
 
 #find_package(PkgConfig REQUIRED)
 #TODO make optional
@@ -35,11 +34,17 @@ createEnumStrings(DistModel)
 
 configure_file(enumtypes.hpp.in enumtypes.hpp)
 
-add_library(clif SHARED clif.cpp subset3d.cpp calib.cpp hdf5.cpp attribute.cpp helpers.cpp datastore.cpp dataset.cpp core.cpp clif_cv.cpp clif_vigra.cpp enumtypes.cpp)
+add_library(clif clif.cpp subset3d.cpp calib.cpp hdf5.cpp attribute.cpp helpers.cpp datastore.cpp dataset.cpp core.cpp clif_cv.cpp clif_vigra.cpp enumtypes.cpp)
 
-add_library(clif_vigra SHARED clif_vigra.cpp)
+add_library(clif_vigra clif_vigra.cpp)
 
-target_link_libraries(clif cliini ${HDF5_CXX_LIBRARIES} ${Boost_LIBRARIES} ${OpenCV_LIBRARIES} ${CLIF_LINK_LIBRARIES})
+message(DEBUG "hdf5 libs ${HDF5_CXX_LIBRARIES}")
+message(DEBUG "hdf5 libs ${HDF5_C_LIBRARIES}")
+message(DEBUG "hdf5 libs ${HDF5_LIBRARIES}")
+
+message(DEBUG "boost libs: ${Boost_LIBRARIES}")
+
+target_link_libraries(clif cliini ${HDF5_LIBRARIES} ${Boost_LIBRARIES} ${OpenCV_LIBRARIES} ${CLIF_LINK_LIBRARIES})
 target_link_libraries(clif_vigra clif ${VIGRA_LIBRARIES})
 #target_link_libraries(clifcalib clif)
 

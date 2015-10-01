@@ -609,7 +609,7 @@ static void print_arg(cliini_arg *arg)
   printf("\n");
 }
 
-static int cliini_fit_typeopts(cliini_args *args, cliini_args *typeargs)
+CLIF_EXPORT int cliini_fit_typeopts(cliini_args *args, cliini_args *typeargs)
 {
   int i;
   int error = 0;

@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <typeindex>
 #include <string.h>
+#include <cstdint>
 
 namespace clif {
 /*
@@ -110,6 +111,7 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
   BaseType CvDepth2BaseType(int cv_type);
   int BaseType2CvDepth(BaseType t);
   
+  typedef unsigned int uint;
 }
 
 #define ClifEnumString(Type,Var) Type ## Str[ static_cast<int>(Var) ]

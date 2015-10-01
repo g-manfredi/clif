@@ -76,7 +76,7 @@ H5::PredType BaseType_to_PredType(BaseType type)
   abort();
 }
   
-static void *read_attr(Attribute *attr, H5::Group g, std::string basename, std::string group_path, std::string name, BaseType &type)
+static void read_attr(Attribute *attr, H5::Group g, std::string basename, std::string group_path, std::string name, BaseType &type)
 {
   int total = 1;
   H5::Attribute h5attr = g.openAttribute(name);
@@ -86,8 +86,8 @@ static void *read_attr(Attribute *attr, H5::Group g, std::string basename, std::
   H5::DataSpace space = h5attr.getSpace();
   int dimcount = space.getSimpleExtentNdims();
 
-  hsize_t dims[dimcount];
-  hsize_t maxdims[dimcount];
+  hsize_t *dims = new hsize_t[dimcount];
+  hsize_t *maxdims = new hsize_t[dimcount];
   
   space.getSimpleExtentDims(dims, maxdims);
   for(int i=0;i<dimcount;i++)
@@ -101,6 +101,9 @@ static void *read_attr(Attribute *attr, H5::Group g, std::string basename, std::
   name = group_path + '/' + name;
   
   attr->set<hsize_t>(name, dimcount, dims, type, buf);
+
+  delete dims;
+  delete maxdims;
 }
   
 void Attributes::open(const char *inifile, const char *typefile) 
@@ -257,13 +260,12 @@ static void attributes_append_group(Attributes &attrs, H5::Group &g, std::string
   for(int i=0;i<g.getNumAttrs();i++) {
     H5::Attribute h5attr = g.openAttribute(i);
     Attribute attr;
-    void *data;
     int size[1];
     BaseType type;
 
     std::string name = appendToPath(group_path, h5attr.getName());
     
-    data = read_attr(&attr, g, basename, group_path, h5attr.getName(),type);
+    read_attr(&attr, g, basename, group_path, h5attr.getName(),type);
           
     attrs.append(attr);
   }
@@ -407,12 +409,14 @@ void Attribute::write(H5::H5File &f, std::string dataset_name)
   std::string grouppath = remove_last_part(fullpath, '/');
   std::string attr_name = get_last_part(fullpath, '/');
   
-  hsize_t dim[size.size()];
+  hsize_t *dim = new hsize_t[size.size()+1];
   for(int i=0;i<size.size();i++)
     dim[i] = size[i];
   H5::DataSpace space(size.size(), dim);
   H5::Attribute attr;
   H5::Group g;
+
+  delete dim;
   
   if (!h5_obj_exists(f, grouppath))
     h5_create_path_groups(f, grouppath);

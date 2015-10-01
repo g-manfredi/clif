@@ -11,7 +11,7 @@ class Dataset;
 //representation of a "raw" clif datset - mostly the images
 class Datastore {
   public:
-    Datastore() {};
+	  Datastore() { _imgsize[0] = -1; _imgsize[1] = -1; };
     
     //create new datastore
     void create(std::string path, Dataset *dataset);
@@ -88,7 +88,7 @@ private:
   
   cv::Mat _mat;
   
-  int _imgsize[2] = {-1, -1};
+  int _imgsize[2];
 };
 
 }

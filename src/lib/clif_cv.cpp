@@ -78,7 +78,7 @@ namespace clif {
       if (boost::filesystem::exists(cache_path)) {
         //printf("cache file!\n");
         m = new cv::Mat();
-        *m = cv::imread(cache_path.c_str(), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+        *m = cv::imread(cache_path.string(), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
         outm = *m;
         store->cache_set(idx,flags,scale, m);
         return;
@@ -147,7 +147,7 @@ namespace clif {
     
     if (check_cache) {
       create_directories(cache_path.parent_path());
-      cv::imwrite(cache_path.c_str(), *m);
+      cv::imwrite(cache_path.string(), *m);
     }
     
     outm = *m;
@@ -261,7 +261,7 @@ namespace clif {
       
       if (boost::filesystem::exists(cache_path.c_str())) {
         m = new_planar_mats(store, ch_count);
-        readMatV(m, cache_path.c_str());
+        readMatV(m, cache_path.string().c_str());
         outm = *m;
         store->cache_set(idx,flags,scale, m);
         return;
@@ -341,7 +341,7 @@ namespace clif {
     
     if (check_cache) {
       create_directories(cache_path.parent_path());
-      writeMatV(m, cache_path.c_str());
+      writeMatV(m, cache_path.string().c_str());
     }
     
     outm = *m;

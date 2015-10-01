@@ -9,7 +9,9 @@
 #include <fnmatch.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef CLIF_COMPILER_MSVC
 #include <unistd.h>
+#endif
 
 #include "H5Cpp.h"
 #include "H5File.h"
@@ -22,7 +24,6 @@
 using namespace clif;
 using namespace std;
 using namespace cv;
-using boost::filesystem::path;
 using H5::H5File;
 
 cliini_opt opts[] = {
@@ -105,7 +106,7 @@ vector<string> extract_matching_strings(cliini_arg *arg, const char *pattern)
   vector<string> files;
   
   for(int i=0;i<cliarg_sum(arg);i++)
-    if (!fnmatch(pattern, cliarg_nth_str(arg, i), FNM_CASEFOLD | FNM_EXTMATCH))
+    if (!fnmatch(pattern, cliarg_nth_str(arg, i), 0/*FNM_CASEFOLD | FNM_EXTMATCH*/))
       files.push_back(cliarg_nth_str(arg, i));
     
   return files;
@@ -239,7 +240,7 @@ int main(const int argc, const char *argv[])
       else
         set->append(in_set);
       
-      vector<string> h5datasets = listH5Datasets(f_in.f, in_set->path().c_str());
+      vector<string> h5datasets = listH5Datasets(f_in.f, in_set->path().string());
       for(int j=0;j<h5datasets.size();j++) {
         cout << "copy dataset" << h5datasets[j] << endl;
         //FIXME handle dataset selection properly!

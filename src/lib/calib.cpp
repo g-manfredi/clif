@@ -123,6 +123,9 @@ namespace clif {
     set->setAttribute(calib_path / "type", "CV8");
     set->setAttribute(calib_path / "projection", f, 2);
     set->setAttribute(calib_path / "projection_center", c, 2);
-    set->setAttribute(calib_path / "opencv_distortion", dist);
+	set->setAttribute(calib_path / "opencv_distortion", dist);
+
+	return true;
   }
+
 }

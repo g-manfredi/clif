@@ -49,43 +49,43 @@ typedef struct {
   int max;
 } cliini_args;
 
-cliini_args *cliini_parsopts(const int argc, const char *argv[], cliini_optgroup *group);
-cliini_args *cliini_parsefile(const char *filename, cliini_optgroup *group);
+CLIF_EXPORT cliini_args *cliini_parsopts(const int argc, const char *argv[], cliini_optgroup *group);
+CLIF_EXPORT cliini_args *cliini_parsefile(const char *filename, cliini_optgroup *group);
 
-int cliini_fit_typeopts(cliini_args *args, cliini_args *typeargs);
+CLIF_EXPORT int cliini_fit_typeopts(cliini_args *args, cliini_args *typeargs);
 
-int cliargs_count(cliini_args *args);
-cliini_arg *cliargs_nth(cliini_args *args, int n);
+CLIF_EXPORT int cliargs_count(cliini_args *args);
+CLIF_EXPORT cliini_arg *cliargs_nth(cliini_args *args, int n);
 
-void print_arg(cliini_arg *arg);
+CLIF_EXPORT void print_arg(cliini_arg *arg);
 
-cliini_arg *cliargs_get(cliini_args *args, const char *name);
+CLIF_EXPORT cliini_arg *cliargs_get(cliini_args *args, const char *name);
 //assumes that the args flags are wildcard patterns
-cliini_arg *cliargs_get_glob(cliini_args *args, const char *name);
+CLIF_EXPORT cliini_arg *cliargs_get_glob(cliini_args *args, const char *name);
 
-int cliarg_inst_count(cliini_arg *arg); //number of instances of this options
-int cliarg_sum(cliini_arg *arg); //sum of all arguments for all instances
+CLIF_EXPORT int cliarg_inst_count(cliini_arg *arg); //number of instances of this options
+CLIF_EXPORT int cliarg_sum(cliini_arg *arg); //sum of all arguments for all instances
 
-int cliarg_arg_count(cliini_arg *arg); //number of arguments for the first instance
-int cliarg_inst_arg_count(cliini_arg *arg, int inst); //number of arguments for the respective instance
+CLIF_EXPORT int cliarg_arg_count(cliini_arg *arg); //number of arguments for the first instance
+CLIF_EXPORT int cliarg_inst_arg_count(cliini_arg *arg, int inst); //number of arguments for the respective instance
 
-char  *cliarg_str(cliini_arg *arg);
-int    cliarg_int(cliini_arg *arg);
-double cliarg_double(cliini_arg *arg);
+CLIF_EXPORT char  *cliarg_str(cliini_arg *arg);
+CLIF_EXPORT int    cliarg_int(cliini_arg *arg);
+CLIF_EXPORT double cliarg_double(cliini_arg *arg);
 
-char  *cliarg_nth_str(cliini_arg *arg, int n);
-int    cliarg_nth_int(cliini_arg *arg, int n);
-double cliarg_nth_double(cliini_arg *arg, int n);
+CLIF_EXPORT char  *cliarg_nth_str(cliini_arg *arg, int n);
+CLIF_EXPORT int    cliarg_nth_int(cliini_arg *arg, int n);
+CLIF_EXPORT double cliarg_nth_double(cliini_arg *arg, int n);
 
 //flat - return all values from all instances
-void cliarg_strs(cliini_arg *arg, char **vals);
-void cliarg_ints(cliini_arg *arg, int *vals);
-void cliarg_doubles(cliini_arg *arg, double *vals);
+CLIF_EXPORT void cliarg_strs(cliini_arg *arg, char **vals);
+CLIF_EXPORT void cliarg_ints(cliini_arg *arg, int *vals);
+CLIF_EXPORT void cliarg_doubles(cliini_arg *arg, double *vals);
 
 //flat - return all values from single instance
-void cliarg_inst_strs(cliini_arg *arg, char **vals);
-void cliarg_inst_ints(cliini_arg *arg, int *vals);
-void cliarg_inst_doubles(cliini_arg *arg, double *vals);
+CLIF_EXPORT void cliarg_inst_strs(cliini_arg *arg, char **vals);
+CLIF_EXPORT void cliarg_inst_ints(cliini_arg *arg, int *vals);
+CLIF_EXPORT void cliarg_inst_doubles(cliini_arg *arg, double *vals);
 
 #ifdef __cplusplus
 }
