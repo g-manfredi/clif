@@ -23,6 +23,7 @@ createEnumStrings(CalibPattern)
 createEnumStrings(DistModel)
 
 configure_file(enumtypes.hpp.in enumtypes.hpp)
+set(CLIF_HEADERS ${CLIF_HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/enumtypes.hpp)
 
 add_library(clif clif.cpp subset3d.cpp calib.cpp hdf5.cpp attribute.cpp helpers.cpp datastore.cpp dataset.cpp core.cpp clif_cv.cpp clif_vigra.cpp enumtypes.cpp)
 add_library(clif_vigra clif_vigra.cpp)
@@ -31,10 +32,10 @@ target_link_libraries(clif cliini ${HDF5_LIBRARIES} ${Boost_LIBRARIES} ${OpenCV_
 target_link_libraries(clif_vigra clif ${VIGRA_LIBRARIES})
 #target_link_libraries(clifcalib clif)
 
-set(HEADERS attribute.hpp calib.hpp clif_cv.hpp clif.hpp clif_vigra.hpp core.hpp dataset.hpp datastore.hpp enumtypes.hpp flexmav.hpp hdf5.hpp helpers.hpp matio.hpp stringtree.hpp subset3d.hpp)
+set(CLIF_HEADERS ${CLIF_HEADERS} attribute.hpp calib.hpp clif_cv.hpp clif.hpp clif_vigra.hpp core.hpp dataset.hpp datastore.hpp flexmav.hpp hdf5.hpp helpers.hpp matio.hpp stringtree.hpp subset3d.hpp)
 
 install(TARGETS clif clif_vigra
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib/static)
-install(FILES ${HEADERS} DESTINATION include/clif)
+install(FILES ${CLIF_HEADERS} DESTINATION include/clif)
