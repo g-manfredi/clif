@@ -1,0 +1,6 @@
+#ifndef _CLIF_CONFIG_H
+#define _CLIF_CONFIG_H
+
+#define CLIF_EXPORT ${CLIF_EXPORT}
+
+#endif
