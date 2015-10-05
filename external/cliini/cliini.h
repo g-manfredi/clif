@@ -1,6 +1,8 @@
 #ifndef _CLIINI_H
 #define _CLIINI_H
 
+#include "config.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

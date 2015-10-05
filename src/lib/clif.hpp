@@ -10,6 +10,8 @@
 #include "datastore.hpp"
 #include "dataset.hpp"
 
+#include "config.h"
+
 
 namespace clif {
   

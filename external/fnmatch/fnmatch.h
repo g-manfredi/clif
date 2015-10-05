@@ -13,6 +13,8 @@ Library General Public License for more details.  */
 
 #define	_FNMATCH_H	1
 
+#include "config.h"
+
 /* Bits set in the FLAGS argument to `fnmatch'.  */
 #undef FNM_PATHNAME
 #define	FNM_PATHNAME	(1 << 0)/* No wildcard can ever match `/'.  */

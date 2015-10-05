@@ -6,10 +6,7 @@ cmake_policy(VERSION 3.1)
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   add_definitions(-DCLIF_COMPILER_MSVC)
   set(CLIF_COMPILER_MSVC true)
-  set(CLIF_EXPORT_STRING "__declspec(dllexport)")
-  add_definitions(-DCLIF_EXPORT=${CLIF_EXPORT_STRING})
-else() # "Clang" "GNU" "Intel" ...
-  add_definitions(-DCLIF_EXPORT=)
+  set(CLIF_EXPORT "__declspec(dllexport)")
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -O3 -fno-omit-frame-pointer -std=c++11 -Wall -march=native")
@@ -41,6 +38,11 @@ include_directories(${Vigra_INCLUDE_DIRS})
 find_package(Boost REQUIRED COMPONENTS filesystem system)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
+
+#config header (contains CLIF_EXPORT for now)
+configure_file(src/lib/config.h.in src/lib/config.h)
+set(CLIF_HEADERS ${CLIF_HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/src/lib/config.h)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/src/lib/)
 
 find_path(FNMATCH_INCLUDE_DIR NAMES fnmatch.h)
 if (NOT FNMATCH_INCLUDE_DIR)
