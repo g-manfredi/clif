@@ -35,7 +35,10 @@ target_link_libraries(clif_vigra clif ${VIGRA_LIBRARIES})
 set(CLIF_HEADERS ${CLIF_HEADERS} attribute.hpp calib.hpp clif_cv.hpp clif.hpp clif_vigra.hpp core.hpp dataset.hpp datastore.hpp flexmav.hpp hdf5.hpp helpers.hpp matio.hpp stringtree.hpp subset3d.hpp)
 
 install(TARGETS clif clif_vigra
+		EXPORT ${PROJECT_NAME}
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib/static)
 install(FILES ${CLIF_HEADERS} DESTINATION include/clif)
+# Install the export set for use with the install-tree
+install(EXPORT ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/CMake/clif/" COMPONENT dev)

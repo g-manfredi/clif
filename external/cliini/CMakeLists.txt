@@ -1,7 +1,6 @@
 cmake_minimum_required (VERSION 2.6)
 project(cliini)
 
-
 if (CLIF_COMPILER_MSVC)
   #use c++ compiler
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /TP")
@@ -26,6 +25,9 @@ if (NOT CLIF_COMPILER_MSVC)
 endif()
 
 install(TARGETS cliini
+		EXPORT ${PROJECT_NAME}
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib/static)
+		
+install(EXPORT ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/CMake/clif/" COMPONENT dev)

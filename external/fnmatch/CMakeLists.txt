@@ -11,7 +11,10 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /TP")
 add_library(fnmatch fnmatch.c)
 
 install(TARGETS fnmatch
+		EXPORT ${PROJECT_NAME}
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib/static)
 install(FILES fnmatch.h DESTINATION include/clif)
+
+install(EXPORT ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/CMake/clif/" COMPONENT dev)
