@@ -12,9 +12,15 @@ set(CLIF_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
 if(NOT TARGET clif AND NOT CLIF_BINARY_DIR)
   include("${CLIF_CMAKE_DIR}/cmake/clif/libclif.cmake")
   include("${CLIF_CMAKE_DIR}/cmake/clif/cliini.cmake")
-  include("${CLIF_CMAKE_DIR}/cmake/clif/fnmatch.cmake")
+   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+     include("${CLIF_CMAKE_DIR}/cmake/clif/fnmatch.cmake")
+   endif()
 endif()
  
 # These are IMPORTED targets created by clifTargets.cmake
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+set(CLIF_LIBRARIES clif clif_vigra cliini)
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 set(CLIF_LIBRARIES clif clif_vigra cliini fnmatch)
+endif()
 #set(CLIF_EXECUTABLE ...)   no executables explicitly build

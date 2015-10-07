@@ -99,42 +99,17 @@ endif()
 
 message("")
 
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-  # using Clang
-  message("use clang")
-elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-  # using GCC
-
-	# The interesting stuff goes here
-	# ===============================
-	# Add all targets to the build-tree export set
-	export(TARGETS clif clif_vigra cliini FILE "${PROJECT_BINARY_DIR}/clifTargets.cmake")
-	# Export the package for use from the build-tree
-	# (this registers the build-tree with a global CMake-registry)
-	export(PACKAGE ${PROJECT_NAME})
-	# Create the clifConfig.cmake and clifConfigVersion files
-	file(RELATIVE_PATH REL_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/cmake/clif" "${CMAKE_INSTALL_PREFIX}/include")
-	# ... for the build tree
-	set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}")
-	configure_file(cmake/clifConfig.cmake.in "${PROJECT_BINARY_DIR}/clifConfig.cmake" @ONLY)
-	# ... for the install tree
-	set(CONF_INCLUDE_DIRS "\${CMAKE_INSTALL_PREFIX}/cmake/clif/${REL_INCLUDE_DIR}")
-	configure_file(cmake/clifConfig.cmake.in "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/clifConfig.cmake" @ONLY)
-	# ... for both
-	configure_file(cmake/clifConfigVersion.cmake.in "${PROJECT_BINARY_DIR}/clifConfigVersion.cmake" @ONLY)
-	# Install the clifConfig.cmake and clifConfigVersion.cmake
-	install(FILES
-	  "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/clifConfig.cmake"
-	  "${PROJECT_BINARY_DIR}/clifConfigVersion.cmake"
-	  DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT dev)
-	  
-elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   # using Visual Studio C++
 	# The interesting stuff goes here
 	# ===============================
 	# Add all targets to the build-tree export set
-	export(TARGETS clif clif_vigra cliini fnmatch FILE "${PROJECT_BINARY_DIR}/clifTargets.cmake")
-	# Export the package for use from the build-tree
+	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	export(TARGETS clif clif_vigra cliini FILE "${PROJECT_BINARY_DIR}/clifTargets.cmake")
+	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+	  export(TARGETS clif clif_vigra cliini fnmatch FILE "${PROJECT_BINARY_DIR}/clifTargets.cmake")
+	endif()
+	
+# Export the package for use from the build-tree
 	# (this registers the build-tree with a global CMake-registry)
 	export(PACKAGE ${PROJECT_NAME})
 	 
@@ -153,7 +128,6 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
 	  "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/clifConfig.cmake"
 	  "${PROJECT_BINARY_DIR}/clifConfigVersion.cmake"
 	  DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT dev)
-endif()
 
 
 
