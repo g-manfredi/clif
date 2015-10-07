@@ -113,12 +113,12 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 	# (this registers the build-tree with a global CMake-registry)
 	export(PACKAGE ${PROJECT_NAME})
 	# Create the clifConfig.cmake and clifConfigVersion files
-	file(RELATIVE_PATH REL_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/CMake/clif" "${CMAKE_INSTALL_PREFIX}/include")
+	file(RELATIVE_PATH REL_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/cmake/clif" "${CMAKE_INSTALL_PREFIX}/include")
 	# ... for the build tree
 	set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}")
 	configure_file(cmake/clifConfig.cmake.in "${PROJECT_BINARY_DIR}/clifConfig.cmake" @ONLY)
 	# ... for the install tree
-	set(CONF_INCLUDE_DIRS "\${CMAKE_INSTALL_PREFIX}/CMake/clif/${REL_INCLUDE_DIR}")
+	set(CONF_INCLUDE_DIRS "\${CMAKE_INSTALL_PREFIX}/cmake/clif/${REL_INCLUDE_DIR}")
 	configure_file(cmake/clifConfig.cmake.in "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/clifConfig.cmake" @ONLY)
 	# ... for both
 	configure_file(cmake/clifConfigVersion.cmake.in "${PROJECT_BINARY_DIR}/clifConfigVersion.cmake" @ONLY)
@@ -139,12 +139,12 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
 	export(PACKAGE ${PROJECT_NAME})
 	 
 	# Create the clifConfig.cmake and clifConfigVersion files
-	file(RELATIVE_PATH REL_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/CMake/clif" "${CMAKE_INSTALL_PREFIX}/include")
+	file(RELATIVE_PATH REL_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/cmake/clif" "${CMAKE_INSTALL_PREFIX}/include")
 	# ... for the build tree
 	set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}")
 	configure_file(cmake/clifConfig.cmake.in "${PROJECT_BINARY_DIR}/clifConfig.cmake" @ONLY)
 	# ... for the install tree
-	set(CONF_INCLUDE_DIRS "\${CMAKE_INSTALL_PREFIX}/CMake/clif/${REL_INCLUDE_DIR}")
+	set(CONF_INCLUDE_DIRS "\${CMAKE_INSTALL_PREFIX}/cmake/clif/${REL_INCLUDE_DIR}")
 	configure_file(cmake/clifConfig.cmake.in "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/clifConfig.cmake" @ONLY)
 	# ... for both
 	configure_file(cmake/clifConfigVersion.cmake.in "${PROJECT_BINARY_DIR}/clifConfigVersion.cmake" @ONLY)
