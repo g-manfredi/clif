@@ -5,7 +5,7 @@ if (CLIF_COMPILER_MSVC)
   #use c++ compiler
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /TP")
 else ()
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -std=c99")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -std=c99 -fPIC")
 endif()
 
 add_library(cliini cliini.c)
