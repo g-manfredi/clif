@@ -49,7 +49,7 @@ class Attribute {
       if (BaseTypeTypes[int(type)] != std::type_index(typeid(T)))
         throw std::invalid_argument("Attribute type doesn't match requested type.");
       
-      val = (T*)data;
+      val = *(T*)data;
     };
     
     template<typename T> void get(T *val, int count)
