@@ -61,7 +61,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/src/lib/)
 
 find_path(FNMATCH_INCLUDE_DIR NAMES fnmatch.h)
 if (NOT FNMATCH_INCLUDE_DIR)
-  set(FNMATCH_USE_INTERNAL TRUE)
+  set(FNMATCH_USE_INTERNAL TRUE CACHE BOOL "use internal fnmatch code")
   add_subdirectory(external/fnmatch)
   include_directories(external/fnmatch)
   link_directories(external/fnmatch)

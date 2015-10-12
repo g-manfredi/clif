@@ -226,17 +226,17 @@ class Attributes {
         
         return NULL;
     }
-    Attribute *getMatch(const char *pattern)
+    Attribute *getMatch(const char *name)
     {    
       for(uint i=0;i<attrs.size();i++)
-        if (!fnmatch(pattern, attrs[i].name.c_str(), FNM_PATHNAME))
+        if (!fnmatch(attrs[i].name.c_str(), name, FNM_PATHNAME))
           return &attrs[i];
         
         return NULL;
     }
-    template<typename STRINGTYPE> Attribute *getMatch(STRINGTYPE pattern)
+    template<typename STRINGTYPE> Attribute *getMatch(STRINGTYPE name)
     {    
-      return getMatch(pattern.c_str());
+      return getMatch(name.c_str());
     }
     Attribute *get(int idx)
     {    
