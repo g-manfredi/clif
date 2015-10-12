@@ -13,8 +13,8 @@ if(NOT TARGET clif AND NOT CLIF_BINARY_DIR)
   if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
 	include("${CLIF_CMAKE_DIR}/cmake/clif/fnmatch.cmake")
   endif()
-  include("${CLIF_CMAKE_DIR}/cmake/clif/cliini.cmake")
-  include("${CLIF_CMAKE_DIR}/cmake/clif/libclif.cmake")
+  include("${CLIF_CMAKE_DIR}/cliini.cmake")
+  include("${CLIF_CMAKE_DIR}/libclif.cmake")
 endif()
  
 # These are IMPORTED targets created by clifTargets.cmake

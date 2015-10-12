@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 2.8)
-project(proj_clif)
+project(clif)
 
 set(CLIF_MINOR_VERSION 1)
 set(CLIF_PATCH_VERSION 0)
@@ -126,7 +126,7 @@ configure_file(cmake/clifConfigVersion.cmake.in "${PROJECT_BINARY_DIR}clifConfig
 install(FILES
   "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/clifConfig.cmake"
   "${PROJECT_BINARY_DIR}/clifConfigVersion.cmake"
-  DESTINATION "cmake/${PROJECT_NAME}" COMPONENT dev)
+  DESTINATION "lib/cmake/clif" COMPONENT dev)
 
 
 

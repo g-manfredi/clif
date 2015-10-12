@@ -17,4 +17,4 @@ install(TARGETS fnmatch
         ARCHIVE DESTINATION lib/static)
 install(FILES fnmatch.h DESTINATION include/clif)
 
-install(EXPORT ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/cmake/clif/" COMPONENT dev)
+install(EXPORT ${PROJECT_NAME} DESTINATION "lib/cmake/clif" COMPONENT dev)

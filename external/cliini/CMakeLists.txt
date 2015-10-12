@@ -30,4 +30,4 @@ install(TARGETS cliini
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib/static)
 		
-install(EXPORT ${PROJECT_NAME} DESTINATION "cmake/${PROJECT_NAME}" COMPONENT dev)
+install(EXPORT ${PROJECT_NAME} DESTINATION "lib/cmake/clif" COMPONENT dev)
