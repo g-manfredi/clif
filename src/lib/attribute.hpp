@@ -2,6 +2,7 @@
 #define _CLIF_ATTRIBUTE_H
 
 #include <opencv2/core/core.hpp>
+#include <fnmatch.h>
 
 #include "core.hpp"
 #include "stringtree.hpp"
@@ -224,6 +225,18 @@ class Attributes {
           return &attrs[i];
         
         return NULL;
+    }
+    Attribute *getMatch(const char *pattern)
+    {    
+      for(uint i=0;i<attrs.size();i++)
+        if (!fnmatch(pattern, attrs[i].name.c_str(), FNM_PATHNAME))
+          return &attrs[i];
+        
+        return NULL;
+    }
+    template<typename STRINGTYPE> Attribute *getMatch(STRINGTYPE pattern)
+    {    
+      return getMatch(pattern.c_str());
     }
     Attribute *get(int idx)
     {    
