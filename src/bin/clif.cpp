@@ -201,7 +201,7 @@ int main(const int argc, const char *argv[])
       set = f_out.createDataset(output_set_name);
     }
     
-    for(int i=0;i<input_clifs.size();i++) {
+    for(uint i=0;i<input_clifs.size();i++) {
       ClifFile f_in(input_clifs[i], H5F_ACC_RDONLY);
       
       //FIXME input name handling/selection
@@ -241,7 +241,7 @@ int main(const int argc, const char *argv[])
         set->append(in_set);
       
       vector<string> h5datasets = listH5Datasets(f_in.f, in_set->path().string());
-      for(int j=0;j<h5datasets.size();j++) {
+      for(uint j=0;j<h5datasets.size();j++) {
         cout << "copy dataset" << h5datasets[j] << endl;
         //FIXME handle dataset selection properly!
         if (!h5_obj_exists(f_out.f, h5datasets[j])) {
@@ -256,7 +256,7 @@ int main(const int argc, const char *argv[])
       delete in_set;
     }
     
-    for(int i=0;i<input_inis.size();i++) {
+    for(uint i=0;i<input_inis.size();i++) {
       printf("append ini file!\n");
       //FIXME multiple type files?
       Attributes others;
@@ -272,7 +272,7 @@ int main(const int argc, const char *argv[])
     
     set->writeAttributes();
     
-    for(int i=0;i<input_imgs.size();i++) {
+    for(uint i=0;i<input_imgs.size();i++) {
       printf("store idx %d: %s\n", i, input_imgs[i].c_str());
       Mat img = imread(input_imgs[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
       int w = img.size().width;
@@ -283,7 +283,7 @@ int main(const int argc, const char *argv[])
     if (input_calib_imgs.size()) {
       Datastore *calib_store = set->createCalibStore();
       
-      for(int i=0;i<input_calib_imgs.size();i++) {
+      for(uint i=0;i<input_calib_imgs.size();i++) {
         printf("store calib img %d: %s\n", i, input_calib_imgs[i].c_str());
         Mat img = imread(input_calib_imgs[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
         int w = img.size().width;
@@ -304,7 +304,7 @@ int main(const int argc, const char *argv[])
   }
   else {
     
-    for(int i=0;i<clif_extract_attributes.size();i++) {
+    for(uint i=0;i<clif_extract_attributes.size();i++) {
       ClifFile f_in(input_clifs[0], H5F_ACC_RDONLY);
       
       //FIXME input name handling/selection
@@ -317,7 +317,7 @@ int main(const int argc, const char *argv[])
         delete in_set;
     }
     
-    for(int i=0;i<clif_extract_images.size();i++) {
+    for(uint i=0;i<clif_extract_images.size();i++) {
       ClifFile f_in(input_clifs[0], H5F_ACC_RDONLY);
       
       //FIXME input name handling/selection

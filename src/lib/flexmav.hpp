@@ -50,7 +50,7 @@ namespace clif {
       case vigra::ImageImportInfo::PixelType::FLOAT : return BaseType::FLOAT; break;
       case vigra::ImageImportInfo::PixelType::DOUBLE : return BaseType::DOUBLE; break;
       default:
-        BaseType::INVALID;
+        return BaseType::INVALID;
     }
   }
   

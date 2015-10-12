@@ -145,9 +145,9 @@ void score_epi(Mat &epi, Mat &score_m, Mat &depth_m, double d, int l)
 #pragma omp parallel for schedule(dynamic)
   for(int i=std::max(minx/x_step*x_step,x_step);i<std::min(epi.size().width-1, maxx);i+=x_step) {
     Vec3i vx(0,0,0);
-    double gy = 0;
+    //double gy = 0;
     double score = 1000000000000;
-    int count = 0;
+    //int count = 0;
     
     /*  Vec3i ref = (Vec3i)epi.at<Vec3us>(h/2,i) - (Vec3i)epi.at<Vec3us>(h/2,i+1);
     

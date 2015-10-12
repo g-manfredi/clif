@@ -90,7 +90,7 @@ int main(const int argc, const char *argv[])
   
   vector<string> datasets = f.datasetList();
   
-  for(int i=0;i<datasets.size();i++) {
+  for(uint i=0;i<datasets.size();i++) {
     Dataset *set = f.openDataset(i);
     
     printf("Found dataset \"%s\" at index %d:\n", datasets[i].c_str(), i);

@@ -95,7 +95,7 @@ namespace clif {
     hsize_t count = g.getNumObjs();
     list.resize(count);
     
-    for(int i=0;i<count;i++)
+    for(uint i=0;i<count;i++)
       list[i] = g.getObjnameByIdx(i);
     
     return list;
@@ -119,7 +119,7 @@ void ClifFile::open(const std::string &filename, unsigned int flags)
   hsize_t count = g.getNumObjs();
   datasets.resize(count);
   
-  for(int i=0;i<count;i++)
+  for(uint i=0;i<count;i++)
     datasets[i] = g.getObjnameByIdx(i);
 }
 
@@ -140,7 +140,7 @@ void ClifFile::create(const std::string &filename)
   hsize_t count = g.getNumObjs();
   datasets.resize(count);
   
-  for(int i=0;i<count;i++)
+  for(uint i=0;i<count;i++)
     datasets[i] = g.getObjnameByIdx(i);
 }
 

@@ -42,6 +42,8 @@ int combinedTypePlaneCount(BaseType type, DataOrg org, DataOrder order)
       }
     case DataOrg::INTERLEAVED : return 1;
     case DataOrg::BAYER_2x2   : return 1;
+    default :
+      abort();
   }
 }
 

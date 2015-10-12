@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <fnmatch.h>
-
+#include <string.h>
 
 const int maxsize = 1024*1024;
 

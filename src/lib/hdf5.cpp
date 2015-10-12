@@ -37,7 +37,7 @@ bool h5_obj_exists(H5::H5File &f, const boost::filesystem::path path)
   
 static void datasetlist_append_group(std::vector<std::string> &list, H5::Group &g,  std::string group_path)
 {    
-  for(int i=0;i<g.getNumObjs();i++) {
+  for(uint i=0;i<g.getNumObjs();i++) {
     H5G_obj_t type = g.getObjTypeByIdx(i);
     
     std::string name = appendToPath(group_path, g.getObjnameByIdx(hsize_t(i)));

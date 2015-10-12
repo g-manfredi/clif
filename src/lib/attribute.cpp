@@ -40,6 +40,8 @@ BaseType PredType_to_native_BaseType(H5::PredType type)
     case H5T_STRING : return BaseType::STRING;
     case H5T_INTEGER : return BaseType::INT;
     case H5T_FLOAT: return BaseType::DOUBLE;
+    default:
+      abort();
   }
   
   printf("ERROR: unknown argument type!\n");
@@ -57,6 +59,8 @@ BaseType hid_t_to_native_BaseType(hid_t type)
       else if (H5Tget_size(type) == 8)
         return BaseType::DOUBLE;
       break;
+    default:
+      abort();
   }
   
   printf("ERROR: unknown argument type!\n");
@@ -70,6 +74,8 @@ H5::PredType BaseType_to_PredType(BaseType type)
     case BaseType::INT : return H5::PredType::NATIVE_INT;
     case BaseType::FLOAT: return H5::PredType::NATIVE_FLOAT;
     case BaseType::DOUBLE: return H5::PredType::NATIVE_DOUBLE;
+    default:
+      abort();
   }
   
   printf("ERROR: unknown argument type!\n");
@@ -128,7 +134,7 @@ void Attributes::open(const char *inifile, const char *typefile)
   for(int i=0;i<cliargs_count(attr_args);i++) {
     cliini_arg *arg = cliargs_nth(attr_args, i);
     
-    int dims = 1;
+    //int dims = 1;
     int size = cliarg_sum(arg);
     
     attrs[i].setName(arg->opt->longflag);
@@ -173,7 +179,7 @@ void Attributes::reset()
 
 void Attributes::write(H5::H5File &f, std::string &name)
 {
-  for(int i=0;i<attrs.size();i++)
+  for(uint i=0;i<attrs.size();i++)
     attrs[i].write(f, name);
   
   f.flush(H5F_SCOPE_GLOBAL);
@@ -187,7 +193,7 @@ void Attributes::writeIni(std::string &filename)
   std::string currsection;
   std::string nextsection;
   
-  for(int i=0;i<attrs.size();i++) {
+  for(uint i=0;i<attrs.size();i++) {
     nextsection = remove_last_part(attrs[i].name, '/');
     if (nextsection.compare(currsection)) {
       currsection = nextsection;
@@ -211,7 +217,7 @@ void Attributes::listSubGroups(std::string parent, std::vector<std::string> &mat
   std::replace(parent.begin(), parent.end(), '.', '/');
   parent = appendToPath(parent, "*");
   
-  for(int i=0;i<attrs.size();i++) {
+  for(uint i=0;i<attrs.size();i++) {
     if (!fnmatch(parent.c_str(), attrs[i].name.c_str(), 0)) {
       match = attrs[i].name.substr(parent.length()-1, attrs[i].name.length());
       match = get_first_part(match, '/');
@@ -243,7 +249,7 @@ Attribute Attributes::operator[](int pos)
 
 static void attributes_append_group(Attributes &attrs, H5::Group &g, std::string basename, std::string group_path)
 {    
-  for(int i=0;i<g.getNumObjs();i++) {
+  for(uint i=0;i<g.getNumObjs();i++) {
     H5G_obj_t type = g.getObjTypeByIdx(i);
     
     std::string name = appendToPath(group_path, g.getObjnameByIdx(hsize_t(i)));
@@ -260,7 +266,6 @@ static void attributes_append_group(Attributes &attrs, H5::Group &g, std::string
   for(int i=0;i<g.getNumAttrs();i++) {
     H5::Attribute h5attr = g.openAttribute(i);
     Attribute attr;
-    int size[1];
     BaseType type;
 
     std::string name = appendToPath(group_path, h5attr.getName());
@@ -299,7 +304,7 @@ void Attributes::append(Attribute *attr)
 //overwrites existing attributes of same name
 void Attributes::append(Attributes &other)
 {
-  for(int i=0;i<other.attrs.size();i++)
+  for(uint i=0;i<other.attrs.size();i++)
     append(other.attrs[i]);
 }
 
@@ -410,7 +415,7 @@ void Attribute::write(H5::H5File &f, std::string dataset_name)
   std::string attr_name = get_last_part(fullpath, '/');
   
   hsize_t *dim = new hsize_t[size.size()+1];
-  for(int i=0;i<size.size();i++)
+  for(uint i=0;i<size.size();i++)
     dim[i] = size[i];
   H5::DataSpace space(size.size(), dim);
   H5::Attribute attr;

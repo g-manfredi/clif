@@ -32,7 +32,7 @@ public:
     readCvMat(store, idx, cv_channels, flags, scale);
     
     //store in multiarrayview
-    for(int c=0;c<(*channels)->size();c++)
+    for(uint c=0;c<(*channels)->size();c++)
       (**channels)[c] = vigra::MultiArrayView<2, T>(imgShape(store), (T*)cv_channels[c].data);
   }
 };
@@ -68,7 +68,7 @@ public:
     vigra::Shape2 shape(cv_channels[0].size().width, cv_channels[0].size().height);
     
     //store in multiarrayview
-    for(int c=0;c<(*channels)->size();c++) {
+    for(uint c=0;c<(*channels)->size();c++) {
       //TODO implement somw form of zero copy...
       (**channels)[c].reshape(shape);
       (**channels)[c] = vigra::MultiArrayView<2, T>(shape, (T*)cv_channels[c].data);
@@ -128,7 +128,7 @@ void readEPI(Subset3d *subset, FlexMAV<3> &img, int line, double disparity, Clif
   
   memset(img_3d.data, 127, cv_channels[0].elemSize()*cv_channels[0].total()*cv_channels.size());*/
   
-  for(int c=0;c<cv_channels.size();c++) {
+  for(uint c=0;c<cv_channels.size();c++) {
     memcpy(img_3d.data+c*cv_channels[0].elemSize()*cv_channels[0].total(), cv_channels[c].data, cv_channels[c].elemSize()*cv_channels[c].total());
   }
   

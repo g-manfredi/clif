@@ -105,6 +105,8 @@ namespace clif {
           case DataOrder::GRBG :
             cvtColor(*m, *m, CV_BayerGB2BGR);
             break;
+          default :
+            abort();
         }
       }
     }
@@ -162,7 +164,7 @@ namespace clif {
   
   static void init_planar_mats(Datastore *store, std::vector<cv::Mat> *channels)
   {
-    for(int i=0;i<channels->size();i++)
+    for(uint i=0;i<channels->size();i++)
       (*channels)[i].create(imgSize(store), BaseType2CvDepth(store->type()));
   }
   
@@ -177,9 +179,9 @@ namespace clif {
   //FIXME delete cache on endianess change!
   void readMatV(std::vector<cv::Mat> *channels, const char *path)
   {
-    int size = (*channels)[0].elemSize() * (*channels)[0].total();
+    uint size = (*channels)[0].elemSize() * (*channels)[0].total();
     FILE *f = fopen(path, "r");
-    for(int c=0;c<channels->size();c++)
+    for(uint c=0;c<channels->size();c++)
       if (size != fread((*channels)[c].data, 1, size, f))
         abort();
   }
@@ -187,9 +189,9 @@ namespace clif {
   //FIXME delete cache on endianess change!
   void writeMatV(std::vector<cv::Mat> *channels, const char *path)
   {
-    int size = (*channels)[0].elemSize() * (*channels)[0].total();
+    uint size = (*channels)[0].elemSize() * (*channels)[0].total();
     FILE *f = fopen(path, "w");
-    for(int c=0;c<channels->size();c++)
+    for(uint c=0;c<channels->size();c++)
       if (size != fwrite((*channels)[c].data, 1, size, f))
         abort();
   }
@@ -288,6 +290,8 @@ namespace clif {
           case DataOrder::GRBG :
             cvtColor(tmp, tmp, CV_BayerGB2BGR);
             break;
+          default :
+            abort();
         }
         cv::split(tmp,*m);
       }
@@ -301,7 +305,7 @@ namespace clif {
     //FIXME READ PLANAR!
     
 #pragma omp parallel for schedule(dynamic)
-    for(int c=0;c<m->size();c++) {
+    for(uint c=0;c<m->size();c++) {
       cv::Mat *ch = &(*m)[c];
     
       if (ch->depth() == CV_16U && flags & CVT_8U) {
@@ -352,8 +356,8 @@ namespace clif {
   {
     int pointcount = 0;
     
-    for(int i=0;i<imgpoints.size();i++)
-      for(int j=0;j<imgpoints[i].size();j++)
+    for(uint i=0;i<imgpoints.size();i++)
+      for(uint j=0;j<imgpoints[i].size();j++)
         pointcount++;
       
     float *pointbuf = new float[4*pointcount];
@@ -361,9 +365,9 @@ namespace clif {
     int *sizebuf = new int[imgpoints.size()];
     
     
-    for(int i=0;i<imgpoints.size();i++) {
+    for(uint i=0;i<imgpoints.size();i++) {
       sizebuf[i] = imgpoints[i].size();
-      for(int j=0;j<imgpoints[i].size();j++) {
+      for(uint j=0;j<imgpoints[i].size();j++) {
         curpoint[0] = imgpoints[i][j].x;
         curpoint[1] = imgpoints[i][j].y;
         curpoint[2] = worldpoints[i][j].x;
@@ -390,7 +394,7 @@ namespace clif {
     worldpoints.resize(sizebuf.size());
 
     int idx = 0;
-    for(int i=0;i<sizebuf.size();i++) {
+    for(uint i=0;i<sizebuf.size();i++) {
       imgpoints[i].resize(sizebuf[i]);
       worldpoints[i].resize(sizebuf[i]);
       for(int j=0;j<sizebuf[i];j++) {

@@ -62,7 +62,7 @@ namespace clif {
       void * operator()(FlexChannels<DIM> &mav, std::vector<cv::Mat> &inputs)
       {
         auto channels = new std::vector<vigra::MultiArrayView<DIM,T>>(inputs.size());
-        for(int i=0;i<inputs.size();i++)
+        for(uint i=0;i<inputs.size();i++)
           (*channels)[i] = vigra::MultiArrayView<DIM,T>(mav.shape(), (T*)inputs[i].data);
         
         return channels;

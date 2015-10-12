@@ -49,7 +49,7 @@ Subset3d::Subset3d(clif::Dataset *data, const int idx)
   
   data->listSubGroups("calibration/extrinsics", subs);
   
-  assert(subs.size() >= idx);
+  assert((int)subs.size() >= idx);
   
   create(data, subs[idx]);
 }
@@ -219,7 +219,7 @@ void Subset3d::readEPI(std::vector<cv::Mat> &channels, int line, double disparit
 
   channels.resize(tmp.size());
   
-  for(int c=0;c<channels.size();c++) {    
+  for(uint c=0;c<channels.size();c++) {    
     channels[c] = cv::Mat(cv::Size(w, h), tmp[0].type());
     Mat *ch = &channels[c];
     

@@ -77,7 +77,7 @@ class Attribute {
     void get(cv::Mat &val)
     {
       int *sizes = new int[size.size()+1];
-      for(int i=0;i<size.size();i++)
+      for(uint i=0;i<size.size();i++)
         sizes[i] = size[i];
       
       val = cv::Mat(size.size(), sizes, BaseType2CvDepth(type), data);
@@ -124,7 +124,7 @@ class Attribute {
       data = malloc(val.total()*val.elemSize());
       
       size.resize(val.dims);
-      for(int i=0;i<size.size();i++)
+      for(uint i=0;i<size.size();i++)
         size[i] = val.size[i];
       
       memcpy(data, val.data, val.total()*val.elemSize());
@@ -219,7 +219,7 @@ class Attributes {
     //@{
     Attribute *get(boost::filesystem::path name)
     {    
-      for(int i=0;i<attrs.size();i++)
+      for(uint i=0;i<attrs.size();i++)
         if (!attrs[i].name.compare(name.string()))
           return &attrs[i];
         
@@ -232,7 +232,7 @@ class Attributes {
     //other types
     template<typename STRINGTYPE> Attribute *get(STRINGTYPE name)
     {    
-      for(int i=0;i<attrs.size();i++)
+      for(uint i=0;i<attrs.size();i++)
         if (!attrs[i].name.compare(name))
           return &attrs[i];
 
@@ -324,7 +324,7 @@ inline StringTree<Attribute*> Attributes::getTree()
 {
   StringTree<Attribute*> tree;
   
-  for(int i=0;i<attrs.size();i++)
+  for(uint i=0;i<attrs.size();i++)
     tree.add(attrs[i].name, &attrs[i], '/');
   
   return tree;

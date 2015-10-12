@@ -19,7 +19,7 @@ namespace clif {
     vector<string> imgsets;
     s->listSubGroups(calib_path, imgsets);
      
-    for(int i=0;i<imgsets.size();i++) {
+    for(uint i=0;i<imgsets.size();i++) {
       //int pointcount = 0;
       path cur_path = calib_path / imgsets[i];
       s->getEnum(cur_path / "type", pattern);
@@ -44,7 +44,7 @@ namespace clif {
           int succ = findChessboardCorners(img, Size(size[0],size[1]), corners, CV_CALIB_CB_ADAPTIVE_THRESH+CV_CALIB_CB_NORMALIZE_IMAGE+CALIB_CB_FAST_CHECK+CV_CALIB_CB_FILTER_QUADS);
           
           if (succ) {
-            printf("found %6d corners (img %d/%d)\n", corners.size(), j, imgs->count());
+            printf("found %6lu corners (img %d/%d)\n", corners.size(), j, imgs->count());
             cornerSubPix(img, corners, Size(8,8), Size(-1,-1), TermCriteria(cv::TermCriteria::MAX_ITER | cv::TermCriteria::EPS,100,0.0001));
           }
           else
@@ -95,12 +95,12 @@ namespace clif {
       calibset = imgset;
       
     readCalibPoints(set, imgset, ipoints_read, wpoints_read);
-    for(int i=0;i<wpoints_read.size();i++) {
+    for(uint i=0;i<wpoints_read.size();i++) {
       if (!wpoints_read[i].size())
         continue;
       ipoints.push_back(std::vector<Point2f>(wpoints_read[i].size()));
       wpoints.push_back(std::vector<Point3f>(wpoints_read[i].size()));
-      for(int j=0;j<wpoints_read[i].size();j++) {
+      for(uint j=0;j<wpoints_read[i].size();j++) {
         wpoints.back()[j] = Point3f(wpoints_read[i][j].x,wpoints_read[i][j].y,0);
         ipoints.back()[j] = ipoints_read[i][j];
       }
