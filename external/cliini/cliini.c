@@ -616,6 +616,11 @@ CLIF_EXPORT int cliini_fit_typeopts(cliini_args *args, cliini_args *typeargs)
   cliini_arg *arg;
   cliini_arg *typearg;
   
+  if (!typeargs) {
+    printf("not types supplied!\n");
+    return 1;
+  }
+
   for(i=0;i<args->count;i++) {    
     arg = &args->args[i];
     if (!(arg->opt->flags & CLIINI_OPT_UNKNOWN))
@@ -697,6 +702,9 @@ CLIF_EXPORT cliini_arg *cliargs_get_glob(cliini_args *args, const char *name)
 
 CLIF_EXPORT int cliargs_count(cliini_args *args)
 {
+  if (!args)
+    return NULL;
+
   return args->count;
 }
 
