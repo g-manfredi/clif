@@ -41,4 +41,4 @@ install(TARGETS clif clif_vigra
         ARCHIVE DESTINATION lib/static)
 install(FILES ${CLIF_HEADERS} DESTINATION include/clif)
 # Install the export set for use with the install-tree
-install(EXPORT ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/cmake/clif/" COMPONENT dev)
+install(EXPORT ${PROJECT_NAME} DESTINATION "cmake/clif" COMPONENT dev)

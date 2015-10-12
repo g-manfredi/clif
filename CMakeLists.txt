@@ -1,11 +1,11 @@
-cmake_minimum_required (VERSION 3.1)
+cmake_minimum_required (VERSION 2.8)
 project(proj_clif)
 
 set(CLIF_MINOR_VERSION 1)
 set(CLIF_PATCH_VERSION 0)
 set(CLIF_VERSION ${FOOBAR_MAJOR_VERSION}.${FOOBAR_MINOR_VERSION}.${FOOBAR_PATCH_VERSION})
 
-cmake_policy(VERSION 3.1)
+cmake_policy(VERSION 2.8)
 
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
   # using Clang
@@ -126,7 +126,7 @@ configure_file(cmake/clifConfigVersion.cmake.in "${PROJECT_BINARY_DIR}clifConfig
 install(FILES
   "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/clifConfig.cmake"
   "${PROJECT_BINARY_DIR}/clifConfigVersion.cmake"
-  DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT dev)
+  DESTINATION "cmake/${PROJECT_NAME}" COMPONENT dev)
 
 
 
