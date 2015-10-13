@@ -117,11 +117,14 @@ file(RELATIVE_PATH REL_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/cmake/clif" "${CMAKE
 # ... for the build tree
 set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}")
 configure_file(cmake/clifConfig.cmake.in "${PROJECT_BINARY_DIR}clifConfig.cmake" @ONLY)
+
 # ... for the install tree
-set(CONF_INCLUDE_DIRS "\${CMAKE_INSTALL_PREFIX}/cmake/clif/${REL_INCLUDE_DIR}")
+set(CONF_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include/clif")
 configure_file(cmake/clifConfig.cmake.in "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/clifConfig.cmake" @ONLY)
+
 # ... for both
 configure_file(cmake/clifConfigVersion.cmake.in "${PROJECT_BINARY_DIR}clifConfigVersion.cmake" @ONLY)
+
 # Install the clifConfig.cmake and clifConfigVersion.cmake
 install(FILES
   "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/clifConfig.cmake"
