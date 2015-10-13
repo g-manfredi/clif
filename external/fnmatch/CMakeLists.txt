@@ -15,6 +15,6 @@ install(TARGETS fnmatch
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
-install(FILES fnmatch.h DESTINATION include/clif)
+install(FILES fnmatch.h DESTINATION include)
 
 install(EXPORT ${PROJECT_NAME} DESTINATION "lib/cmake/clif" COMPONENT dev)
