@@ -8,6 +8,8 @@
 
 using namespace H5;
 
+typedef unsigned int uint;
+
 namespace clif {
 
 bool h5_obj_exists(H5::H5File &f, const char * const path)
