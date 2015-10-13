@@ -114,12 +114,16 @@ endif()
 export(PACKAGE ${PROJECT_NAME})
 # Create the clifConfig.cmake and clifConfigVersion files
 file(RELATIVE_PATH REL_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/cmake/clif" "${CMAKE_INSTALL_PREFIX}/include")
+
 # ... for the build tree
+#TODO missing externals...
 set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}")
+set(CONF_LIBRARY_DIRS "${PROJECT_BINARY_DIR}/src/lib")
 configure_file(cmake/clifConfig.cmake.in "${PROJECT_BINARY_DIR}/clifConfig.cmake" @ONLY)
 
 # ... for the install tree
 set(CONF_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include/clif")
+set(CONF_LIBRARY_DIRS "${CMAKE_INSTALL_PREFIX}/lib")
 configure_file(cmake/clifConfig.cmake.in "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/clifConfig.cmake" @ONLY)
 
 # ... for both
