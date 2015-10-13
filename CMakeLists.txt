@@ -17,7 +17,7 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   # using Visual Studio C++
   message("use msvc")
-  set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} /noOy /W3")
+  set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} /noOy /W2 /EHsc")
 endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
