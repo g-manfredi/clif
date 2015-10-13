@@ -200,7 +200,7 @@ namespace clif {
       
       H5::DataSpace space(DIM, dims, dims);
       
-      H5::DataSet h5set = set->f.createDataSet(fullpath.c_str(), 
+      H5::DataSet h5set = set->f.createDataSet(fullpath.generic_string().c_str(), 
                           H5PredType(_type), space);
       
       h5set.write(_mat.data, H5::DataType(H5PredType_Native(_type)), space, space);

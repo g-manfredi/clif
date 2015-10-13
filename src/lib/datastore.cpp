@@ -146,10 +146,10 @@ void Datastore::link(const Datastore *other, Dataset *dataset)
     }
     else {
       _link_file = other->_dataset->f.getFileName().c_str();
-      _link_path = (other->_dataset->path() / other->_path).string();
+      _link_path = (other->_dataset->path() / other->_path).generic_string();
     }
     
-    h5_create_path_groups(dataset->f, path(_link_path).parent_path().c_str());
+    h5_create_path_groups(dataset->f, path(_link_path).parent_path().generic_string().c_str());
     
     H5Lcreate_external(_link_file.c_str(), _link_path.c_str(), dataset->f.getId(), _link_path.c_str(), H5P_DEFAULT, H5P_DEFAULT);
   }  
@@ -174,12 +174,12 @@ void Datastore::init(hsize_t w, hsize_t h)
   hsize_t maxdims[3] = {comb_w,comb_h,H5S_UNLIMITED}; 
   path dataset_path = _dataset->path() / _path;
   
-  if (h5_obj_exists(_dataset->f, dataset_path.string())) {
-    _data = _dataset->f.openDataSet(dataset_path.string());
+  if (h5_obj_exists(_dataset->f, dataset_path.generic_string())) {
+    _data = _dataset->f.openDataSet(dataset_path.generic_string());
     return;
   }
   
-  h5_create_path_groups(_dataset->f, path(dataset_path.c_str()).parent_path());
+  h5_create_path_groups(_dataset->f, path(dataset_path.generic_string().c_str()).parent_path());
   
   //chunking fixed for now
   hsize_t chunk_dims[3] = {comb_w,comb_h,1};
@@ -192,7 +192,7 @@ void Datastore::init(hsize_t w, hsize_t h)
   
   H5::DataSpace space(3, dims, maxdims);
   
-  _data = _dataset->f.createDataSet(dataset_path.string(), 
+  _data = _dataset->f.createDataSet(dataset_path.generic_string(), 
                       H5PredType(_type), space, prop);
 }
 
@@ -221,8 +221,8 @@ void Datastore::open(Dataset *dataset, std::string path_)
       
   path dataset_path = dataset->path() / path_;
       
-  if (!h5_obj_exists(dataset->f, dataset_path.c_str())) {
-    printf("error: could not find requrested datset: %s\n", dataset_path.c_str());
+  if (!h5_obj_exists(dataset->f, dataset_path.generic_string().c_str())) {
+    printf("error: could not find requrested datset: %s\n", dataset_path.generic_string().c_str());
     return;
   }
   
@@ -235,10 +235,10 @@ void Datastore::open(Dataset *dataset, std::string path_)
     return;
   }
   
-  _data = dataset->f.openDataSet(dataset_path.string());
-  printf("opened h5 dataset %s id %d\n", dataset_path.c_str(), _data.getId());
+  _data = dataset->f.openDataSet(dataset_path.generic_string());
+  printf("opened h5 dataset %s id %d\n", dataset_path.generic_string().c_str(), _data.getId());
   
-  printf("Datastore open %s: %s %s %s\n", dataset_path.c_str(), ClifEnumString(BaseType,_type),ClifEnumString(DataOrg,_org),ClifEnumString(DataOrder,_order));
+  printf("Datastore open %s: %s %s %s\n", dataset_path.generic_string().c_str(), ClifEnumString(BaseType,_type),ClifEnumString(DataOrg,_org),ClifEnumString(DataOrder,_order));
 }
 
 //FIXME chekc w,h?

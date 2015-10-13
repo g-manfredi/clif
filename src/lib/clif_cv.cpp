@@ -67,7 +67,7 @@ namespace clif {
       //printf("cache dir %s\n", cache_path.c_str());
       cache_path /= "clif/v0.0/cached_imgs";
       std::hash<std::string> hasher;
-      std::string dset_path = store->getDataset()->path().string();
+      std::string dset_path = store->getDataset()->path().generic_string();
       longkey_stream << hasher(dset_path) << "_" << hasher(store->getDatastorePath()) << "_" << hasher(shortkey);
       longkey = longkey_stream.str();
       cache_path /= longkey+".pgm";
@@ -256,12 +256,12 @@ namespace clif {
       //printf("cache dir %s\n", cache_path.c_str());
       cache_path /= "clif/v0.0/cached_imgs";
       std::hash<std::string> hasher;
-      std::string dset_path = store->getDataset()->path().string();
+      std::string dset_path = store->getDataset()->path().generic_string();
       longkey_stream << hasher(dset_path) << "_" << hasher(store->getDatastorePath()) << "_" << hasher(shortkey);
       longkey = longkey_stream.str();
       cache_path /= longkey+".raw";
       
-      if (boost::filesystem::exists(cache_path.c_str())) {
+      if (boost::filesystem::exists(cache_path.string().c_str())) {
         m = new_planar_mats(store, ch_count);
         readMatV(m, cache_path.string().c_str());
         outm = *m;

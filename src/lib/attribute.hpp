@@ -21,7 +21,7 @@ class Attribute {
     Attribute() {};
     Attribute(std::string name_)  { name = name_; };
     Attribute(const char *name_)  { name = std::string(name_); };
-    Attribute(boost::filesystem::path &name_)  { name = name_.string(); };
+    Attribute(boost::filesystem::path &name_)  { name = name_.generic_string(); };
     
     const char *getStr()
     {
@@ -218,29 +218,17 @@ class Attributes {
      * @name Read Attributes
      */
     //@{
-    Attribute *get(boost::filesystem::path name)
-    {    
-      for(uint i=0;i<attrs.size();i++)
-        if (!attrs[i].name.compare(name.string()))
-          return &attrs[i];
-        
-        return NULL;
-    }
-    Attribute *getMatch(const char *name)
-    {    
-      for(uint i=0;i<attrs.size();i++)
-        if (!fnmatch(attrs[i].name.c_str(), name, FNM_PATHNAME))
-          return &attrs[i];
-        
-        return NULL;
-    }
-    template<typename STRINGTYPE> Attribute *getMatch(STRINGTYPE name)
-    {    
-      return getMatch(name.c_str());
-    }
     Attribute *get(int idx)
     {    
       return &attrs[idx];
+    }
+    Attribute *get(boost::filesystem::path name)
+    {    
+      for(uint i=0;i<attrs.size();i++)
+        if (!attrs[i].name.compare(name.generic_string()))
+          return &attrs[i];
+        
+        return NULL;
     }
     //other types
     template<typename STRINGTYPE> Attribute *get(STRINGTYPE name)
@@ -250,6 +238,22 @@ class Attributes {
           return &attrs[i];
 
       return NULL;
+    }
+    Attribute *getMatch(const char *name)
+    {    
+      for(uint i=0;i<attrs.size();i++)
+        if (!fnmatch(attrs[i].name.c_str(), name, FNM_PATHNAME))
+          return &attrs[i];
+        
+        return NULL;
+    }
+    Attribute *getMatch(boost::filesystem::path name)
+    {    
+      return getMatch(name.generic_string().c_str());
+    }
+    Attribute *getMatch(std::string name)
+    {    
+      return getMatch(name.c_str());
     }
     //@}
     

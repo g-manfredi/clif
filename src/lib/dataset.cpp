@@ -12,7 +12,7 @@ void Intrinsics::load(Attributes *attrs, boost::filesystem::path path)
   _undist_map = cv::Mat();
   
   if (!a) {
-    printf("no valid intrinsic model! %s\n", path.c_str());
+    printf("no valid intrinsic model! %s\n", path.generic_string().c_str());
     model = DistModel::INVALID;
     return;
   }

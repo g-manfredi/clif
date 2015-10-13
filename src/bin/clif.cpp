@@ -240,7 +240,7 @@ int main(const int argc, const char *argv[])
       else
         set->append(in_set);
       
-      vector<string> h5datasets = listH5Datasets(f_in.f, in_set->path().string());
+      vector<string> h5datasets = listH5Datasets(f_in.f, in_set->path().generic_string());
       for(uint j=0;j<h5datasets.size();j++) {
         cout << "copy dataset" << h5datasets[j] << endl;
         //FIXME handle dataset selection properly!

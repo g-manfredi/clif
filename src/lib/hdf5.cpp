@@ -34,7 +34,7 @@ bool h5_obj_exists(H5::H5File &f, const std::string path)
 
 bool h5_obj_exists(H5::H5File &f, const boost::filesystem::path path)
 {
-  return h5_obj_exists(f, path.c_str());
+  return h5_obj_exists(f, path.generic_string().c_str());
 }
   
 static void datasetlist_append_group(std::vector<std::string> &list, H5::Group &g,  std::string group_path)
@@ -77,7 +77,7 @@ void h5_create_path_groups(H5::H5File &f, boost::filesystem::path path)
   for(auto it = path.begin(); it != path.end(); ++it) {
     part /= *it;
     if (!clif::h5_obj_exists(f, part)) {
-      f.createGroup(part.string());
+      f.createGroup(part.generic_string());
     }
   }
 }
