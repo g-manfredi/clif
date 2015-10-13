@@ -4,6 +4,8 @@
 #include <H5FaccProp.h>
 #include <H5FcreatProp.h>
 
+#include "enumtypes.hpp"
+
 using namespace H5;
 
 namespace clif {
