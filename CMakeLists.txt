@@ -122,7 +122,7 @@ set(CONF_LIBRARY_DIRS "${PROJECT_BINARY_DIR}/src/lib")
 configure_file(cmake/clifConfig.cmake.in "${PROJECT_BINARY_DIR}/clifConfig.cmake" @ONLY)
 
 # ... for the install tree
-set(CONF_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include/clif")
+set(CONF_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include")
 set(CONF_LIBRARY_DIRS "${CMAKE_INSTALL_PREFIX}/lib")
 configure_file(cmake/clifConfig.cmake.in "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/clifConfig.cmake" @ONLY)
 
