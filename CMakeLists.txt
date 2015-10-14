@@ -60,10 +60,13 @@ if (NOT DEFINED FNMATCH_USE_INTERNAL)
   find_path(FNMATCH_INCLUDE_DIR NAMES fnmatch.h)
   if (NOT FNMATCH_INCLUDE_DIR)
     set(FNMATCH_USE_INTERNAL TRUE CACHE BOOL "use internal fnmatch code")
-    set(CLIF_BUILD_USE_DIRS ${CLIF_BUILD_USE_DIRS} external/fnmatch)
   else()
     set(FNMATCH_USE_INTERNAL FALSE CACHE BOOL "use internal fnmatch code")
   endif()
+endif()
+
+if (FNMATCH_USE_INTERNAL)
+	set(CLIF_BUILD_USE_DIRS ${CLIF_BUILD_USE_DIRS} external/fnmatch)
 endif()
 
 configure_file(src/lib/config.h.in src/lib/config.h)
@@ -89,6 +92,7 @@ foreach(dir ${CLIF_BUILD_COMPILE_DIRS})
 endforeach()
 
 set(CLIF_LINK_LIBRARIES ${CLIF_LINK_LIBRARIES} ${CLIF_LINK_TARGETS})
+message("link ${CLIF_LINK_LIBRARIES}")
 
 message("")
 message("build info:")
