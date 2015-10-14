@@ -23,22 +23,36 @@ createEnumStrings(CalibPattern)
 createEnumStrings(DistModel)
 
 configure_file(enumtypes.hpp.in enumtypes.hpp)
-set(CLIF_HEADERS ${CLIF_HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/enumtypes.hpp)
+set(LIBCLIF_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/enumtypes.hpp)
 
 add_library(clif clif.cpp subset3d.cpp calib.cpp hdf5.cpp attribute.cpp helpers.cpp datastore.cpp dataset.cpp core.cpp clif_cv.cpp clif_vigra.cpp enumtypes.cpp)
 add_library(clif_vigra clif_vigra.cpp)
+
+set(CLIF_LINK_TARGETS ${CLIF_LINK_TARGETS} clif clif_vigra PARENT_SCOPE)
 
 target_link_libraries(clif cliini ${HDF5_LIBRARIES} ${Boost_LIBRARIES} ${OpenCV_LIBRARIES} ${CLIF_LINK_LIBRARIES})
 target_link_libraries(clif_vigra clif ${VIGRA_LIBRARIES})
 #target_link_libraries(clifcalib clif)
 
-set(CLIF_HEADERS ${CLIF_HEADERS} attribute.hpp calib.hpp clif_cv.hpp clif.hpp clif_vigra.hpp core.hpp dataset.hpp datastore.hpp flexmav.hpp hdf5.hpp helpers.hpp matio.hpp stringtree.hpp subset3d.hpp)
+set(LIBCLIF_HEADERS ${LIBCLIF_HEADERS} attribute.hpp calib.hpp clif_cv.hpp clif.hpp clif_vigra.hpp core.hpp dataset.hpp datastore.hpp flexmav.hpp hdf5.hpp helpers.hpp matio.hpp stringtree.hpp subset3d.hpp)
+
+foreach(header ${LIBCLIF_HEADERS})
+  if (IS_ABSOLUTE ${header})
+    list(APPEND CLIF_FULLPATH_HEADERS "${header}")
+  else()
+    list(APPEND CLIF_FULLPATH_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/${header}")
+  endif()
+endforeach()
+
+set(CLIF_HEADERS "${CLIF_HEADERS}" PARENT_SCOPE)
+set(CLIF_FULLPATH_HEADERS "${CLIF_FULLPATH_HEADERS}" PARENT_SCOPE)
+
+install(FILES ${LIBCLIF_HEADERS} DESTINATION include/clif)
 
 install(TARGETS clif clif_vigra
-		EXPORT ${PROJECT_NAME}
+        EXPORT clif
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
-install(FILES ${CLIF_HEADERS} DESTINATION include/clif)
-# Install the export set for use with the install-tree
-install(EXPORT ${PROJECT_NAME} DESTINATION "lib/cmake/clif" COMPONENT dev)
+
+        

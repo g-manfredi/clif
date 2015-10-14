@@ -6,23 +6,16 @@
 #  CLIF_LIBRARY_DIRS - where to find libraries
  
 # Compute paths
-get_filename_component(CLIF_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-set(CLIF_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
-set(CLIF_LIBRARY_DIRS "@CONF_LIBRARY_DIRS@")
+#get_filename_component(CLIF_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+
+@PACKAGE_INIT@
+
+#import targets
+include("${CMAKE_CURRENT_LIST_DIR}/clif.cmake")
+
+set_and_check(CLIF_INCLUDE_DIRS "@PACKAGE_CLIF_INSTALL_INCLUDE_DIR@")
+set_and_check(CLIF_LIBRARY_DIRS "@PACKAGE_CLIF_INSTALL_LIBRARY_DIR@")
+# These are imported targets
+set(CLIF_LIBRARIES @CLIF_INSTALL_LIBRARIES@)
  
-# Our library dependencies (contains definitions for IMPORTED targets)
-if(NOT TARGET clif AND NOT CLIF_BINARY_DIR)
-  if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-	include("${CLIF_CMAKE_DIR}/fnmatch.cmake")
-  endif()
-  include("${CLIF_CMAKE_DIR}/cliini.cmake")
-  include("${CLIF_CMAKE_DIR}/libclif.cmake")
-endif()
  
-# These are IMPORTED targets created by clifTargets.cmake
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-  set(CLIF_LIBRARIES clif clif_vigra cliini fnmatch)
-  #set(CLIF_EXECUTABLE ...)   no executables explicitly build
-elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-  set(CLIF_LIBRARIES clif clif_vigra cliini)
-endif()

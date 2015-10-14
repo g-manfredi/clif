@@ -18,6 +18,8 @@ endif()
 
 target_link_libraries(cliini ${CLIF_FNMATCH_LIBRARIES})
 
+set(CLIF_LINK_TARGETS ${CLIF_LINK_LIBRARIES} cliini)
+
 if (NOT CLIF_COMPILER_MSVC)
   target_link_libraries(cliini_test cliini)
   target_link_libraries(cliini_initest cliini)
@@ -25,9 +27,7 @@ if (NOT CLIF_COMPILER_MSVC)
 endif()
 
 install(TARGETS cliini
-		EXPORT ${PROJECT_NAME}
+        EXPORT clif
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
-		
-install(EXPORT ${PROJECT_NAME} DESTINATION "lib/cmake/clif" COMPONENT dev)
