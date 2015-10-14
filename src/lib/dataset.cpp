@@ -143,7 +143,7 @@ void Dataset::link(const Dataset *other)
   intrinsics = other->intrinsics;
   calib_images = NULL;
   
-  Datastore::link(static_cast<const Datastore*>(other), this);
+  Datastore::link(other, this);
  
   //FIXME set stores to 0!
   

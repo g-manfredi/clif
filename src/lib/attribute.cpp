@@ -124,47 +124,50 @@ void Attributes::open(const char *inifile, const char *typefile)
   
   cliini_args *attr_args = cliini_parsefile(inifile, &group);
   cliini_args *attr_types = cliini_parsefile(typefile, &group);
-  cliini_fit_typeopts(attr_args, attr_types);
+  if (attr_args && attr_types)
+	  cliini_fit_typeopts(attr_args, attr_types);
   
   attrs.resize(0);
   
-  attrs.resize(cliargs_count(attr_args));
-  
-  //FIXME for now only 1d attributes :-P
-  for(int i=0;i<cliargs_count(attr_args);i++) {
-    cliini_arg *arg = cliargs_nth(attr_args, i);
-    
-    //int dims = 1;
-    int size = cliarg_sum(arg);
-    
-    attrs[i].setName(arg->opt->longflag);
-      
-    switch (arg->opt->type) {
-      case CLIINI_ENUM:
-      case CLIINI_STRING :
-        assert(size == 1);
-        attrs[i].set(((char**)(arg->vals))[0], strlen(((char**)(arg->vals))[0])+1);
-        break;
-      case CLIINI_INT :
-        attrs[i].set((int*)(arg->vals), size);
-        break;
-      case CLIINI_DOUBLE :
-        attrs[i].set((double*)(arg->vals), size);
-        break;
-      default :
-        abort();
-    }
-    
-    /*if (arg->opt->type == CLIINI_STRING) {
-      assert(size == 1);
-      //only single string supported!
-      size = strlen(((char**)(arg->vals))[0])+1;
-      attrs[i].Set<int>(arg->opt->longflag, dims, &size, cliini_type_to_BaseType(arg->opt->type), ((char**)(arg->vals))[0]);
-    }
-    if else (arg->opt->type == CLIINI_INT) {
-      attrs[i].set( size);
-      //attrs[i].Set<int>(arg->opt->longflag, dims, &size, cliini_type_to_BaseType(arg->opt->type), arg->vals);
-    }*/
+  if (attr_args) {
+	  attrs.resize(cliargs_count(attr_args));
+
+	  //FIXME for now only 1d attributes :-P
+	  for (int i = 0; i < cliargs_count(attr_args); i++) {
+		  cliini_arg *arg = cliargs_nth(attr_args, i);
+
+		  //int dims = 1;
+		  int size = cliarg_sum(arg);
+
+		  attrs[i].setName(arg->opt->longflag);
+
+		  switch (arg->opt->type) {
+		  case CLIINI_ENUM:
+		  case CLIINI_STRING:
+			  assert(size == 1);
+			  attrs[i].set(((char**)(arg->vals))[0], strlen(((char**)(arg->vals))[0]) + 1);
+			  break;
+		  case CLIINI_INT:
+			  attrs[i].set((int*)(arg->vals), size);
+			  break;
+		  case CLIINI_DOUBLE:
+			  attrs[i].set((double*)(arg->vals), size);
+			  break;
+		  default:
+			  abort();
+		  }
+
+		  /*if (arg->opt->type == CLIINI_STRING) {
+			assert(size == 1);
+			//only single string supported!
+			size = strlen(((char**)(arg->vals))[0])+1;
+			attrs[i].Set<int>(arg->opt->longflag, dims, &size, cliini_type_to_BaseType(arg->opt->type), ((char**)(arg->vals))[0]);
+			}
+			if else (arg->opt->type == CLIINI_INT) {
+			attrs[i].set( size);
+			//attrs[i].Set<int>(arg->opt->longflag, dims, &size, cliini_type_to_BaseType(arg->opt->type), arg->vals);
+			}*/
+	  }
   }
     
     

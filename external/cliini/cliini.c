@@ -474,6 +474,9 @@ static int parse_line(char *line, cliini_args *args, cliini_optgroup *group, cha
 
 CLIF_EXPORT cliini_args *cliini_parsefile(const char *filename, cliini_optgroup *group)
 {
+  if (!filename)
+	return NULL;
+
   FILE *f = fopen(filename, "r");
   char *buf = (char*)malloc(maxsize);
   char *line_end;
