@@ -23,7 +23,9 @@ createEnumStrings(CalibPattern)
 createEnumStrings(DistModel)
 
 configure_file(enumtypes.hpp.in enumtypes.hpp)
-set(LIBCLIF_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/enumtypes.hpp)
+list(APPEND CLIF_BUILD_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR})
+set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} PARENT_SCOPE)
+include_directories(${CLIF_BUILD_INCLUDE_DIRS})
 
 add_library(clif clif.cpp subset3d.cpp calib.cpp hdf5.cpp attribute.cpp helpers.cpp datastore.cpp dataset.cpp core.cpp clif_cv.cpp clif_vigra.cpp enumtypes.cpp)
 add_library(clif_vigra clif_vigra.cpp)
