@@ -10,7 +10,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /TP")
 
 add_library(fnmatch fnmatch.c)
 
-set(CLIF_LINK_TARGETS ${CLIF_LINK_TARGETS} fnmatch PARENT_SCOPE)
+set(CLIF_LINK_LIBRARIES ${CLIF_LINK_LIBRARIES} fnmatch PARENT_SCOPE)
 
 install(TARGETS fnmatch
 	EXPORT clif

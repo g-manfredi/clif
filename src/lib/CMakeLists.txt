@@ -30,7 +30,7 @@ add_library(clif_vigra clif_vigra.cpp)
 
 set(CLIF_LINK_TARGETS ${CLIF_LINK_TARGETS} clif clif_vigra PARENT_SCOPE)
 
-target_link_libraries(clif cliini ${HDF5_LIBRARIES} ${Boost_LIBRARIES} ${OpenCV_LIBRARIES} ${CLIF_LINK_LIBRARIES})
+target_link_libraries(clif ${CLIF_LINK_LIBRARIES})
 target_link_libraries(clif_vigra clif ${VIGRA_LIBRARIES})
 #target_link_libraries(clifcalib clif)
 

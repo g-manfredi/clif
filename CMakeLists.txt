@@ -30,9 +30,11 @@ if (NOT OpenCV_FOUND)
   message(WARNING "WARNING: using internal cmake find macros!")
 endif()
 
+
 find_package(OpenCV REQUIRED)
-include_directories(${OpenCV_INCLUDE_DIRS})
-link_directories(${OpenCV_LIB_DIR})
+list(APPEND CLIF_LINK_LIBRARIES ${OpenCV_LIBRARIES})
+list(APPEND CLIF_INCLUDE_DIRS ${OpenCV_INCLUDE_DIRS})
+list(APPEND CLIF_LIBRARY_DIRS ${OpenCV_LIB_DIR})
 
 #FIXME check wether actual built is static?
 if (CLIF_COMPILER_MSVC)
@@ -40,21 +42,24 @@ if (CLIF_COMPILER_MSVC)
 endif()
 find_package(HDF5 REQUIRED C CXX)
 find_package(HDF5 REQUIRED)
-include_directories(${HDF5_INCLUDE_DIR})
-link_directories(${HDF5_LIBRARY_DIR})
-
+list(APPEND CLIF_LINK_LIBRARIES ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES})
+list(APPEND CLIF_INCLUDE_DIRS ${HDF5_INCLUDE_DIR})
+list(APPEND CLIF_LIBRARY_DIRS ${HDF5_LIBRARY_DIR})
 
 find_package(Vigra REQUIRED)
-include_directories(${Vigra_INCLUDE_DIRS})
-#link_directories(${Vigra?})
+list(APPEND CLIF_LINK_LIBRARIES vigraimpexx)
+list(APPEND CLIF_INCLUDE_DIRS ${Vigra_INCLUDE_DIRS})
+#list(APPEND CLIF_LIBRARY_DIRS !!!FIXME!!!)
+
+find_package(Boost REQUIRED COMPONENTS filesystem system)
+list(APPEND CLIF_LINK_LIBRARIES ${Boost_LIBRARIES})
+list(APPEND CLIF_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
+list(APPEND CLIF_LIBRARY_DIRS ${Boost_LIBRARY_DIRS})
 
 #WARNING no find_package after this line! (would use our included find... macros!)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 include(ClifCMakePackageConfigHelpers)
 
-find_package(Boost REQUIRED COMPONENTS filesystem system)
-include_directories(${Boost_INCLUDE_DIRS})
-link_directories(${Boost_LIBRARY_DIRS})
 
 if (NOT DEFINED FNMATCH_USE_INTERNAL)
   find_path(FNMATCH_INCLUDE_DIR NAMES fnmatch.h)
@@ -66,32 +71,32 @@ if (NOT DEFINED FNMATCH_USE_INTERNAL)
 endif()
 
 if (FNMATCH_USE_INTERNAL)
-	set(CLIF_BUILD_USE_DIRS ${CLIF_BUILD_USE_DIRS} external/fnmatch)
+	list(APPEND CLIF_BUILD_COMPILE_DIRS external/fnmatch)
 endif()
 
 configure_file(src/lib/config.h.in src/lib/config.h)
-set(CLIF_HEADERS ${CLIF_HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/src/lib/config.h)
+list(APPEND CLIF_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/src/lib/config.h)
 
 #rest
-set(CLIF_BUILD_USE_DIRS ${CLIF_BUILD_USE_DIRS} src/lib)
-set(CLIF_BUILD_USE_DIRS ${CLIF_BUILD_USE_DIRS} external/cliini)
+list(APPEND CLIF_BUILD_USE_DIRS external/cliini src/lib)
 
-#for generated headers
+#compile
+list(APPEND CLIF_BUILD_COMPILE_DIRS external/cliini src/lib src/bin src/gui)
+#include
 set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR}/src/lib)
-
-#merge
 set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_USE_DIRS} ${CLIF_BUILD_INCLUDE_DIRS})
 set(CLIF_BUILD_LINK_DIRS ${CLIF_BUILD_USE_DIRS})
-set(CLIF_BUILD_COMPILE_DIRS ${CLIF_BUILD_USE_DIRS} src/bin src/gui)
-
-include_directories(${CLIF_BUILD_INCLUDE_DIRS})
-link_directories(${CLIF_BUILD_LINK_DIRS})
 
 foreach(dir ${CLIF_BUILD_COMPILE_DIRS})
+	include_directories(${CLIF_BUILD_INCLUDE_DIRS} ${CLIF_INCLUDE_DIRS})
+	link_directories(${CLIF_BUILD_LINK_DIRS} ${CLIF_LIBRARY_DIRS})
     add_subdirectory(${dir})
+	list(REMOVE_DUPLICATES CLIF_BUILD_INCLUDE_DIRS)
+	list(REMOVE_DUPLICATES CLIF_INCLUDE_DIRS)
+	list(REMOVE_DUPLICATES CLIF_BUILD_LINK_DIRS)
+	list(REMOVE_DUPLICATES CLIF_LIBRARY_DIRS)
 endforeach()
 
-set(CLIF_LINK_LIBRARIES ${CLIF_LINK_LIBRARIES} ${CLIF_LINK_TARGETS})
 message("link ${CLIF_LINK_LIBRARIES}")
 
 message("")
