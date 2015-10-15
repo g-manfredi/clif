@@ -43,7 +43,23 @@ template<template<typename> class F, typename ... ArgTypes> void callByBaseType(
     case BaseType::INT :    F<int>()(args...); break;
     case BaseType::FLOAT :  F<float>()(args...); break;
     case BaseType::DOUBLE : F<double>()(args...); break;
+    //FIXME shouldn't string result in char* ?
     case BaseType::STRING : F<char>()(args...); break;
+    default:
+      abort();
+  }
+}
+
+//deep dark black c++ magic :-D
+template<typename ExtraType, template<typename,typename> class F, typename ... ArgTypes> void callByBaseType(BaseType type, ArgTypes ... args)
+{
+  switch (type) {
+    case BaseType::UINT8 :  F<ExtraType,uint8_t>()(args...); break;
+    case BaseType::UINT16 : F<ExtraType,uint16_t>()(args...); break;
+    case BaseType::INT :    F<ExtraType,int>()(args...); break;
+    case BaseType::FLOAT :  F<ExtraType,float>()(args...); break;
+    case BaseType::DOUBLE : F<ExtraType,double>()(args...); break;
+    case BaseType::STRING : F<ExtraType,char>()(args...); break;
     default:
       abort();
   }
@@ -58,6 +74,20 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
     case BaseType::FLOAT :  return F<float>()(args...); break;
     case BaseType::DOUBLE : return F<double>()(args...); break;
     case BaseType::STRING : return F<char>()(args...); break;
+    default:
+      abort();
+  }
+}
+
+template<typename ExtraType, template<typename,typename> class F, typename R, typename ... ArgTypes> R callByBaseType(BaseType type, ArgTypes ... args)
+{
+  switch (type) {
+    case BaseType::UINT8 :  return F<ExtraType,uint8_t>()(args...); break;
+    case BaseType::UINT16 : return F<ExtraType,uint16_t>()(args...); break;
+    case BaseType::INT :    return F<ExtraType,int>()(args...); break;
+    case BaseType::FLOAT :  return F<ExtraType,float>()(args...); break;
+    case BaseType::DOUBLE : return F<ExtraType,double>()(args...); break;
+    case BaseType::STRING : return F<ExtraType,char>()(args...); break;
     default:
       abort();
   }
