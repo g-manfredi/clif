@@ -47,8 +47,10 @@ list(APPEND CLIF_INCLUDE_DIRS ${HDF5_INCLUDE_DIR})
 list(APPEND CLIF_LIBRARY_DIRS ${HDF5_LIBRARY_DIR})
 
 find_package(Vigra REQUIRED)
-list(APPEND CLIF_LINK_LIBRARIES vigraimpexx)
+#FIXME ask Ullrich why theres not VIGRA_LIBRARIES?
+list(APPEND CLIF_LINK_LIBRARIES vigraimpex)
 list(APPEND CLIF_INCLUDE_DIRS ${Vigra_INCLUDE_DIRS})
+#FIXME ask Ullrich why theres not VIGRA_LIBRARY_DIRS?
 #list(APPEND CLIF_LIBRARY_DIRS !!!FIXME!!!)
 
 find_package(Boost REQUIRED COMPONENTS filesystem system)
@@ -70,31 +72,24 @@ if (NOT DEFINED FNMATCH_USE_INTERNAL)
   endif()
 endif()
 
-if (FNMATCH_USE_INTERNAL)
-	list(APPEND CLIF_BUILD_COMPILE_DIRS external/fnmatch)
-endif()
-
-configure_file(src/lib/config.h.in src/lib/config.h)
-list(APPEND CLIF_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/src/lib/config.h)
-
-#rest
-list(APPEND CLIF_BUILD_USE_DIRS external/cliini src/lib)
-
 #compile
+if (FNMATCH_USE_INTERNAL)
+  list(APPEND CLIF_BUILD_COMPILE_DIRS external/fnmatch)
+endif()
 list(APPEND CLIF_BUILD_COMPILE_DIRS external/cliini src/lib src/bin src/gui)
-#include
-set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR}/src/lib)
-set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_USE_DIRS} ${CLIF_BUILD_INCLUDE_DIRS})
-set(CLIF_BUILD_LINK_DIRS ${CLIF_BUILD_USE_DIRS})
+
+configure_file(config.h.in config.h)
+list(APPEND CLIF_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+list(APPEND CLIF_BUILD_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR})
 
 foreach(dir ${CLIF_BUILD_COMPILE_DIRS})
-	include_directories(${CLIF_BUILD_INCLUDE_DIRS} ${CLIF_INCLUDE_DIRS})
-	link_directories(${CLIF_BUILD_LINK_DIRS} ${CLIF_LIBRARY_DIRS})
-    add_subdirectory(${dir})
-	list(REMOVE_DUPLICATES CLIF_BUILD_INCLUDE_DIRS)
-	list(REMOVE_DUPLICATES CLIF_INCLUDE_DIRS)
-	list(REMOVE_DUPLICATES CLIF_BUILD_LINK_DIRS)
-	list(REMOVE_DUPLICATES CLIF_LIBRARY_DIRS)
+  include_directories(${CLIF_BUILD_INCLUDE_DIRS} ${CLIF_INCLUDE_DIRS})
+  link_directories(${CLIF_BUILD_LINK_DIRS} ${CLIF_LIBRARY_DIRS})
+  add_subdirectory(${dir})
+  list(REMOVE_DUPLICATES CLIF_BUILD_INCLUDE_DIRS)
+  list(REMOVE_DUPLICATES CLIF_INCLUDE_DIRS)
+  list(REMOVE_DUPLICATES CLIF_BUILD_LINK_DIRS)
+  list(REMOVE_DUPLICATES CLIF_LIBRARY_DIRS)
 endforeach()
 
 message("link ${CLIF_LINK_LIBRARIES}")
@@ -118,13 +113,14 @@ endif()
 
 message("")
 
-#copy headers into clif subdir
+#copy headers into clif subdir in build
 foreach(header ${CLIF_FULLPATH_HEADERS})
   get_filename_component(_FILE ${header} NAME)
   configure_file(${header} "include/clif/${_FILE}" COPYONLY)
 endforeach()
-set(CLIF_INSTALL_INCLUDE_DIR "include")
 
+# for local built tree use 
+set(CLIF_INSTALL_INCLUDE_DIR "include")
 foreach(dir ${CLIF_BUILD_LINK_DIRS})
   if (IS_ABSOLUTE "${dir}")
     set(CLIF_INSTALL_LIBRARY_DIR ${CLIF_INSTALL_LIBRARY_DIR} "${dir}")
@@ -132,18 +128,15 @@ foreach(dir ${CLIF_BUILD_LINK_DIRS})
     set(CLIF_INSTALL_LIBRARY_DIR ${CLIF_INSTALL_LIBRARY_DIR} "${CMAKE_CURRENT_BINARY_DIR}/${dir}")
   endif()
 endforeach()
-
 set(CLIF_INSTALL_LIBRARIES ${CLIF_LINK_TARGETS})
 set(CLIF_INSTALL_CMAKE_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(INSTALL_PREFIX_BACKUP ${CMAKE_INSTALL_PREFIX})
-set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
 configure_package_config_file(cmake/clifConfig.cmake.in
                               "${CLIF_INSTALL_CMAKE_DIR}/clifConfig.cmake"
                               INSTALL_DESTINATION "${CLIF_INSTALL_CMAKE_DIR}"
                               PATH_VARS CLIF_INSTALL_INCLUDE_DIR CLIF_INSTALL_LIBRARY_DIR CLIF_INSTALL_LIBRARIES CLIF_INSTALL_CMAKE_DIR)
-set(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX_BACKUP})
 
-# ... for the install tree
+# for the installed package
 set(CLIF_INSTALL_INCLUDE_DIR "include")
 set(CLIF_INSTALL_LIBRARY_DIR "lib")
 set(CLIF_INSTALL_LIBRARIES ${CLIF_LINK_TARGETS})
@@ -163,7 +156,7 @@ install(FILES
   DESTINATION ${CLIF_INSTALL_CMAKE_DIR} COMPONENT dev)
 
 #export targets for installation
-install(EXPORT clif DESTINATION "lib/cmake/clif" COMPONENT dev)
+install(EXPORT clif DESTINATION ${CLIF_INSTALL_CMAKE_DIR} COMPONENT dev)
 
 #local export into binary dir (may be used with cmake .. -DCMAKE_PREFIX_PATH=<...> or with cmake-gui)
 export(EXPORT clif FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.cmake)

@@ -16,9 +16,11 @@ if (NOT CLIF_COMPILER_MSVC)
   add_executable(cliini_types testini_types.c)
 endif()
 
-target_link_libraries(cliini ${CLIF_FNMATCH_LIBRARIES})
+target_link_libraries(cliini ${CLIF_LIBRARIES})
 
 set(CLIF_LINK_LIBRARIES ${CLIF_LINK_LIBRARIES} cliini PARENT_SCOPE)
+set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
+set(CLIF_BUILD_LINK_DIRS ${CLIF_BUILD_LINK_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
 
 if (NOT CLIF_COMPILER_MSVC)
   target_link_libraries(cliini_test cliini)
