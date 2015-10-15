@@ -12,7 +12,29 @@ namespace clif {
 /** %Attribute (Metadata) handling for CLIF
 This class implements templated attribute access. Most times access will be trough the Attributes class, which uses the methods of this class internally, therefore more detailed documentation is available for the Attributes class.
 */
-class Attribute {
+
+namespace {
+  //TODO all possible output types ...
+  template <typename T> struct _type_is_number { static const bool value = false; };
+  template<> struct _type_is_number<int> { static const bool value = true; };
+  template<> struct _type_is_number<float> { static const bool value = true; };
+  template<> struct _type_is_number<double> { static const bool value = true; };
+  
+  template<typename CT, typename T> class convertFromBaseTypeDispatcher {
+  public:
+    void operator()(clif::BaseType type, void *data, CT *convertto)
+    {
+      if (type == clif::BaseType::STRING && _type_is_number<CT>::value)
+        //convert string to numbers with atof
+        *convertto = atof((char*)data);
+      else
+        // try simple implicit cast
+        *convertto = *(T*)data;
+    }
+  };
+}
+
+class Attribute {  
   public:
     template<typename T> void set(std::string name_, int dims_, T *size_, BaseType type_, void *data_);
     
@@ -50,6 +72,11 @@ class Attribute {
         throw std::invalid_argument("Attribute type doesn't match requested type.");
       
       val = *(T*)data;
+    };
+    
+    template<typename T> void convert(T *val)
+    {
+      callByBaseType<T,convertFromBaseTypeDispatcher>(type, type, data, val);
     };
     
     template<typename T> void get(T *val, int count)
