@@ -79,7 +79,8 @@ endif()
 list(APPEND CLIF_BUILD_COMPILE_DIRS external/cliini src/lib src/bin src/gui)
 
 configure_file(config.h.in config.h)
-list(APPEND CLIF_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+list(APPEND CLIF_HEADERS config.h)
+list(APPEND CLIF_FULLPATH_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/config.h) 
 list(APPEND CLIF_BUILD_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR})
 
 foreach(dir ${CLIF_BUILD_COMPILE_DIRS})
@@ -131,10 +132,12 @@ endforeach()
 set(CLIF_INSTALL_LIBRARIES ${CLIF_LINK_TARGETS})
 set(CLIF_INSTALL_CMAKE_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(INSTALL_PREFIX_BACKUP ${CMAKE_INSTALL_PREFIX})
+set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
 configure_package_config_file(cmake/clifConfig.cmake.in
                               "${CLIF_INSTALL_CMAKE_DIR}/clifConfig.cmake"
                               INSTALL_DESTINATION "${CLIF_INSTALL_CMAKE_DIR}"
                               PATH_VARS CLIF_INSTALL_INCLUDE_DIR CLIF_INSTALL_LIBRARY_DIR CLIF_INSTALL_LIBRARIES CLIF_INSTALL_CMAKE_DIR)
+set(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX_BACKUP})
 
 # for the installed package
 set(CLIF_INSTALL_INCLUDE_DIR "include")
@@ -159,7 +162,13 @@ install(FILES
 install(EXPORT clif DESTINATION ${CLIF_INSTALL_CMAKE_DIR} COMPONENT dev)
 
 #local export into binary dir (may be used with cmake .. -DCMAKE_PREFIX_PATH=<...> or with cmake-gui)
-export(EXPORT clif FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.cmake)
+if (${CMAKE_VERSION} VERSION_LESS 3.0.0)
+  #TODO use a generated list of targets!
+  export(TARGETS clif cliini FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.cmake)
+else()
+  message(${CMAKE_VERSION})
+  export(EXPORT clif FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.cmake)
+endif()
 
 #export into cmakes local package cache - should be directly visible to cmake of local user
 export(PACKAGE clif)

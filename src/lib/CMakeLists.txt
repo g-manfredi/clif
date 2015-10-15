@@ -24,6 +24,7 @@ createEnumStrings(DistModel)
 
 configure_file(enumtypes.hpp.in enumtypes.hpp)
 list(APPEND CLIF_BUILD_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR})
+list(APPEND LIBCLIF_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/enumtypes.hpp)
 set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} PARENT_SCOPE)
 include_directories(${CLIF_BUILD_INCLUDE_DIRS})
 
@@ -35,7 +36,7 @@ target_link_libraries(clif_vigra clif ${VIGRA_LIBRARIES})
 
 set(CLIF_LINK_LIBRARIES ${CLIF_LINK_LIBRARIES} clif clif_vigra PARENT_SCOPE)
 set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
-set(CLIF_BUILD_LINK_DIRS ${CLIF_BUILD_LINK_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
+set(CLIF_BUILD_LINK_DIRS ${CLIF_BUILD_LINK_DIRS} ${CMAKE_CURRENT_BINARY_DIR} PARENT_SCOPE)
 
 list(APPEND LIBCLIF_HEADERS attribute.hpp calib.hpp clif_cv.hpp clif.hpp clif_vigra.hpp core.hpp dataset.hpp datastore.hpp flexmav.hpp hdf5.hpp helpers.hpp matio.hpp stringtree.hpp subset3d.hpp)
 
