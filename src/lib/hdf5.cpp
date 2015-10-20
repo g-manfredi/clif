@@ -69,7 +69,13 @@ H5::H5File h5_memory_file()
 {
   FileAccPropList acc_plist;
   acc_plist.setCore(16*1024, false);
-  return H5File("/tmp/hdf5placeholder", H5F_ACC_TRUNC, FileCreatPropList::DEFAULT, acc_plist);
+  char tmpfilename[] = "openlfhdf5tempfileXXXXXX";
+  int handle = mkstemp(tmpfilename);
+  assert(handle != -1);
+  //FIXME handle file delete at the end!
+  H5File f = H5File(tmpfilename, H5F_ACC_TRUNC, FileCreatPropList::DEFAULT, acc_plist);
+  close(handle);
+  return f;
 }
 
 void h5_create_path_groups(H5::H5File &f, boost::filesystem::path path) 
