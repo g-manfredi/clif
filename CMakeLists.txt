@@ -121,7 +121,7 @@ foreach(header ${CLIF_FULLPATH_HEADERS})
 endforeach()
 
 # for local built tree use 
-set(CLIF_INSTALL_INCLUDE_DIR "include")
+set(CLIF_INSTALL_INCLUDE_DIR "include" "include/clif")
 foreach(dir ${CLIF_BUILD_LINK_DIRS})
   if (IS_ABSOLUTE "${dir}")
     set(CLIF_INSTALL_LIBRARY_DIR ${CLIF_INSTALL_LIBRARY_DIR} "${dir}")
