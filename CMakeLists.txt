@@ -79,6 +79,7 @@ endif()
 list(APPEND CLIF_BUILD_COMPILE_DIRS external/cliini src/lib src/bin src/gui)
 
 configure_file(config.h.in config.h)
+install(FILES "${PROJECT_BINARY_DIR}/config.h" DESTINATION include)
 list(APPEND CLIF_HEADERS config.h)
 list(APPEND CLIF_FULLPATH_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/config.h) 
 list(APPEND CLIF_BUILD_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR})
