@@ -5,6 +5,8 @@
 #include <H5FcreatProp.h>
 
 #include "enumtypes.hpp"
+#include "io.h"
+
 
 using namespace H5;
 
@@ -69,12 +71,14 @@ H5::H5File h5_memory_file()
 {
   FileAccPropList acc_plist;
   acc_plist.setCore(16*1024, false);
-  char tmpfilename[] = "openlfhdf5tempfileXXXXXX";
-  int handle = mkstemp(tmpfilename);
+  //char tmpfilename[] = "openlfhdf5tempfileXXXXXX";   %Linux
+ // int handle = mkstemp(tmpfilename);				   %Linux
+  char *tmpfilename = "openlfhdf5tempfileXXXXXX";
+  char *handle = _mktemp(tmpfilename);
   assert(handle != -1);
   //FIXME handle file delete at the end!
   H5File f = H5File(tmpfilename, H5F_ACC_TRUNC, FileCreatPropList::DEFAULT, acc_plist);
-  close(handle);
+  //close(handle);										%Linux
   return f;
 }
 

@@ -31,6 +31,7 @@ if (NOT CLIF_COMPILER_MSVC)
   target_link_libraries(cliini_types cliini)
 endif()
 
+install(FILES cliini.h DESTINATION include)
 install(TARGETS cliini
         EXPORT clif
         RUNTIME DESTINATION bin
