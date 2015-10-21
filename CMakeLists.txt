@@ -79,7 +79,6 @@ endif()
 list(APPEND CLIF_BUILD_COMPILE_DIRS external/cliini src/lib src/bin src/gui)
 
 configure_file(config.h.in config.h)
-install(FILES "${PROJECT_BINARY_DIR}/config.h" DESTINATION include)
 list(APPEND CLIF_HEADERS config.h)
 list(APPEND CLIF_FULLPATH_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/config.h) 
 list(APPEND CLIF_BUILD_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR})
@@ -116,9 +115,12 @@ endif()
 message("")
 
 #copy headers into clif subdir in build
+
 foreach(header ${CLIF_FULLPATH_HEADERS})
+#message(${header})
   get_filename_component(_FILE ${header} NAME)
   configure_file(${header} "include/clif/${_FILE}" COPYONLY)
+  #message(${_FILE})
 endforeach()
 
 # for local built tree use 
@@ -161,6 +163,7 @@ install(FILES
 
 #export targets for installation
 install(EXPORT clif DESTINATION ${CLIF_INSTALL_CMAKE_DIR} COMPONENT dev)
+install(FILES ${CLIF_FULLPATH_HEADERS} DESTINATION include/clif )
 
 #local export into binary dir (may be used with cmake .. -DCMAKE_PREFIX_PATH=<...> or with cmake-gui)
 if (${CMAKE_VERSION} VERSION_LESS 3.0.0)

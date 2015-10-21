@@ -51,8 +51,6 @@ endforeach()
 set(CLIF_HEADERS "${CLIF_HEADERS}" PARENT_SCOPE)
 set(CLIF_FULLPATH_HEADERS "${CLIF_FULLPATH_HEADERS}" PARENT_SCOPE)
 
-install(FILES ${LIBCLIF_HEADERS} DESTINATION include/clif)
-
 install(TARGETS clif clif_vigra
         EXPORT clif
         RUNTIME DESTINATION bin
