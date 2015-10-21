@@ -143,7 +143,7 @@ configure_package_config_file(cmake/clifConfig.cmake.in
 set(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX_BACKUP})
 
 # for the installed package
-set(CLIF_INSTALL_INCLUDE_DIR "include")
+set(CLIF_INSTALL_INCLUDE_DIR "include" "include/clif")
 set(CLIF_INSTALL_LIBRARY_DIR "lib")
 set(CLIF_INSTALL_LIBRARIES ${CLIF_LINK_TARGETS})
 set(CLIF_INSTALL_CMAKE_DIR "lib/cmake/clif")
