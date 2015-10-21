@@ -5,7 +5,9 @@
 #include <H5FcreatProp.h>
 
 #include "enumtypes.hpp"
+#ifdef CLIF_COMPILER_MSVC
 #include "io.h"
+#endif
 
 
 using namespace H5;
@@ -71,14 +73,19 @@ H5::H5File h5_memory_file()
 {
   FileAccPropList acc_plist;
   acc_plist.setCore(16*1024, false);
-  //char tmpfilename[] = "openlfhdf5tempfileXXXXXX";   %Linux
- // int handle = mkstemp(tmpfilename);				   %Linux
+#ifdef CLIF_COMPILER_MSVC
   char *tmpfilename = "openlfhdf5tempfileXXXXXX";
-  char *handle = _mktemp(tmpfilename);
+  tmpfilename = _mktemp(tmpfilename);
+#else
+  char tmpfilename[] = "openlfhdf5tempfileXXXXXX";
+  int handle = mkstemp(tmpfilename);
+#endif
   assert(handle != -1);
   //FIXME handle file delete at the end!
   H5File f = H5File(tmpfilename, H5F_ACC_TRUNC, FileCreatPropList::DEFAULT, acc_plist);
-  //close(handle);										%Linux
+#ifndef CLIF_COMPILER_MSVC
+  close(handle);
+#endif
   return f;
 }
 
