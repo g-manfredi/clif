@@ -104,7 +104,15 @@ namespace clif {
 
 void ClifFile::open(const std::string &filename, unsigned int flags)
 {
-  f.openFile(filename, flags);
+  try {
+    printf("try openfile!\n");
+    f.openFile(filename, flags);
+  }
+  catch (H5::FileIException e) {
+    printf("catch openfile!\n");
+    assert(f.getId() == H5I_INVALID_HID);
+    return;
+  }
   
   datasets.resize(0);
   
