@@ -72,10 +72,14 @@ std::vector<std::string> listH5Datasets(H5::H5File &f, std::string parent)
 H5::H5File h5_memory_file()
 {
   FileAccPropList acc_plist;
-  acc_plist.setCore(16*1024, false);
+  acc_plist.setCore(16 * 1024, false);
 #ifdef CLIF_COMPILER_MSVC
   char *tmpfilename = "openlfhdf5tempfileXXXXXX";
-  tmpfilename = _mktemp(tmpfilename);
+  tmpfilename = _mktemp(strdup(tmpfilename));
+  if (!tmpfilename) {
+    printf("could not allocate temporary file!\n");
+	abort();
+  }
 #else
   char tmpfilename[] = "openlfhdf5tempfileXXXXXX";
   int handle = mkstemp(tmpfilename);
@@ -83,7 +87,9 @@ H5::H5File h5_memory_file()
   assert(handle != -1);
   //FIXME handle file delete at the end!
   H5File f = H5File(tmpfilename, H5F_ACC_TRUNC, FileCreatPropList::DEFAULT, acc_plist);
-#ifndef CLIF_COMPILER_MSVC
+#ifdef CLIF_COMPILER_MSVC
+  free(tmpfilename);
+#else
   close(handle);
 #endif
   return f;
