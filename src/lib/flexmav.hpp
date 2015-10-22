@@ -111,6 +111,19 @@ namespace clif {
       _data = call_r<new_dispatcher,void*>(this, &_mat);
     }
     
+    void create(cv::Mat &input)
+    {
+      if (_data)
+        call<delete_dispatcher>(this);
+      for (int i=0;i<DIM;i++)
+        _shape[i] = _mat.size[DIM-i-1];
+      if (input.channels() != 1)
+        abort();
+      _type = CvDepth2BaseType(input.depth());
+      _mat = input;
+      _data = call_r<new_dispatcher,void*>(this, &_mat);
+    }
+    
     //read from datastore
     void read(Datastore *store)
     {

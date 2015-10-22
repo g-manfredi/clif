@@ -52,7 +52,22 @@ BaseType hid_t_to_native_BaseType(hid_t type)
 {
   switch (H5Tget_class(type)) {
     case H5T_STRING : return BaseType::STRING;
-    case H5T_INTEGER : return BaseType::INT;
+    case H5T_INTEGER :
+      switch (H5Tget_size(type)) {
+        case 1 : 
+          if (H5Tget_sign(type) != H5T_SGN_NONE)
+            abort();
+          return BaseType::UINT8;
+        case 2 :
+          if (H5Tget_sign(type) != H5T_SGN_NONE)
+            abort();
+          return BaseType::UINT16;
+        case 3 :
+        case 4 :
+          if (H5Tget_sign(type) == H5T_SGN_NONE)
+            abort();
+          return BaseType::INT;
+      }
     case H5T_FLOAT: 
       if (H5Tget_size(type) == 4)
         return BaseType::FLOAT;
@@ -60,26 +75,24 @@ BaseType hid_t_to_native_BaseType(hid_t type)
         return BaseType::DOUBLE;
       break;
     default:
+      printf("ERROR: unknown argument type!\n");
       abort();
   }
-  
-  printf("ERROR: unknown argument type!\n");
-  abort();
 }
 
 H5::PredType BaseType_to_PredType(BaseType type)
 {    
   switch (type) {
     case BaseType::STRING : return H5::PredType::C_S1;
+    case BaseType::UINT8 : return H5::PredType::NATIVE_B8;
+    case BaseType::UINT16 : return H5::PredType::NATIVE_B16;
     case BaseType::INT : return H5::PredType::NATIVE_INT;
     case BaseType::FLOAT: return H5::PredType::NATIVE_FLOAT;
     case BaseType::DOUBLE: return H5::PredType::NATIVE_DOUBLE;
     default:
+    printf("ERROR: unknown argument type!\n");
       abort();
   }
-  
-  printf("ERROR: unknown argument type!\n");
-  abort();
 }
   
 static void read_attr(Attribute *attr, H5::Group g, std::string basename, std::string group_path, std::string name, BaseType &type)
