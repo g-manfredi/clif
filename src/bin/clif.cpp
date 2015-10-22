@@ -17,6 +17,7 @@
 #include "H5File.h"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
 
 #include "clif_cv.hpp"
 #include "calib.hpp"
@@ -275,6 +276,8 @@ int main(const int argc, const char *argv[])
     for(uint i=0;i<input_imgs.size();i++) {
       printf("store idx %d: %s\n", i, input_imgs[i].c_str());
       Mat img = imread(input_imgs[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+      if (img.channels() == 3)
+        cvtColor(img, img, COLOR_BGR2RGB);
       int w = img.size().width;
       int h = img.size().height;
       set->appendRawImage(w, h, img.data);
@@ -286,6 +289,8 @@ int main(const int argc, const char *argv[])
       for(uint i=0;i<input_calib_imgs.size();i++) {
         printf("store calib img %d: %s\n", i, input_calib_imgs[i].c_str());
         Mat img = imread(input_calib_imgs[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+        if (img.channels() == 3)
+          cvtColor(img, img, COLOR_BGR2RGB);
         int w = img.size().width;
         int h = img.size().height;
         calib_store->appendRawImage(w, h, img.data);
