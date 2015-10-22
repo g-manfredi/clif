@@ -4,8 +4,10 @@
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
-#include <fnmatch.h>
 #include <string.h>
+
+//may be our local fnmatch
+#include "fnmatch.h"
 
 const int maxsize = 1024*1024;
 

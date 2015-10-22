@@ -1,16 +1,9 @@
 cmake_minimum_required (VERSION 2.6)
 project(fnmatch)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -std=c99")
-
-#build as c++ with msvc
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /TP")
-#add_definitions(/D__STDC__)
-
-
 add_library(fnmatch fnmatch.c)
 
-set(CLIF_LINK_LIBRARIES ${CLIF_LINK_LIBRARIES} fnmatch PARENT_SCOPE)
+set(CLIF_LINK_LIBRARIES ${CLIF_LINK_LIBRARIES} Shlwapi.dll fnmatch PARENT_SCOPE)
 set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
 set(CLIF_BUILD_LINK_DIRS ${CLIF_BUILD_LINK_DIRS} ${CMAKE_CURRENT_BINARY_DIR} PARENT_SCOPE)
 
