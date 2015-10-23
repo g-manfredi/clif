@@ -115,6 +115,8 @@ void Datastore::write(cv::Mat &m)
     _type = CvDepth2BaseType(m.depth());
   }
   
+  assert(_type == CvDepth2BaseType(m.depth()));
+  
   _mat = m;
 }
 

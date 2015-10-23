@@ -193,7 +193,8 @@ namespace clif {
       call<exportImage_dispatcher>(this, filename);
     }
     
-    void write(Dataset *set, path path)
+    //simply writes  the data into the raw hdf5 dataset - this makes clif::Dataset out of sync with the underlying hdf5 file!
+    void writeRAW(Dataset *set, path path)
     {
       boost::filesystem::path fullpath = set->path() / path;
       
@@ -224,6 +225,14 @@ namespace clif {
         printf("dim: %d\n", DIM);
       
       exportImage("debug_vigra.tiff");*/
+    }
+    
+    //adds the flexmav
+    Datastore *write(Dataset *set, path path)
+    {
+      Datastore *datastore = set->addStore(path.generic_string());
+      write(datastore);
+      return datastore;
     }
 
     
