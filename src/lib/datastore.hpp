@@ -10,8 +10,8 @@ class Dataset;
 
 //representation of a "raw" clif datset - mostly the images
 class Datastore {
-  public:
-	  Datastore() { _imgsize[0] = -1; _imgsize[1] = -1; };
+public:
+    Datastore() { _imgsize[0] = -1; _imgsize[1] = -1; };
     
     //create new datastore
     void create(std::string path, Dataset *dataset);

@@ -53,9 +53,11 @@ cv::Mat* Intrinsics::getUndistMap(double depth, int w, int h)
   return &_undist_map;
 }
 
+//FIXME f could point to core driver (memory only) file!
 void Dataset::open(H5::H5File &f_, std::string name)
 {
   _path = std::string("/clif/").append(name);
+  _memory_file = false;
   f = f_;
     
   //static_cast<clif::Dataset&>(*this) = clif::Dataset(f, fullpath);
@@ -162,9 +164,15 @@ void Dataset::link(H5::H5File &f_, const Dataset *other)
   link(other);
 }
 
+bool Dataset::memoryFile()
+{
+  return _memory_file;
+}
+
 //link second dataset into the place of current dataset
 void Dataset::memory_link(const Dataset *other)
 { 
+  _memory_file = true;
   f = h5_memory_file();
   link(other);
 }

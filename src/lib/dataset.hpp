@@ -66,6 +66,8 @@ class Dataset : public Attributes, public Datastore {
     Datastore *getStore(const std::string &path);
     Datastore *addStore(const std::string &path);
     
+    bool memoryFile();
+    
     //FIXME fix or remove this method
     bool valid();
     
@@ -102,6 +104,7 @@ private:
     
     //FIXME delete on destruct!
     std::unordered_map<std::string,Datastore*> _stores;
+    bool _memory_file = false;
 };
   
 }
