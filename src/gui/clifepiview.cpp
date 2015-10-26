@@ -4,8 +4,8 @@
 #include <QSplitter>
 #include <QGraphicsLineItem>
 #include <QTimer>
-
-#include <qwt_scale_engine.h>
+#include <QSlider>
+#include <QVBoxLayout>
 
 #include "clifepiview.hpp"
 #include "clif_qt.hpp"
@@ -20,35 +20,47 @@ DlgFind::DlgFind(Dataset *dataset, QWidget* parent)
     _3dslice = new Subset3d(dataset);
     _centerview = new clifScaledImageView(this);
     _epiview = new clifScaledImageView(this);
-    _slider = new QwtSlider(this);
+    _slider = new QSlider(this);
     _slider->setOrientation(Qt::Horizontal);
-    _slider->setStepAlignment(false);
-    _slider->setScaleEngine(new QwtLogScaleEngine());
-    _slider->setScalePosition(QwtSlider::ScalePosition::TrailingScale);
+    //_slider->setStepAlignment(false);
+    //_slider->setScaleEngine(new QwtLogScaleEngine());
+    //_slider->setScalePosition(QwtSlider::ScalePosition::TrailingScale);
     
     
     /*connect(what, SIGNAL(textChanged(const QString&)), this, SLOT(enableBtnFind(const QString&)));
     connect(btnFind, SIGNAL(clicked()), this, SLOT(findClicked()));*/
-    connect(_slider, SIGNAL(valueChanged(double)), this, SLOT(horopterChanged(double)));
+    connect(_slider, SIGNAL(valueChanged(int)), this, SLOT(dispChanged(int)));
     connect(_centerview, SIGNAL(imgClicked(QPointF*)), this, SLOT(lineChanged(QPointF*)));
 
     setLayout(createLayout());
     
-    readQImage(dataset, 0, _center_img, DEMOSAIC);
-    _line = _center_img.size().height()/2;
-    _centerview->setImage(_center_img);
-    _line_item = _centerview->scene.addLine(0, _line,  _center_img.size().width(),_line);
+    if (!_center_img)
+      _center_img = new QImage();
+    readQImage(dataset, 0, *_center_img, DEMOSAIC);
+    _line = _center_img->size().height()/2;
+    _centerview->setImage(*_center_img);
+    _line_item = _centerview->scene.addLine(0, _line, _center_img->size().width(),_line);
     
     
-    _depth = 1000;
-    _slider->blockSignals(true);
-    _slider->setScale(1,1e6);
-    _slider->blockSignals(false);
-    _slider->setValue(_depth);
+    _disp = 0;
+    //_slider->blockSignals(true);
+    //_slider->setScale(1,1e6);
+    //_slider->blockSignals(false);
+    _slider->setMaximum(10000);
+    _slider->setValue(_disp*100);
     
     setWindowTitle("Find");
     //setFixedHeight(sizeHint().height()); // 6.
 }
+
+DlgFind::~DlgFind()
+{
+  if (_center_img)
+    delete _center_img;
+  if (_epi_img)
+    delete _epi_img;
+}
+
 /*
 QHBoxLayout* DlgFind::createLayout() // 7.
 {
@@ -76,7 +88,7 @@ QHBoxLayout* DlgFind::createLayout() // 7.
     return main;
 }*/
 
-QVBoxLayout* DlgFind::createLayout()
+QLayout* DlgFind::createLayout()
 {
   QSplitter *splitter = new QSplitter();
   splitter->addWidget(_centerview);
@@ -113,13 +125,15 @@ void DlgFind::enableBtnFind(const QString& text) // 9.
 void DlgFind::refreshEPI()
 {
   //_slider->blockSignals(true);
-  readEPI(_3dslice, _epi_img, _line, _depth);
-  _epiview->setImage(_epi_img);
+  if (!_epi_img)
+    _epi_img = new QImage();
+  readEPI(_3dslice, *_epi_img, _line, _disp);
+  _epiview->setImage(*_epi_img);
   qApp->processEvents();
   //_slider->blockSignals(false);
   
-  printf("depth %f\n", _depth);
-  printf("disp %f\n", _3dslice->depth2disparity(_depth));
+  printf("disp %f\n", _disp);
+  printf("depth %f\n", _3dslice->disparity2depth(_disp));
 }
 
 void DlgFind::refreshEPISlot()
@@ -132,9 +146,9 @@ void DlgFind::refreshEPISlot()
   refreshEPI();
 }
 
-void DlgFind::horopterChanged(double value)
+void DlgFind::dispChanged(int value)
 {
-  _depth = value;
+  _disp = value*0.01;
   
   if (!_timer) {
     _timer = new QTimer(this);
@@ -149,21 +163,21 @@ void DlgFind::lineChanged(QPointF *p)
   _line = p->y();
   _epiview->centerOn(p->x(), 0);
   _epiview->setDragMode(QGraphicsView::ScrollHandDrag);
-  _line_item->setLine(0, _line,  _center_img.size().width(),_line);
+  _line_item->setLine(0, _line,  _center_img->size().width(),_line);
   refreshEPI();
 }
 
-double DlgFind::getHoropterDepth(Dataset *dataset, QWidget *parent)
+double DlgFind::getDisparity(Dataset *dataset, QWidget *parent)
 {
   DlgFind *finder = new DlgFind(dataset, parent);
   
   finder->exec();
   
-  double h = finder->_depth;
+  double d = finder->_disp;
   
   delete finder;
   
-  return h;
+  return d;
 }
 
 }

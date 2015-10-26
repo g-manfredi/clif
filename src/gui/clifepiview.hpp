@@ -6,33 +6,29 @@
 
 #include "clifscaledimageview.hpp"
 
-#include <QtGui>
 #include <QDialog>
 
-#include <QHBoxLayout>
-#include <QVBoxLayout>
-#include <QLabel>
-#include <QCheckBox>
-#include <QLineEdit>
-#include <QPushButton>
-#include <qwt_slider.h>
-
-#if defined WTF_HACK_QT_EXPORT
- #define TEST_COMMON_DLLSPEC Q_DECL_EXPORT
+#if defined CLIF_EXPORT
+ #define QT_DLLSPEC Q_DECL_EXPORT
 #else
- #define TEST_COMMON_DLLSPEC Q_DECL_IMPORT
+ #define QT_DLLSPEC Q_DECL_IMPORT
 #endif
+
+class QVBoxLayout;
+class QImage;
+class QSlider;
 
 namespace clif {
   
-class TEST_COMMON_DLLSPEC DlgFind : public QDialog
+class QT_DLLSPEC DlgFind : public QDialog
 {
     Q_OBJECT
 
 public:
     DlgFind(clif::Dataset *dataset, QWidget* parent = 0);
+    ~DlgFind();
     
-    static double getHoropterDepth(clif::Dataset *dataset, QWidget *parent = 0);
+    static double getDisparity(clif::Dataset *dataset, QWidget *parent = 0);
 
 signals:
     void findNext(const QString& str, Qt::CaseSensitivity cs);
@@ -42,22 +38,22 @@ private slots:
     //void findClicked();
     //void enableBtnFind(const QString& text);
   
-    void horopterChanged(double value);
+    void dispChanged(int value);
     void lineChanged(QPointF *p);
     void refreshEPISlot();
 
 private:
-    QVBoxLayout* createLayout();
+    QLayout* createLayout();
     void refreshEPI();
 
-    QwtSlider *_slider;
+    QSlider *_slider;
     clifScaledImageView *_centerview;
     clifScaledImageView *_epiview;
     
-    QImage _center_img;
-    QImage _epi_img;
+    QImage *_center_img = NULL;
+    QImage *_epi_img = NULL;
     
-    double _depth;
+    double _disp;
     int _line;
     clif::Subset3d *_3dslice;
     

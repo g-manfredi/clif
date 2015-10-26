@@ -62,10 +62,10 @@ namespace clif {
     img = cvMatToQImage(m).copy();
   }
   
-  void readEPI(clif::Subset3d *set, QImage &img, int line, double depth, int flags)
+  void readEPI(clif::Subset3d *set, QImage &img, int line, double disp, int flags)
   {
     Mat m;
-    set->readEPI(m, line, depth, ClifUnit::MM, flags | CVT_8U);
+    set->readEPI(m, line, disp, ClifUnit::PIXELS, flags | CVT_8U);
     
     //FIXME zero copy memory handling?
     img = cvMatToQImage(m).copy();
