@@ -83,8 +83,9 @@ H5::H5File h5_memory_file()
 #else
   char tmpfilename[] = "openlfhdf5tempfileXXXXXX";
   int handle = mkstemp(tmpfilename);
-#endif
   assert(handle != -1);
+#endif
+  
   //FIXME handle file delete at the end!
   H5File f = H5File(tmpfilename, H5F_ACC_TRUNC, FileCreatPropList::DEFAULT, acc_plist);
 #ifdef CLIF_COMPILER_MSVC
