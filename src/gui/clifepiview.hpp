@@ -8,11 +8,7 @@
 
 #include <QDialog>
 
-#if defined CLIF_EXPORT
- #define QT_DLLSPEC Q_DECL_EXPORT
-#else
- #define QT_DLLSPEC Q_DECL_IMPORT
-#endif
+#include "config.h"
 
 class QVBoxLayout;
 class QImage;
@@ -20,7 +16,7 @@ class QSlider;
 
 namespace clif {
   
-class QT_DLLSPEC DlgFind : public QDialog
+class CLIF_EXPORT DlgFind : public QDialog
 {
     Q_OBJECT
 

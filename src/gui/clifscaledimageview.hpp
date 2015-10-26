@@ -3,16 +3,11 @@
 
 #include <QtGui>
 #include <QGraphicsView>
-
-#if defined CLIF_EXPORT
- #define QT_DLLSPEC Q_DECL_EXPORT
-#else
- #define QT_DLLSPEC Q_DECL_IMPORT
-#endif
+#include "config.h"
 
 namespace clif {
   
-class QT_DLLSPEC clifScaledImageView : public QGraphicsView
+class CLIF_EXPORT clifScaledImageView : public QGraphicsView
 {
     Q_OBJECT
 

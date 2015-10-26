@@ -20,16 +20,17 @@ set(CLIF_BUILD_QT ${CLIF_BUILD_QT} PARENT_SCOPE)
 set(CLIF_BUILD_QT_REASON ${CLIF_BUILD_QT_REASON} PARENT_SCOPE)
 
 if(CLIF_BUILD_QT)
+  find_package(Qt5Core)
+
   set(CMAKE_AUTOMOC ON)
   set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
   include_directories(${Qt5Widgets_INCLUDE_DIRS})
 
-  add_definitions(-DWTF_HACK_QT_EXPORT)
-  add_library(clif-qt SHARED clifscaledimageview.cpp clifepiview.cpp clif_qt.cpp)
+  add_library(clif-qt clifscaledimageview.cpp clifepiview.cpp clif_qt.cpp)
 
   #TODO add clif
-  target_link_libraries(clif-qt ${Qt5Widgets_LIBRARIES})
+  target_link_libraries(clif-qt ${CLIF_LIBRARIES} ${Qt5Core_LIBRARIES} ${Qt5Widgets_LIBRARIES})
   
   set(CLIF_LINK_LIBRARIES ${CLIF_LINK_LIBRARIES} clif-qt PARENT_SCOPE)
   set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)

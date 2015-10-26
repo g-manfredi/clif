@@ -20,8 +20,10 @@ endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   add_definitions(-DCLIF_COMPILER_MSVC)
+  add_definitions(-DCLIF_EXPORT_LIBRARY)
   set(CLIF_COMPILER_MSVC true)
   set(CLIF_EXPORT "__declspec(dllexport)")
+  set(CLIF_IMPORT "__declspec(dllimport)")
 endif()
 
 find_package(OpenCV)
