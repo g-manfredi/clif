@@ -7,6 +7,7 @@
 #include "enumtypes.hpp"
 #ifdef CLIF_COMPILER_MSVC
 #include "io.h"
+#include "Windows.h"
 #endif
 
 
@@ -74,14 +75,20 @@ H5::H5File h5_memory_file()
   FileAccPropList acc_plist;
   acc_plist.setCore(16 * 1024, false);
 #ifdef CLIF_COMPILER_MSVC
-  char *tmpfilename = "openlfhdf5tempfileXXXXXX";
-  tmpfilename = _mktemp(strdup(tmpfilename));
+  char *tmppath = (char*)malloc(1024);
+  char *tmppath2 = (char*)malloc(1024);
+  if (!GetTempPath(1024, tmppath))
+	  abort();
+  strcat(tmppath, "openlfhdf5tempfile_%d_XXXXXX");
+  //increase number of temporary files...
+  sprintf(tmppath2, tmppath, rand());
+  char *tmpfilename = _mktemp(tmppath2);
   if (!tmpfilename) {
     printf("could not allocate temporary file!\n");
 	abort();
   }
 #else
-  char tmpfilename[] = "openlfhdf5tempfileXXXXXX";
+  char tmpfilename[] = "/tmp/openlfhdf5tempfileXXXXXX";
   int handle = mkstemp(tmpfilename);
   assert(handle != -1);
 #endif
@@ -89,7 +96,7 @@ H5::H5File h5_memory_file()
   //FIXME handle file delete at the end!
   H5File f = H5File(tmpfilename, H5F_ACC_TRUNC, FileCreatPropList::DEFAULT, acc_plist);
 #ifdef CLIF_COMPILER_MSVC
-  free(tmpfilename);
+  free(tmppath);
 #else
   close(handle);
 #endif
