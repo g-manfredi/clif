@@ -299,11 +299,17 @@ int main(const int argc, const char *argv[])
     }
     
     if (cliargs_get(args, "detect-patterns")) {
+      delete set;
+      //FIXME does f_out refresh automatically?
+      set = f_out.openDataset(0);
       pattern_detect(set);
       set->writeAttributes();
     }
     
     if (cliargs_get(args, "opencv-calibrate")) {
+      delete set;
+      //FIXME does f_out refresh automatically?
+      set = f_out.openDataset(0);
       opencv_calibrate(set);
       set->writeAttributes();
     }
