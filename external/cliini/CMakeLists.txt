@@ -8,7 +8,7 @@ else ()
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -std=c99 -fPIC")
 endif()
 
-add_library(cliini SHARED cliini.c)
+add_library(cliini ${CLIF_BUILD_TYPE} cliini.c)
 
 if (NOT CLIF_COMPILER_MSVC)
   add_executable(cliini_test test.c)

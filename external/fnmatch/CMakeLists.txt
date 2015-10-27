@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 2.6)
 project(fnmatch)
 
-add_library(fnmatch SHARED fnmatch.c)
+add_library(fnmatch ${CLIF_BUILD_TYPE} fnmatch.c)
 
 set(CLIF_LINK_LIBRARIES ${CLIF_LINK_LIBRARIES} Shlwapi.dll fnmatch PARENT_SCOPE)
 set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
