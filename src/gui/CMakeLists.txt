@@ -27,7 +27,7 @@ if(CLIF_BUILD_QT)
 
   include_directories(${Qt5Widgets_INCLUDE_DIRS})
 
-  add_library(clif-qt clifscaledimageview.cpp clifepiview.cpp clif_qt.cpp)
+  add_library(clif-qt SHARED clifscaledimageview.cpp clifepiview.cpp clif_qt.cpp)
 
   #TODO add clif
   target_link_libraries(clif-qt ${CLIF_LIBRARIES} ${Qt5Core_LIBRARIES} ${Qt5Widgets_LIBRARIES})
