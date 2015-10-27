@@ -6,10 +6,14 @@
 #define CLIF_PATCH_VERSION (@CLIF_PATCH_VERSION@)
 #define CLIF_VERSION_STRING "@CLIF_VERSION@"
 
-#ifdef CLIF_EXPORT_LIBRARY
-  #define CLIF_EXPORT ${CLIF_EXPORT}
+#ifdef CLIF_BUILD_DYNAMIC
+	#ifdef CLIF_EXPORT_LIBRARY
+	  #define CLIF_EXPORT ${CLIF_EXPORT}
+	#else
+	  #define CLIF_EXPORT ${CLIF_IMPORT}
+	#endif
 #else
-  #define CLIF_EXPORT ${CLIF_IMPORT}
+	#define CLIF_EXPORT
 #endif
 
 #endif
