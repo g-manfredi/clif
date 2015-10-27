@@ -38,13 +38,18 @@ public:
     
     int imgMemSize();
     
-    bool valid();
-    void size(int s[3]);
+    bool valid() const;
+    void size(int s[3]) const;
     void imgSize(int s[2]);
+    int dims() const;
+    void fullsize(std::vector<int> &size) const;
+    
     int channels() { return 3; } //FIXME grayscale!?
     int count();
     
     const std::string& getDatastorePath() const { return _path; };
+    
+    friend std::ostream& operator<<(std::ostream& out, const Datastore& a);
     
     const H5::DataSet & H5DataSet() const { return _data; };
     Dataset *getDataset() { return _dataset; };

@@ -25,10 +25,15 @@ ClifFile lf_file;
 vector<DatasetRoot*> root_list;
 DatasetRoot *root_curr = NULL;
 
-void attachTreeItem(QTreeWidgetItem *w, StringTree<Attribute*> *t)
+void attachTreeItem(QTreeWidgetItem *w, StringTree<Attribute*,Datastore*> *t)
 {
     if (std::get<0>(t->val.second))
         w->setData(1, Qt::DisplayRole, QString(std::get<0>(t->val.second)->toString().c_str()));
+    else if (std::get<1>(t->val.second)) {
+        std::stringstream stream;
+        stream << *std::get<1>(t->val.second);
+        w->setData(1, Qt::DisplayRole, stream.str().c_str());
+    }
 
     for(int i=0;i<t->childCount();i++) {
         QTreeWidgetItem *item = new QTreeWidgetItem(w, QStringList(QString(t->childs[i].val.first.c_str())));
@@ -57,7 +62,7 @@ public:
         openDataset();
 
         if (!expanded) {
-            StringTree<Attribute*> tree = dataset->getTree();
+            StringTree<Attribute*,Datastore*> tree = dataset->getTree();
 
             attachTreeItem(item, &tree);
         }

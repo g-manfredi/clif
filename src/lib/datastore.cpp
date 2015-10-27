@@ -349,16 +349,17 @@ void Datastore::readRawImage(uint idx, hsize_t w, hsize_t h, void *imgdata)
   _data.read(imgdata, H5PredType(_type), imgspace, space);
 }
 
-bool Datastore::valid()
+bool Datastore::valid() const
 {
   if (_data.getId() == H5I_INVALID_HID)
     return false;
   return true;
 }
 
-void Datastore::size(int s[3])
+void Datastore::size(int s[3]) const
 {
   H5::DataSpace space = _data.getSpace();
+  assert(space.getSimpleExtentNdims() == 3);
   hsize_t dims[3];
   
   space.getSimpleExtentDims(dims);
@@ -367,6 +368,32 @@ void Datastore::size(int s[3])
   s[1] = dims[1];
   s[2] = dims[2];
 }
+
+int Datastore::dims() const
+{
+  assert(!_memonly);
+  
+  H5::DataSpace space = _data.getSpace();
+  return space.getSimpleExtentNdims();
+}
+
+void Datastore::fullsize(std::vector<int> &size) const
+{
+  H5::DataSpace space = _data.getSpace();
+  int dimcount = dims();
+  
+  size.resize(dimcount);
+  
+  hsize_t *dims = new hsize_t[dimcount];
+  
+  space.getSimpleExtentDims(dims);
+
+  for(int i=0;i<dimcount;i++)
+    size[i] = dims[i];
+  
+  delete dims;
+}
+
 
 int Datastore::count()
 {
@@ -391,6 +418,23 @@ void Datastore::imgSize(int s[2])
     s[0] = _imgsize[0];
     s[1] = _imgsize[1];
   }
+}
+
+
+std::ostream& operator<<(std::ostream& out, const Datastore& a)
+{
+  int dimcount = a.dims();
+  std::vector<int> dims;
+  
+  assert(dimcount);
+  
+  a.fullsize(dims);
+  
+  for(int i=0;i<dimcount-1;i++)
+    out << dims[i] << " x ";
+  out << dims[dimcount-1];
+  
+  return out;
 }
 
 }

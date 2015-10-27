@@ -65,11 +65,14 @@ class Dataset : public Attributes, public Datastore {
     
     Datastore *getStore(const std::string &path);
     Datastore *addStore(const std::string &path);
+    void addStore(Datastore *store);
     
     bool memoryFile();
     
     //FIXME fix or remove this method
     bool valid();
+    
+    StringTree<Attribute*,Datastore*> getTree();
     
     /** load the intrinsics group with name \a intrset.
      * default (empty string) will load the first intrinsics group from the file, 

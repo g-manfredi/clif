@@ -57,6 +57,7 @@ namespace clif {
 	template<typename... TS> class StringTree {
 	public:
 		StringTree() {};
+		StringTree(std::string name);
 		StringTree(std::string name, TS...args);
 
 		void print(int depth = 0);
@@ -75,6 +76,12 @@ namespace clif {
 	{
 		val.first = name;
 		val.second = std::tuple<TS...>(args...);
+	}
+	
+	template<typename... TS> StringTree<TS...>::StringTree(std::string name)
+	{
+		val.first = name;
+		val.second = std::tuple<TS...>();
 	}
 
 	template<typename... TS> void StringTree<TS...>::print(int depth)
@@ -115,7 +122,7 @@ namespace clif {
 
 		if (found < str.length() - 1) {
 			//FIXME different type?!
-			childs.push_back(StringTree<TS...>(name, NULL));
+			childs.push_back(StringTree<TS...>(name));
 			childs.back().add(str.substr(found + 1), args..., delim);
 		}
 		else

@@ -53,6 +53,35 @@ cv::Mat* Intrinsics::getUndistMap(double depth, int w, int h)
   return &_undist_map;
 }
 
+
+static void datastores_append_group(Dataset *set, std::unordered_map<std::string,Datastore*> &stores, H5::Group &g, std::string basename, std::string group_path)
+{
+  for(uint i=0;i<g.getNumObjs();i++) {
+    H5G_obj_t type = g.getObjTypeByIdx(i);
+    
+    std::string name;
+    if (group_path.size())
+      name = appendToPath(group_path, g.getObjnameByIdx(hsize_t(i)));
+    else
+      name = g.getObjnameByIdx(hsize_t(i));
+
+    if (type == H5G_GROUP) {
+      H5::Group sub = g.openGroup(g.getObjnameByIdx(hsize_t(i)));
+      datastores_append_group(set, stores, sub, basename, name);
+    }
+    else if (type == H5G_DATASET)
+    {
+      Datastore *store = new Datastore();
+      store->open(set, name);
+      assert(store->valid());
+      set->addStore(store);
+    }
+    else if (type == H5G_LINK) {
+      printf("FIXME implement link handling for datastore!");
+    }
+  }
+}
+
 //FIXME f could point to core driver (memory only) file!
 void Dataset::open(H5::H5File &f_, std::string name)
 {
@@ -76,6 +105,10 @@ void Dataset::open(H5::H5File &f_, std::string name)
   }
   
   Datastore::open(this, "data");
+  addStore(this);
+  
+  H5::Group group = f.openGroup(_path.c_str());
+  datastores_append_group(this, _stores, group, _path, std::string());
 }
 
 //TODO use priority!
@@ -146,11 +179,17 @@ void Dataset::link(const Dataset *other)
   calib_images = NULL;
   
   Datastore::link(other, this);
+  addStore(this);
  
   //FIXME set stores to 0!
   
   //iterate stores...
   for(auto iter : other->_stores) {
+    if (iter.second == other) {
+      printf("skip itself!\n");
+      continue;
+    }
+    printf("link %s!\n",iter.first.c_str()); 
     addStore(iter.first);
     _stores[iter.first]->link(iter.second, this);
   }
@@ -222,6 +261,27 @@ Datastore *Dataset::addStore(const std::string &path)
   _stores[store->getDatastorePath()] = store;
   
   return store;
+}
+
+void Dataset::addStore(Datastore *store)
+{
+  assert(store);
+  _stores[store->getDatastorePath()] = store;
+}
+
+StringTree<Attribute*,Datastore*> Dataset::getTree()
+{
+  StringTree<Attribute*,Datastore*> tree;
+  
+  for(uint i=0;i<attrs.size();i++)
+    tree.add(attrs[i].name, &attrs[i], (Datastore*)NULL, '/');
+  
+  for(auto it=_stores.begin();it!=_stores.end();++it) {
+    printf("add store %s\n", it->first.c_str());
+    tree.add(it->first, NULL, it->second, '/');
+  }
+  
+  return tree;
 }
 
 /*
