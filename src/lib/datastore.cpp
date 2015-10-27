@@ -337,11 +337,11 @@ void Datastore::readRawImage(uint idx, hsize_t w, hsize_t h, void *imgdata)
   
   space.getSimpleExtentDims(dims, maxdims);
   
-  if (dims[2] <= idx)
+  if (dims[0] <= idx)
     throw std::invalid_argument("requested index out or range");
   
-  hsize_t size[3] = {dims[0],dims[1],1};
-  hsize_t start[3] = {0,0,idx};
+  hsize_t size[3] = {1, dims[1],dims[2]};
+  hsize_t start[3] = {idx, 0,0};
   space.selectHyperslab(H5S_SELECT_SET, size, start);
   
   H5::DataSpace imgspace(3, size);
@@ -364,9 +364,9 @@ void Datastore::size(int s[3]) const
   
   space.getSimpleExtentDims(dims);
   
-  s[0] = dims[0];
+  s[0] = dims[2];
   s[1] = dims[1];
-  s[2] = dims[2];
+  s[2] = dims[0];
 }
 
 int Datastore::dims() const
@@ -389,7 +389,7 @@ void Datastore::fullsize(std::vector<int> &size) const
   space.getSimpleExtentDims(dims);
 
   for(int i=0;i<dimcount;i++)
-    size[i] = dims[i];
+    size[i] = dims[dimcount-i-1];
   
   delete dims;
 }
