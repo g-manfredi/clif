@@ -107,7 +107,8 @@ vector<string> extract_matching_strings(cliini_arg *arg, const char *pattern)
   vector<string> files;
   
   for(int i=0;i<cliarg_sum(arg);i++)
-    if (!fnmatch(pattern, cliarg_nth_str(arg, i), 0/*FNM_CASEFOLD | FNM_EXTMATCH*/))
+    //FIXME not working on windows!
+    if (!fnmatch(pattern, cliarg_nth_str(arg, i), FNM_CASEFOLD | FNM_EXTMATCH))
       files.push_back(cliarg_nth_str(arg, i));
     
   return files;

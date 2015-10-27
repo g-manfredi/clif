@@ -212,8 +212,8 @@ void Datastore::init(hsize_t w, hsize_t h)
   hsize_t comb_w = w*combinedTypeElementCount(_type,_org,_order);
   hsize_t comb_h = h*combinedTypePlaneCount(_type,_org,_order);
   
-  hsize_t dims[3] = {comb_w,comb_h,0};
-  hsize_t maxdims[3] = {comb_w,comb_h,H5S_UNLIMITED}; 
+  hsize_t dims[3] = {0, comb_h,comb_w};
+  hsize_t maxdims[3] = {H5S_UNLIMITED,comb_h,comb_w}; 
   path dataset_path = _dataset->path() / _path;
   
   if (h5_obj_exists(_dataset->f, dataset_path.generic_string())) {
@@ -224,7 +224,7 @@ void Datastore::init(hsize_t w, hsize_t h)
   h5_create_path_groups(_dataset->f, path(dataset_path.generic_string().c_str()).parent_path());
   
   //chunking fixed for now
-  hsize_t chunk_dims[3] = {comb_w,comb_h,1};
+  hsize_t chunk_dims[3] = {1,comb_h,comb_w};
   H5::DSetCreatPropList prop;    
   prop.setChunk(3, chunk_dims);
   //prop.setDeflate(6);
@@ -297,14 +297,14 @@ void Datastore::writeRawImage(uint idx, hsize_t w, hsize_t h, void *imgdata)
   
   space.getSimpleExtentDims(dims, maxdims);
   
-  if (dims[2] <= idx) {
-    dims[2] = idx+1;
+  if (dims[0] <= idx) {
+    dims[0] = idx+1;
     _data.extend(dims);
     space = _data.getSpace();
   }
   
-  hsize_t size[3] = {dims[0],dims[1],1};
-  hsize_t start[3] = {0,0,idx};
+  hsize_t size[3] = {1, dims[1],dims[2]};
+  hsize_t start[3] = {idx, 0,0};
   space.selectHyperslab(H5S_SELECT_SET, size, start);
   
   H5::DataSpace imgspace(3, size);
@@ -322,7 +322,7 @@ void Datastore::appendRawImage(hsize_t w, hsize_t h, void *imgdata)
     
     space.getSimpleExtentDims(dims, maxdims);
     
-    idx = dims[2];
+    idx = dims[0];
   }
   
   writeRawImage(idx, w, h, imgdata);

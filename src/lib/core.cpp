@@ -38,7 +38,7 @@ int combinedTypePlaneCount(BaseType type, DataOrg org, DataOrder order)
       switch (order) {
         case DataOrder::RGB   : return 3;
         default:
-          abort();
+          return 1;
       }
     case DataOrg::INTERLEAVED : return 1;
     case DataOrg::BAYER_2x2   : return 1;

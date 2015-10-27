@@ -10,7 +10,7 @@ endfunction(createEnumStrings)
 
 set(DataType     "INVALID,UINT8,UINT16")
 set(DataOrg      "INVALID,PLANAR,INTERLEAVED,BAYER_2x2")
-set(DataOrder    "INVALID,RGGB,BGGR,GBRG,GRBG,RGB")
+set(DataOrder    "INVALID,NONE,RGGB,BGGR,GBRG,GRBG,RGB")
 set(ExtrType     "INVALID,LINE")
 set(CalibPattern "INVALID,CHECKERBOARD,HDMARKER")
 set(DistModel    "INVALID,CV8,LINES")
