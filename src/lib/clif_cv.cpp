@@ -400,4 +400,21 @@ namespace clif {
       }
     }
   }
+  
+static cv::Mat mat_2d_from_3d(const cv::Mat *m, int ch)
+{
+  //step is already in bytes!
+  return cv::Mat(m->size[1], m->size[2], m->depth(), m->data + ch*m->step[0]);
+}
+  
+void cvt_3d2Interleaved(cv::Mat *in, cv::Mat *out)
+{
+  std::vector<cv::Mat> channels(in->size[0]);
+  
+  for(int i=0;i<in->size[0];i++)
+    channels[i] = mat_2d_from_3d(in, i);
+
+  cv::merge(channels, *out);
+}
+  
 }

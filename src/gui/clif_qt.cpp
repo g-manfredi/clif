@@ -6,7 +6,7 @@ namespace clif {
   
   using namespace cv;
   
-  QImage  cvMatToQImage( const cv::Mat &inMat )
+  QImage  clifMatToQImage( const cv::Mat &inMat )
   {
     switch ( inMat.type() )
     {
@@ -23,7 +23,7 @@ namespace clif {
       {
           QImage image( inMat.data, inMat.cols, inMat.rows, inMat.step, QImage::Format_RGB888 );
 
-          return image.rgbSwapped();
+          return image;
       }
 
       // 8-bit, 1 channel
@@ -53,13 +53,18 @@ namespace clif {
     return QImage();
 }
   
-  void readQImage(Datastore *store, uint idx, QImage &img, int flags)
+  void readQImage(Datastore *store, const std::vector<int> idx, QImage &img, int flags)
   {
-    Mat m;
-    readCvMat(store, idx, m, flags | CVT_8U);
+    Mat img_3d, img_2d;
+    store->readImage(idx, &img_3d, flags | CVT_8U);
+    cvt_3d2Interleaved(&img_3d, &img_2d);
+    
+    //FIXME should not be necessary
+    img_2d *= 1.0/256.0;
+    img_2d.convertTo(img_2d, CV_8U);
     
     //FIXME zero copy memory handling?
-    img = cvMatToQImage(m).copy();
+    img = clifMatToQImage(img_2d).copy();
   }
   
   void readEPI(clif::Subset3d *set, QImage &img, int line, double disp, int flags)
@@ -68,7 +73,7 @@ namespace clif {
     set->readEPI(m, line, disp, ClifUnit::PIXELS, flags | CVT_8U);
     
     //FIXME zero copy memory handling?
-    img = cvMatToQImage(m).copy();
+    img = clifMatToQImage(m).copy();
   }
   
 }

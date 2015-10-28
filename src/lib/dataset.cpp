@@ -104,7 +104,7 @@ void Dataset::open(H5::H5File &f_, std::string name)
     return;
   }
   
-  Datastore::open(this, "data");
+  Datastore::open(this, "data", "format");
   addStore(this);
   
   H5::Group group = f.openGroup(_path.c_str());

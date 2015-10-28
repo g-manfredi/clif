@@ -114,5 +114,68 @@ void h5_create_path_groups(H5::H5File &f, boost::filesystem::path path)
     }
   }
 }
+
+
+BaseType PredType_to_native_BaseType(H5::PredType type)
+{    
+  switch (type.getClass()) {
+    case H5T_STRING : return BaseType::STRING;
+    case H5T_INTEGER : return BaseType::INT;
+    case H5T_FLOAT: return BaseType::DOUBLE;
+    default:
+      abort();
+  }
+  
+  printf("ERROR: unknown argument type!\n");
+  abort();
+}
+
+BaseType hid_t_to_native_BaseType(hid_t type)
+{
+  switch (H5Tget_class(type)) {
+    case H5T_STRING : return BaseType::STRING;
+    case H5T_INTEGER :
+      switch (H5Tget_size(type)) {
+        case 1 : 
+          if (H5Tget_sign(type) != H5T_SGN_NONE)
+            abort();
+          return BaseType::UINT8;
+        case 2 :
+          if (H5Tget_sign(type) != H5T_SGN_NONE)
+            abort();
+          return BaseType::UINT16;
+        case 3 :
+        case 4 :
+          if (H5Tget_sign(type) == H5T_SGN_NONE)
+            abort();
+          return BaseType::INT;
+      }
+    case H5T_FLOAT: 
+      if (H5Tget_size(type) == 4)
+        return BaseType::FLOAT;
+      else if (H5Tget_size(type) == 8)
+        return BaseType::DOUBLE;
+      break;
+    default:
+      printf("ERROR: unknown argument type!\n");
+      abort();
+  }
+}
+
+H5::PredType BaseType_to_PredType(BaseType type)
+{
+  switch (type) {
+    case BaseType::STRING : return H5::PredType::C_S1;
+    case BaseType::UINT8 : return H5::PredType::NATIVE_B8;
+    case BaseType::UINT16 : return H5::PredType::NATIVE_B16;
+    case BaseType::INT : return H5::PredType::NATIVE_INT;
+    case BaseType::FLOAT: return H5::PredType::NATIVE_FLOAT;
+    case BaseType::DOUBLE: return H5::PredType::NATIVE_DOUBLE;
+    default:
+    printf("ERROR: unknown argument type!\n");
+      abort();
+  }
+}
+
   
 }

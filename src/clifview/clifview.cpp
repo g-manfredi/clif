@@ -171,6 +171,7 @@ void ClifView::on_actionOpen_triggered()
   }
 }
 
+//FIXME multi-dim!
 void ClifView::setView(DatasetRoot *root, int idx)
 {
     if (!root)
@@ -181,7 +182,10 @@ void ClifView::setView(DatasetRoot *root, int idx)
         case 2 : flags = UNDISTORT; break;
     }
 
-    readQImage(root->dataset, idx, curview_q, flags);
+    std::vector<int> n_idx(root->dataset->dims(),0);
+    n_idx[3] = idx;
+    
+    readQImage(root->dataset, n_idx, curview_q, flags);
 
     ui->viewer->setImage(curview_q);
 }

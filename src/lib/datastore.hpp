@@ -25,7 +25,7 @@ public:
     void link(const Datastore *other, Dataset *dataset);
     
     //open existing datastore
-    void open(Dataset *dataset, std::string path);
+    void open(Dataset *dataset, std::string path, const std::string format_group = std::string());
     
     void writeRawImage(uint idx, hsize_t w, hsize_t h, void *data);
     void appendRawImage(hsize_t w, hsize_t h, void *data);
@@ -34,6 +34,9 @@ public:
     void writeChannel(const std::vector<int> &idx, cv::Mat *img);
     void writeImage(const std::vector<int> &idx, cv::Mat *img);
     void appendImage(cv::Mat *img);
+    
+    void readImage(const std::vector<int> &idx, cv::Mat *img, int flags = 0);
+    void readChannel(const std::vector<int> &idx, cv::Mat *channel, int flags = 0);
     
     void setDims(int dims);
     
@@ -78,13 +81,15 @@ public:
     }
     
   protected:
-    void init();
-    void init(int w, int h, int chs, int extra_dims, BaseType type = BaseType::INVALID);
+    //initialization
+    void init_write(const std::vector<int> &idx, cv::Mat *img);
+    void create_types(BaseType type = BaseType::INVALID);
+    void create_dims_imgs(int w, int h, int chs);
+    void create_store();
     
     BaseType _type = BaseType::INVALID;
     DataOrg _org = DataOrg::INVALID;
     DataOrder _order = DataOrder::INVALID;
-    int _channels = 0;
     
     H5::DataSet _data;
     std::string _path;

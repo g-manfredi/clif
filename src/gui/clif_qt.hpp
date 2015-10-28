@@ -13,7 +13,7 @@ namespace clif {
 /** \defgroup clif_cv OpenCV Bindings
 *  @{
 */
-CLIF_EXPORT void readQImage(clif::Datastore *store, uint idx, QImage &img, int flags = 0);
+CLIF_EXPORT void readQImage(Datastore *store, const std::vector<int> idx, QImage &img, int flags);
 CLIF_EXPORT void readEPI(clif::Subset3d *set, QImage &img, int line, double disp, int flags = 0);
 /**
  *  @}

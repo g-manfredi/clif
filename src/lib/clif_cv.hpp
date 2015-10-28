@@ -22,6 +22,8 @@ namespace clif {
 
   void writeCvMat(Datastore *store, uint idx, hsize_t w, hsize_t h, void *data);
   
+  void cvt_3d2Interleaved(cv::Mat *in, cv::Mat *out);
+  
 /**
  *  @}
  */
