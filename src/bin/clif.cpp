@@ -274,27 +274,27 @@ int main(const int argc, const char *argv[])
     
     set->writeAttributes();
     
+    //set dims for 3d LG (imgs are 3d themselves...)
+    set->setDims(4);
     for(uint i=0;i<input_imgs.size();i++) {
       printf("store idx %d: %s\n", i, input_imgs[i].c_str());
       Mat img = imread(input_imgs[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+      assert(img.size().width && img.size().height);
       if (img.channels() == 3)
         cvtColor(img, img, COLOR_BGR2RGB);
-      int w = img.size().width;
-      int h = img.size().height;
-      set->appendRawImage(w, h, img.data);
+      set->appendImage(&img);
     }
     
     if (input_calib_imgs.size()) {
       Datastore *calib_store = set->createCalibStore();
+      calib_store->setDims(4);
       
       for(uint i=0;i<input_calib_imgs.size();i++) {
         printf("store calib img %d: %s\n", i, input_calib_imgs[i].c_str());
         Mat img = imread(input_calib_imgs[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
         if (img.channels() == 3)
           cvtColor(img, img, COLOR_BGR2RGB);
-        int w = img.size().width;
-        int h = img.size().height;
-        calib_store->appendRawImage(w, h, img.data);
+        calib_store->appendImage(&img);
       }
     }
     
@@ -340,7 +340,7 @@ int main(const int argc, const char *argv[])
       Dataset *in_set = f_in.openDataset(0);
         
       char buf[4096];
-      for(int c=0;c<in_set->Datastore::count();c++) {
+      for(int c=0;c<in_set->Datastore::imgCount();c++) {
         Mat img;
         sprintf(buf, clif_extract_images[i].c_str(), c);
         printf("store idx %d: %s\n", c, buf);

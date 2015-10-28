@@ -25,7 +25,7 @@ public:
     
     //allocate correct type
     if (*channels == NULL)
-      *channels = new std::vector<vigra::MultiArrayView<2, T>>(store->channels());
+      *channels = new std::vector<vigra::MultiArrayView<2, T>>(store->imgChannels());
     
     //read
     std::vector<cv::Mat> cv_channels;
@@ -59,7 +59,7 @@ public:
     
     //allocate correct type
     if (*channels == NULL)
-      *channels = new std::vector<vigra::MultiArray<2, T>>(subset->dataset()->channels());
+      *channels = new std::vector<vigra::MultiArray<2, T>>(subset->dataset()->imgChannels());
     
     //read
     std::vector<cv::Mat> cv_channels;

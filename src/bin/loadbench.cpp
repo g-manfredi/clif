@@ -70,7 +70,7 @@ int main(const int argc, const char *argv[])
   //std::vector<cv::Mat> channels;
   Mat channels;
   
-  for(int i=0;i<in_set->Datastore::count();i++)
+  for(int i=0;i<in_set->Datastore::imgCount();i++)
     readCvMat(in_set, i, channels, UNDISTORT);
 
   return EXIT_SUCCESS;

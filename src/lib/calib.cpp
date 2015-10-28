@@ -37,18 +37,18 @@ namespace clif {
         assert(imgs);
         
         //FIXME range!
-        for(int j=0;j<imgs->count();j++) {
+        for(int j=0;j<imgs->imgCount();j++) {
           vector<Point2f> corners;
           readCvMat(imgs, j, img, CVT_8U | CVT_GRAY | DEMOSAIC);    
           
           int succ = findChessboardCorners(img, Size(size[0],size[1]), corners, CV_CALIB_CB_ADAPTIVE_THRESH+CV_CALIB_CB_NORMALIZE_IMAGE+CALIB_CB_FAST_CHECK+CV_CALIB_CB_FILTER_QUADS);
           
           if (succ) {
-            printf("found %6lu corners (img %d/%d)\n", corners.size(), j, imgs->count());
+            printf("found %6lu corners (img %d/%d)\n", corners.size(), j, imgs->imgCount());
             cornerSubPix(img, corners, Size(8,8), Size(-1,-1), TermCriteria(cv::TermCriteria::MAX_ITER | cv::TermCriteria::EPS,100,0.0001));
           }
           else
-            printf("found      0 corners (img %d/%d)\n", j, imgs->count());
+            printf("found      0 corners (img %d/%d)\n", j, imgs->imgCount());
             
           ipoints.push_back(std::vector<Point2f>());
           wpoints.push_back(std::vector<Point2f>());

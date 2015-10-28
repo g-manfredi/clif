@@ -67,7 +67,7 @@ int main(const int argc, const char *argv[])
   FlexChannels<2> img;
 
   for(int i=0;i<10000;i++)
-    readEPI(subset, img, i % in_set->Datastore::count(), 5.0, ClifUnit::PIXELS, 0, Interpolation::LINEAR);
+    readEPI(subset, img, i % in_set->Datastore::imgCount(), 5.0, ClifUnit::PIXELS, 0, Interpolation::LINEAR);
 
   return EXIT_SUCCESS;
 }

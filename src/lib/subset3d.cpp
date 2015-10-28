@@ -176,12 +176,12 @@ void Subset3d::readEPI(cv::Mat &m, int line, double disparity, ClifUnit unit, in
   cv::Mat tmp;
   readCvMat(_data, 0, tmp, flags | UNDISTORT, scale);
 
-  m = cv::Mat::zeros(cv::Size(tmp.size().width, _data->clif::Datastore::count()), tmp.type());
+  m = cv::Mat::zeros(cv::Size(tmp.size().width, _data->clif::Datastore::imgCount()), tmp.type());
   
-  for(int i=0;i<_data->clif::Datastore::count();i++)
+  for(int i=0;i<_data->clif::Datastore::imgCount();i++)
   {      
     //FIXME rounding?
-    double d = step*(i-_data->clif::Datastore::count()/2);
+    double d = step*(i-_data->clif::Datastore::imgCount()/2);
     
     if (abs(d) >= tmp.size().width)
       continue;
@@ -215,7 +215,7 @@ void Subset3d::readEPI(std::vector<cv::Mat> &channels, int line, double disparit
   std::vector<cv::Mat> tmp;
   readCvMat(_data, 0, tmp, flags | UNDISTORT, scale);
   w = tmp[0].size().width;
-  h = _data->clif::Datastore::count();
+  h = _data->clif::Datastore::imgCount();
 
   channels.resize(tmp.size());
   
@@ -264,29 +264,21 @@ void Subset3d::readEPI(std::vector<cv::Mat> &channels, int line, double disparit
 
 int Subset3d::EPICount()
 {
-  //FIXME use extrinsics group size! (for cross type...)
-
-  int size[2];
-  
-  _data->imgSize(size);
-  
+  //FIXME use extrinsics group size! (for cross type...)  
   //FIXME depends on rotation!
-  return size[1];
+  return _data->extent()[1];
 }
 
 int Subset3d::EPIWidth()
 {
-  int size[2];
-  
-  _data->imgSize(size);
-  
   //FIXME depends on rotation!
-  return size[0];
+  return _data->extent()[0];
 }
 
 int Subset3d::EPIHeight()
 {
-  return _data->clif::Datastore::count();
+  //FIXME use extrinsics group size! (for cross type...)  
+  return _data->clif::Datastore::imgCount();
 }
 
 }

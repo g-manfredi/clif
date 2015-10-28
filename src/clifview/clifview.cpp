@@ -234,7 +234,7 @@ void ClifView::on_tree_itemActivated(QTreeWidgetItem *item, int column)
     root->openDataset();
     ui->menuTools->actions().at(0)->setEnabled(true);
     
-    ui->datasetSlider->setMaximum(root->dataset->Datastore::count()-1);
+    ui->datasetSlider->setMaximum(root->dataset->Datastore::imgCount()-1);
     ui->datasetSlider->setValue(0);
     
     on_datasetSlider_valueChanged(0);

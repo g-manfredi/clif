@@ -1,29 +1,31 @@
 #include "datastore.hpp"
 
 #include "clif.hpp"
-
 #include "dataset.hpp"
 
-//#include "clif.hpp"
 
+#include "opencv2/highgui/highgui.hpp"
 namespace clif {
 
 //FIXME wether dataset already exists and overwrite?
 //FIXME set remaining members!
-void Datastore::create(std::string path, Dataset *dataset)
+void Datastore::create(std::string path, Dataset *dataset, const std::string format_group)
 {
   assert(dataset);
   
   _type = BaseType::INVALID; 
   _org = DataOrg(-1);
   _order = DataOrder(-1); 
+  _channels = 0;
     
   _data = H5::DataSet();
   _path = path;
   _dataset = dataset;
-
-  _imgsize[0] = -1;
-  _imgsize[1] = -1;
+  
+  _format_group = format_group;
+  
+  _readonly = false;
+  _memonly = false;
 }
 
 
@@ -75,23 +77,14 @@ void Datastore::create(std::string path, Dataset *dataset)
                       H5PredType(_type), space, prop);
 }*/
 
-void Datastore::create(std::string path, Dataset *dataset, cv::Mat &m)
+void Datastore::create(std::string path, Dataset *dataset, cv::Mat &m, const std::string format_group)
 {  
-  _type = BaseType(CvDepth2BaseType(m.depth())); 
-  _org = DataOrg(-1);
-  _order = DataOrder(-1); 
-    
-  _data = H5::DataSet();
-  _path = path;
-  _dataset = dataset;
+  create(path, dataset, format_group);
   
   _readonly = false;
   _memonly = true;
   
   _mat = m;
-
-  _imgsize[0] = -1;
-  _imgsize[1] = -1;
 }
 
 //read store into m 
@@ -197,8 +190,135 @@ void Datastore::link(const Datastore *other, Dataset *dataset)
   }  
 }
 
+static void get_format_fields(Dataset *set, path format_group, DataOrg &org, DataOrder &order, int &channels)
+{
+  channels = 0;
+  set->getEnum(format_group / "organisation", org);
+  set->getEnum(format_group / "order",        order);
+  
+  if (org <= DataOrg::INVALID)
+    org = DataOrg::PLANAR;
+  
+  if (order <= DataOrder::INVALID) {
+    if (channels > 1) {
+      printf("ERROR: unspecified channel order with > 1 channels!\n");
+      abort();
+    }
+    channels = 1;
+  }
+  
+  if (org == DataOrg::PLANAR)
+    switch (order) {
+      case DataOrder::RGB : channels = 3;
+      case DataOrder::SINGLE : channels = 1;
+      case DataOrder::RGGB :
+      case DataOrder::BGGR :
+      case DataOrder::GBRG :
+      case DataOrder::GRBG :
+        printf("ERROR: use of planar organisation with bayer pattern ordering!");
+        abort();
+    }
+  else if (org == DataOrg::BAYER_2x2)
+    channels = 1;
+}
+
+//generic init
+//all dimensions which are zero will be set to H5S_UNLIMITED rest is fixed
+//per default will chunk using first two dims
+void Datastore::init()
+{  
+  path dataset_path = _dataset->path() / _path;
+  
+  if (h5_obj_exists(_dataset->f, dataset_path.generic_string())) {
+    //FIXME
+    printf("FIXME dataset already exists, check size?");
+    _data = _dataset->f.openDataSet(dataset_path.generic_string());
+    return;
+  }
+  
+  hsize_t *dims = new hsize_t[_extent.size()];
+  hsize_t *maxdims = new hsize_t[_extent.size()];
+  
+  for(int i=0;i<_extent.size();i++)
+    if (_extent[i]) {
+      dims[_extent.size()-i-1] = _extent[i];
+      maxdims[_extent.size()-i-1] = _extent[i];
+    }
+    else {
+      dims[_extent.size()-i-1] = 0;
+      maxdims[_extent.size()-i-1] = H5S_UNLIMITED;
+    }
+  
+  h5_create_path_groups(_dataset->f, path(dataset_path.generic_string().c_str()).parent_path());
+  
+  H5::DSetCreatPropList prop; 
+  
+  //chunking fixed for now
+  if (_extent.size() >= 3 && _extent[0] > 1 && _extent[1] > 1) {
+    hsize_t *chunk_dims = new hsize_t[_extent.size()];
+    for(int i=0;i<2;i++)
+      chunk_dims[_extent.size()-i-1] = _extent[i];
+    for(int i=2;i<_extent.size();i++)
+      chunk_dims[_extent.size()-i-1] = 1;
+        
+    prop.setChunk(_extent.size(), chunk_dims);
+    delete chunk_dims;
+  }
+  //prop.setDeflate(6);
+  /*unsigned int szip_options_mask = H5_SZIP_NN_OPTION_MASK;
+  unsigned int szip_pixels_per_block = 16;
+  prop.setSzip(szip_options_mask, szip_pixels_per_block);*/
+  
+  H5::DataSpace space(_extent.size(), dims, maxdims);
+  
+  _data = _dataset->f.createDataSet(dataset_path.generic_string(), 
+                      H5PredType(_type), space, prop);
+  
+  delete dims;
+  delete maxdims;
+}
+
+//init store for image storage
+void Datastore::init(int w, int h, int chs, int extra_dims, BaseType type)
+{
+  _extent.resize(3+extra_dims);
+  
+  if (_format_group.size()) {
+    get_format_fields(_dataset, _format_group, _org, _order, _channels);
+    if (type > BaseType::INVALID && type != _type) {
+      printf("ERROR: supplied type differs from specification in format group!\n");
+      abort();
+    }
+    if (_channels != chs) {
+      printf("ERROR: supplied channel count differs from specification in format group!\n");
+      abort();
+    }
+  }
+  else {
+    if (type <= BaseType::INVALID) {
+      printf("ERROR: no type specifid on datastore init!\n");
+      abort();
+    }
+    _type = type;
+    _org = DataOrg::PLANAR;
+    _order = DataOrder::SINGLE;
+    _channels = chs;
+  }
+  
+  _extent[0] = w;
+  _extent[1] = h;
+  _extent[2] = _channels;
+  
+  for(int i=0;i<extra_dims;i++)
+    _extent[i+3] = 0;
+  
+  _basesize = _extent;
+  
+  init();
+}
+
 //FIXME set all members!
-void Datastore::init(hsize_t w, hsize_t h)
+/*void Datastore::init(hsize_t w, hsize_t h)
 {
   _dataset->getEnum("format/type",         _type);
   _dataset->getEnum("format/organisation", _org);
@@ -232,11 +352,11 @@ void Datastore::init(hsize_t w, hsize_t h)
   unsigned int szip_pixels_per_block = 16;
   prop.setSzip(szip_options_mask, szip_pixels_per_block);*/
   
-  H5::DataSpace space(3, dims, maxdims);
+  /*H5::DataSpace space(3, dims, maxdims);
   
   _data = _dataset->f.createDataSet(dataset_path.generic_string(), 
                       H5PredType(_type), space, prop);
-}
+}*/
 
 //FIXME scale!
 void * Datastore::cache_get(int idx, int flags, float scale)
@@ -288,8 +408,10 @@ void Datastore::writeRawImage(uint idx, hsize_t w, hsize_t h, void *imgdata)
 {
   assert(!_readonly);
   
-  if (!valid())
-    init(w, h);
+  //if (!valid())
+    //FIXME how to specify dimensionality?
+    //init_from_attributes(w, h, 1);
+  //FIXME FIXTHIS
   
   H5::DataSpace space = _data.getSpace();
   hsize_t dims[3];
@@ -328,6 +450,109 @@ void Datastore::appendRawImage(hsize_t w, hsize_t h, void *imgdata)
   writeRawImage(idx, w, h, imgdata);
 }
 
+hsize_t *new_h5_dim_vec_from_extent(std::vector<int> extent)
+{
+  hsize_t *v = new hsize_t[extent.size()];
+  
+  for(int i=0;i<extent.size();i++)
+    v[i] = extent[extent.size()-i-1];
+  
+  return v;
+}
+
+void Datastore::writeChannel(const std::vector<int> &idx, cv::Mat *channel)
+{
+  hsize_t *dims = NULL;
+  H5::DataSpace space = _data.getSpace();
+  bool extend = false;
+  hsize_t *size;
+  hsize_t *start;
+  std::vector<int> ch_size(idx.size(), 1);
+  
+  assert(idx.size() == _extent.size());
+  assert(channel->isContinuous());
+  
+  for(int i=0;i<idx.size();i++)
+    if (_extent[i] <= idx[i]) {
+      extend = true;
+      _extent[i] = idx[i]+1;
+    }
+  
+  if (extend) {
+    dims = new_h5_dim_vec_from_extent(_extent);
+    _data.extend(dims);
+    space = _data.getSpace();
+  }
+  
+  ch_size[0] = _basesize[0];
+  ch_size[1] = _basesize[1];
+  
+  size = new_h5_dim_vec_from_extent(ch_size);
+  start = new_h5_dim_vec_from_extent(idx);
+  
+  space.selectHyperslab(H5S_SELECT_SET, size, start);
+  
+  H5::DataSpace imgspace(idx.size(), size);
+  
+  printf("actual write!\n");
+  _data.write(channel->data, H5PredType(_type), imgspace, space);
+}
+
+void Datastore::setDims(int dims)
+{
+  _extent.resize(0);
+  _extent.resize(dims);
+  
+  _basesize = _extent;
+}
+
+void Datastore::writeImage(const std::vector<int> &idx, cv::Mat *img)
+{
+  if (_type <= BaseType::INVALID)
+    init(img->size().width, img->size().height, img->channels(), idx.size()-3, CvDepth2BaseType(img->depth()));
+  
+  assert(img->channels() == _channels);
+  assert(idx[0] == 0);
+  assert(idx[1] == 0);
+  assert(idx[2] == 0);
+  
+  if (img->dims == 2) {
+    if (img->channels() == 1)
+      writeChannel(idx, img);
+    else {
+      std::vector<cv::Mat> channels;
+      std::vector<int> ch_idx = idx;
+      
+      cv::split(*img,channels);
+      for(int i=0;i<channels.size();i++) {
+        ch_idx[2] = i;
+        writeChannel(ch_idx, &channels[i]);
+      }
+    }
+  }
+  else {
+    printf("FIXME direct 3-d img write!\n");
+    abort();
+  }
+}
+
+
+void Datastore::appendImage(cv::Mat *img)
+{  
+  if (!_extent.size()) {
+    printf("ERROR datastore must have dimension!\n");
+    abort();
+  }
+  
+  if (_type <= BaseType::INVALID)
+    init(img->size().width, img->size().height, img->channels(), _extent.size()-3, CvDepth2BaseType(img->depth()));
+  
+  //default to append at idx 3 (next image)
+  std::vector<int> idx(_extent.size(), 0);
+  idx[3] = _extent[3];
+  writeImage(idx, img);
+}
+
 //FIXME implement 8-bit conversion if requested
 void Datastore::readRawImage(uint idx, hsize_t w, hsize_t h, void *imgdata)
 {
@@ -351,88 +576,45 @@ void Datastore::readRawImage(uint idx, hsize_t w, hsize_t h, void *imgdata)
 
 bool Datastore::valid() const
 {
-  if (_data.getId() == H5I_INVALID_HID)
+  //FIXME memonly?
+  if (_type <= BaseType::INVALID)
     return false;
   return true;
 }
 
-void Datastore::size(int s[3]) const
-{
-  H5::DataSpace space = _data.getSpace();
-  assert(space.getSimpleExtentNdims() == 3);
-  hsize_t dims[3];
-  
-  space.getSimpleExtentDims(dims);
-  
-  s[0] = dims[2];
-  s[1] = dims[1];
-  s[2] = dims[0];
-}
-
 int Datastore::dims() const
 {
-  assert(!_memonly);
-  
-  H5::DataSpace space = _data.getSpace();
-  return space.getSimpleExtentNdims();
+  return _extent.size();
 }
 
-void Datastore::fullsize(std::vector<int> &size) const
+//when intepreting as image store
+int Datastore::imgCount()
 {
-  H5::DataSpace space = _data.getSpace();
-  int dimcount = dims();
+  int count = 1;
+  for(int i=3;i<_extent.size();i++)
+    count *= _extent[i];
   
-  size.resize(dimcount);
-  
-  hsize_t *dims = new hsize_t[dimcount];
-  
-  space.getSimpleExtentDims(dims);
-
-  for(int i=0;i<dimcount;i++)
-    size[i] = dims[dimcount-i-1];
-  
-  delete dims;
+  return count;
 }
-
-
-int Datastore::count()
+// 
+//when intepreting as image store
+int Datastore::imgChannels()
 {
-  int store_size[3];
-  size(store_size);
-  
-  return store_size[2];
+  return _extent[2];
 }
 
-void Datastore::imgSize(int s[2])
+const std::vector<int>& Datastore::extent() const
 {
-  if (_imgsize[0] == -1) {
-    int store_size[3];
-    size(store_size);
-    
-    s[0] = store_size[0]/combinedTypeElementCount(_type,_org,_order);
-    s[1] = store_size[1]/combinedTypePlaneCount(_type,_org,_order); 
-    _imgsize[0] = s[0];
-    _imgsize[1] = s[1];
-  }
-  else {
-    s[0] = _imgsize[0];
-    s[1] = _imgsize[1];
-  }
+  return _extent;
 }
-
 
 std::ostream& operator<<(std::ostream& out, const Datastore& a)
-{
-  int dimcount = a.dims();
-  std::vector<int> dims;
-  
-  assert(dimcount);
-  
-  a.fullsize(dims);
-  
-  for(int i=0;i<dimcount-1;i++)
-    out << dims[i] << " x ";
-  out << dims[dimcount-1];
+{  
+  assert(a._extent.size());
+
+  for(int i=0;i<a._extent.size()-1;i++)
+    out << a._extent[i] << " x ";
+  out << a._extent[a._extent.size()-1];
   
   return out;
 }

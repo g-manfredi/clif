@@ -8,12 +8,8 @@
 namespace clif {
   
   cv::Size imgSize(Datastore *store)
-  {    
-    int size[2];
-    
-    store->imgSize(size);
-    
-    return cv::Size(size[0],size[1]);
+  {     
+    return cv::Size(store->extent()[0],store->extent()[1]);
   }
     
   //FIXME only power to scales at the moment
@@ -200,7 +196,7 @@ namespace clif {
   void readCvMat(Datastore *store, uint idx, std::vector<cv::Mat> &outm, int flags, float scale)
   {
     cv::Size size = imgSize(store);
-    int ch_input = store->channels();
+    int ch_input = store->imgChannels();
     int ch_count = proc_ch_count(ch_input, flags);
     
     if (flags & UNDISTORT) {

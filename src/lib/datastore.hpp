@@ -11,15 +11,15 @@ class Dataset;
 //representation of a "raw" clif datset - mostly the images
 class Datastore {
 public:
-    Datastore() { _imgsize[0] = -1; _imgsize[1] = -1; };
+    Datastore() {};
     
     //create new datastore
-    void create(std::string path, Dataset *dataset);
+    void create(std::string path, Dataset *dataset, const std::string format_group = std::string());
     
     //create new datastore with specified size and type
     //void create(std::string path, Dataset *dataset, BaseType type, int dims, int *size);
     //create from opencv matrix
-    void create(std::string path, Dataset *dataset, cv::Mat &m);
+    void create(std::string path, Dataset *dataset, cv::Mat &m, const std::string format_group = std::string());
     
     //create this datastore as a link to other in dataset - dataset is then readonly!
     void link(const Datastore *other, Dataset *dataset);
@@ -31,6 +31,12 @@ public:
     void appendRawImage(hsize_t w, hsize_t h, void *data);
     void readRawImage(uint idx, hsize_t w, hsize_t h, void *data);
     
+    void writeChannel(const std::vector<int> &idx, cv::Mat *img);
+    void writeImage(const std::vector<int> &idx, cv::Mat *img);
+    void appendImage(cv::Mat *img);
+    
+    void setDims(int dims);
+    
     //read store into m 
     void read(cv::Mat &m);
     //write m into store
@@ -39,13 +45,12 @@ public:
     int imgMemSize();
     
     bool valid() const;
-    void size(int s[3]) const;
-    void imgSize(int s[2]);
     int dims() const;
+    const std::vector<int>& extent() const;
     void fullsize(std::vector<int> &size) const;
     
-    int channels() { return 3; } //FIXME grayscale!?
-    int count();
+    int imgChannels();
+    int imgCount();
     
     const std::string& getDatastorePath() const { return _path; };
     
@@ -73,11 +78,13 @@ public:
     }
     
   protected:
-    void init(hsize_t w, hsize_t h);
+    void init();
+    void init(int w, int h, int chs, int extra_dims, BaseType type = BaseType::INVALID);
     
-    BaseType _type; 
-    DataOrg _org;
-    DataOrder _order;
+    BaseType _type = BaseType::INVALID;
+    DataOrg _org = DataOrg::INVALID;
+    DataOrder _order = DataOrder::INVALID;
+    int _channels = 0;
     
     H5::DataSet _data;
     std::string _path;
@@ -93,7 +100,12 @@ private:
   
   cv::Mat _mat;
   
-  int _imgsize[2];
+  std::string _format_group;
+  
+  //size of img (w chanels, others 0)
+  std::vector<int> _basesize;
+  //actual dataset size
+  std::vector<int> _extent;
 };
 
 }

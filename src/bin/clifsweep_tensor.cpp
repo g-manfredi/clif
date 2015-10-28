@@ -254,10 +254,8 @@ int main(const int argc, const char *argv[])
   
   int size[2];
   
-  in_set->imgSize(size);
-  
-  size[0] *= scale;
-  size[1] *= scale;
+  size[0] = in_set->extent()[0]*scale;
+  size[1] = in_set->extent()[1]*scale;;
   
   double focal_length[2];
   
@@ -268,7 +266,7 @@ int main(const int argc, const char *argv[])
   
   
   Mat img;
-  readCvMat(in_set, in_set->Datastore::count()/2, img, UNDISTORT, scale);
+  readCvMat(in_set, in_set->Datastore::imgCount()/2, img, UNDISTORT, scale);
   
   Mat epi;
   Mat depth = Mat::zeros(Size(size[0], size[1]), CV_64F);
