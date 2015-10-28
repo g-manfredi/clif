@@ -32,7 +32,7 @@ if (CLIF_BUILD_QT)
    add_executable (${PROJECT_NAME} ${srcs} ${hdrs} ${Boost_INCLUDE_DIRS})
    target_link_libraries(${PROJECT_NAME} clif-qt ${Qt5Widgets_LIBRARIES} ${Boost_LIBRARIES})
 
-   install(TARGETS clifview DESTINATION bin )
+   install(TARGETS ${PROJECT_NAME} DESTINATION bin )
 endif()
 
 #cmake_minimum_required(VERSION 2.8.11)
