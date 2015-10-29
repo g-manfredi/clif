@@ -26,7 +26,7 @@ namespace clif {
 #define CVT_GRAY 8
 #define NO_DISK_CACHE 16
 #define NO_MEM_CACHE 32
-#define CACHE_FORCE_MEMCPY 64
+#define FORCE_REUSE 64
 
 
 #define PROCESS_FLAGS_MAX 128

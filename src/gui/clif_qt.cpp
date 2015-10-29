@@ -58,12 +58,8 @@ namespace clif {
   void readQImage(Datastore *store, const std::vector<int> idx, QImage &img, int flags)
   {
     Mat img_3d, img_2d;
-    store->readImage(idx, &img_3d, flags | CVT_8U);
+    store->readImage(idx, &img_3d, flags | CVT_8U | CVT_GRAY);
     cvt_3d2Interleaved(&img_3d, &img_2d);
-    
-    //FIXME should not be necessary
-    img_2d *= 1.0/256.0;
-    img_2d.convertTo(img_2d, CV_8U);
     
     //FIXME zero copy memory handling?
     img = clifMatToQImage(img_2d).copy();

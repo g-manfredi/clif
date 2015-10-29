@@ -550,12 +550,10 @@ bool Datastore::mat_cache_get(cv::Mat *m, const std::vector<int> idx, int flags,
   if (!cached)
     return false;
   
-  if (flags & CACHE_FORCE_MEMCPY)
+  if (flags & FORCE_REUSE)
     cached->copyTo(*m);
   else
     *m = *cached;
-  
-  printf("got cached!\n");
   
   return true;
 }
@@ -572,6 +570,41 @@ void Datastore::mat_cache_set(cv::Mat *m, const std::vector<int> idx, int flags,
   else
     m->copyTo(*cached);
   cache_set(idx,flags,extra_flags,scale,cached);
+}
+
+
+void apply_flags_channel(cv::Mat *in, cv::Mat *out, int flags)
+{
+  if (in->depth() == CV_16U && flags & CVT_8U) {
+    *in *= 1.0/256.0;
+    in->convertTo(*out, CV_8U);
+  }
+}
+
+static cv::Mat mat_2d_from_3d(const cv::Mat &m, int ch)
+{
+  //step is already in bytes!
+  return cv::Mat(m.size[1], m.size[2], m.depth(), m.data + ch*m.step[0]);
+}
+
+void apply_flags_image(cv::Mat *in, cv::Mat *out, int flags)
+{
+  if (flags & CVT_GRAY) {
+    assert(out->size[0] == 1);
+    //FIXME set sum type depending on input types?
+    cv::Mat sum(out->size[1], out->size[2], CV_32F, cv::Scalar(0.0));
+    
+    for(int i=0;i<in->size[0];i++) {
+      cv::Mat channel = mat_2d_from_3d(*in, i);
+      cv::add(sum, channel, sum, cv::noArray(), sum.type());
+    }
+    
+    sum *= 1.0/in->size[0];
+    cv::Mat out2d = mat_2d_from_3d(*out, 0);
+    sum.convertTo(out2d, out->type());
+  }
+  else
+    assert(out->data == in->data);
 }
 
 void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int flags)
@@ -600,16 +633,23 @@ void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int f
   
   H5::DataSpace imgspace(idx.size(), size);
   
-  channel->create(_basesize[1], _basesize[0], BaseType2CvDepth(_type));
-  _data.read(channel->data, H5PredType(_type), imgspace, space);
+  //just stores memory buffer again
+  uchar *data = channel->data;
+  cv::Mat reader = *channel;
+  
+  //if reader has right format nothing will happens else, we can read correct format and convert later
+  reader.create(_basesize[1], _basesize[0], BaseType2CvDepth(_type));
+
+  //find out wether format changed?
+  _data.read(reader.data, H5PredType(_type), imgspace, space);
+  
+  apply_flags_channel(&reader, channel, flags);
+  if (data != channel->data && FORCE_REUSE) {
+    printf("memcpy desired but image data in wrong format!\n");
+    abort();
+  }
   
   mat_cache_set(channel,idx,flags,CACHE_CONT_MAT_CHANNEL,scale);
-}
-
-static cv::Mat mat_2d_from_3d(const cv::Mat &m, int ch)
-{
-  //step is already in bytes!
-  return cv::Mat(m.size[1], m.size[2], m.depth(), m.data + ch*m.step[0]);
 }
 
 //this is always a 3d mat!
@@ -625,20 +665,39 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags)
   if (mat_cache_get(img,idx,flags,CACHE_CONT_MAT_IMG,scale))
     return; 
   
-  img->create(3,imgsize,BaseType2CvDepth(_type));
+  int depth = BaseType2CvDepth(_type);
+  int channels = _basesize[2];
+  
+  if (flags & CVT_8U)
+    depth = CV_8U;
+  
+  if (flags & CVT_GRAY)
+    channels = 1;
+  
+  imgsize[0] = channels;
+  
+  img->create(3,imgsize,depth);
   //for now
   assert(img->isContinuous());
   
   std::vector<int> ch_idx = idx;
   
+  cv::Mat reader = *img;
+  //use full number of channels!
+  imgsize[0] = _basesize[2];
+  //create unprocessed
+  reader.create(3,imgsize,depth);
+  
   //FIXME where to handle demosaicing?
   //solution: readImage always sets flags to DEMOSAIC and
   //returns a image with channel count Datastore::imgChannels() (which detects channel count depending on bayer/non-bayer)
   for(int i=0;i<_extent[2];i++) {
-    cv::Mat channel = mat_2d_from_3d(*img, i);
+    cv::Mat channel = mat_2d_from_3d(reader, i);
     ch_idx[2] = i;    
-    readChannel(ch_idx, &channel, flags | NO_MEM_CACHE);
+    readChannel(ch_idx, &channel, flags | NO_MEM_CACHE | FORCE_REUSE);
   }
+  
+  apply_flags_image(&reader, img, flags);
   
   mat_cache_set(img,idx,flags,CACHE_CONT_MAT_IMG,scale);
 }
