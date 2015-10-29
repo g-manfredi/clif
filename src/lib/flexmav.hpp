@@ -25,6 +25,7 @@ namespace clif {
       case BaseType::FLOAT :  F<float>()(args...); break;
       case BaseType::DOUBLE : F<double>()(args...); break;
       default:
+        printf("unknown type %d\n", type);
         abort();
     }
   }
@@ -38,6 +39,7 @@ namespace clif {
       case BaseType::FLOAT :  return F<float>()(args...); break;
       case BaseType::DOUBLE : return F<double>()(args...); break;
       default:
+        printf("unknown type %d\n", type);
         abort();
     }
   }
@@ -116,10 +118,13 @@ namespace clif {
       if (_data)
         call<delete_dispatcher>(this);
       for (int i=0;i<DIM;i++)
-        _shape[i] = _mat.size[DIM-i-1];
-      if (input.channels() != 1)
+        _shape[i] = input.size[DIM-i-1];
+      if (input.channels() != 1) {
+        printf("input channels != 1\n");
         abort();
+      }
       _type = CvDepth2BaseType(input.depth());
+      assert(_type > BaseType::INVALID);
       _mat = input;
       _data = call_r<new_dispatcher,void*>(this, &_mat);
     }
