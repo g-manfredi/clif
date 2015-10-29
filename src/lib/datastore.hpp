@@ -70,6 +70,7 @@ public:
     void *cache_get(const std::vector<int> idx, int flags, int extra_flags, float scale);
     void cache_set(const std::vector<int> idx, int flags, int extra_flags, float scale, void *data);
     bool mat_cache_get(cv::Mat *m, const std::vector<int> idx, int flags, int extra_flags, float scale);
+    void mat_cache_set(cv::Mat *m, const std::vector<int> idx, int flags, int extra_flags, float scale);
 
     template<template<typename> class F, typename R, typename ... ArgTypes> R call(ArgTypes ... args)
     {

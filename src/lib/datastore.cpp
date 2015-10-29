@@ -555,7 +555,23 @@ bool Datastore::mat_cache_get(cv::Mat *m, const std::vector<int> idx, int flags,
   else
     *m = *cached;
   
+  printf("got cached!\n");
+  
   return true;
+}
+
+void Datastore::mat_cache_set(cv::Mat *m, const std::vector<int> idx, int flags, int extra_flags, float scale)
+{
+  if (flags & NO_MEM_CACHE)
+    return;
+  
+  cv::Mat *cached = new cv::Mat();
+  //operator= should references if self-managed matrix, else copies
+  if (m->refcount)
+    *cached = *m;
+  else
+    m->copyTo(*cached);
+  cache_set(idx,flags,extra_flags,scale,cached);
 }
 
 void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int flags)
@@ -583,35 +599,11 @@ void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int f
   space.selectHyperslab(H5S_SELECT_SET, size, start);
   
   H5::DataSpace imgspace(idx.size(), size);
-
-  cv::Mat *cached = NULL;
-  if ((flags & NO_MEM_CACHE) == 0) {
-    cached = new cv::Mat();
-    cached->create(_basesize[1], _basesize[0], BaseType2CvDepth(_type));
-  }
   
-  if (cached) {
-    _data.read(cached->data, H5PredType(_type), imgspace, space);
-  }
-  else {
-    //FIXME check if format/size fits and return error if not!
-    _data.read(channel->data, H5PredType(_type), imgspace, space);
-  }
+  channel->create(_basesize[1], _basesize[0], BaseType2CvDepth(_type));
+  _data.read(channel->data, H5PredType(_type), imgspace, space);
   
-  if (cached) {
-    if (flags & CACHE_FORCE_MEMCPY) {
-      cached->copyTo(*channel);
-      *channel = cached->clone();
-    }
-    else
-      *channel = *cached;
-  }
-  
-  //FIXME apply/imlement image operations
-  
-  if (cached) {
-    cache_set(idx,flags,CACHE_CONT_MAT_CHANNEL,scale,cached);
-  }
+  mat_cache_set(channel,idx,flags,CACHE_CONT_MAT_CHANNEL,scale);
 }
 
 static cv::Mat mat_2d_from_3d(const cv::Mat &m, int ch)
@@ -645,8 +637,10 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags)
   for(int i=0;i<_extent[2];i++) {
     cv::Mat channel = mat_2d_from_3d(*img, i);
     ch_idx[2] = i;    
-    readChannel(ch_idx, &channel, flags | CACHE_FORCE_MEMCPY);
+    readChannel(ch_idx, &channel, flags | NO_MEM_CACHE);
   }
+  
+  mat_cache_set(img,idx,flags,CACHE_CONT_MAT_IMG,scale);
 }
 
 void Datastore::setDims(int dims)
