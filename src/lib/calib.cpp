@@ -37,15 +37,22 @@ namespace clif {
         assert(imgs);
         
         //FIXME range!
+        
+        assert(imgs->dims() == 4);
+        
         for(int j=0;j<imgs->imgCount();j++) {
           vector<Point2f> corners;
-          readCvMat(imgs, j, img, CVT_8U | CVT_GRAY | DEMOSAIC);    
+          std::vector<int> idx(4, 0);
+          idx[3] = j;
+          imgs->readImage(idx, &img, CVT_8U | CVT_GRAY | DEMOSAIC);
           
-          int succ = findChessboardCorners(img, Size(size[0],size[1]), corners, CV_CALIB_CB_ADAPTIVE_THRESH+CV_CALIB_CB_NORMALIZE_IMAGE+CALIB_CB_FAST_CHECK+CV_CALIB_CB_FILTER_QUADS);
+          cv::Mat ch = clifMat_channel(img, 0);
+          
+          int succ = findChessboardCorners(ch, Size(size[0],size[1]), corners, CV_CALIB_CB_ADAPTIVE_THRESH+CV_CALIB_CB_NORMALIZE_IMAGE+CALIB_CB_FAST_CHECK+CV_CALIB_CB_FILTER_QUADS);
           
           if (succ) {
             printf("found %6lu corners (img %d/%d)\n", corners.size(), j, imgs->imgCount());
-            cornerSubPix(img, corners, Size(8,8), Size(-1,-1), TermCriteria(cv::TermCriteria::MAX_ITER | cv::TermCriteria::EPS,100,0.0001));
+            cornerSubPix(ch, corners, Size(8,8), Size(-1,-1), TermCriteria(cv::TermCriteria::MAX_ITER | cv::TermCriteria::EPS,100,0.0001));
           }
           else
             printf("found      0 corners (img %d/%d)\n", j, imgs->imgCount());
@@ -123,9 +130,9 @@ namespace clif {
     set->setAttribute(calib_path / "type", "CV8");
     set->setAttribute(calib_path / "projection", f, 2);
     set->setAttribute(calib_path / "projection_center", c, 2);
-	set->setAttribute(calib_path / "opencv_distortion", dist);
-
-	return true;
+    set->setAttribute(calib_path / "opencv_distortion", dist);
+    
+    return true;
   }
 
 }

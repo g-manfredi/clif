@@ -58,7 +58,7 @@ namespace clif {
   void readQImage(Datastore *store, const std::vector<int> idx, QImage &img, int flags)
   {
     Mat img_3d, img_2d;
-    store->readImage(idx, &img_3d, flags | CVT_8U | CVT_GRAY);
+    store->readImage(idx, &img_3d, flags | CVT_8U);
     cvt_3d2Interleaved(&img_3d, &img_2d);
     
     //FIXME zero copy memory handling?
@@ -68,7 +68,7 @@ namespace clif {
   void readEPI(clif::Subset3d *set, QImage &img, int line, double disp, int flags)
   {
     Mat m;
-    set->readEPI(m, line, disp, ClifUnit::PIXELS, flags | CVT_8U);
+    set->readEPI(&m, line, disp, ClifUnit::PIXELS, flags | CVT_8U);
     
     //FIXME zero copy memory handling?
     img = clifMatToQImage(m).copy();

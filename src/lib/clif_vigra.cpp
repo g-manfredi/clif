@@ -29,7 +29,8 @@ public:
     
     //read
     std::vector<cv::Mat> cv_channels;
-    readCvMat(store, idx, cv_channels, flags, scale);
+
+    //readCvMat(store, idx, cv_channels, flags, scale);
     
     //store in multiarrayview
     for(uint c=0;c<(*channels)->size();c++)
@@ -45,7 +46,9 @@ void readImage(Datastore *store, uint idx, void **channels, int flags, float sca
 void readImage(Datastore *store, uint idx, FlexChannels<2> &channels, int flags, float scale)
 {
   std::vector<cv::Mat> cv_channels;
-  readCvMat(store, idx, cv_channels, flags, scale);
+  //readCvMat(store, idx, cv_channels, flags, scale);
+  //FIXME readimage
+  abort();
   
   channels.create(imgShape(store), store->type(), cv_channels);
 }
@@ -63,7 +66,9 @@ public:
     
     //read
     std::vector<cv::Mat> cv_channels;
-    subset->readEPI(cv_channels, line, disparity, unit, flags, interp, scale);
+    //subset->readEPI(cv_channels, line, disparity, unit, flags, interp, scale);
+    //FIXME readimage
+    abort();
     
     vigra::Shape2 shape(cv_channels[0].size().width, cv_channels[0].size().height);
     
@@ -84,7 +89,9 @@ void readEPI(Subset3d *subset, void **channels, int line, double disparity, Clif
 void readEPI(Subset3d *subset, FlexChannels<2> &channels, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
 {
   std::vector<cv::Mat> cv_channels;
-  subset->readEPI(cv_channels, line, disparity, unit, flags, interp, scale);
+  //subset->readEPI(cv_channels, line, disparity, unit, flags, interp, scale);
+  //FIXME readimage
+  abort();
   
   vigra::Shape2 shape(cv_channels[0].size().width, cv_channels[0].size().height);
   
@@ -94,7 +101,9 @@ void readEPI(Subset3d *subset, FlexChannels<2> &channels, int line, double dispa
 void readEPI(Subset3d *subset, int channel, FlexMAV<2> &img, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
 {
   std::vector<cv::Mat> cv_channels;
-  subset->readEPI(cv_channels, line, disparity, unit, flags, interp, scale);
+      //FIXME readimage
+    abort();
+  //subset->readEPI(cv_channels, line, disparity, unit, flags, interp, scale);
   
   vigra::Shape2 shape(cv_channels[0].size().width, cv_channels[0].size().height);
   
@@ -103,8 +112,9 @@ void readEPI(Subset3d *subset, int channel, FlexMAV<2> &img, int line, double di
 
 void readEPI(Subset3d *subset, FlexMAV<3> &img, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
 {
-  std::vector<cv::Mat> cv_channels;
-  subset->readEPI(cv_channels, line, disparity, unit, flags, interp, scale);
+  std::vector<cv::Mat> cv_channels;    //FIXME readimage
+    abort();
+  //subset->readEPI(cv_channels, line, disparity, unit, flags, interp, scale);
   
   vigra::Shape3 shape(cv_channels[0].size().width, cv_channels[0].size().height, cv_channels.size());
   

@@ -320,7 +320,12 @@ class Attributes {
      * @name Reading Enums
      */
     //@{
-    template<typename S, typename T> T getEnum(S name) { return get(name)->getEnum<T>(); };
+    template<typename S, typename T> T getEnum(S name)
+    { 
+      Attribute *found = get(name);
+      if (!found) return T(0);
+      return found->getEnum<T>();
+    };
     template<typename S, typename T> void getEnum(S name, T &val) { val = getEnum<S,T>(name); };
     //@}
     

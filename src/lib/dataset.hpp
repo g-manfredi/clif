@@ -32,6 +32,7 @@ class Intrinsics {
 class Dataset : public Attributes, public Datastore {
   public:
     Dataset() {};
+    ~Dataset();
     //FIXME use only open/create methods?
     //Dataset(H5::H5File &f_, std::string path);
     

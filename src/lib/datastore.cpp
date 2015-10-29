@@ -6,8 +6,7 @@
 #define CACHE_CONT_MAT_CHANNEL 1
 #define CACHE_CONT_MAT_IMG 2
 
-
-#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
 namespace clif {
 
 //FIXME wether dataset already exists and overwrite?
@@ -202,6 +201,8 @@ static void get_format_fields(Dataset *set, path format_group, DataOrg &org, Dat
     org = DataOrg::PLANAR;
   
   if (order <= DataOrder::INVALID) {
+    printf("no order!\n");
+    abort();
     order = DataOrder::INVALID;
     channels = 1;
   }
@@ -423,19 +424,18 @@ void Datastore::open(Dataset *dataset, std::string path_, const std::string form
     else
       _basesize[i] = maxdims[_extent.size()-i-1];
   }
-  
+
   int channels;
   if (_format_group.size()) {
     get_format_fields(dataset, format_group, _org, _order, channels);
     if (_basesize.size() >= 2 && _basesize[2] && channels && channels != _basesize[2]) {
       printf("ERROR: channel count mismatch detected!\n");
+      abort();
     }
   }
   _type = hid_t_to_native_BaseType(H5Dget_type(_data.getId()));
   
   assert(_type > BaseType::INVALID);
-  
-  printf("%d channels\n", _basesize[2]);
 }
 
 //FIXME chekc w,h?
@@ -573,11 +573,36 @@ void Datastore::mat_cache_set(cv::Mat *m, const std::vector<int> idx, int flags,
 }
 
 
-void apply_flags_channel(cv::Mat *in, cv::Mat *out, int flags)
+void apply_flags_channel(Datastore *store, cv::Mat *in, cv::Mat *out, int flags)
 {
-  if (in->depth() == CV_16U && flags & CVT_8U) {
-    *in *= 1.0/256.0;
-    in->convertTo(*out, CV_8U);
+  //for format conversion
+  cv::Mat *curr = in;
+  
+  if (flags & CVT_8U) {
+    if (curr->depth() == CV_8U) {} //do nothing
+    else if (curr->depth() == CV_16U) {
+      *curr *= 1.0/256.0;
+      curr->convertTo(*out, CV_8U);
+    }
+    else {
+      printf("FIXME implement 8bit conversion!\n");
+      abort();
+    }
+    curr = out;
+  }
+  
+  if (flags & UNDISTORT) {
+    Intrinsics *i = &store->getDataset()->intrinsics;
+    //FIXMe getundistmap (should be) generic!
+    if (i->model == DistModel::INVALID) {} // do nothing
+    else if (i->model == DistModel::CV8) {
+      cv::Mat *chap = i->getUndistMap(0, in->size[1], in->size[0]);
+      //cv::undistort(*ch,newm, i->cv_cam, i->cv_dist);
+      //cv::setNumThreads(0);
+      remap(*curr, *out, *chap, cv::noArray(), cv::INTER_LINEAR);
+    }
+    else
+      printf("distortion model not supported: %s\n", enum_to_string(i->model));
   }
 }
 
@@ -643,7 +668,7 @@ void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int f
   //find out wether format changed?
   _data.read(reader.data, H5PredType(_type), imgspace, space);
   
-  apply_flags_channel(&reader, channel, flags);
+  apply_flags_channel(this, &reader, channel, flags);
   if (data != channel->data && FORCE_REUSE) {
     printf("memcpy desired but image data in wrong format!\n");
     abort();
@@ -812,6 +837,7 @@ int Datastore::imgCount()
 //when intepreting as image store
 int Datastore::imgChannels()
 {
+  //FIXME bayer pattern!
   return _extent[2];
 }
 

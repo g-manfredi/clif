@@ -179,6 +179,7 @@ clif::Dataset* ClifFile::createDataset(const std::string name)
 {
   clif::Dataset *set = new clif::Dataset();
   set->create(f, name);
+  datasets.push_back(name);
   return set;
 }
 

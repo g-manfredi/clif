@@ -14,7 +14,7 @@ namespace clif {
     
   //FIXME only power to scales at the moment
   //FIXME store file and dataset name in cache!
-  void readCvMat(Datastore *store, uint idx, cv::Mat &outm, int flags, float scale)
+  /*void readCvMat(Datastore *store, uint idx, cv::Mat &outm, int flags, float scale)
   {
     if (flags & UNDISTORT) {
       flags |= DEMOSAIC;
@@ -149,7 +149,7 @@ namespace clif {
     }
     
     outm = *m;
-  }
+  }*/
   
   static inline int proc_ch_count(int channels, int flags)
   {
@@ -173,7 +173,7 @@ namespace clif {
   }
   
   //FIXME delete cache on endianess change!
-  void readMatV(std::vector<cv::Mat> *channels, const char *path)
+  /*void readMatV(std::vector<cv::Mat> *channels, const char *path)
   {
     uint size = (*channels)[0].elemSize() * (*channels)[0].total();
     FILE *f = fopen(path, "r");
@@ -190,10 +190,10 @@ namespace clif {
     for(uint c=0;c<channels->size();c++)
       if (size != fwrite((*channels)[c].data, 1, size, f))
         abort();
-  }
+  }*/
   
   //planar version
-  void readCvMat(Datastore *store, uint idx, std::vector<cv::Mat> &outm, int flags, float scale)
+  /*void readCvMat(Datastore *store, uint idx, std::vector<cv::Mat> &outm, int flags, float scale)
   {
     cv::Size size = imgSize(store);
     int ch_input = store->imgChannels();
@@ -345,7 +345,7 @@ namespace clif {
     }
     
     outm = *m;
-  }
+  }*/
   
   
   void writeCalibPoints(Dataset *set, std::string calib_set_name, std::vector<std::vector<cv::Point2f>> &imgpoints, std::vector<std::vector<cv::Point2f>> &worldpoints)
@@ -415,6 +415,19 @@ void cvt_3d2Interleaved(cv::Mat *in, cv::Mat *out)
     channels[i] = mat_2d_from_3d(in, i);
 
   cv::merge(channels, *out);
+}
+
+int clifMat_channels(cv::Mat &img)
+{
+  assert(img.dims == 3);
+  return img.size[0];
+}
+
+cv::Mat clifMat_channel(cv::Mat &m, int ch)
+{
+  assert(m.dims == 3);
+  
+  return cv::Mat(m.size[1], m.size[2], m.depth(), m.data + ch*m.step[0]);
 }
   
 }

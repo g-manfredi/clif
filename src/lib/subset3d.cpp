@@ -164,44 +164,12 @@ template<typename T> void warp_1d_nearest(Mat in, Mat out, int offset)
   memcpy(out_ptr+start, in_ptr+start-offset, size);
 }*/
 
-void Subset3d::readEPI(cv::Mat &m, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
-{
-  double step;
-  
-  if (unit == ClifUnit::PIXELS)
-    step = disparity;
-  else
-    step = depth2disparity(disparity, scale); //f[0]*step_length/disparity*scale;
-  
-  cv::Mat tmp;
-  readCvMat(_data, 0, tmp, flags | UNDISTORT, scale);
 
-  m = cv::Mat::zeros(cv::Size(tmp.size().width, _data->clif::Datastore::imgCount()), tmp.type());
-  
-  for(int i=0;i<_data->clif::Datastore::imgCount();i++)
-  {      
-    //FIXME rounding?
-    double d = step*(i-_data->clif::Datastore::imgCount()/2);
-    
-    if (abs(d) >= tmp.size().width)
-      continue;
-    
-    readCvMat(_data, i, tmp, flags | UNDISTORT, scale);
-    
-    if (tmp.type() == CV_16UC3)
-      warp_1d_linear_rgb<Vec3us>(tmp.row(line), m.row(i), d);
-    else if (tmp.type() == CV_8UC3)
-      warp_1d_linear_rgb<Vec3b>(tmp.row(line), m.row(i), d);
-    //Matx23d warp(1,0,d, 0,1,0);
-    //warpAffine(tmp.row(line), m.row(i), warp, m.row(i).size(), CV_INTER_LANCZOS4);
-  }
-}
-
-
-void Subset3d::readEPI(std::vector<cv::Mat> &channels, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
+void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
 {
   int w, h;
   double step;
+  std::vector<int> idx(_data->dims(), 0);
   
   if (unit == ClifUnit::PIXELS)
     step = disparity;
@@ -212,24 +180,32 @@ void Subset3d::readEPI(std::vector<cv::Mat> &channels, int line, double disparit
   if (abs(i_step - step) < 1.0/512.0)
     interp = Interpolation::NEAREST;
   
-  std::vector<cv::Mat> tmp;
-  readCvMat(_data, 0, tmp, flags | UNDISTORT, scale);
-  w = tmp[0].size().width;
+  Mat tmp;
+  idx[3] = 0;
+  //FIXME scale
+  _data->readImage(idx, &tmp, flags | UNDISTORT);
+  w = tmp.size[1];
   h = _data->clif::Datastore::imgCount();
-
-  channels.resize(tmp.size());
   
-  for(uint c=0;c<channels.size();c++) {    
-    channels[c] = cv::Mat(cv::Size(w, h), tmp[0].type());
-    Mat *ch = &channels[c];
+  int epi_size[3];
+  epi_size[2] = w;
+  epi_size[1] = h;
+  epi_size[0] = clifMat_channels(tmp);
+  
+  epi->create(3, epi_size, tmp.type());
+  
+  for(int i=0;i<h;i++) {
+    Mat img;
+    idx[3] = i;
+    _data->readImage(idx, &img, flags | UNDISTORT);
     
-    //TODO fix linear interpolation to reset mat by itself
-    if (interp == Interpolation::LINEAR)
-      channels[c] = cv::Mat::zeros(cv::Size(w, h), tmp[0].type());
-    
-    for(int i=0;i<h;i++)
-    {      
-      readCvMat(_data, i, tmp, flags | UNDISTORT, scale);
+    for(uint c=0;c<_data->imgChannels();c++) {    
+      cv::Mat channel = clifMat_channel(img, c);
+      cv::Mat epi_ch = clifMat_channel(*epi, c);
+      
+      //TODO fix linear interpolation to reset mat by itself
+      if (interp == Interpolation::LINEAR)
+        epi_ch.setTo(0);
       
       //FIXME rounding?
       double d = step*(i-h/2);
@@ -242,20 +218,20 @@ void Subset3d::readEPI(std::vector<cv::Mat> &channels, int line, double disparit
       
       switch (interp) {
         case Interpolation::LINEAR :
-          _data->call<warp_1d_linear_dispatcher>(&tmp[c], ch, line, i, d);
+          _data->call<warp_1d_linear_dispatcher>(&channel, &epi_ch, line, i, d);
           break;
         case Interpolation::NEAREST :
         default :
-          _data->call<warp_1d_nearest_dispatcher>(&tmp[c], ch, line, i, d);
+          _data->call<warp_1d_nearest_dispatcher>(&channel, &epi_ch, line, i, d);
       }
       
       /*if (tmp[c].type() == CV_16UC1)
-        //warp_1d_nearest<uint16_t>(tmp[c].row(line), ch->row(i), d);
-        warp_1d_linear<uint16_t>(tmp[c].row(line), ch->row(i), d);
-      else if (tmp[c].type() == CV_8UC1)
-        warp_1d_linear<uint8_t>(tmp[c].row(line), ch->row(i), d);
-      else
-        abort();*/
+       *       //warp_1d_nearest<uint16_t>(tmp[c].row(line), ch->row(i), d);
+       *       warp_1d_linear<uint16_t>(tmp[c].row(line), ch->row(i), d);
+       *     else if (tmp[c].type() == CV_8UC1)
+       *       warp_1d_linear<uint8_t>(tmp[c].row(line), ch->row(i), d);
+       *     else
+       *       abort();*/
       //Matx23d warp(1,0,d, 0,1,0);
       //warpAffine(tmp.row(line), m.row(i), warp, m.row(i).size(), CV_INTER_LANCZOS4);
     }

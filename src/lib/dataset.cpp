@@ -166,6 +166,15 @@ void Dataset::create(H5::H5File &f_, std::string name)
   Datastore::create("data", this);
 }
 
+Dataset::~Dataset()
+{
+  uint intent;
+  H5Fget_intent(f.getId(), &intent);
+  
+  if (intent != H5F_ACC_RDONLY)
+    Attributes::write(f,_path);
+}
+
 //link second dataset into the place of current dataset
 void Dataset::link(const Dataset *other)
 {  

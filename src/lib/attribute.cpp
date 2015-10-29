@@ -35,8 +35,8 @@ static void read_attr(Attribute *attr, H5::Group g, std::string basename, std::s
   
   attr->set<hsize_t>(name, dimcount, dims, type, buf);
 
-  delete dims;
-  delete maxdims;
+  delete[] dims;
+  delete[] maxdims;
 }
   
 void Attributes::open(const char *inifile, const char *typefile) 

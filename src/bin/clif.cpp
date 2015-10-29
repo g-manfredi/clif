@@ -256,7 +256,12 @@ int main(const int argc, const char *argv[])
       }
       
       delete in_set;
+      delete set;
+      //FIXME dataset idx!
+      set = f_out.openDataset(0);
     }
+    
+    printf("check1 extent: %p %d %d %d %d\n", set, set->extent()[0], set->extent()[1], set->extent()[2], set->extent()[3]);
     
     for(uint i=0;i<input_inis.size();i++) {
       printf("append ini file!\n");
@@ -272,10 +277,10 @@ int main(const int argc, const char *argv[])
     //FIXME check wether image format was sufficiently defined!
     //FIXME how do we handle overwriting of data?
     
-    set->writeAttributes();
+    //set->writeAttributes();
     
     //set dims for 3d LG (imgs are 3d themselves...)
-    set->setDims(4);
+    //set->setDims(4);
     for(uint i=0;i<input_imgs.size();i++) {
       printf("store idx %d: %s\n", i, input_imgs[i].c_str());
       Mat img = imread(input_imgs[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
@@ -284,6 +289,8 @@ int main(const int argc, const char *argv[])
         cvtColor(img, img, COLOR_BGR2RGB);
       set->appendImage(&img);
     }
+    
+    printf("check2 extent: %p %d %d %d %d\n", set, set->extent()[0], set->extent()[1], set->extent()[2], set->extent()[3]);
     
     if (input_calib_imgs.size()) {
       Datastore *calib_store = set->createCalibStore();
@@ -299,20 +306,15 @@ int main(const int argc, const char *argv[])
     }
     
     if (cliargs_get(args, "detect-patterns")) {
-      delete set;
-      //FIXME does f_out refresh automatically?
-      set = f_out.openDataset(0);
       pattern_detect(set);
-      set->writeAttributes();
+      //set->writeAttributes();
     }
     
     if (cliargs_get(args, "opencv-calibrate")) {
-      delete set;
-      //FIXME does f_out refresh automatically?
-      set = f_out.openDataset(0);
       opencv_calibrate(set);
-      set->writeAttributes();
+      //set->writeAttributes();
     }
+    delete set;
   }
   else {
     
@@ -340,11 +342,14 @@ int main(const int argc, const char *argv[])
       Dataset *in_set = f_in.openDataset(0);
         
       char buf[4096];
-      for(int c=0;c<in_set->Datastore::imgCount();c++) {
+      for(int c=0;c<in_set->imgCount();c++) {
         Mat img;
         sprintf(buf, clif_extract_images[i].c_str(), c);
         printf("store idx %d: %s\n", c, buf);
-        readCvMat(in_set, c, img);
+        std::vector<int> idx(in_set->dims(), 0);
+        idx[3] = c;
+        in_set->readImage(idx, &img);
+        cvt_3d2Interleaved(&img, &img);
         imwrite(buf, img);
       }
       delete in_set;
