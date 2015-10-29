@@ -59,7 +59,6 @@ typedef Vec<ushort, 3> Vec3us;
 
 template<typename V> void warp_1d_linear_rgb(Mat in, Mat out, double offset)
 {
-  
   if (abs(offset) >= in.size().width) {
     return;
   }
@@ -78,7 +77,7 @@ template<typename V> void warp_1d_linear_rgb(Mat in, Mat out, double offset)
   f1 = (offset - (double)off_i)*1024;
   f2 = 1024 - f1;
   
-  for(int i=clamp<int>(off_i, 1, out.size().width-1);i<clamp<int>(out.size().width+off_i, 1, out.size().width-1);i++) {
+  for(int i=clamp<int>(off_i, 1, out.size().width-1);i<clamp<int>(out.size().width+off_i, 1, out.size().width);i++) {
     out_ptr[i] = (f1*(Vec3i)in_ptr[i-off_i] + f2*(Vec3i)in_ptr[i-off_i+1])/1024;
   }
   /*for(int i=0;i<out.size().width;i++) {
@@ -86,7 +85,7 @@ template<typename V> void warp_1d_linear_rgb(Mat in, Mat out, double offset)
   }*/
 }
 
-template<typename T> void warp_1d_linear(Mat *in, Mat *out, int line_in, int line_out, int offset)
+template<typename T> void warp_1d_linear(Mat *in, Mat *out, int line_in, int line_out, double offset)
 {
   
   if (abs(offset) >= in->size().width) {
@@ -107,14 +106,13 @@ template<typename T> void warp_1d_linear(Mat *in, Mat *out, int line_in, int lin
   f1 = (offset - (double)off_i)*1024;
   f2 = 1024 - f1;
   
-  for(int i=clamp<int>(off_i, 1, out->size().width-1);i<clamp<int>(out->size().width+off_i, 1, out->size().width-1);i++) {
+  for(int i=clamp<int>(off_i, 1, out->size().width-1);i<clamp<int>(out->size().width+off_i, 1, out->size().width);i++)
     out_ptr[i] = (f1*(int)in_ptr[i-off_i] + f2*(int)in_ptr[i-off_i+1])/1024;
-  }
 }
 
 template<typename T> class warp_1d_linear_dispatcher {
 public:
-  void operator()(Mat *in, Mat *out, int line_in, int line_out, int offset)
+  void operator()(Mat *in, Mat *out, int line_in, int line_out, double offset)
   {
     warp_1d_linear<T>(in, out, line_in, line_out, offset);
   }
@@ -184,7 +182,7 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, ClifUnit unit, 
   idx[3] = 0;
   //FIXME scale
   _data->readImage(idx, &tmp, flags | UNDISTORT);
-  w = tmp.size[1];
+  w = tmp.size[2];
   h = _data->clif::Datastore::imgCount();
   
   int epi_size[3];
@@ -194,19 +192,22 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, ClifUnit unit, 
   
   epi->create(3, epi_size, tmp.type());
   
+  //TODO fix linear interpolation to reset mat by itself
+  if (interp == Interpolation::LINEAR)
+    epi->setTo(0);
+  
   for(int i=0;i<h;i++) {
     Mat img;
     idx[3] = i;
     _data->readImage(idx, &img, flags | UNDISTORT);
     
-    for(uint c=0;c<_data->imgChannels();c++) {    
+    for(int c=0;c<_data->imgChannels();c++) {    
       cv::Mat channel = clifMat_channel(img, c);
       cv::Mat epi_ch = clifMat_channel(*epi, c);
+      assert(epi_ch.type() == channel.type());
       
-      //TODO fix linear interpolation to reset mat by itself
-      if (interp == Interpolation::LINEAR)
-        epi_ch.setTo(0);
-      
+      assert(channel.size().width == w);
+            
       //FIXME rounding?
       double d = step*(i-h/2);
       
@@ -215,14 +216,17 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, ClifUnit unit, 
       
       //Mat line_in = tmp[c].row(line);
       //Mat line_out = ch->row(i);
+            
+      //channel.row(line).copyTo(epi_ch.row(i));
+      //epi_ch.setTo(255);
       
       switch (interp) {
         case Interpolation::LINEAR :
-          _data->call<warp_1d_linear_dispatcher>(&channel, &epi_ch, line, i, d);
+          callByBaseType<warp_1d_linear_dispatcher>(CvDepth2BaseType(epi_ch.depth()), &channel, &epi_ch, line, i, d);
           break;
         case Interpolation::NEAREST :
         default :
-          _data->call<warp_1d_nearest_dispatcher>(&channel, &epi_ch, line, i, d);
+          callByBaseType<warp_1d_nearest_dispatcher>(CvDepth2BaseType(epi_ch.depth()),&channel, &epi_ch, line, i, d);
       }
       
       /*if (tmp[c].type() == CV_16UC1)
