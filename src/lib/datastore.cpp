@@ -623,11 +623,15 @@ static cv::Mat mat_2d_from_3d(const cv::Mat &m, int ch)
 //this is always a 3d mat!
 void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags)
 {
+  float scale = -1.0;
   int imgsize[3];
   imgsize[2] = _basesize[0];
   imgsize[1] = _basesize[1];
   //FIXME may be changed by flags!
   imgsize[0] = _basesize[2];
+  
+  if (mat_cache_get(img,idx,flags,CACHE_CONT_MAT_IMG,scale))
+    return; 
   
   img->create(3,imgsize,BaseType2CvDepth(_type));
   //for now
