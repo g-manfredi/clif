@@ -3,6 +3,9 @@
 #include "clif.hpp"
 #include "dataset.hpp"
 
+#define CACHE_CONT_MAT_CHANNEL 1
+#define CACHE_CONT_MAT_IMG 2
+
 
 #include "opencv2/highgui/highgui.hpp"
 namespace clif {
@@ -358,7 +361,7 @@ void Datastore::create_dims_imgs(int w, int h, int chs)
 
 //FIXME scale!
 //WARNING idx will change if size changes!
-void * Datastore::cache_get(const std::vector<int> idx, int flags, float scale)
+void * Datastore::cache_get(const std::vector<int> idx, int flags, int extra_flags, float scale)
 {
   uint64_t idx_sum = 0;
   uint64_t mul = 1;
@@ -367,7 +370,7 @@ void * Datastore::cache_get(const std::vector<int> idx, int flags, float scale)
     mul *= _extent[i];
   }
   
-  uint64_t key = (idx_sum * PROCESS_FLAGS_MAX) | flags;
+  uint64_t key = (idx_sum * PROCESS_FLAGS_MAX) | flags | (extra_flags << 16);
   auto it_find = image_cache.find(key);
   
   if (it_find == image_cache.end())
@@ -376,7 +379,7 @@ void * Datastore::cache_get(const std::vector<int> idx, int flags, float scale)
     return it_find->second;
 }
 
-void Datastore::cache_set(const std::vector<int> idx, int flags, float scale, void *data)
+void Datastore::cache_set(const std::vector<int> idx, int flags, int extra_flags, float scale, void *data)
 {  
   uint64_t idx_sum = 0;
   uint64_t mul = 1;
@@ -385,7 +388,7 @@ void Datastore::cache_set(const std::vector<int> idx, int flags, float scale, vo
     mul *= _extent[i];
   }
   
-  uint64_t key = (idx_sum * PROCESS_FLAGS_MAX) | flags;
+  uint64_t key = (idx_sum * PROCESS_FLAGS_MAX) | flags | (extra_flags << 16);
   image_cache[key] = data;
 }
 
@@ -537,6 +540,24 @@ void Datastore::writeChannel(const std::vector<int> &idx, cv::Mat *channel)
   _data.write(channel->data, H5PredType(_type), imgspace, space);
 }
 
+bool Datastore::mat_cache_get(cv::Mat *m, const std::vector<int> idx, int flags, int extra_flags, float scale)
+{
+  if (flags & NO_MEM_CACHE)
+    return false;
+  
+  cv::Mat *cached = (cv::Mat*)cache_get(idx,flags,extra_flags,scale);
+  
+  if (!cached)
+    return false;
+  
+  if (flags & CACHE_FORCE_MEMCPY)
+    cached->copyTo(*m);
+  else
+    *m = *cached;
+  
+  return true;
+}
+
 void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int flags)
 {
   float scale = -1.0;
@@ -549,17 +570,8 @@ void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int f
   
   assert(idx.size() == _extent.size());
   
-  if ((flags & NO_MEM_CACHE) == 0) {
-    cv::Mat *cached = (cv::Mat*)cache_get(idx,flags,scale);
-    if (cached) {
-      if (flags & CACHE_FORCE_MEMCPY)
-        cached->copyTo(*channel);
-      else
-        *channel = *cached;
-      return;
-    }
-  }
-  
+  if (mat_cache_get(channel,idx,flags,CACHE_CONT_MAT_CHANNEL,scale))
+    return; 
 
   
   ch_size[0] = _basesize[0];
@@ -598,7 +610,7 @@ void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int f
   //FIXME apply/imlement image operations
   
   if (cached) {
-    cache_set(idx,flags,scale, cached);
+    cache_set(idx,flags,CACHE_CONT_MAT_CHANNEL,scale,cached);
   }
 }
 

@@ -22,7 +22,7 @@ public:
     void create(std::string path, Dataset *dataset, cv::Mat &m, const std::string format_group = std::string());
     
     //create this datastore as a link to other in dataset - dataset is then readonly!
-    void link(const Datastore *other, Dataset *dataset);
+     void link(const Datastore *other, Dataset *dataset);
     
     //open existing datastore
     void open(Dataset *dataset, std::string path, const std::string format_group = std::string());
@@ -67,8 +67,9 @@ public:
     
     //FIXME delete cache contents on desctructor
     
-    void *cache_get(const std::vector<int> idx, int flags, float scale);
-    void cache_set(const std::vector<int> idx, int flags, float scale, void *data);
+    void *cache_get(const std::vector<int> idx, int flags, int extra_flags, float scale);
+    void cache_set(const std::vector<int> idx, int flags, int extra_flags, float scale, void *data);
+    bool mat_cache_get(cv::Mat *m, const std::vector<int> idx, int flags, int extra_flags, float scale);
 
     template<template<typename> class F, typename R, typename ... ArgTypes> R call(ArgTypes ... args)
     {
