@@ -350,7 +350,7 @@ int main(const int argc, const char *argv[])
         std::vector<int> idx(in_set->dims(), 0);
         idx[3] = c;
         in_set->readImage(idx, &img);
-        cvt_3d2Interleaved(&img, &img);
+        clifMat2cv(&img, &img);
         imwrite(buf, img);
       }
       delete in_set;

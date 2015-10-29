@@ -60,7 +60,7 @@ namespace clif {
   {
     Mat img_3d, img_2d;
     store->readImage(idx, &img_3d, flags | CVT_8U);
-    cvt_3d2Interleaved(&img_3d, &img_2d);
+    clifMat2cv(&img_3d, &img_2d);
     
     //FIXME zero copy memory handling?
     img = clifMatToQImage(img_2d).copy();
@@ -70,7 +70,7 @@ namespace clif {
   {
     Mat img_3d, img_2d;
     set->readEPI(&img_3d, line, disp, Unit::PIXELS, flags | CVT_8U);
-    cvt_3d2Interleaved(&img_3d, &img_2d);
+    clifMat2cv(&img_3d, &img_2d);
     
     //FIXME zero copy memory handling?
     img = clifMatToQImage(img_2d).copy();

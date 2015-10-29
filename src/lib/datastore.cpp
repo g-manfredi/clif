@@ -129,6 +129,11 @@ void Datastore::link(const Datastore *other, Dataset *dataset)
   _path = other->_path;
   _dataset = dataset;
   
+  _extent = other->_extent;
+  _basesize = other->_basesize;
+  
+  _format_group = other->_format_group;
+  
   //just copy opencv matrix - storage is shared (data must no be written from original owner afterwards!)
   if (other->_memonly) {
     //check wether this dataset is memory only

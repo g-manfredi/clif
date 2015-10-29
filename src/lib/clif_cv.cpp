@@ -409,7 +409,7 @@ static cv::Mat mat_2d_from_3d(const cv::Mat *m, int ch)
   return cv::Mat(m->size[1], m->size[2], m->depth(), m->data + ch*m->step[0]);
 }
   
-void cvt_3d2Interleaved(cv::Mat *in, cv::Mat *out)
+void clifMat2cv(cv::Mat *in, cv::Mat *out)
 {
   std::vector<cv::Mat> channels(in->size[0]);
 
