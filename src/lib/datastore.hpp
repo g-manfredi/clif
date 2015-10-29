@@ -67,8 +67,8 @@ public:
     
     //FIXME delete cache contents on desctructor
     
-    void *cache_get(int idx, int flags, float scale);
-    void cache_set(int idx, int flags, float scale, void *data);
+    void *cache_get(const std::vector<int> idx, int flags, float scale);
+    void cache_set(const std::vector<int> idx, int flags, float scale, void *data);
 
     template<template<typename> class F, typename R, typename ... ArgTypes> R call(ArgTypes ... args)
     {

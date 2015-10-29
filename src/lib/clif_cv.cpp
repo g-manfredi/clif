@@ -20,7 +20,7 @@ namespace clif {
       flags |= DEMOSAIC;
     }
     
-    cv::Mat *m = static_cast<cv::Mat*>(store->cache_get(idx,flags,scale));
+    cv::Mat *m = static_cast<cv::Mat*>(NULL);
     if (m) {
       outm = *m;
       return;
@@ -76,7 +76,7 @@ namespace clif {
         m = new cv::Mat();
         *m = cv::imread(cache_path.string(), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
         outm = *m;
-        store->cache_set(idx,flags,scale, m);
+        //store->cache_set(idx,flags,scale, m);
         return;
       }
     }
@@ -141,7 +141,7 @@ namespace clif {
       cv::resize(*m,*m,cv::Point2i(m->size())*scale, cv::INTER_NEAREST);
     }
     
-    store->cache_set(idx,flags,scale, m);
+    //store->cache_set(idx,flags,scale, m);
     
     if (check_cache) {
       create_directories(cache_path.parent_path());
@@ -209,7 +209,7 @@ namespace clif {
     //shortkey_stream << "_" << idx << "_" << flags << " " << scale;
     //shortkey = shortkey_stream.str();
     
-    std::vector<cv::Mat> *m = static_cast<std::vector<cv::Mat>*>(store->cache_get(idx,flags,scale));
+    std::vector<cv::Mat> *m = static_cast<std::vector<cv::Mat>*>(NULL);
     if (m) {
       outm = *m;
       return;
@@ -261,7 +261,7 @@ namespace clif {
         m = new_planar_mats(store, ch_count);
         readMatV(m, cache_path.string().c_str());
         outm = *m;
-        store->cache_set(idx,flags,scale, m);
+        //store->cache_set(idx,flags,scale, m);
         return;
       }
     }
@@ -337,7 +337,7 @@ namespace clif {
       }
     }
     
-    store->cache_set(idx,flags,scale, m);
+    //store->cache_set(idx,flags,scale, m);
     
     if (check_cache) {
       create_directories(cache_path.parent_path());
@@ -410,7 +410,7 @@ static cv::Mat mat_2d_from_3d(const cv::Mat *m, int ch)
 void cvt_3d2Interleaved(cv::Mat *in, cv::Mat *out)
 {
   std::vector<cv::Mat> channels(in->size[0]);
-  
+
   for(int i=0;i<in->size[0];i++)
     channels[i] = mat_2d_from_3d(in, i);
 

@@ -357,9 +357,17 @@ void Datastore::create_dims_imgs(int w, int h, int chs)
 }*/
 
 //FIXME scale!
-void * Datastore::cache_get(int idx, int flags, float scale)
+//WARNING idx will change if size changes!
+void * Datastore::cache_get(const std::vector<int> idx, int flags, float scale)
 {
-  uint64_t key = (idx * PROCESS_FLAGS_MAX) | flags;
+  uint64_t idx_sum = 0;
+  uint64_t mul = 1;
+  for(int i=2;i<idx.size();i++) {
+    idx_sum += idx[i]*mul;
+    mul *= _extent[i];
+  }
+  
+  uint64_t key = (idx_sum * PROCESS_FLAGS_MAX) | flags;
   auto it_find = image_cache.find(key);
   
   if (it_find == image_cache.end())
@@ -368,9 +376,16 @@ void * Datastore::cache_get(int idx, int flags, float scale)
     return it_find->second;
 }
 
-void Datastore::cache_set(int idx, int flags, float scale, void *data)
-{
-  uint64_t key = (idx * PROCESS_FLAGS_MAX) | flags;
+void Datastore::cache_set(const std::vector<int> idx, int flags, float scale, void *data)
+{  
+  uint64_t idx_sum = 0;
+  uint64_t mul = 1;
+  for(int i=2;i<idx.size();i++) {
+    idx_sum += idx[i]*mul;
+    mul *= _extent[i];
+  }
+  
+  uint64_t key = (idx_sum * PROCESS_FLAGS_MAX) | flags;
   image_cache[key] = data;
 }
 
@@ -524,6 +539,7 @@ void Datastore::writeChannel(const std::vector<int> &idx, cv::Mat *channel)
 
 void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int flags)
 {
+  float scale = -1.0;
   hsize_t *dims = NULL;
   H5::DataSpace space = _data.getSpace();
   bool extend = false;
@@ -533,7 +549,18 @@ void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int f
   
   assert(idx.size() == _extent.size());
   
-  channel->create(_basesize[1], _basesize[0], BaseType2CvDepth(_type));
+  if ((flags & NO_MEM_CACHE) == 0) {
+    cv::Mat *cached = (cv::Mat*)cache_get(idx,flags,scale);
+    if (cached) {
+      if (flags & CACHE_FORCE_MEMCPY)
+        cached->copyTo(*channel);
+      else
+        *channel = *cached;
+      return;
+    }
+  }
+  
+
   
   ch_size[0] = _basesize[0];
   ch_size[1] = _basesize[1];
@@ -545,11 +572,34 @@ void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int f
   
   H5::DataSpace imgspace(idx.size(), size);
 
-  _data.read(channel->data, H5PredType(_type), imgspace, space);
+  cv::Mat *cached = NULL;
+  if ((flags & NO_MEM_CACHE) == 0) {
+    cached = new cv::Mat();
+    cached->create(_basesize[1], _basesize[0], BaseType2CvDepth(_type));
+  }
   
-  //FIXME apply image operations
+  if (cached) {
+    _data.read(cached->data, H5PredType(_type), imgspace, space);
+  }
+  else {
+    //FIXME check if format/size fits and return error if not!
+    _data.read(channel->data, H5PredType(_type), imgspace, space);
+  }
   
-  //FIXME cache results
+  if (cached) {
+    if (flags & CACHE_FORCE_MEMCPY) {
+      cached->copyTo(*channel);
+      *channel = cached->clone();
+    }
+    else
+      *channel = *cached;
+  }
+  
+  //FIXME apply/imlement image operations
+  
+  if (cached) {
+    cache_set(idx,flags,scale, cached);
+  }
 }
 
 static cv::Mat mat_2d_from_3d(const cv::Mat &m, int ch)
@@ -567,7 +617,7 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags)
   //FIXME may be changed by flags!
   imgsize[0] = _basesize[2];
   
-  img->create(3, imgsize, BaseType2CvDepth(_type));
+  img->create(3,imgsize,BaseType2CvDepth(_type));
   //for now
   assert(img->isContinuous());
   
@@ -578,11 +628,8 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags)
   //returns a image with channel count Datastore::imgChannels() (which detects channel count depending on bayer/non-bayer)
   for(int i=0;i<_extent[2];i++) {
     cv::Mat channel = mat_2d_from_3d(*img, i);
-    ch_idx[2] = i;
-    
-    printf("read channel %d\n", i);
-    
-    readChannel(ch_idx, &channel, flags);
+    ch_idx[2] = i;    
+    readChannel(ch_idx, &channel, flags | CACHE_FORCE_MEMCPY);
   }
 }
 

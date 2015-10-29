@@ -2,6 +2,8 @@
 
 #include "subset3d.hpp"
 
+#include "opencv2/highgui/highgui.hpp"
+
 namespace clif {
   
   using namespace cv;
