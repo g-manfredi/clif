@@ -112,15 +112,19 @@ void readEPI(Subset3d *subset, int channel, FlexMAV<2> &img, int line, double di
 
 void readEPI(Subset3d *subset, FlexMAV<3> &img, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
 {
-  std::vector<cv::Mat> cv_channels;    //FIXME readimage
-    abort();
-  //subset->readEPI(cv_channels, line, disparity, unit, flags, interp, scale);
+  cv::Mat epi;
   
-  vigra::Shape3 shape(cv_channels[0].size().width, cv_channels[0].size().height, cv_channels.size());
+  subset->readEPI(&epi, line, disparity, unit, flags, interp, scale);
   
-  int size[3] = {cv_channels[0].size().width, cv_channels[0].size().height, cv_channels.size() };
+  img.create(epi);
   
-  cv::Mat img_3d(3, size, cv_channels[0].depth());
+  assert(img.type() > BaseType::INVALID);
+  
+  //vigra::Shape3 shape(cv_channels[0].size().width, cv_channels[0].size().height, cv_channels.size());
+  
+  //int size[3] = {cv_channels[0].size().width, cv_channels[0].size().height, cv_channels.size() };
+  
+  //cv::Mat img_3d(3, size, cv_channels[0].depth());
   /*cv::Mat img_2d(cv::Size(size[0], size[1]), cv_channels[0].depth());
   
   cv::Range range[3];
@@ -138,11 +142,11 @@ void readEPI(Subset3d *subset, FlexMAV<3> &img, int line, double disparity, Clif
   
   memset(img_3d.data, 127, cv_channels[0].elemSize()*cv_channels[0].total()*cv_channels.size());*/
   
-  for(uint c=0;c<cv_channels.size();c++) {
+  /*for(uint c=0;c<cv_channels.size();c++) {
     memcpy(img_3d.data+c*cv_channels[0].elemSize()*cv_channels[0].total(), cv_channels[c].data, cv_channels[c].elemSize()*cv_channels[c].total());
   }
   
-  img.create(shape, subset->dataset()->type(), img_3d);
+  img.create(shape, subset->dataset()->type(), img_3d);*/
 }
 
 }

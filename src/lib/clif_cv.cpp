@@ -426,9 +426,6 @@ int clifMat_channels(cv::Mat &img)
 cv::Mat clifMat_channel(cv::Mat &m, int ch)
 {
   assert(m.dims == 3);
-  
-  printf("%dx%d\n", m.size[2],m.size[1]);
-  
   return cv::Mat(m.size[1], m.size[2], m.depth(), m.data + ch*m.step[0]);
 }
   
