@@ -6,6 +6,9 @@
 
 namespace clif {
   
+class Dataset;
+class Datastore;
+  
 /** \defgroup clif_cv OpenCV Bindings
 *  @{
 */

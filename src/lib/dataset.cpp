@@ -83,17 +83,17 @@ static void datastores_append_group(Dataset *set, std::unordered_map<std::string
 }
 
 //FIXME f could point to core driver (memory only) file!
-void Dataset::open(H5::H5File &f_, std::string name)
+void Dataset::open(ClifFile &f, std::string name)
 {
   _path = std::string("/clif/").append(name);
   _memory_file = false;
-  f = f_;
+  _file = f;
     
   //static_cast<clif::Dataset&>(*this) = clif::Dataset(f, fullpath);
   
-  if (h5_obj_exists(f, _path.c_str())) {
+  if (h5_obj_exists(_file.f, _path.c_str())) {
     //static_cast<Attributes&>(*this) = Attributes(f, _path);
-    Attributes::open(f, _path);
+    Attributes::open(_file.f, _path);
     
     //FIXME specificy which one!?
     load_intrinsics();
@@ -107,7 +107,7 @@ void Dataset::open(H5::H5File &f_, std::string name)
   Datastore::open(this, "data", "format");
   addStore(this);
   
-  H5::Group group = f.openGroup(_path.c_str());
+  H5::Group group = _file.f.openGroup(_path.c_str());
   datastores_append_group(this, _stores, group, _path, std::string());
 }
 
@@ -146,9 +146,9 @@ Datastore *Dataset::getCalibStore()
   boost::filesystem::path dataset_path;
   dataset_path = path() / "calibration/images/data";
   
-  std::cout << dataset_path << clif::h5_obj_exists(f, dataset_path) << calib_images << std::endl;
+  std::cout << dataset_path << clif::h5_obj_exists(f(), dataset_path) << calib_images << std::endl;
   
-  if (!calib_images && clif::h5_obj_exists(f, dataset_path)) {
+  if (!calib_images && clif::h5_obj_exists(f(), dataset_path)) {
     calib_images = new clif::Datastore();
     calib_images->open(this, "calibration/images/data");
   }
@@ -156,29 +156,39 @@ Datastore *Dataset::getCalibStore()
   return calib_images;
 }
 
-void Dataset::create(H5::H5File &f_, std::string name)
+void Dataset::create(ClifFile &f, std::string name)
 {
   _path = std::string("/clif/").append(name);
-  f = f_;
+  _file = f;
   
   //TODO check if already exists and fail if it does?
   
   Datastore::create("data", this);
 }
 
+H5::H5File& Dataset::f()
+{
+  return _file.f;
+}
+
+ClifFile& Dataset::file()
+{
+  return _file;
+}
+
 Dataset::~Dataset()
 {
   uint intent;
-  H5Fget_intent(f.getId(), &intent);
+  H5Fget_intent(f().getId(), &intent);
   
   if (intent != H5F_ACC_RDONLY)
-    Attributes::write(f,_path);
+    Attributes::write(f(),_path);
 }
 
 //link second dataset into the place of current dataset
 void Dataset::link(const Dataset *other)
 {  
-  assert(f.getId() != H5I_INVALID_HID);
+  assert(f().getId() != H5I_INVALID_HID);
   
   attrs = other->attrs;
   
@@ -205,9 +215,9 @@ void Dataset::link(const Dataset *other)
 }
 
 //link second dataset into the place of current dataset
-void Dataset::link(H5::H5File &f_, const Dataset *other)
+void Dataset::link(ClifFile &f, const Dataset *other)
 {
-  f = f_;
+  _file = f;
   
   link(other);
 }
@@ -221,7 +231,7 @@ bool Dataset::memoryFile()
 void Dataset::memory_link(const Dataset *other)
 { 
   _memory_file = true;
-  f = h5_memory_file();
+  _file = h5_memory_file();
   link(other);
 }
 

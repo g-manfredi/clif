@@ -145,12 +145,12 @@ void Datastore::link(const Datastore *other, Dataset *dataset)
       
       path fullpath = _dataset->path() / _path;
       
-      if (h5_obj_exists(_dataset->f, fullpath)) {
+      if (h5_obj_exists(_dataset->f(), fullpath)) {
         printf("TODO overwrite!\n");
         abort();
       }
       
-      h5_create_path_groups(_dataset->f, fullpath.parent_path());
+      h5_create_path_groups(_dataset->f(), fullpath.parent_path());
       
       hsize_t *dims = new hsize_t[_mat.dims];
       for(int i=0;i<_mat.dims;i++)
@@ -164,7 +164,7 @@ void Datastore::link(const Datastore *other, Dataset *dataset)
       if (_mat.channels() != 1)
         abort();
       
-      _data = _dataset->f.createDataSet(fullpath.generic_string().c_str(), 
+      _data = _dataset->f().createDataSet(fullpath.generic_string().c_str(), 
                           H5PredType(CvDepth2BaseType(_mat.depth())), space);
       
       _data.write(_mat.data, H5::DataType(H5PredType(CvDepth2BaseType(_mat.depth()))), space, space);
@@ -181,13 +181,12 @@ void Datastore::link(const Datastore *other, Dataset *dataset)
       _link_path = other->_link_path;
     }
     else {
-      _link_file = other->_dataset->f.getFileName().c_str();
+      _link_file = other->_dataset->file().path().string();
       _link_path = (other->_dataset->path() / other->_path).generic_string();
     }
     
-    h5_create_path_groups(dataset->f, path(_link_path).parent_path().generic_string().c_str());
-    
-    H5Lcreate_external(_link_file.c_str(), _link_path.c_str(), dataset->f.getId(), _link_path.c_str(), H5P_DEFAULT, H5P_DEFAULT);
+    h5_create_path_groups(dataset->f(), path(_link_path).parent_path().generic_string().c_str());
+    H5Lcreate_external(_link_file.c_str(), _link_path.c_str(), dataset->f().getId(), _link_path.c_str(), H5P_DEFAULT, H5P_DEFAULT);
   }  
 }
 
@@ -230,10 +229,10 @@ void Datastore::create_store()
 {
   path dataset_path = _dataset->path() / _path;
   
-  if (h5_obj_exists(_dataset->f, dataset_path.generic_string())) {
+  if (h5_obj_exists(_dataset->f(), dataset_path.generic_string())) {
     //FIXME
     printf("FIXME dataset already exists, check size?");
-    _data = _dataset->f.openDataSet(dataset_path.generic_string());
+    _data = _dataset->f().openDataSet(dataset_path.generic_string());
     abort();
   }
   
@@ -250,7 +249,7 @@ void Datastore::create_store()
       maxdims[_extent.size()-i-1] = H5S_UNLIMITED;
     }
   
-  h5_create_path_groups(_dataset->f, path(dataset_path.generic_string().c_str()).parent_path());
+  h5_create_path_groups(_dataset->f(), path(dataset_path.generic_string().c_str()).parent_path());
   
   H5::DSetCreatPropList prop; 
   
@@ -272,7 +271,7 @@ void Datastore::create_store()
   
   H5::DataSpace space(_extent.size(), dims, maxdims);
   
-  _data = _dataset->f.createDataSet(dataset_path.generic_string(), 
+  _data = _dataset->f().createDataSet(dataset_path.generic_string(), 
                       H5PredType(_type), space, prop);
   
   delete dims;
@@ -400,12 +399,12 @@ void Datastore::open(Dataset *dataset, std::string path_, const std::string form
       
   path dataset_path = dataset->path() / path_;
       
-  if (!h5_obj_exists(dataset->f, dataset_path.generic_string().c_str())) {
+  if (!h5_obj_exists(dataset->f(), dataset_path.generic_string().c_str())) {
     printf("error: could not find requested datset: %s\n", dataset_path.generic_string().c_str());
     return;
   }
   
-  _data = dataset->f.openDataSet(dataset_path.generic_string());
+  _data = dataset->f().openDataSet(dataset_path.generic_string());
   
   H5::DataSpace space = _data.getSpace();
   

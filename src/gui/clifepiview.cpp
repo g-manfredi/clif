@@ -11,6 +11,7 @@
 #include "clif_qt.hpp"
 
 #include "subset3d.hpp"
+#include "dataset.hpp"
 
 namespace clif {
 

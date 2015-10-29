@@ -13,6 +13,8 @@
 #include "clif.hpp"
 #include "hdf5.hpp"
 
+#include "dataset.hpp"
+
 namespace clif {
   
   //same as callByBaseType but without char (cause vigra doesn't like it :-))
@@ -203,12 +205,12 @@ namespace clif {
     {
       boost::filesystem::path fullpath = set->path() / path;
       
-      if (h5_obj_exists(set->f, fullpath)) {
+      if (h5_obj_exists(set->f(), fullpath)) {
         printf("TODO overwrite!\n");
         abort();
       }
       
-      h5_create_path_groups(set->f, fullpath.parent_path());
+      h5_create_path_groups(set->f(), fullpath.parent_path());
       
       hsize_t dims[DIM];
       for(int i=0;i<DIM;i++)
@@ -219,7 +221,7 @@ namespace clif {
       
       H5::DataSpace space(DIM, dims, dims);
       
-      H5::DataSet h5set = set->f.createDataSet(fullpath.generic_string().c_str(), 
+      H5::DataSet h5set = set->f().createDataSet(fullpath.generic_string().c_str(), 
                           H5PredType(_type), space);
       
       h5set.write(_mat.data, H5::DataType(H5PredType_Native(_type)), space, space);

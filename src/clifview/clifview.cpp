@@ -1,8 +1,6 @@
 #include "clifview.h"
 #include "ui_clifview.h"
 
-#include "attribute.hpp"
-
 #include <QTimer>
 #include <QFileDialog>
 #include <QGraphicsPixmapItem>
@@ -10,6 +8,7 @@
 
 #include "clifepiview.hpp"
 #include "clif_qt.hpp"
+#include "dataset.hpp"
 
 using namespace clif;
 using namespace std;

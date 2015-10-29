@@ -4,6 +4,8 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
 
+#include "dataset.hpp"
+
 namespace clif {
 
 using namespace std;
@@ -163,13 +165,13 @@ template<typename T> void warp_1d_nearest(Mat in, Mat out, int offset)
 }*/
 
 
-void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
+void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int flags, Interpolation interp, float scale)
 {
   int w, h;
   double step;
   std::vector<int> idx(_data->dims(), 0);
   
-  if (unit == ClifUnit::PIXELS)
+  if (unit == Unit::PIXELS)
     step = disparity;
   else
     step = depth2disparity(disparity, scale); //f[0]*step_length/disparity*scale;

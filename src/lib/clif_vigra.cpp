@@ -55,7 +55,7 @@ void readImage(Datastore *store, uint idx, FlexChannels<2> &channels, int flags,
 
 template<typename T> class readepi_dispatcher {
 public:
-  void operator()(Subset3d *subset, void **raw_channels, int line, double disparity, ClifUnit unit = ClifUnit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0)
+  void operator()(Subset3d *subset, void **raw_channels, int line, double disparity, Unit unit = Unit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0)
   {
     //cast
     std::vector<vigra::MultiArray<2, T>> **channels = reinterpret_cast<std::vector<vigra::MultiArray<2, T>> **>(raw_channels);
@@ -81,12 +81,12 @@ public:
   }
 };
 
-void readEPI(Subset3d *subset, void **channels, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
+void readEPI(Subset3d *subset, void **channels, int line, double disparity, Unit unit, int flags, Interpolation interp, float scale)
 {
   subset->dataset()->call<readepi_dispatcher>(subset, channels, line, disparity, unit, flags, interp, scale);
 }
 
-void readEPI(Subset3d *subset, FlexChannels<2> &channels, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
+void readEPI(Subset3d *subset, FlexChannels<2> &channels, int line, double disparity, Unit unit, int flags, Interpolation interp, float scale)
 {
   std::vector<cv::Mat> cv_channels;
   //subset->readEPI(cv_channels, line, disparity, unit, flags, interp, scale);
@@ -98,7 +98,7 @@ void readEPI(Subset3d *subset, FlexChannels<2> &channels, int line, double dispa
   channels.create(shape, subset->dataset()->type(), cv_channels);
 }
 
-void readEPI(Subset3d *subset, int channel, FlexMAV<2> &img, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
+void readEPI(Subset3d *subset, int channel, FlexMAV<2> &img, int line, double disparity, Unit unit, int flags, Interpolation interp, float scale)
 {
   std::vector<cv::Mat> cv_channels;
       //FIXME readimage
@@ -110,7 +110,7 @@ void readEPI(Subset3d *subset, int channel, FlexMAV<2> &img, int line, double di
   img.create(shape, subset->dataset()->type(), cv_channels[channel]);
 }
 
-void readEPI(Subset3d *subset, FlexMAV<3> &img, int line, double disparity, ClifUnit unit, int flags, Interpolation interp, float scale)
+void readEPI(Subset3d *subset, FlexMAV<3> &img, int line, double disparity, Unit unit, int flags, Interpolation interp, float scale)
 {
   cv::Mat epi;
   

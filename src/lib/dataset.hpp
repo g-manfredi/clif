@@ -3,6 +3,7 @@
 
 #include "attribute.hpp"
 #include "datastore.hpp"
+#include "clif.hpp"
 
 namespace clif {
   
@@ -37,25 +38,25 @@ class Dataset : public Attributes, public Datastore {
     //Dataset(H5::H5File &f_, std::string path);
     
     /** Open the dataset \a name from file \a f_ */
-    void open(H5::H5File &f_, std::string name);
+    void open(ClifFile &f, std::string name);
     
     //link other into this file, attributes are copied, "main" datastore is linked read-only
     //TODO link other existing datastores!
     void link(const Dataset *other);
-    void link(H5::H5File &f_, const Dataset *other);
+    void link(ClifFile &file, const Dataset *other);
     
     //create memory backed file and link other into this file, attributes are copied, "main" datastore is linked read-only
     //TODO link other existing datastores!
     void memory_link(const Dataset *other);
     
     /** Create or open (if existing) the dataset \a name in file \a f_ */
-    void create(H5::H5File &f_, std::string name);
+    void create(ClifFile &file, std::string name);
       
     //writes only Attributes! FIXME hide Attributes::Write
     //TODO automatically call this on file close (destructor)
     /** Sync attributes back to the underlying HDF5 file 
      */
-    void writeAttributes() { Attributes::write(f, _path); }
+    void writeAttributes() { Attributes::write(f(), _path); }
     
     /** Get the calibration Datastore - use methods of Datastore to access calibration images 
      */
@@ -91,15 +92,16 @@ class Dataset : public Attributes, public Datastore {
      */
     boost::filesystem::path path();
     
-    
-    /** The internal HDF5 reference
-     */
-    H5::H5File f;
+    H5::H5File& f();
+    ClifFile& file();
 
     //TODO if attributes get changed automatically refresh intrinsics on getIntrinsics?
     //TODO hide and create accessor
     Intrinsics intrinsics;
 private:
+    /** The internal HDF5 reference
+     */
+    ClifFile _file;
     Datastore *calib_images = NULL;
     std::string _path;
     

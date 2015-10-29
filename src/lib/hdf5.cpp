@@ -11,13 +11,14 @@
 #endif
 
 
+
 using namespace H5;
 
 typedef unsigned int uint;
 
 namespace clif {
 
-bool h5_obj_exists(H5::H5File &f, const char * const path)
+bool h5_obj_exists(H5::H5File f, const char * const path)
 {
   H5E_auto2_t  oldfunc;
   void *old_client_data;
@@ -34,12 +35,12 @@ bool h5_obj_exists(H5::H5File &f, const char * const path)
   return false;
 }
 
-bool h5_obj_exists(H5::H5File &f, const std::string path)
+bool h5_obj_exists(H5::H5File f, const std::string path)
 {
   return h5_obj_exists(f,path.c_str());
 }
 
-bool h5_obj_exists(H5::H5File &f, const boost::filesystem::path path)
+bool h5_obj_exists(H5::H5File f, const boost::filesystem::path path)
 {
   return h5_obj_exists(f, path.generic_string().c_str());
 }
@@ -70,8 +71,10 @@ std::vector<std::string> listH5Datasets(H5::H5File &f, std::string parent)
   return list;
 }
   
-H5::H5File h5_memory_file()
+ClifFile h5_memory_file()
 {
+  ClifFile cf;
+  
   FileAccPropList acc_plist;
   acc_plist.setCore(16 * 1024, false);
 #ifdef CLIF_COMPILER_MSVC
@@ -95,12 +98,14 @@ H5::H5File h5_memory_file()
   
   //FIXME handle file delete at the end!
   H5File f = H5File(tmpfilename, H5F_ACC_TRUNC, FileCreatPropList::DEFAULT, acc_plist);
+  cf = ClifFile(f, tmpfilename);
 #ifdef CLIF_COMPILER_MSVC
   free(tmppath);
 #else
   close(handle);
 #endif
-  return f;
+  
+  return cf;
 }
 
 void h5_create_path_groups(H5::H5File &f, boost::filesystem::path path) 

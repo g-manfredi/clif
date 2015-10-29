@@ -6,6 +6,7 @@
 
 #include "core.hpp"
 #include "stringtree.hpp"
+#include "enumtypes.hpp"
 
 namespace clif {
   
@@ -22,9 +23,9 @@ namespace {
   
   template<typename CT, typename T> class convertFromBaseTypeDispatcher {
   public:
-    void operator()(clif::BaseType type, void *data, CT *convertto)
+    void operator()(BaseType type, void *data, CT *convertto)
     {
-      if (type == clif::BaseType::STRING && _type_is_number<CT>::value)
+      if (type == BaseType::STRING && _type_is_number<CT>::value)
         //convert string to numbers with atof
         *convertto = atof((char*)data);
       else
@@ -190,7 +191,7 @@ class Attribute {
         ((char*)data)[i] = val[i];
     };
 
-    void write(H5::H5File &f, std::string dataset_name);
+    void write(H5::H5File f, std::string dataset_name);
     std::string toString();
     
     friend std::ostream& operator<<(std::ostream& out, const Attribute& a);
@@ -349,7 +350,7 @@ class Attributes {
     /** write all attributes under \b path into file \b f.
      * [TODO](@ref #todo_attr_write) see Dataset::writeAttributes for a more convenient method.
      */
-    void write(H5::H5File &f, std::string &path);
+    void write(H5::H5File f, std::string &path);
     
     /** generate a StringTree of the stored Attributes
      */

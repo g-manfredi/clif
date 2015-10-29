@@ -20,6 +20,7 @@
 
 #include "clif_cv.hpp"
 #include "calib.hpp"
+#include "dataset.hpp"
 
 using namespace clif;
 using namespace std;

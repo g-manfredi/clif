@@ -7,13 +7,13 @@
 #include "hdf5.hpp"
 #include "enumtypes.hpp"
 
-enum class ClifUnit : int {INVALID,MM,PIXELS};
 
 namespace clif {
   
 using boost::filesystem::path;
 
 enum class Interpolation : int {INVALID,NEAREST,LINEAR}; //TODO lanczos etc.
+enum class Unit : int {INVALID,MM,PIXELS};
 
 int baseType_size(BaseType t);
 

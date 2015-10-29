@@ -8,6 +8,9 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+#include "hdf5.hpp"
+#include "dataset.hpp"
+
 #include "cliini.h"
 
 namespace clif {
@@ -104,6 +107,8 @@ namespace clif {
 
 void ClifFile::open(const std::string &filename, unsigned int flags)
 {
+  _path = boost::filesystem::canonical(filename);
+  
   try {
     printf("try openfile!\n");
     f.openFile(filename, flags);
@@ -119,7 +124,7 @@ void ClifFile::open(const std::string &filename, unsigned int flags)
   if (f.getId() == H5I_INVALID_HID)
     return;
   
-  if (!clif::h5_obj_exists(f, "/clif"))
+  if (!h5_obj_exists(f, "/clif"))
       return;
     
   H5::Group g = f.openGroup("/clif");
@@ -133,6 +138,8 @@ void ClifFile::open(const std::string &filename, unsigned int flags)
 
 void ClifFile::create(const std::string &filename)
 {
+  _path = boost::filesystem::canonical(filename);
+  
   f = H5::H5File(filename, H5F_ACC_TRUNC);
   
   datasets.resize(0);
@@ -140,7 +147,7 @@ void ClifFile::create(const std::string &filename)
   if (f.getId() == H5I_INVALID_HID)
     return;
   
-  if (!clif::h5_obj_exists(f, "/clif"))
+  if (!h5_obj_exists(f, "/clif"))
       return;
     
   H5::Group g = f.openGroup("/clif");
@@ -157,28 +164,34 @@ ClifFile::ClifFile(const std::string &filename, unsigned int flags)
   open(filename, flags);
 }
 
+ClifFile::ClifFile(H5::H5File h5file, boost::filesystem::path &&path)
+{
+  f = h5file;
+  _path = path;
+}
+
 int ClifFile::datasetCount()
 {
   return datasets.size();
 }
 
 
-clif::Dataset* ClifFile::openDataset(const std::string name)
+Dataset* ClifFile::openDataset(const std::string name)
 {
-  clif::Dataset *set = new clif::Dataset();
+  Dataset *set = new Dataset();
   
   if (name.size())
-    set->open(f, name);
+    set->open(*this, name);
   else
-    set->open(f, datasets[0]);
+    set->open(*this, datasets[0]);
 
   return set;
 }
 
-clif::Dataset* ClifFile::createDataset(const std::string name)
+Dataset* ClifFile::createDataset(const std::string name)
 {
-  clif::Dataset *set = new clif::Dataset();
-  set->create(f, name);
+  Dataset *set = new Dataset();
+  set->create(*this, name);
   datasets.push_back(name);
   return set;
 }
@@ -191,6 +204,11 @@ clif::Dataset* ClifFile::openDataset(int idx)
 bool ClifFile::valid()
 {
   return f.getId() != H5I_INVALID_HID;
+}
+
+const path& ClifFile::path()
+{
+  return _path;
 }
 
 }

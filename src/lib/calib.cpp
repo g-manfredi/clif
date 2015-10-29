@@ -1,5 +1,7 @@
 #include "calib.hpp"
 #include "clif_cv.hpp"
+#include "enumtypes.hpp"
+#include "dataset.hpp"
 
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/imgproc/imgproc.hpp>

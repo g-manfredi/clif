@@ -107,7 +107,7 @@ void Attributes::reset()
 }
 
 
-void Attributes::write(H5::H5File &f, std::string &name)
+void Attributes::write(H5::H5File f, std::string &name)
 {
   for(uint i=0;i<attrs.size();i++)
     attrs[i].write(f, name);
@@ -335,7 +335,7 @@ std::string Attribute::toString()
   }
 }
 
-void Attribute::write(H5::H5File &f, std::string dataset_name)
+void Attribute::write(H5::H5File f, std::string dataset_name)
 {  
   //FIXME we should have a path?
   std::string attr_path = name;

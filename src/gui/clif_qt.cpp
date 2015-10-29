@@ -1,6 +1,7 @@
 #include "clif_qt.hpp"
 
 #include "subset3d.hpp"
+#include "dataset.hpp"
 
 #include "opencv2/highgui/highgui.hpp"
 
@@ -68,7 +69,7 @@ namespace clif {
   void readEPI(clif::Subset3d *set, QImage &img, int line, double disp, int flags)
   {
     Mat img_3d, img_2d;
-    set->readEPI(&img_3d, line, disp, ClifUnit::PIXELS, flags | CVT_8U);
+    set->readEPI(&img_3d, line, disp, Unit::PIXELS, flags | CVT_8U);
     cvt_3d2Interleaved(&img_3d, &img_2d);
     
     //FIXME zero copy memory handling?

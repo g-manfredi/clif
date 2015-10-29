@@ -3,12 +3,8 @@
 
 #include <vector>
 #include <iostream>
-
-#include "core.hpp"
-#include "attribute.hpp"
-#include "stringtree.hpp"
-#include "datastore.hpp"
-#include "dataset.hpp"
+#include <boost/filesystem.hpp>
+#include <H5Cpp.h>
 
 #include "config.h"
 
@@ -30,10 +26,11 @@ namespace clif {
 
 
 #define PROCESS_FLAGS_MAX 128
-
-H5::PredType H5PredType(BaseType type);
   
 std::vector<std::string> Datasets(H5::H5File &f);
+
+class Dataset;
+
 
 CLIF_EXPORT class ClifFile
 {
@@ -41,17 +38,19 @@ public:
   ClifFile() {};
   //TODO create file if not existing?
   ClifFile(const std::string &filename, unsigned int flags = H5F_ACC_RDONLY);
+  ClifFile(H5::H5File h5file, boost::filesystem::path &&path);
   
   void open(const std::string &filename, unsigned int flags = H5F_ACC_RDONLY);
   void create(const std::string &filename);
   //void close();
   
-  clif::Dataset* openDataset(int idx);
-  clif::Dataset* openDataset(const std::string name = std::string());
+  Dataset* openDataset(int idx);
+  Dataset* openDataset(const std::string name = std::string());
 
-  clif::Dataset* createDataset(const std::string name);
+  Dataset* createDataset(const std::string name);
   
   int datasetCount();
+  const boost::filesystem::path& path();
   
   bool valid();
   
@@ -61,6 +60,7 @@ public:
 private:
   
   std::vector<std::string> datasets;
+  boost::filesystem::path _path;
 };
 
 }
