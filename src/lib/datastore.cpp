@@ -531,7 +531,13 @@ void Datastore::mat_cache_set(cv::Mat *m, const std::vector<int> idx, int flags,
   
   cv::Mat *cached = new cv::Mat();
   //operator= should references if self-managed matrix, else copies
-  if (m->refcount)
+#if CV_MAJOR_VERSION >= 3
+  bool shared = m->u;
+#else
+  bool shared = m->refcount;
+#endif
+
+  if (shared)
     *cached = *m;
   else
     m->copyTo(*cached);
