@@ -29,9 +29,9 @@ public:
     //open existing datastore
     void open(Dataset *dataset, std::string path, const std::string format_group = std::string());
     
-    void writeRawImage(uint idx, hsize_t w, hsize_t h, void *data);
+    void writeRawImage(int idx, hsize_t w, hsize_t h, void *data);
     void appendRawImage(hsize_t w, hsize_t h, void *data);
-    void readRawImage(uint idx, hsize_t w, hsize_t h, void *data);
+    void readRawImage(int idx, hsize_t w, hsize_t h, void *data);
     
     void writeChannel(const std::vector<int> &idx, cv::Mat *img);
     void writeImage(const std::vector<int> &idx, cv::Mat *img);

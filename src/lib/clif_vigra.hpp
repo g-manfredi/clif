@@ -45,10 +45,10 @@ namespace clif {
  */
   }
   
-  template<uint DIM> class FlexChannels;
-  template <uint DIM, typename T, uint IDX> vigra::MultiArrayView<DIM,T> getFixedChannel(FlexChannels<DIM> &a);
+  template<unsigned int DIM> class FlexChannels;
+  template <unsigned int DIM, typename T, unsigned int IDX> vigra::MultiArrayView<DIM,T> getFixedChannel(FlexChannels<DIM> &a);
   
-  template<uint DIM> class FlexChannels {
+  template<unsigned int DIM> class FlexChannels {
   public:
     
     typedef vigra::TinyVector<vigra::MultiArrayIndex, DIM> difference_type;
@@ -62,7 +62,7 @@ namespace clif {
       void * operator()(FlexChannels<DIM> &mav, std::vector<cv::Mat> &inputs)
       {
         auto channels = new std::vector<vigra::MultiArrayView<DIM,T>>(inputs.size());
-        for(uint i=0;i<inputs.size();i++)
+        for(unsigned int i=0;i<inputs.size();i++)
           (*channels)[i] = vigra::MultiArrayView<DIM,T>(mav.shape(), (T*)inputs[i].data);
         
         return channels;
@@ -108,7 +108,7 @@ namespace clif {
     
     difference_type shape() { return _shape; };
     
-    //template<typename T, uint idx> vigra::MultiArrayView<DIM,T> &channel() { return channels<T>[idx]; }
+    //template<typename T, unsigned int idx> vigra::MultiArrayView<DIM,T> &channel() { return channels<T>[idx]; }
     
   private:
     int _ch_count;
@@ -119,15 +119,15 @@ namespace clif {
     BaseType _type = BaseType::INVALID;
   };
 
-  template <uint DIM, typename T, uint IDX> vigra::MultiArrayView<DIM,T>* getFixedChannel(FlexChannels<DIM> &a)
+  template <unsigned int DIM, typename T, unsigned int IDX> vigra::MultiArrayView<DIM,T>* getFixedChannel(FlexChannels<DIM> &a)
   {
     return a.channels()[IDX];
   }
     
   vigra::Shape2 imgShape(Datastore *store);
   
-  void readImage(Datastore *store, uint idx, void **channels, int flags = 0, float scale = 1.0);
-  void readImage(Datastore *store, uint idx, FlexChannels<2> &channels, int flags = 0, float scale = 1.0);
+  void readImage(Datastore *store, unsigned int idx, void **channels, int flags = 0, float scale = 1.0);
+  void readImage(Datastore *store, unsigned int idx, FlexChannels<2> &channels, int flags = 0, float scale = 1.0);
   
   void readEPI(Subset3d *subset, void **channels, int line, double disparity, Unit unit = Unit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0);
   
@@ -137,7 +137,7 @@ namespace clif {
   
   void readEPI(Subset3d *subset, FlexMAV<3> &img, int line, double disparity, Unit unit = Unit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0);
   
-  //void readSubset3d(Datastore *store, uint idx, void **volume, int flags = 0, float scale = 1.0);
+  //void readSubset3d(Datastore *store, unsigned int idx, void **volume, int flags = 0, float scale = 1.0);
   
 /**
  *  @}

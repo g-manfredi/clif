@@ -9,6 +9,8 @@
 
 namespace clif {
   
+typedef unsigned int uint;
+
   cv::Size imgSize(Datastore *store)
   {     
     return cv::Size(store->extent()[0],store->extent()[1]);

@@ -127,6 +127,8 @@ inline bool file_exists(const std::string& name)
   return (stat(name.c_str(), &st) == 0);
 }
 
+typedef unsigned int uint;
+
 int main(const int argc, const char *argv[])
 {
   cliini_args *args = cliini_parsopts(argc, argv, &group);

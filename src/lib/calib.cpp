@@ -13,6 +13,8 @@ using namespace clif;
 
 namespace clif {
     
+typedef unsigned int uint;
+
   bool pattern_detect(Dataset *s, int imgset)
   {
     path calib_path("calibration/images/sets");

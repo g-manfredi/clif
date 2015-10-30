@@ -60,6 +60,8 @@ cliini_opt opts[] = {
   }
 };
 
+typedef unsigned int uint;
+
 cliini_optgroup group = {
   opts,
   NULL,

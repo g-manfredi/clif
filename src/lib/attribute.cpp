@@ -8,11 +8,12 @@
 
 namespace clif {
 
+typedef unsigned int uint;
   
 static void read_attr(Attribute *attr, H5::Group g, std::string basename, std::string group_path, std::string name, BaseType &type)
 {
   int total = 1;
-  H5::Attribute h5attr = g.openAttribute(name);
+  H5::Attribute h5attr = g.openAttribute(name.c_str());
   
   type =  hid_t_to_native_BaseType(H5Aget_type(h5attr.getId()));
   
@@ -182,12 +183,14 @@ static void attributes_append_group(Attributes &attrs, H5::Group &g, std::string
   for(uint i=0;i<g.getNumObjs();i++) {
     H5G_obj_t type = g.getObjTypeByIdx(i);
     
-    std::string name = appendToPath(group_path, g.getObjnameByIdx(hsize_t(i)));
+	char g_name[1024];
+	g.getObjnameByIdx(hsize_t(i), g_name, 1024);
+    std::string name = appendToPath(group_path, g_name);
     
     
     
     if (type == H5G_GROUP) {
-      H5::Group sub = g.openGroup(g.getObjnameByIdx(hsize_t(i)));
+	  H5::Group sub = g.openGroup(g_name);
       attributes_append_group(attrs, sub, basename, name);
     }
   }
@@ -197,10 +200,12 @@ static void attributes_append_group(Attributes &attrs, H5::Group &g, std::string
     H5::Attribute h5attr = g.openAttribute(i);
     Attribute attr;
     BaseType type;
+	char attr_name[1024];
 
-    std::string name = appendToPath(group_path, h5attr.getName());
+	h5attr.getName(attr_name, 1024);
+	std::string name = appendToPath(group_path, attr_name);
     
-    read_attr(&attr, g, basename, group_path, h5attr.getName(),type);
+	read_attr(&attr, g, basename, group_path, attr_name, type);
           
     attrs.append(attr);
   }
@@ -354,14 +359,14 @@ void Attribute::write(H5::H5File f, std::string dataset_name)
   delete dim;
   
   if (!h5_obj_exists(f, grouppath))
-    h5_create_path_groups(f, grouppath);
+    h5_create_path_groups(f, grouppath.c_str());
   
-  g = f.openGroup(grouppath);
+  g = f.openGroup(grouppath.c_str());
   
   if (H5Aexists(g.getId(), attr_name.c_str()))
-    g.removeAttr(attr_name);
+    g.removeAttr(attr_name.c_str());
     
-  attr = g.createAttribute(attr_name, BaseType_to_PredType(type), space);
+  attr = g.createAttribute(attr_name.c_str(), BaseType_to_PredType(type), space);
       
   attr.write(BaseType_to_PredType(type), data);
 }

@@ -99,16 +99,16 @@ namespace clif {
 			std::cout << " [...] " << val.first;
 		printtuple(val.second);
 		printf("\n");
-		for (uint i = 0; i < childs.size(); i++)
+		for (unsigned int i = 0; i < childs.size(); i++)
 			childs[i].print(depth + 1);
 	}
 
 	template<typename... TS> void StringTree<TS...>::add(std::string str, TS...args, char delim)
 	{
-		uint found = str.find(delim);
+		unsigned int found = str.find(delim);
 		std::string name = str.substr(0, found);
 
-		for (uint i = 0; i < childs.size(); i++)
+		for (unsigned int i = 0; i < childs.size(); i++)
 			if (!name.compare(childs[i].val.first)) {
 				if (found < str.length() - 1) {
 					childs[i].add(str.substr(found + 1), args..., delim);

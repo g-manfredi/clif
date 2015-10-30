@@ -14,6 +14,8 @@
 #include "cliini.h"
 
 namespace clif {
+
+typedef unsigned int uint;
   
   
   /*std::string path_element(boost::filesystem::path path, int idx)
@@ -107,11 +109,11 @@ namespace clif {
 
 void ClifFile::open(const std::string &filename, unsigned int flags)
 {
-  _path = boost::filesystem::canonical(filename);
+  _path = boost::filesystem::absolute(filename);
   
   try {
     printf("try openfile!\n");
-    f.openFile(filename, flags);
+    f.openFile(filename.c_str(), flags);
   }
   catch (H5::FileIException e) {
     printf("catch openfile!\n");
@@ -132,15 +134,18 @@ void ClifFile::open(const std::string &filename, unsigned int flags)
   hsize_t count = g.getNumObjs();
   datasets.resize(count);
   
-  for(uint i=0;i<count;i++)
-    datasets[i] = g.getObjnameByIdx(i);
+  for (uint i = 0; i < count; i++) {
+	  char name[1024];
+	  g.getObjnameByIdx(i, name, 1024);
+	  datasets[i] = std::string(name);
+  }
 }
 
 void ClifFile::create(const std::string &filename)
 {
   _path = boost::filesystem::absolute(filename);
   
-  f = H5::H5File(filename, H5F_ACC_TRUNC);
+  f = H5::H5File(filename.c_str(), H5F_ACC_TRUNC);
   
   datasets.resize(0);
   

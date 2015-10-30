@@ -5,6 +5,9 @@
 #include "hdf5.hpp"
 
 namespace clif {
+
+typedef unsigned int uint;
+
 void Intrinsics::load(Attributes *attrs, boost::filesystem::path path)
 {
   Attribute *a = attrs->get(path / "type");
@@ -59,14 +62,16 @@ void Dataset::datastores_append_group(Dataset *set, std::unordered_map<std::stri
   for(uint i=0;i<g.getNumObjs();i++) {
     H5G_obj_t type = g.getObjTypeByIdx(i);
     
+	char g_name[1024];
+	g.getObjnameByIdx(hsize_t(i), g_name, 1024);
     std::string name;
     if (group_path.size())
-      name = appendToPath(group_path, g.getObjnameByIdx(hsize_t(i)));
+		name = appendToPath(group_path, g_name);
     else
-      name = g.getObjnameByIdx(hsize_t(i));
+		name = g_name;
 
     if (type == H5G_GROUP) {
-      H5::Group sub = g.openGroup(g.getObjnameByIdx(hsize_t(i)));
+		H5::Group sub = g.openGroup(g_name);
       datastores_append_group(set, stores, sub, basename, name);
     }
     else if (type == H5G_DATASET)

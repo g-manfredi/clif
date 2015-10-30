@@ -58,10 +58,10 @@ namespace clif {
     }
   }
   
-  template<uint DIM> class FlexMAV;
-  template <uint DIM, typename T, uint IDX> vigra::MultiArrayView<DIM,T> getFixedChannel(FlexMAV<DIM> &a);
+  template<unsigned int DIM> class FlexMAV;
+  template <unsigned int DIM, typename T, unsigned int IDX> vigra::MultiArrayView<DIM,T> getFixedChannel(FlexMAV<DIM> &a);
   
-  template<uint DIM> class FlexMAV {
+  template<unsigned int DIM> class FlexMAV {
   public:
     
     typedef vigra::TinyVector<vigra::MultiArrayIndex, DIM> difference_type;

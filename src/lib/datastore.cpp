@@ -9,6 +9,8 @@
 #include "opencv2/imgproc/imgproc.hpp"
 namespace clif {
 
+typedef unsigned int uint;
+
 //FIXME wether dataset already exists and overwrite?
 //FIXME set remaining members!
 void Datastore::create(std::string path, Dataset *dataset, const std::string format_group)
@@ -371,7 +373,7 @@ void Datastore::open(Dataset *dataset, std::string path_, const std::string form
     return;
   }
   
-  _data = dataset->f().openDataSet(dataset_path.generic_string());
+  _data = dataset->f().openDataSet(dataset_path.generic_string().c_str());
   
   H5::DataSpace space = _data.getSpace();
   
@@ -405,7 +407,7 @@ void Datastore::open(Dataset *dataset, std::string path_, const std::string form
 }
 
 //FIXME chekc w,h?
-void Datastore::writeRawImage(uint idx, hsize_t w, hsize_t h, void *imgdata)
+void Datastore::writeRawImage(int idx, hsize_t w, hsize_t h, void *imgdata)
 {
   assert(!_readonly);
   
@@ -763,7 +765,7 @@ void Datastore::appendImage(cv::Mat *img)
 }
 
 //FIXME implement 8-bit conversion if requested
-void Datastore::readRawImage(uint idx, hsize_t w, hsize_t h, void *imgdata)
+void Datastore::readRawImage(int idx, hsize_t w, hsize_t h, void *imgdata)
 {
   H5::DataSpace space = _data.getSpace();
   hsize_t dims[3];

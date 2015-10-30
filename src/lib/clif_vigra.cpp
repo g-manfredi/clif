@@ -9,6 +9,8 @@
 
 namespace clif {
 
+typedef unsigned int uint;
+
 vigra::Shape2 imgShape(Datastore *store)
 {
   cv::Size size = imgSize(store);
