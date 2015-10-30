@@ -16,13 +16,13 @@ class QSlider;
 
 namespace clif {
   
-class CLIF_EXPORT DlgFind : public QDialog
+class CLIF_EXPORT clifEpiView : public QDialog
 {
     Q_OBJECT
 
 public:
-    DlgFind(clif::Dataset *dataset, QWidget* parent = 0);
-    ~DlgFind();
+    clifEpiView(clif::Dataset *dataset, QWidget* parent = 0);
+    ~clifEpiView();
     
     static double getDisparity(clif::Dataset *dataset, QWidget *parent = 0);
 

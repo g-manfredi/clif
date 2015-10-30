@@ -245,5 +245,5 @@ void ClifView::on_tree_itemActivated(QTreeWidgetItem *item, int column)
 
 void ClifView::on_actionSet_horopter_triggered()
 {
-    double h = DlgFind::getDisparity(root_curr->dataset, this);
+    double h = clifEpiView::getDisparity(root_curr->dataset, this);
 }
