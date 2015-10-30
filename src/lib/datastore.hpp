@@ -11,8 +11,9 @@ class Dataset;
 //representation of a "raw" clif datset - mostly the images
 class Datastore {
 public:
-    Datastore() {};
-    ~Datastore();
+    //needed for Dataset to call the protected constructure - this should not be necessary!
+    //TODO maybe the problem is that dataset inherits from datastore as second part of multi-inheritance?
+    friend class Dataset;
     
     //create new datastore
     void create(std::string path, Dataset *dataset, const std::string format_group = std::string());
@@ -56,6 +57,8 @@ public:
     int imgChannels();
     int imgCount();
     
+    void flush();
+    
     const std::string& getDatastorePath() const { return _path; };
     
     friend std::ostream& operator<<(std::ostream& out, const Datastore& a);
@@ -84,6 +87,10 @@ public:
     }
     
   protected:
+    //datastore is tied to dataset!
+    Datastore() {};
+    ~Datastore();
+    
     //initialization
     void init_write(const std::vector<int> &idx, cv::Mat *img);
     void create_types(BaseType type = BaseType::INVALID);

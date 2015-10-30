@@ -54,7 +54,7 @@ cv::Mat* Intrinsics::getUndistMap(double depth, int w, int h)
 }
 
 
-static void datastores_append_group(Dataset *set, std::unordered_map<std::string,Datastore*> &stores, H5::Group &g, std::string basename, std::string group_path)
+void Dataset::datastores_append_group(Dataset *set, std::unordered_map<std::string,Datastore*> &stores, H5::Group &g, std::string basename, std::string group_path)
 {
   for(uint i=0;i<g.getNumObjs();i++) {
     H5G_obj_t type = g.getObjTypeByIdx(i);
@@ -178,7 +178,17 @@ ClifFile& Dataset::file()
 
 Dataset::~Dataset()
 {
+  Datastore::flush();
+  
+  //delete stores
+  for (auto& it: _stores)
+    if (it.second != this)
+      delete it.second;
+  
   uint intent;
+  if (!_file.valid())
+    return;
+
   H5Fget_intent(f().getId(), &intent);
   
   if (intent != H5F_ACC_RDONLY)
@@ -199,16 +209,12 @@ void Dataset::link(const Dataset *other)
   
   Datastore::link(other, this);
   addStore(this);
- 
-  //FIXME set stores to 0!
   
   //iterate stores...
   for(auto iter : other->_stores) {
     if (iter.second == other) {
-      printf("skip itself!\n");
       continue;
     }
-    printf("link %s!\n",iter.first.c_str()); 
     addStore(iter.first);
     _stores[iter.first]->link(iter.second, this);
   }

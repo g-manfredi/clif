@@ -111,6 +111,8 @@ private:
     //FIXME delete on destruct!
     std::unordered_map<std::string,Datastore*> _stores;
     bool _memory_file = false;
+    
+    void datastores_append_group(Dataset *set, std::unordered_map<std::string,Datastore*> &stores, H5::Group &g, std::string basename, std::string group_path);
 };
   
 }

@@ -136,51 +136,13 @@ void Datastore::link(const Datastore *other, Dataset *dataset)
   
   //just copy opencv matrix - storage is shared (data must no be written from original owner afterwards!)
   if (other->_memonly) {
-    //check wether this dataset is memory only
-    //if (_dataset->memoryFile()) {
-      //just copy over
-      _mat = other->_mat;
-      _readonly = true;
-      _memonly = true;
-    //}
-    //write memory-only data into file (and convert datastore to regular)
-    /*else {
-      //FIXME _data should be empty/invalid h5dataset!
-      _mat = other->_mat;
-      
-      path fullpath = _dataset->path() / _path;
-      
-      if (h5_obj_exists(_dataset->f(), fullpath)) {
-        printf("TODO overwrite!\n");
-        abort();
-      }
-      
-      h5_create_path_groups(_dataset->f(), fullpath.parent_path());
-      
-      hsize_t *dims = new hsize_t[_mat.dims];
-      for(int i=0;i<_mat.dims;i++)
-        dims[i] = _mat.size[i];
-      
-      //H5::DSetCreatPropList prop;    
-      //prop.setChunk(dimcount, chunk_dims);
-      
-      H5::DataSpace space(_mat.dims, dims, dims);
-      
-      if (_mat.channels() != 1)
-        abort();
-      
-      _data = _dataset->f().createDataSet(fullpath.generic_string().c_str(), 
-                          H5PredType(CvDepth2BaseType(_mat.depth())), space);
-      
-      _data.write(_mat.data, H5::DataType(H5PredType(CvDepth2BaseType(_mat.depth()))), space, space);
-      
-      _readonly = false;
-      _memonly = false;
-      _mat.release();
-      delete dims;
-    }*/
+    //just copy over
+    _mat = other->_mat;
+    _readonly = true;
+    _memonly = true;
   }
   else { //link to an actual dataset in a file
+    _memonly = false;
     if (other->_link_file.size()) {
       _link_file = other->_link_file;
       _link_path = other->_link_path;
@@ -861,15 +823,17 @@ std::ostream& operator<<(std::ostream& out, const Datastore& a)
   return out;
 }
 
-Datastore::~Datastore() {
-  if (!_dataset->memoryFile()) {
+void Datastore::flush()
+{
+  if (valid() && _memonly && _readonly && !_dataset->memoryFile()) {
+    printf("flush %s\n", _path.c_str());
     //write memory-only data into file (and convert datastore to regular)
     //FIXME _data should be empty/invalid h5dataset!
     
     path fullpath = _dataset->path() / _path;
     
     if (h5_obj_exists(_dataset->f(), fullpath)) {
-      printf("TODO overwrite!\n");
+      printf("TODO overwrite (store %s exists)!\n", fullpath.c_str());
       abort();
     }
     
@@ -897,6 +861,11 @@ Datastore::~Datastore() {
     _mat.release();
     delete dims;
   }
+}
+
+Datastore::~Datastore()
+{
+  flush();
 }
 
 }
