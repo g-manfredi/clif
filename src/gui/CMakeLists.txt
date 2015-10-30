@@ -27,12 +27,12 @@ if(CLIF_BUILD_QT)
 
   include_directories(${Qt5Widgets_INCLUDE_DIRS})
 
-  add_library(clif-qt ${CLIF_BUILD_TYPE} clifscaledimageview.cpp clifepiview.cpp clif_qt.cpp)
+  add_library(${PROJECT_NAME} ${CLIF_BUILD_TYPE} clifscaledimageview.cpp clifepiview.cpp clif_qt.cpp)
 
   #TODO add clif
-  target_link_libraries(clif-qt ${CLIF_LIBRARIES} ${Qt5Core_LIBRARIES} ${Qt5Widgets_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME} ${CLIF_LIBRARIES} ${Qt5Core_LIBRARIES} ${Qt5Widgets_LIBRARIES})
   
-  set(CLIF_LINK_LIBRARIES ${CLIF_LINK_LIBRARIES} clif-qt PARENT_SCOPE)
+  set(CLIF_LINK_LIBRARIES ${CLIF_LINK_LIBRARIES} ${PROJECT_NAME} PARENT_SCOPE)
   set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
   set(CLIF_BUILD_LINK_DIRS ${CLIF_BUILD_LINK_DIRS} ${CMAKE_CURRENT_BINARY_DIR} PARENT_SCOPE)
 
@@ -48,4 +48,6 @@ if(CLIF_BUILD_QT)
 
   set(CLIF_HEADERS "${CLIF_HEADERS}" PARENT_SCOPE)
   set(CLIF_FULLPATH_HEADERS "${CLIF_FULLPATH_HEADERS}" PARENT_SCOPE)
+  
+  install(TARGETS ${PROJECT_NAME} DESTINATION lib)
 endif()
