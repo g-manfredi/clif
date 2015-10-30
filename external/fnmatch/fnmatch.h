@@ -1,7 +1,10 @@
 #ifndef _CLIF_FNMATCH_WIN_H
 #define _CLIF_FNMATCH_WIN_H
 
+//pathname is always assumted...
 #define FNM_PATHNAME 0
+#define FNM_CASEFOLD 1
+#define FNM_EXTMATCH 2
 
 
 #ifdef __cplusplus
