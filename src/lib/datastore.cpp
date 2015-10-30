@@ -114,6 +114,7 @@ void Datastore::write(cv::Mat &m)
   _mat = m;
 }
 
+//FIXME check for actual h5datasets in mem-only stores and force copy on delete!
 void Datastore::link(const Datastore *other, Dataset *dataset)
 {
   assert(dataset);
@@ -124,7 +125,6 @@ void Datastore::link(const Datastore *other, Dataset *dataset)
   _org = other->_org;
   _order = other->_order; 
     
-  //TODO is this ok?
   _data = other->_data;
   _path = other->_path;
   _dataset = dataset;
@@ -137,14 +137,14 @@ void Datastore::link(const Datastore *other, Dataset *dataset)
   //just copy opencv matrix - storage is shared (data must no be written from original owner afterwards!)
   if (other->_memonly) {
     //check wether this dataset is memory only
-    if (_dataset->memoryFile()) {
+    //if (_dataset->memoryFile()) {
       //just copy over
       _mat = other->_mat;
       _readonly = true;
       _memonly = true;
-    }
+    //}
     //write memory-only data into file (and convert datastore to regular)
-    else {
+    /*else {
       //FIXME _data should be empty/invalid h5dataset!
       _mat = other->_mat;
       
@@ -178,7 +178,7 @@ void Datastore::link(const Datastore *other, Dataset *dataset)
       _memonly = false;
       _mat.release();
       delete dims;
-    }
+    }*/
   }
   else { //link to an actual dataset in a file
     if (other->_link_file.size()) {
@@ -859,6 +859,44 @@ std::ostream& operator<<(std::ostream& out, const Datastore& a)
   out << a._extent[a._extent.size()-1];
   
   return out;
+}
+
+Datastore::~Datastore() {
+  if (!_dataset->memoryFile()) {
+    //write memory-only data into file (and convert datastore to regular)
+    //FIXME _data should be empty/invalid h5dataset!
+    
+    path fullpath = _dataset->path() / _path;
+    
+    if (h5_obj_exists(_dataset->f(), fullpath)) {
+      printf("TODO overwrite!\n");
+      abort();
+    }
+    
+    h5_create_path_groups(_dataset->f(), fullpath.parent_path());
+    
+    hsize_t *dims = new hsize_t[_mat.dims];
+    for(int i=0;i<_mat.dims;i++)
+      dims[i] = _mat.size[i];
+    
+    //H5::DSetCreatPropList prop;    
+    //prop.setChunk(dimcount, chunk_dims);
+    
+    H5::DataSpace space(_mat.dims, dims, dims);
+    
+    if (_mat.channels() != 1)
+      abort();
+    
+    _data = _dataset->f().createDataSet(fullpath.generic_string().c_str(), 
+                                        H5PredType(CvDepth2BaseType(_mat.depth())), space);
+    
+    _data.write(_mat.data, H5::DataType(H5PredType(CvDepth2BaseType(_mat.depth()))), space, space);
+    
+    _readonly = false;
+    _memonly = false;
+    _mat.release();
+    delete dims;
+  }
 }
 
 }

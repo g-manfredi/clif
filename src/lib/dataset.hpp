@@ -106,7 +106,7 @@ private:
     std::string _path;
     
     //hide copy assignment operator
-    Dataset& operator=(const Dataset& other);
+    Dataset& operator=(const Dataset& other) = delete;
     
     //FIXME delete on destruct!
     std::unordered_map<std::string,Datastore*> _stores;

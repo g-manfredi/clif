@@ -138,7 +138,7 @@ void ClifFile::open(const std::string &filename, unsigned int flags)
 
 void ClifFile::create(const std::string &filename)
 {
-  _path = boost::filesystem::canonical(filename);
+  _path = boost::filesystem::absolute(filename);
   
   f = H5::H5File(filename, H5F_ACC_TRUNC);
   

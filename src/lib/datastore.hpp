@@ -12,6 +12,7 @@ class Dataset;
 class Datastore {
 public:
     Datastore() {};
+    ~Datastore();
     
     //create new datastore
     void create(std::string path, Dataset *dataset, const std::string format_group = std::string());
@@ -106,6 +107,8 @@ private:
   std::string _link_path;
   
   cv::Mat _mat;
+  
+  Dataset& operator=(const Dataset& other) = delete;
   
   std::string _format_group;
   
