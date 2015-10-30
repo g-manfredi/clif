@@ -15,7 +15,7 @@
 
 namespace clif {
 
-DlgFind::DlgFind(Dataset *dataset, QWidget* parent)
+clifEpiView::clifEpiView(Dataset *dataset, QWidget* parent)
 : QDialog(parent)
 {
     _3dslice = new Subset3d(dataset);
@@ -55,7 +55,7 @@ DlgFind::DlgFind(Dataset *dataset, QWidget* parent)
     //setFixedHeight(sizeHint().height()); // 6.
 }
 
-DlgFind::~DlgFind()
+clifEpiView::~clifEpiView()
 {
   if (_center_img)
     delete _center_img;
@@ -64,7 +64,7 @@ DlgFind::~DlgFind()
 }
 
 /*
-QHBoxLayout* DlgFind::createLayout() // 7.
+QHBoxLayout* clifEpiView::createLayout() // 7.
 {
     QHBoxLayout* topLeft = new QHBoxLayout();
     topLeft->addWidget(label);
@@ -90,7 +90,7 @@ QHBoxLayout* DlgFind::createLayout() // 7.
     return main;
 }*/
 
-QLayout* DlgFind::createLayout()
+QLayout* clifEpiView::createLayout()
 {
   QSplitter *splitter = new QSplitter();
   splitter->addWidget(_centerview);
@@ -105,7 +105,7 @@ QLayout* DlgFind::createLayout()
   return box;
 }
 /*
-void DlgFind::findClicked() // 8.
+void clifEpiView::findClicked() // 8.
 {  
     QString text = what->text();
     Qt::CaseSensitivity cs = cbCase->isChecked() ? Qt::CaseSensitive : Qt::CaseInsensitive;
@@ -119,12 +119,12 @@ void DlgFind::findClicked() // 8.
     }
 }*/
 /*
-void DlgFind::enableBtnFind(const QString& text) // 9.
+void clifEpiView::enableBtnFind(const QString& text) // 9.
 {
     btnFind->setEnabled(!text.isEmpty());
 }*/
 
-void DlgFind::refreshEPI()
+void clifEpiView::refreshEPI()
 {
   //_slider->blockSignals(true);
   if (!_epi_img)
@@ -138,7 +138,7 @@ void DlgFind::refreshEPI()
   printf("depth %f\n", _3dslice->disparity2depth(_disp));
 }
 
-void DlgFind::refreshEPISlot()
+void clifEpiView::refreshEPISlot()
 {
   if (_timer) {
     delete _timer;
@@ -148,7 +148,7 @@ void DlgFind::refreshEPISlot()
   refreshEPI();
 }
 
-void DlgFind::dispChanged(int value)
+void clifEpiView::dispChanged(int value)
 {
   _disp = value*0.01;
   
@@ -160,7 +160,7 @@ void DlgFind::dispChanged(int value)
   }
 }
 
-void DlgFind::lineChanged(QPointF *p)
+void clifEpiView::lineChanged(QPointF *p)
 {
   _line = p->y();
   _epiview->centerOn(p->x(), 0);
@@ -169,9 +169,9 @@ void DlgFind::lineChanged(QPointF *p)
   refreshEPI();
 }
 
-double DlgFind::getDisparity(Dataset *dataset, QWidget *parent)
+double clifEpiView::getDisparity(Dataset *dataset, QWidget *parent)
 {
-  DlgFind *finder = new DlgFind(dataset, parent);
+  clifEpiView *finder = new clifEpiView(dataset, parent);
   
   finder->exec();
   
