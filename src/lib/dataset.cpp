@@ -10,7 +10,10 @@ typedef unsigned int uint;
 
 void Intrinsics::load(Attributes *attrs, boost::filesystem::path path)
 {
-  Attribute *a = attrs->get(path / "type");
+  //FIXME 
+  boost::filesystem::path wtf = path;
+  wtf /= "type";
+  Attribute *a = attrs->get(wtf);
   
   _undist_map = cv::Mat();
   
@@ -269,7 +272,11 @@ void Dataset::load_intrinsics(std::string intrset)
     intrset = sets[0];
   }
   
-  intrinsics.load(this, boost::filesystem::path() / "calibration/intrinsics" / intrset);
+  //FIXME why does a direct call not work!
+  boost::filesystem::path a = "calibration/intrinsics";
+  boost::filesystem::path b = intrset;
+  a /= b;
+  intrinsics.load(this, a);
 }
 
 Datastore *Dataset::getStore(const std::string &path)

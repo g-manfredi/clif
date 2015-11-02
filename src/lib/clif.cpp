@@ -109,7 +109,10 @@ typedef unsigned int uint;
 
 void ClifFile::open(const std::string &filename, unsigned int flags)
 {
-  _path = boost::filesystem::absolute(filename);
+  /*if (boost::filesystem::exists(filename))
+    _path = boost::filesystem::absolute(filename);
+  else*/
+    _path = filename;
   
   try {
     printf("try openfile!\n");
