@@ -9,6 +9,7 @@
 #include "clifepiview.hpp"
 #include "clif_qt.hpp"
 #include "dataset.hpp"
+#include "clifstoreview.hpp"
 
 using namespace clif;
 using namespace std;
@@ -24,14 +25,18 @@ ClifFile lf_file;
 vector<DatasetRoot*> root_list;
 DatasetRoot *root_curr = NULL;
 
+clifStoreView *_storeview = NULL;
+
 void attachTreeItem(QTreeWidgetItem *w, StringTree<Attribute*,Datastore*> *t)
 {
-    if (std::get<0>(t->val.second))
+    if (std::get<0>(t->val.second)) {
         w->setData(1, Qt::DisplayRole, QString(std::get<0>(t->val.second)->toString().c_str()));
+    }
     else if (std::get<1>(t->val.second)) {
         std::stringstream stream;
         stream << *std::get<1>(t->val.second);
         w->setData(1, Qt::DisplayRole, stream.str().c_str());
+        w->setData(1, Qt::UserRole, qVariantFromValue((void*)std::get<1>(t->val.second)));
     }
 
     for(int i=0;i<t->childCount();i++) {
@@ -173,7 +178,7 @@ void ClifView::on_actionOpen_triggered()
 //FIXME multi-dim!
 void ClifView::setView(DatasetRoot *root, int idx)
 {
-    if (!root)
+    /*if (!root)
       return;
     int flags = 0;
     switch (ui->selViewProc->currentIndex()) {
@@ -185,8 +190,7 @@ void ClifView::setView(DatasetRoot *root, int idx)
     n_idx[3] = idx;
     
     readQImage(root->dataset, n_idx, curview_q, flags);
-
-    ui->viewer->setImage(curview_q);
+*/
 }
 
 void ClifView::slider_changed_delayed()
@@ -213,7 +217,7 @@ void ClifView::on_datasetSlider_valueChanged(int value)
 
 void ClifView::on_selViewProc_currentIndexChanged(int index)
 {
-    setView(root_curr, ui->datasetSlider->value());
+    //setView(root_curr, ui->datasetSlider->value());
 }
 
 void ClifView::on_tree_itemExpanded(QTreeWidgetItem *item)
@@ -228,19 +232,27 @@ void ClifView::on_tree_itemExpanded(QTreeWidgetItem *item)
 
 void ClifView::on_tree_itemActivated(QTreeWidgetItem *item, int column)
 {
-    if (!item->data(0, Qt::UserRole).isValid())
-      return;
+    if (item->data(0, Qt::UserRole).isValid()) {
+      DatasetRoot *root = QVP<DatasetRoot>::asPtr(item->data(0, Qt::UserRole));
+      root_curr = root;
+      
+      root->openDataset();
+      ui->menuTools->actions().at(0)->setEnabled(true);
+    }
     
-    DatasetRoot *root = QVP<DatasetRoot>::asPtr(item->data(0, Qt::UserRole));
-    root_curr = root;
+    if (item->data(1, Qt::UserRole).isValid() && item->data(1, Qt::UserRole).value<void*>()) {
+      if (_storeview)
+        delete _storeview;
+      
+      _storeview = new clifStoreView((Datastore*)item->data(1, Qt::UserRole).value<void*>());
+      
+      ui->viewDock->setWidget(_storeview);
+    }
     
-    root->openDataset();
-    ui->menuTools->actions().at(0)->setEnabled(true);
+    //ui->datasetSlider->setMaximum(root->dataset->Datastore::imgCount()-1);
+    //ui->datasetSlider->setValue(0);
     
-    ui->datasetSlider->setMaximum(root->dataset->Datastore::imgCount()-1);
-    ui->datasetSlider->setValue(0);
-    
-    on_datasetSlider_valueChanged(0);
+    //on_datasetSlider_valueChanged(0);
 }
 
 void ClifView::on_actionSet_horopter_triggered()
