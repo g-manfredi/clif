@@ -2,6 +2,7 @@
 
 #include "clif.hpp"
 #include "dataset.hpp"
+#include "clif_cv.hpp"
 
 #define CACHE_CONT_MAT_CHANNEL 1
 #define CACHE_CONT_MAT_IMG 2
@@ -164,6 +165,10 @@ static void get_format_fields(Dataset *set, path format_group, DataOrg &org, Dat
   channels = 0;
   set->getEnum(format_group / "organisation", org);
   set->getEnum(format_group / "order",        order);
+  
+  Attribute *test = set->get(format_group / "organisation");
+  assert(test);
+  printf("org: %p %s %d %p\n", set, test->getStr(), org, &org);
   
   if (org <= DataOrg::INVALID)
     org = DataOrg::PLANAR;
@@ -578,6 +583,8 @@ void apply_flags_channel(Datastore *store, cv::Mat *in, cv::Mat *out, int flags)
     else
       printf("distortion model not supported: %s\n", enum_to_string(i->model));
   }
+  else if (curr->data != out->data)
+    curr->copyTo(*out);
 }
 
 static cv::Mat mat_2d_from_3d(const cv::Mat &m, int ch)
@@ -589,8 +596,13 @@ static cv::Mat mat_2d_from_3d(const cv::Mat &m, int ch)
 void apply_flags_image(cv::Mat *in, cv::Mat *out, int flags)
 {
   if (flags & CVT_GRAY) {
-    assert(out->size[0] == 1);
-    //FIXME set sum type depending on input types?
+    int outsize[3];
+    outsize[2] = in->size[2];
+    outsize[1] = in->size[1];
+    outsize[0] = 1;
+    
+    out->create(3, outsize, in->depth());
+    
     cv::Mat sum(out->size[1], out->size[2], CV_32F, cv::Scalar(0.0));
     
     for(int i=0;i<in->size[0];i++) {
@@ -602,8 +614,9 @@ void apply_flags_image(cv::Mat *in, cv::Mat *out, int flags)
     cv::Mat out2d = mat_2d_from_3d(*out, 0);
     sum.convertTo(out2d, out->type());
   }
-  else
-    assert(out->data == in->data);
+  else if (out->data != in->data) {
+    in->copyTo(*out);
+  }
 }
 
 void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int flags)
@@ -642,8 +655,9 @@ void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int f
   //find out wether format changed?
   _data.read(reader.data, H5PredType(_type), imgspace, space);
   
+  //FIXME create channel wit correct parameters!
   apply_flags_channel(this, &reader, channel, flags);
-  if (data != channel->data && FORCE_REUSE) {
+  if ((data != channel->data) && (flags & FORCE_REUSE)) {
     printf("memcpy desired but image data in wrong format!\n");
     abort();
   }
@@ -651,52 +665,102 @@ void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int f
   mat_cache_set(channel,idx,flags,CACHE_CONT_MAT_CHANNEL,scale);
 }
 
+int order2cv_conf_flag(DataOrder order)
+{
+  switch (order) {
+    case DataOrder::RGGB :
+      return CV_BayerBG2BGR;
+    case DataOrder::BGGR :
+      return CV_BayerRG2BGR;
+    case DataOrder::GBRG :
+      return CV_BayerGR2BGR;
+    case DataOrder::GRBG :
+      return CV_BayerGB2BGR;
+    default :
+      abort();
+  }
+}
+
 //this is always a 3d mat!
 void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags)
 {
   float scale = -1.0;
-  int imgsize[3];
+  int imgsize[3], output_size[3];
   imgsize[2] = _basesize[0];
   imgsize[1] = _basesize[1];
   //FIXME may be changed by flags!
   imgsize[0] = _basesize[2];
-  
-  if (mat_cache_get(img,idx,flags,CACHE_CONT_MAT_IMG,scale))
-    return; 
-  
+  output_size[2] = imgsize[2];
+  output_size[1] = imgsize[1];
+  output_size[0] = imgsize[0];
   int depth = BaseType2CvDepth(_type);
-  int channels = _basesize[2];
-  
-  if (flags & CVT_8U)
-    depth = CV_8U;
+  int output_depth = depth;
+  int channel_flags = flags;
+  bool demosaic = false;
   
   if (flags & CVT_GRAY)
-    channels = 1;
+    flags |= DEMOSAIC;
+  if (flags & UNDISTORT)
+    flags |= DEMOSAIC;
+    
+  if (mat_cache_get(img,idx,flags,CACHE_CONT_MAT_IMG,scale))
+    return;
   
-  imgsize[0] = channels;
+  if ((flags & DEMOSAIC) && _org == DataOrg::BAYER_2x2)
+    demosaic = true;
   
-  img->create(3,imgsize,depth);
+  assert((flags & FORCE_REUSE) == 0);
+  
+  if (flags & CVT_8U)
+    output_depth = CV_8U;
+  if (flags & CVT_GRAY)
+    output_size[0] = 1;
+  else if (demosaic)
+    output_size[0] = 3;
+  
+  img->create(3,output_size,output_depth);
   //for now
   assert(img->isContinuous());
   
   std::vector<int> ch_idx = idx;
   
   cv::Mat reader = *img;
-  //use full number of channels!
-  imgsize[0] = _basesize[2];
-  //create unprocessed
+  //if input and output are the same type this is a no-op
   reader.create(3,imgsize,depth);
   
-  //FIXME where to handle demosaicing?
-  //solution: readImage always sets flags to DEMOSAIC and
-  //returns a image with channel count Datastore::imgChannels() (which detects channel count depending on bayer/non-bayer)
-  for(int i=0;i<_extent[2];i++) {
-    cv::Mat channel = mat_2d_from_3d(reader, i);
-    ch_idx[2] = i;    
-    readChannel(ch_idx, &channel, flags | NO_MEM_CACHE | FORCE_REUSE);
+  cv::Mat channel_in, channel_out, tmp;
+    
+  if (demosaic) {
+    //read raw channels
+    readChannel(ch_idx, &channel, NO_MEM_CACHE);
+    cv::cvtColor(channel, img_rgb, order2cv_conf_flag(_order));
+    
+    cv2ClifMat(&img_rgb, &img_rgb);
+    
+    apply_flags_image(&img_rgb, &img_rgb, flags);
+    
+    //convert
+    for(int i=0;i<3;i++) {
+      channel_in = mat_2d_from_3d(img_rgb, i);
+      channel_out = mat_2d_from_3d(*img, i);
+      apply_flags_channel(this, &channel_in, &channel_out, flags);
+    }
   }
+  else {
+    for(int i=0;i<_extent[2];i++) {
+      channel_in = mat_2d_from_3d(reader, i);
+      ch_idx[2] = i;    
+      readChannel(ch_idx, &channel_in, NO_MEM_CACHE | FORCE_REUSE);
+    }
   
-  apply_flags_image(&reader, img, flags);
+    apply_flags_image(&reader, &tmp, flags);
+    
+    for(int i=0;i<output_size[0];i++) {
+      channel_in = mat_2d_from_3d(tmp, i);
+      channel_out = mat_2d_from_3d(*img, i);
+      apply_flags_channel(this, &channel_in, &channel_out, flags);
+    }
+  }
   
   mat_cache_set(img,idx,flags,CACHE_CONT_MAT_IMG,scale);
 }

@@ -10,7 +10,7 @@ typedef unsigned int uint;
 
 void Intrinsics::load(Attributes *attrs, boost::filesystem::path path)
 {
-  Attribute *a = attrs->get(path);
+  Attribute *a = attrs->get(path / "type");
   
   _undist_map = cv::Mat();
   
@@ -62,24 +62,26 @@ void Dataset::datastores_append_group(Dataset *set, std::unordered_map<std::stri
   for(uint i=0;i<g.getNumObjs();i++) {
     H5G_obj_t type = g.getObjTypeByIdx(i);
     
-	char g_name[1024];
-	g.getObjnameByIdx(hsize_t(i), g_name, 1024);
+    char g_name[1024];
+    g.getObjnameByIdx(hsize_t(i), g_name, 1024);
     std::string name;
     if (group_path.size())
-		name = appendToPath(group_path, g_name);
+      name = appendToPath(group_path, g_name);
     else
-		name = g_name;
-
+      name = g_name;
+    
     if (type == H5G_GROUP) {
-		H5::Group sub = g.openGroup(g_name);
+      H5::Group sub = g.openGroup(g_name);
       datastores_append_group(set, stores, sub, basename, name);
     }
     else if (type == H5G_DATASET)
     {
-      Datastore *store = new Datastore();
-      store->open(set, name);
-      assert(store->valid());
-      set->addStore(store);
+      if (_stores.find(name) == _stores.end()) {
+        Datastore *store = new Datastore();
+        store->open(set, name);
+        assert(store->valid());
+        set->addStore(store);
+      }
     }
     else if (type == H5G_LINK) {
       printf("FIXME implement link handling for datastore!");
@@ -269,7 +271,7 @@ void Dataset::load_intrinsics(std::string intrset)
     intrset = sets[0];
   }
   
-  intrinsics.load(this, boost::filesystem::path(intrset) / "calibration/intrinsics");
+  intrinsics.load(this, boost::filesystem::path("calibration/intrinsics") / intrset);
 }
 
 Datastore *Dataset::getStore(const std::string &path)

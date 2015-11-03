@@ -421,6 +421,25 @@ void clifMat2cv(cv::Mat *in, cv::Mat *out)
   cv::merge(channels, *out);
 }
 
+void cv2ClifMat(cv::Mat *in, cv::Mat *out)
+{
+  std::vector<cv::Mat> channels;
+  
+  cv::split(*in, channels);
+  
+  int imgsize[3];
+  imgsize[2] = in->size().width;
+  imgsize[1] = in->size().height;
+  imgsize[0] = channels.size();
+  
+  out->create(3,imgsize, in->depth());
+
+  for(int i=0;i<channels.size();i++) {
+    cv::Mat channel = mat_2d_from_3d(out, i);
+    channels[i].copyTo(channel);
+  }
+}
+
 int clifMat_channels(cv::Mat &img)
 {
   assert(img.dims == 3);

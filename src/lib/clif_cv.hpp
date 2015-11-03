@@ -26,6 +26,7 @@ class Datastore;
   //void writeCvMat(Datastore *store, uint idx, hsize_t w, hsize_t h, void *data);
   
   void clifMat2cv(cv::Mat *in, cv::Mat *out);
+  void cv2ClifMat(cv::Mat *in, cv::Mat *out);
   
   int clifMat_channels(cv::Mat &img);
   cv::Mat clifMat_channel(cv::Mat &m, int ch);
