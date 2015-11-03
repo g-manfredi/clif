@@ -1,5 +1,9 @@
 #include "helpers.hpp"
 
+#include <boost/filesystem.hpp>
+
+using namespace boost::filesystem;
+
 namespace clif {
 
 std::string appendToPath(std::string str, std::string append)
@@ -39,6 +43,14 @@ std::string get_first_part(std::string in, char c)
     return in;
   
   return in.substr(0, pos);
+}
+
+boost::filesystem::path get_abs_path(boost::filesystem::path path)
+{
+  if (path.is_absolute())
+    return path;
+  else
+    return current_path() / path;
 }
 
 }

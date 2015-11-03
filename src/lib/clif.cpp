@@ -109,10 +109,7 @@ typedef unsigned int uint;
 
 void ClifFile::open(const std::string &filename, unsigned int flags)
 {
-  /*if (boost::filesystem::exists(filename))
-    _path = boost::filesystem::absolute(filename);
-  else*/
-    _path = filename;
+  _path = get_abs_path(filename);
   
   try {
     printf("try openfile!\n");
@@ -138,9 +135,9 @@ void ClifFile::open(const std::string &filename, unsigned int flags)
   datasets.resize(count);
   
   for (uint i = 0; i < count; i++) {
-	  char name[1024];
-	  g.getObjnameByIdx(i, name, 1024);
-	  datasets[i] = std::string(name);
+    char name[1024];
+    g.getObjnameByIdx(i, name, 1024);
+    datasets[i] = std::string(name);
   }
 }
 
@@ -148,7 +145,7 @@ void ClifFile::create(const std::string &filename)
 {
   _path = boost::filesystem::absolute(filename);
   
-  f = H5::H5File(filename.c_str(), H5F_ACC_TRUNC);
+  f = H5::H5File(filename, H5F_ACC_TRUNC);
   
   datasets.resize(0);
   

@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <string>
+#include <boost/filesystem/path.hpp>
 
 namespace clif {
   
@@ -15,6 +16,8 @@ std::string appendToPath(std::string str, std::string append);
 std::string remove_last_part(std::string in, char c);
 std::string get_last_part(std::string in, char c);
 std::string get_first_part(std::string in, char c);
+
+boost::filesystem::path get_abs_path(boost::filesystem::path path);
 
 }
 
