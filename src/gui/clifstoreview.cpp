@@ -9,6 +9,7 @@
 #include <QSlider>
 #include <QVBoxLayout>
 
+#include "clifscaledimageview.hpp"
 #include "clifepiview.hpp"
 #include "clif_qt.hpp"
 
@@ -23,9 +24,25 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   _vbox = new QVBoxLayout(this);
   setLayout(_vbox);
   
-  _view = new clifScaledImageView(_vbox);
-  v_box->addWidget(_view);
+  _view = new clifScaledImageView(this);
+  _vbox->addWidget(_view);
   
+  _slider = new QSlider(Qt::Horizontal, this);
+  _slider->setMaximum(store->imgCount());
+  _vbox->addWidget(_slider);
+  
+  std::vector<int> n_idx(store->dims(),0);
+  n_idx[3] = 0;
+    
+  _qimg = new QImage();
+  
+  readQImage(store, n_idx, *_qimg, 0);
+  _view->setImage(*_qimg);
+}
+
+clifStoreView::~clifStoreView()
+{
+  delete _qimg;
 }
 
 }

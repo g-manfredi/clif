@@ -26,89 +26,7 @@
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
-   <layout class="QGridLayout" name="gridLayout_3">
-    <item row="0" column="0">
-     <widget class="QSplitter" name="splitter">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-      <widget class="QTreeWidget" name="tree">
-       <property name="columnCount">
-        <number>2</number>
-       </property>
-       <column>
-        <property name="text">
-         <string notr="true">1</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string notr="true">2</string>
-        </property>
-       </column>
-      </widget>
-      <widget class="QWidget" name="widget" native="true">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-         <horstretch>10</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <layout class="QGridLayout" name="gridLayout">
-        <item row="0" column="0">
-         <layout class="QVBoxLayout" name="verticalLayout_2">
-          <item>
-           <widget class="clifScaledImageView" name="viewer">
-            <property name="sizeAdjustPolicy">
-             <enum>QAbstractScrollArea::AdjustToContents</enum>
-            </property>
-            <property name="dragMode">
-             <enum>QGraphicsView::ScrollHandDrag</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QSlider" name="datasetSlider">
-            <property name="maximum">
-             <number>99</number>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="tickPosition">
-             <enum>QSlider::TicksBelow</enum>
-            </property>
-            <property name="tickInterval">
-             <number>1</number>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QComboBox" name="selViewProc">
-            <item>
-             <property name="text">
-              <string>raw</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>demosaic</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>undistort</string>
-             </property>
-            </item>
-           </widget>
-          </item>
-         </layout>
-        </item>
-       </layout>
-      </widget>
-     </widget>
-    </item>
-   </layout>
+   <layout class="QGridLayout" name="gridLayout_3"/>
   </widget>
   <widget class="QMenuBar" name="Menu">
    <property name="geometry">
@@ -116,7 +34,7 @@
      <x>0</x>
      <y>0</y>
      <width>641</width>
-     <height>31</height>
+     <height>20</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -144,6 +62,48 @@
    </attribute>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QDockWidget" name="treeDock">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_3">
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QTreeWidget" name="tree">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <column>
+        <property name="text">
+         <string notr="true">1</string>
+        </property>
+       </column>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="viewDock">
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_4"/>
+  </widget>
   <action name="actionOpen">
    <property name="text">
     <string>&amp;Open</string>
@@ -162,13 +122,6 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <customwidgets>
-  <customwidget>
-   <class>clifScaledImageView</class>
-   <extends>QGraphicsView</extends>
-   <header>clifscaledimageview.hpp</header>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>

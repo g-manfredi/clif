@@ -1,5 +1,5 @@
-#ifndef _SCALEDQGRAPHICSVIEW_H
-#define _SCALEDQGRAPHICSVIEW_H
+#ifndef _CLIFSCALEDIMAGEVIEW_H
+#define _CLIFSCALEDIMAGEVIEW_H
 
 #include <QtGui>
 #include <QGraphicsView>
