@@ -706,6 +706,8 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags)
   if (mat_cache_get(img,idx,flags,CACHE_CONT_MAT_IMG,scale))
     return;
   
+  printf("read idx %d\n", idx[3]);
+  
   if ((flags & DEMOSAIC) && _org == DataOrg::BAYER_2x2)
     demosaic = true;
   
