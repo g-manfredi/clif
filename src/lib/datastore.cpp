@@ -731,8 +731,10 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags)
   cv::Mat channel_in, channel_out, tmp;
     
   if (demosaic) {
+    cv::Mat channel, img_rgb;
+    
     //read raw channels
-    readChannel(ch_idx, &channel, NO_MEM_CACHE);
+    readChannel(ch_idx, &channel_in, NO_MEM_CACHE);
     cv::cvtColor(channel, img_rgb, order2cv_conf_flag(_order));
     
     cv2ClifMat(&img_rgb, &img_rgb);
