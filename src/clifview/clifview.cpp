@@ -27,7 +27,7 @@ DatasetRoot *root_curr = NULL;
 
 clifStoreView *_storeview = NULL;
 
-void attachTreeItem(QTreeWidgetItem *w, StringTree<Attribute*,Datastore*> *t)
+void attachTreeItem(QTreeWidgetItem *w, StringTree<Attribute*,Datastore*> *t, ClifView *view = NULL, const char *select_store = NULL)
 {
     if (std::get<0>(t->val.second)) {
         w->setData(1, Qt::DisplayRole, QString(std::get<0>(t->val.second)->toString().c_str()));
@@ -37,11 +37,15 @@ void attachTreeItem(QTreeWidgetItem *w, StringTree<Attribute*,Datastore*> *t)
         stream << *std::get<1>(t->val.second);
         w->setData(1, Qt::DisplayRole, stream.str().c_str());
         w->setData(1, Qt::UserRole, qVariantFromValue((void*)std::get<1>(t->val.second)));
+        if (select_store && !std::get<1>(t->val.second)->getDatastorePath().compare(select_store)) {
+          w->setSelected(true);
+          view->on_tree_itemActivated(w, 0);
+        }
     }
 
     for(int i=0;i<t->childCount();i++) {
         QTreeWidgetItem *item = new QTreeWidgetItem(w, QStringList(QString(t->childs[i].val.first.c_str())));
-        attachTreeItem(item, &t->childs[i]);
+        attachTreeItem(item, &t->childs[i], view, select_store);
     }
 }
 
@@ -61,14 +65,14 @@ public:
           dataset = f->openDataset(name);
     }
 
-    void expand(QTreeWidgetItem *item)
+    void expand(QTreeWidgetItem *item, ClifView *view = NULL, const char *expand_store = NULL)
     {
         openDataset();
 
         if (!expanded) {
             StringTree<Attribute*,Datastore*> tree = dataset->getTree();
 
-            attachTreeItem(item, &tree);
+            attachTreeItem(item, &tree, view, expand_store);
         }
     }
     
@@ -134,7 +138,7 @@ QImage  cvMatToQImage( const cv::Mat &inMat )
   return QImage();
 }*/
 
-ClifView::ClifView(QWidget *parent) :
+ClifView::ClifView(const char *cliffile, const char *dataset,  const char *store, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::ClifView)
 {
@@ -142,6 +146,9 @@ ClifView::ClifView(QWidget *parent) :
 
     QStringList headerLabels = {QString("path"), QString("value")};
     ui->tree->setHeaderLabels(headerLabels);
+    
+    if (cliffile)
+      open(cliffile, dataset, store);
 }
 
 ClifView::~ClifView()
@@ -154,8 +161,16 @@ void ClifView::on_actionOpen_triggered()
   QString filename = QFileDialog::getOpenFileName(this,
         tr("Open clif File"));
   
-  std::string path(filename.toLocal8Bit().constData());
-  lf_file.open(path, H5F_ACC_RDONLY);
+  const char *path = filename.toLocal8Bit().constData();
+
+  open(path);
+}
+
+
+void ClifView::open(const char *cliffile, const char *dataset,  const char *store)
+{
+  lf_file.open(cliffile, H5F_ACC_RDONLY);
+  _load_store = NULL;
   
   //lffile = H5::H5File(filename.toLocal8Bit().constData(), H5F_ACC_RDONLY);
 
@@ -172,6 +187,11 @@ void ClifView::on_actionOpen_triggered()
      
      item->setData(0, Qt::UserRole, QVP<DatasetRoot>::asQVariant(root));
      root_list.push_back(root);
+     
+     if (dataset && !datasets[i].compare(dataset)) {
+       _load_store = store;       
+       ui->tree->expandItem(item);
+     }
   }
 }
 
@@ -227,7 +247,7 @@ void ClifView::on_tree_itemExpanded(QTreeWidgetItem *item)
     
     DatasetRoot *root = QVP<DatasetRoot>::asPtr(item->data(0, Qt::UserRole));
     
-    root->expand(item);
+    root->expand(item, this, _load_store);
 }
 
 void ClifView::on_tree_itemActivated(QTreeWidgetItem *item, int column)

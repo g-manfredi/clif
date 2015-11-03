@@ -11,6 +11,7 @@
 
 const int maxsize = 1024*1024;
 
+#define RETNULLONFALSE(A) if (!(A)) return NULL;
 
 #define MAXPARTS 1000
 #define SECTION_MAXLEN 4096
@@ -727,28 +728,36 @@ CLIF_EXPORT int cliarg_sum(cliini_arg *arg)
 
 CLIF_EXPORT void cliarg_strs(cliini_arg *arg, char **vals)
 {
+  RETNULLONFALSE(arg)
+  RETNULLONFALSE(vals)
   int i;
   memcpy((void*)vals, arg->vals, sizeof(char*)*arg->sum);
 }
 
 CLIF_EXPORT void cliarg_doubles(cliini_arg *arg, double *vals)
 {
+  RETNULLONFALSE(arg)
+  RETNULLONFALSE(vals)
   int i;
   memcpy((void*)vals, arg->vals, sizeof(double)*arg->sum);
 }
 
 CLIF_EXPORT void cliarg_ints(cliini_arg *arg, int *vals)
 {
+  RETNULLONFALSE(arg)
+  RETNULLONFALSE(vals)
   int i;
   memcpy((void*)vals, arg->vals, sizeof(int)*arg->sum);
 }
 
 CLIF_EXPORT char  *cliarg_str(cliini_arg *arg)
 {
+  RETNULLONFALSE(arg)
   return ((char**)arg->vals)[0];
 }
 
 CLIF_EXPORT char  *cliarg_nth_str(cliini_arg *arg, int n)
 {
+  RETNULLONFALSE(arg)
   return ((char**)arg->vals)[n];
 }
