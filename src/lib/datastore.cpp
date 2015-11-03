@@ -562,12 +562,12 @@ void apply_flags_channel(Datastore *store, cv::Mat *in, cv::Mat *out, int flags)
     else if (curr->depth() == CV_16U) {
       *curr *= 1.0/256.0;
       curr->convertTo(*out, CV_8U);
+      curr = out;
     }
     else {
       printf("FIXME implement 8bit conversion!\n");
       abort();
     }
-    curr = out;
   }
   
   if (flags & UNDISTORT) {
@@ -615,7 +615,7 @@ void apply_flags_image(cv::Mat *in, cv::Mat *out, int flags)
     sum.convertTo(out2d, out->type());
   }
   else if (out->data != in->data) {
-    in->copyTo(*out);
+    *out = *in;
   }
 }
 
@@ -669,13 +669,13 @@ int order2cv_conf_flag(DataOrder order)
 {
   switch (order) {
     case DataOrder::RGGB :
-      return CV_BayerBG2BGR;
-    case DataOrder::BGGR :
       return CV_BayerRG2BGR;
+    case DataOrder::BGGR :
+      return CV_BayerBG2BGR;
     case DataOrder::GBRG :
-      return CV_BayerGR2BGR;
-    case DataOrder::GRBG :
       return CV_BayerGB2BGR;
+    case DataOrder::GRBG :
+      return CV_BayerGR2BGR;
     default :
       abort();
   }
@@ -734,16 +734,18 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags)
     cv::Mat channel, img_rgb;
     
     //read raw channels
-    readChannel(ch_idx, &channel_in, NO_MEM_CACHE);
-    cv::cvtColor(channel, img_rgb, order2cv_conf_flag(_order));
+    readChannel(ch_idx, &channel, NO_MEM_CACHE);
+    cv::cvtColor(channel, channel, order2cv_conf_flag(_order));
     
-    cv2ClifMat(&img_rgb, &img_rgb);
+    cv2ClifMat(&channel, &img_rgb);
     
-    apply_flags_image(&img_rgb, &img_rgb, flags);
+    apply_flags_image(&img_rgb, &tmp, flags);
+    
+    assert(tmp.size[0] = output_size[0]);
     
     //convert
-    for(int i=0;i<3;i++) {
-      channel_in = mat_2d_from_3d(img_rgb, i);
+    for(int i=0;i<tmp.size[0];i++) {
+      channel_in = mat_2d_from_3d(tmp, i);
       channel_out = mat_2d_from_3d(*img, i);
       apply_flags_channel(this, &channel_in, &channel_out, flags);
     }
