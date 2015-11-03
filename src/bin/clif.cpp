@@ -264,8 +264,6 @@ int main(const int argc, const char *argv[])
       set = f_out.openDataset(0);
     }
     
-    printf("check1 extent: %p %d %d %d %d\n", set, set->extent()[0], set->extent()[1], set->extent()[2], set->extent()[3]);
-    
     for(uint i=0;i<input_inis.size();i++) {
       printf("append ini file!\n");
       //FIXME multiple type files?
@@ -283,7 +281,9 @@ int main(const int argc, const char *argv[])
     //set->writeAttributes();
     
     //set dims for 3d LG (imgs are 3d themselves...)
-    //set->setDims(4);
+    if (!set->dims())
+      set->setDims(4);
+    
     for(uint i=0;i<input_imgs.size();i++) {
       printf("store idx %d: %s\n", i, input_imgs[i].c_str());
       Mat img = imread(input_imgs[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
@@ -292,8 +292,6 @@ int main(const int argc, const char *argv[])
         cvtColor(img, img, COLOR_BGR2RGB);
       set->appendImage(&img);
     }
-    
-    printf("check2 extent: %p %d %d %d %d\n", set, set->extent()[0], set->extent()[1], set->extent()[2], set->extent()[3]);
     
     if (input_calib_imgs.size()) {
       Datastore *calib_store = set->createCalibStore();
