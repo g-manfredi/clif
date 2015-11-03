@@ -8,6 +8,7 @@
 class QSlider;
 class QVBoxLayout;
 class QTimer;
+class QComboBox;
 
 namespace clif {
   
@@ -26,16 +27,17 @@ public:
 private slots:
   void load_img();
   void queue_sel_img(int n);
+  void queue_load_img();
   
 private:
-  QVBoxLayout *_vbox;
-  clifScaledImageView *_view;
-  QSlider *_slider;
+  clifScaledImageView *_view = NULL;
   QImage *_qimg = NULL;
   Datastore *_store = NULL;
   int _curr_idx = -1;
+  int _curr_flags = 0;
   int _show_idx = 0;
   QTimer *_timer = NULL;
+  QComboBox *_sel = NULL;
   bool _rendering = false;
   
 };

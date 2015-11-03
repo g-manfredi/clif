@@ -4,10 +4,11 @@
 
 #include <QApplication>
 #include <QSplitter>
-#include <QGraphicsLineItem>
 #include <QTimer>
 #include <QSlider>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QComboBox>
 
 #include "clifscaledimageview.hpp"
 #include "clifepiview.hpp"
@@ -21,6 +22,11 @@ namespace clif {
 clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
 : QWidget(parent)
 {
+  QHBoxLayout *hbox;
+  QVBoxLayout *_vbox;
+  QWidget *w;
+  QSlider *_slider;
+  
   _store = store;
   _vbox = new QVBoxLayout(this);
   setLayout(_vbox);
@@ -28,11 +34,25 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   _view = new clifScaledImageView(this);
   _vbox->addWidget(_view);
   
+  hbox = new QHBoxLayout(this);
+  w = new QWidget(this);
+  _vbox ->addWidget(w);
+  w->setLayout(hbox);
+  
+  _sel = new QComboBox(this);
+  _sel->addItem("raw", QVariant(0));
+  _sel->addItem("demosaic", QVariant(DEMOSAIC));
+  _sel->addItem("gray", QVariant(CVT_GRAY));
+  _sel->addItem("undistort", QVariant(UNDISTORT));
+  _sel->setCurrentIndex(0);
+  hbox->addWidget(_sel);
+  
   _slider = new QSlider(Qt::Horizontal, this);
   _slider->setTickInterval(1);
   _slider->setTickPosition(QSlider::TicksBelow);
   _slider->setMaximum(_store->imgCount()-1);
-  _vbox->addWidget(_slider);
+  hbox->addWidget(_slider);
+
   
   _qimg = new QImage();
   
@@ -40,6 +60,7 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   load_img();
   
   connect(_slider, SIGNAL(valueChanged(int)), this, SLOT(queue_sel_img(int)));
+  connect(_sel, SIGNAL(currentIndexChanged(int)), this, SLOT(queue_load_img()));
 }
 
 clifStoreView::~clifStoreView()
@@ -51,6 +72,11 @@ void clifStoreView::queue_sel_img(int n)
 {
   _show_idx = n;
 
+  queue_load_img();
+}
+
+void clifStoreView::queue_load_img()
+{
   if (!_timer) {
     _timer = new QTimer(this);
     connect(_timer, SIGNAL(timeout()), this, SLOT(load_img()));
@@ -65,16 +91,17 @@ void clifStoreView::load_img()
   if (_timer)
     _timer = NULL;
   
-  if (_curr_idx == _show_idx)
+  if (_curr_idx == _show_idx && _curr_flags == _sel->itemData(_sel->currentIndex()).value<int>())
     return;
   
-  std::vector<int> n_idx(_store->dims(),0);
-  n_idx[3] = _show_idx;
-  
-  readQImage(_store, n_idx, *_qimg, 0);
-  _view->setImage(*_qimg);
-  
+  _curr_flags = _sel->itemData(_sel->currentIndex()).value<int>();
   _curr_idx = _show_idx;
+  
+  std::vector<int> n_idx(_store->dims(),0);
+  n_idx[3] = _curr_idx;
+  
+  readQImage(_store, n_idx, *_qimg, _curr_flags);
+  _view->setImage(*_qimg);
   
   //force results of this slow operation to be displayed
   _rendering = true;
