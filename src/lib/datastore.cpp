@@ -166,19 +166,11 @@ static void get_format_fields(Dataset *set, path format_group, DataOrg &org, Dat
   set->getEnum(format_group / "organisation", org);
   set->getEnum(format_group / "order",        order);
   
-  Attribute *test = set->get(format_group / "organisation");
-  assert(test);
-  printf("org: %p %s %d %p\n", set, test->getStr(), org, &org);
-  
   if (org <= DataOrg::INVALID)
     org = DataOrg::PLANAR;
   
-  if (order <= DataOrder::INVALID) {
-    printf("no order!\n");
-    abort();
+  if (order <= DataOrder::INVALID)
     order = DataOrder::INVALID;
-    channels = 1;
-  }
   
   if (org == DataOrg::PLANAR)
     switch (order) {
@@ -917,7 +909,7 @@ std::ostream& operator<<(std::ostream& out, const Datastore& a)
 
 void Datastore::flush()
 {
-  if (valid() && _memonly && _readonly && !_dataset->memoryFile()) {
+  if (valid() && _memonly && !_dataset->memoryFile()) {
     printf("flush %s\n", _path.c_str());
     //write memory-only data into file (and convert datastore to regular)
     //FIXME _data should be empty/invalid h5dataset!
@@ -953,6 +945,8 @@ void Datastore::flush()
     _mat.release();
     delete dims;
   }
+  else
+    printf("no need to flush %s\n", _path.c_str());
 }
 
 Datastore::~Datastore()

@@ -141,6 +141,12 @@ void ClifFile::open(const std::string &filename, unsigned int flags)
   }
 }
 
+//FIXME delete datasets?
+void ClifFile::close()
+{
+  f.close();
+}
+
 void ClifFile::create(const std::string &filename)
 {
   _path = boost::filesystem::absolute(filename);

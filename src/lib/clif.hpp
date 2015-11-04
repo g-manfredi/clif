@@ -47,12 +47,14 @@ public:
   Dataset* openDataset(int idx);
   Dataset* openDataset(const std::string name = std::string());
 
-  Dataset* createDataset(const std::string name);
+  Dataset* createDataset(const std::string name = "default");
   
   int datasetCount();
   const boost::filesystem::path& path();
   
   bool valid();
+  
+  void close();
   
   const std::vector<std::string> & datasetList() const {return datasets;};
   
