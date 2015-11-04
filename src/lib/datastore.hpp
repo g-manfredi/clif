@@ -37,7 +37,7 @@ public:
     void writeImage(const std::vector<int> &idx, cv::Mat *img);
     void appendImage(cv::Mat *img);
     
-    void readImage(const std::vector<int> &idx, cv::Mat *img, int flags = 0);
+    void readImage(const std::vector<int> &idx, cv::Mat *img, int flags = 0, double min = std::numeric_limits<float>::quiet_NaN(), double max = std::numeric_limits<float>::quiet_NaN());
     void readChannel(const std::vector<int> &idx, cv::Mat *channel, int flags = 0);
     
     void setDims(int dims);

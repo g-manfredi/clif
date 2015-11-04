@@ -9,6 +9,8 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QComboBox>
+#include <QCheckBox>
+#include <QDoubleSpinBox>
 
 #include "clifscaledimageview.hpp"
 #include "clifepiview.hpp"
@@ -34,6 +36,7 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   _view = new clifScaledImageView(this);
   _vbox->addWidget(_view);
   
+  ///////////////////// SLIDER /////////////////////
   hbox = new QHBoxLayout(this);
   w = new QWidget(this);
   _vbox ->addWidget(w);
@@ -52,7 +55,25 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   _slider->setTickPosition(QSlider::TicksBelow);
   _slider->setMaximum(_store->imgCount()-1);
   hbox->addWidget(_slider);
-
+  
+  ///////////////////// RANGE /////////////////////
+  hbox = new QHBoxLayout(this);
+  w = new QWidget(this);
+  _vbox ->addWidget(w);
+  w->setLayout(hbox);
+  _range_ck = new QCheckBox("scale for range", this);
+  connect(_range_ck, SIGNAL(stateChanged(int)), this, SLOT(rangeStateChanged(int)));
+  hbox->addWidget(_range_ck);
+  _sp_min = new QDoubleSpinBox(this);
+  _sp_min->setRange(-1000000000,std::numeric_limits<double>::max());
+  _sp_min->setDisabled(true);
+  connect(_sp_min, SIGNAL(valueChanged(double)), this, SLOT(queue_load_img()));
+  hbox->addWidget(_sp_min);
+  _sp_max = new QDoubleSpinBox(this);
+  _sp_max->setRange(-1000000000,std::numeric_limits<double>::max());
+  _sp_max->setDisabled(true);
+  connect(_sp_max, SIGNAL(valueChanged(double)), this, SLOT(queue_load_img()));
+  hbox->addWidget(_sp_max);
   
   _qimg = new QImage();
   
@@ -75,6 +96,20 @@ void clifStoreView::queue_sel_img(int n)
   queue_load_img();
 }
 
+void clifStoreView::rangeStateChanged(int s)
+{
+  if (s == Qt::Checked) {
+    _sp_min->setDisabled(false);
+    _sp_max->setDisabled(false);
+  }
+  else {
+    _sp_min->setDisabled(true);
+    _sp_max->setDisabled(true);
+  }
+  
+  queue_load_img();
+}
+
 void clifStoreView::queue_load_img()
 {
   if (!_timer) {
@@ -91,7 +126,7 @@ void clifStoreView::load_img()
   if (_timer)
     _timer = NULL;
   
-  if (_curr_idx == _show_idx && _curr_flags == _sel->itemData(_sel->currentIndex()).value<int>())
+  if (_curr_idx == _show_idx && _curr_flags == _sel->itemData(_sel->currentIndex()).value<int>() && _range_ck->checkState() != Qt::Checked)
     return;
   
   _curr_flags = _sel->itemData(_sel->currentIndex()).value<int>();
@@ -100,7 +135,10 @@ void clifStoreView::load_img()
   std::vector<int> n_idx(_store->dims(),0);
   n_idx[3] = _curr_idx;
   
-  readQImage(_store, n_idx, *_qimg, _curr_flags);
+  if (_range_ck->checkState() == Qt::Checked)
+    readQImage(_store, n_idx, *_qimg, _curr_flags, _sp_min->value(), _sp_max->value());
+  else
+    readQImage(_store, n_idx, *_qimg, _curr_flags);
   _view->setImage(*_qimg);
   
   //force results of this slow operation to be displayed

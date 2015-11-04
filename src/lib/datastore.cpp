@@ -552,7 +552,7 @@ void Datastore::mat_cache_set(cv::Mat *m, const std::vector<int> idx, int flags,
 }
 
 
-void apply_flags_channel(Datastore *store, cv::Mat *in, cv::Mat *out, int flags)
+void apply_flags_channel(Datastore *store, cv::Mat *in, cv::Mat *out, int flags, double min = std::numeric_limits<float>::quiet_NaN(), double max = std::numeric_limits<float>::quiet_NaN())
 {
   //for format conversion
   cv::Mat *curr = in;
@@ -560,13 +560,22 @@ void apply_flags_channel(Datastore *store, cv::Mat *in, cv::Mat *out, int flags)
   if (flags & CVT_8U) {
     if (curr->depth() == CV_8U) {} //do nothing
     else if (curr->depth() == CV_16U) {
-      *curr *= 1.0/256.0;
+      if (isnan(min) || isnan(max))
+        *curr *= 1.0/256.0;
+      else {
+        *curr -= min;
+        *curr *= 256.0 / (max-min);
+      }
       curr->convertTo(*out, CV_8U);
       curr = out;
     }
     else {
-      printf("FIXME implement 8bit conversion!\n");
-      abort();
+      if (!isnan(min) && !isnan(max)) {
+        *curr -= min;
+        *curr *= 256.0 / (max-min);
+      }
+      curr->convertTo(*out, CV_8U);
+      curr = out;
     }
   }
   
@@ -633,7 +642,6 @@ void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int f
   
   if (mat_cache_get(channel,idx,flags,CACHE_CONT_MAT_CHANNEL,scale))
     return; 
-
   
   ch_size[0] = _basesize[0];
   ch_size[1] = _basesize[1];
@@ -682,7 +690,7 @@ int order2cv_conf_flag(DataOrder order)
 }
 
 //this is always a 3d mat!
-void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags)
+void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags, double min, double max)
 {
   float scale = -1.0;
   int imgsize[3], output_size[3];
@@ -697,11 +705,17 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags)
   int output_depth = depth;
   int channel_flags = flags;
   bool demosaic = false;
+  bool disable_cache = false;
+  
+  if (!isnan(min) && !isnan(max))
+    disable_cache = true;
   
   if (flags & CVT_GRAY)
     flags |= DEMOSAIC;
   if (flags & UNDISTORT)
     flags |= DEMOSAIC;
+  if (disable_cache)
+    flags |= NO_MEM_CACHE;
     
   if (mat_cache_get(img,idx,flags,CACHE_CONT_MAT_IMG,scale))
     return;
@@ -749,7 +763,7 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags)
     for(int i=0;i<tmp.size[0];i++) {
       channel_in = mat_2d_from_3d(tmp, i);
       channel_out = mat_2d_from_3d(*img, i);
-      apply_flags_channel(this, &channel_in, &channel_out, flags);
+      apply_flags_channel(this, &channel_in, &channel_out, flags, min, max);
     }
   }
   else {
@@ -764,7 +778,7 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags)
     for(int i=0;i<output_size[0];i++) {
       channel_in = mat_2d_from_3d(tmp, i);
       channel_out = mat_2d_from_3d(*img, i);
-      apply_flags_channel(this, &channel_in, &channel_out, flags);
+      apply_flags_channel(this, &channel_in, &channel_out, flags, min, max);
     }
   }
   

@@ -9,6 +9,8 @@ class QSlider;
 class QVBoxLayout;
 class QTimer;
 class QComboBox;
+class QCheckBox;
+class QDoubleSpinBox;
 
 namespace clif {
   
@@ -28,6 +30,7 @@ private slots:
   void load_img();
   void queue_sel_img(int n);
   void queue_load_img();
+  void rangeStateChanged(int s);
   
 private:
   clifScaledImageView *_view = NULL;
@@ -39,6 +42,9 @@ private:
   QTimer *_timer = NULL;
   QComboBox *_sel = NULL;
   bool _rendering = false;
+  QCheckBox *_range_ck = NULL;
+  QDoubleSpinBox *_sp_min = NULL;
+  QDoubleSpinBox *_sp_max = NULL;
   
 };
   
