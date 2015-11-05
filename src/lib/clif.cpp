@@ -151,7 +151,7 @@ void ClifFile::create(const std::string &filename)
 {
   _path = boost::filesystem::absolute(filename);
   
-  f = H5::H5File(filename, H5F_ACC_TRUNC);
+  f = H5::H5File(filename.c_str(), H5F_ACC_TRUNC);
   
   datasets.resize(0);
   

@@ -48,6 +48,11 @@ void ExternalClifViewer::error(QLocalSocket::LocalSocketError e)
   if (_store.size())
     args << "-s" << _store;
   
-  QString file = "/home/hendrik/projects/clif/build/src/clifview/clifview";
+#if defined (_WIN32)
+  QString file = "clifview.exe";
+#else
+  QString file = "clifview";
+#endif
+
   process->start(file, args);
 }
