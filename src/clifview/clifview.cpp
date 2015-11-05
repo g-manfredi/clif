@@ -4,12 +4,15 @@
 #include <QTimer>
 #include <QFileDialog>
 #include <QGraphicsPixmapItem>
+#include <QtNetwork>
+
 #include <opencv2/opencv.hpp>
 
 #include "clifepiview.hpp"
 #include "clif_qt.hpp"
 #include "dataset.hpp"
 #include "clifstoreview.hpp"
+#include "clifviewcaller.hpp"
 
 using namespace clif;
 using namespace std;
@@ -138,6 +141,20 @@ QImage  cvMatToQImage( const cv::Mat &inMat )
   return QImage();
 }*/
 
+static QLocalServer* add_server(ClifView *clifview)
+{
+  QLocalServer *server = new QLocalServer(clifview);
+  if (!server->listen("clifview_showfile")) {
+    printf("could not start server - will not listen to show requests - %s!\n", server->errorString().toUtf8().constData());
+    delete server;
+    return NULL;
+  }
+  
+  ClifView::connect(server, SIGNAL(newConnection()), clifview, SLOT(showFileNewCon()));
+  
+  return server;
+}
+
 ClifView::ClifView(const char *cliffile, const char *dataset,  const char *store, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::ClifView)
@@ -149,7 +166,68 @@ ClifView::ClifView(const char *cliffile, const char *dataset,  const char *store
     
     if (cliffile)
       open(cliffile, dataset, store);
+    
+    _server = add_server(this);
 }
+
+void ClifView::showFileNewCon()
+{
+    _server_socket = _server->nextPendingConnection();
+    
+    if (!_server_socket || _server_socket->state() != QLocalSocket::ConnectedState) {
+      printf("error getting local socket %s\n", _server_socket->errorString().toUtf8().constData());
+      if (_server_socket) {
+        delete _server_socket;
+        _server_socket = NULL;
+      }
+    }
+    else {    
+      connect(_server_socket, SIGNAL(readyRead()), this, SLOT(showFileReadyRead()));
+    }
+}
+
+void ClifView::showFileReadyRead()
+{
+  QString filename;
+  QString dataset;
+  QString store;
+  printf("client connected!\n");
+  
+  QDataStream in(_server_socket);
+  in.setVersion(QDataStream::Qt_4_0);
+  
+  in >> filename;
+  in >> dataset;
+  in >> store;
+  
+  printf("opening %s - %s - %s\n", filename.toUtf8().constData(), dataset.toUtf8().constData(), store.toUtf8().constData());
+  
+  delete _client_socket;
+  
+  open(filename.toUtf8().constData(), dataset.toUtf8().constData(), store.toUtf8().constData());
+}
+
+/*void ClifView::showFileClientConnected()
+{
+  int written;
+  char buf[4096];
+  
+  sprintf(buf, "%s\n", "/home/hendrik/projects/clif/demo.clif");
+  
+  QByteArray block;
+  QDataStream out(&block, QIODevice::WriteOnly);
+  out.setVersion(QDataStream::Qt_4_0);
+  out << tr("/home/hendrik/projects/clif/examples/demo.clif");
+  //out << tr("default");
+  //out << tr("data");
+  
+  _client_socket->write(block);
+}
+
+void ClifView::showFileClientError(QLocalSocket::LocalSocketError e)
+{
+    printf("client error %d - %s!\n", e, _client_socket->errorString().toUtf8().constData());
+}*/
 
 ClifView::~ClifView()
 {
@@ -171,6 +249,8 @@ void ClifView::open(const char *cliffile, const char *dataset,  const char *stor
 {
   lf_file.open(cliffile, H5F_ACC_RDONLY);
   _load_store = NULL;
+  
+  printf("opening: %s - %s - %s\n", cliffile, dataset, store);
   
   //lffile = H5::H5File(filename.toLocal8Bit().constData(), H5F_ACC_RDONLY);
 

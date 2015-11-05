@@ -10,11 +10,14 @@ if (CLIF_BUILD_QT)
    set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
    find_package(Qt5Widgets REQUIRED)
+   find_package(Qt5Network REQUIRED)
    find_package(Boost REQUIRED COMPONENTS filesystem system)
 
    include_directories(${Qt5Widgets_INCLUDE_DIRS})
+   include_directories(${Qt5Network_INCLUDE_DIRS})
    include_directories(include)
    add_definitions(${Qt5Widgets_DEFINITIONS})
+   add_definitions(${Qt5Network_DEFINITIONS})
 
 #Find all files of the procject in the related directory / subdirectories (necessary for linking in the executable)
    file(GLOB srcs *.cpp *.cpp)
@@ -30,7 +33,7 @@ if (CLIF_BUILD_QT)
    endif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
    add_executable (${PROJECT_NAME} ${srcs} ${hdrs} ${Boost_INCLUDE_DIRS})
-   target_link_libraries(${PROJECT_NAME} clif-qt ${Qt5Widgets_LIBRARIES} ${Boost_LIBRARIES})
+   target_link_libraries(${PROJECT_NAME} clif-qt ${Qt5Widgets_LIBRARIES} ${Qt5Network_LIBRARIES} ${Boost_LIBRARIES})
 
    install(TARGETS ${PROJECT_NAME} DESTINATION bin )
 endif()

@@ -5,9 +5,12 @@
 #include <QListWidgetItem>
 #include <QTreeWidgetItem>
 
+#include <QLocalSocket>
+
 #include "clif_qt.hpp"
 
 class DatasetRoot;
+class QLocalServer;
 
 namespace Ui {
 class ClifView;
@@ -37,10 +40,18 @@ private slots:
     void on_tree_itemExpanded(QTreeWidgetItem *item);
     void on_actionSet_horopter_triggered();
     void slider_changed_delayed();
-
+    void showFileNewCon();
+    void showFileReadyRead();
+    //void showFileClientConnected();
+    //void showFileClientError(QLocalSocket::LocalSocketError e);
+    
 private:
     Ui::ClifView *ui;
     const char *_load_store = NULL;
+    
+    QLocalServer *_server = NULL;
+    QLocalSocket *_server_socket = NULL;
+    QLocalSocket *_client_socket = NULL;
 };
 
 #endif // CLIFVIEW_H

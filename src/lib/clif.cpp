@@ -155,12 +155,14 @@ void ClifFile::create(const std::string &filename)
   
   datasets.resize(0);
   
-  if (f.getId() == H5I_INVALID_HID)
+  if (f.getId() == H5I_INVALID_HID) {
+    printf("could not open %s\n", filename.c_str());
     return;
+  }
   
   if (!h5_obj_exists(f, "/clif"))
       return;
-    
+//     
   H5::Group g = f.openGroup("/clif");
   
   hsize_t count = g.getNumObjs();
