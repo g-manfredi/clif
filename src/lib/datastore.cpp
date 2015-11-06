@@ -909,49 +909,63 @@ std::ostream& operator<<(std::ostream& out, const Datastore& a)
 
 void Datastore::flush()
 {
-  if (valid() && _memonly && !_dataset->memoryFile()) {
-    printf("flush %s\n", _path.c_str());
-    //write memory-only data into file (and convert datastore to regular)
-    //FIXME _data should be empty/invalid h5dataset!
-    
-    path fullpath = _dataset->path() / _path;
-    
-    if (h5_obj_exists(_dataset->f(), fullpath)) {
-      printf("TODO overwrite (store %s exists)!\n", fullpath.c_str());
-      abort();
+  if (!valid())
+    return;
+  
+  if (_memonly) {
+    if (_dataset->memoryFile()) {
+      _mat.release();
     }
-    
-    h5_create_path_groups(_dataset->f(), fullpath.parent_path());
-    
-    hsize_t *dims = new hsize_t[_mat.dims];
-    for(int i=0;i<_mat.dims;i++)
-      dims[i] = _mat.size[i];
-    
-    //H5::DSetCreatPropList prop;    
-    //prop.setChunk(dimcount, chunk_dims);
-    
-    H5::DataSpace space(_mat.dims, dims, dims);
-    
-    if (_mat.channels() != 1)
-      abort();
-    
-    _data = _dataset->f().createDataSet(fullpath.generic_string().c_str(), 
-                                        H5PredType(CvDepth2BaseType(_mat.depth())), space);
-    
-    _data.write(_mat.data, H5::DataType(H5PredType(CvDepth2BaseType(_mat.depth()))), space, space);
-    
-    _readonly = false;
-    _memonly = false;
-    _mat.release();
-    delete dims;
+    else {
+      printf("flush %s\n", _path.c_str());
+      //write memory-only data into file (and convert datastore to regular)
+      //FIXME _data should be empty/invalid h5dataset!
+      
+      path fullpath = _dataset->path() / _path;
+      
+      if (h5_obj_exists(_dataset->f(), fullpath)) {
+        printf("TODO overwrite (store %s exists)!\n", fullpath.c_str());
+        abort();
+      }
+      
+      h5_create_path_groups(_dataset->f(), fullpath.parent_path());
+      
+      hsize_t *dims = new hsize_t[_mat.dims];
+      for(int i=0;i<_mat.dims;i++)
+        dims[i] = _mat.size[i];
+      
+      //H5::DSetCreatPropList prop;    
+      //prop.setChunk(dimcount, chunk_dims);
+      
+      H5::DataSpace space(_mat.dims, dims, dims);
+      
+      if (_mat.channels() != 1)
+        abort();
+      
+      _data = _dataset->f().createDataSet(fullpath.generic_string().c_str(), 
+                                          H5PredType(CvDepth2BaseType(_mat.depth())), space);
+      
+      _data.write(_mat.data, H5::DataType(H5PredType(CvDepth2BaseType(_mat.depth()))), space, space);
+      
+      _readonly = false;
+      _memonly = false;
+      _mat.release();
+      delete dims;
+    }
   }
   else
-    printf("no need to flush %s\n", _path.c_str());
+    assert(_mat.total() == 0);
+  
 }
 
 Datastore::~Datastore()
 {
   flush();
+  
+  for(auto i=image_cache.begin();i!=image_cache.end();++i) {
+    if ((i->first >> 16) & (CACHE_CONT_MAT_CHANNEL | CACHE_CONT_MAT_IMG))
+      delete (cv::Mat*)i->second;
+  }
 }
 
 }

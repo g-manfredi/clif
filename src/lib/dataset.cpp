@@ -243,6 +243,8 @@ bool Dataset::memoryFile()
 //link second dataset into the place of current dataset
 void Dataset::memory_link(const Dataset *other)
 { 
+  reset();
+  
   _memory_file = true;
   _file = h5_memory_file();
   link(other);
@@ -293,6 +295,12 @@ Datastore *Dataset::addStore(const std::string &path)
   _stores[store->getDatastorePath()] = store;
   
   return store;
+}
+
+void Dataset::reset()
+{
+  this->~Dataset();
+  new(this) Dataset();
 }
 
 void Dataset::addStore(Datastore *store)
