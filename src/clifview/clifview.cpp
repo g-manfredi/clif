@@ -199,12 +199,18 @@ void ClifView::showFileReadyRead()
   in >> filename;
   in >> dataset;
   in >> store;
-  
-  printf("opening %s - %s - %s\n", filename.toUtf8().constData(), dataset.toUtf8().constData(), store.toUtf8().constData());
-  
+
+  char *fs = strdup(filename.toUtf8().constData());
+  char *ds = strdup(dataset.toUtf8().constData());
+  char *ss = strdup(store.toUtf8().constData());
+ 
   delete _client_socket;
   
-  open(filename.toUtf8().constData(), dataset.toUtf8().constData(), store.toUtf8().constData());
+  open(fs, ds, ss);
+
+  free(fs);
+  free(ds);
+  free(ss);
 }
 
 /*void ClifView::showFileClientConnected()
@@ -239,9 +245,11 @@ void ClifView::on_actionOpen_triggered()
   QString filename = QFileDialog::getOpenFileName(this,
         tr("Open clif File"));
   
-  const char *path = filename.toLocal8Bit().constData();
+  char *path = strdup(filename.toUtf8().constData());
 
   open(path);
+
+  free(path);
 }
 
 

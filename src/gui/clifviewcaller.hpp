@@ -3,8 +3,9 @@
 
 #include <QObject>
 #include <QLocalSocket>
+#include "config.h"
 
-class ExternalClifViewer : public QObject
+class CLIF_EXPORT ExternalClifViewer : public QObject
 {
   Q_OBJECT
   
