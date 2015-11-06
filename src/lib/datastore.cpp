@@ -355,6 +355,7 @@ void Datastore::cache_set(const std::vector<int> idx, int flags, int extra_flags
   }
   
   uint64_t key = (idx_sum * PROCESS_FLAGS_MAX) | flags | (extra_flags << 16);
+#pragma omp critical
   image_cache[key] = data;
 }
 
@@ -622,18 +623,20 @@ void apply_flags_image(cv::Mat *in, cv::Mat *out, int flags)
 
 void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int flags)
 {
-  float scale = -1.0;
-  hsize_t *dims = NULL;
-  H5::DataSpace space = _data.getSpace();
-  bool extend = false;
-  hsize_t *size;
-  hsize_t *start;
   std::vector<int> ch_size(idx.size(), 1);
-  
-  assert(idx.size() == _extent.size());
+  float scale = -1.0;
   
   if (mat_cache_get(channel,idx,flags,CACHE_CONT_MAT_CHANNEL,scale))
     return; 
+
+  hsize_t *dims = NULL;
+  bool extend = false;
+  hsize_t *size;
+  hsize_t *start;
+
+  
+  assert(idx.size() == _extent.size());
+  
   
   ch_size[0] = _basesize[0];
   ch_size[1] = _basesize[1];
@@ -641,9 +644,6 @@ void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int f
   size = new_h5_dim_vec_from_extent(ch_size);
   start = new_h5_dim_vec_from_extent(idx);
   
-  space.selectHyperslab(H5S_SELECT_SET, size, start);
-  
-  H5::DataSpace imgspace(idx.size(), size);
   
   //just stores memory buffer again
   uchar *data = channel->data;
@@ -653,7 +653,15 @@ void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int f
   reader.create(_basesize[1], _basesize[0], BaseType2CvDepth(_type));
 
   //find out wether format changed?
+//protect hdf5
+#pragma omp critical
+  {
+  H5::DataSpace imgspace(idx.size(), size);
+  H5::DataSpace space;
+  space = _data.getSpace();
+  space.selectHyperslab(H5S_SELECT_SET, size, start);
   _data.read(reader.data, H5PredType(_type), imgspace, space);
+  }
   
   //FIXME create channel wit correct parameters!
   apply_flags_channel(this, &reader, channel, flags);

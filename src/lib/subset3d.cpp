@@ -198,16 +198,23 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
   if (interp == Interpolation::LINEAR)
     epi->setTo(0);
   
+  int cv_t_count = cv::getNumThreads();
+  
+#pragma omp parallel
+  if (!cv_t_count)
+    cv::setNumThreads(0);
+#pragma omp parallel for
   for(int i=0;i<h;i++) {
+    std::vector<int> idx_l(_data->dims(), 0);
     Mat img;
-    idx[3] = i;
-    _data->readImage(idx, &img, flags | UNDISTORT);
+    idx_l[3] = i;
+    _data->readImage(idx_l, &img, flags | UNDISTORT);
     
     for(int c=0;c<_data->imgChannels();c++) {    
       cv::Mat channel = clifMat_channel(img, c);
       cv::Mat epi_ch = clifMat_channel(*epi, c);
-      assert(epi_ch.type() == channel.type());
-      
+
+      assert(epi_ch.type() == channel.type());      
       assert(channel.size().width == w);
             
       //FIXME rounding?
@@ -215,12 +222,6 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
       
       if (abs(d) >= w)
         continue;
-      
-      //Mat line_in = tmp[c].row(line);
-      //Mat line_out = ch->row(i);
-            
-      //channel.row(line).copyTo(epi_ch.row(i));
-      //epi_ch.setTo(255);
       
       switch (interp) {
         case Interpolation::LINEAR :
@@ -230,18 +231,11 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
         default :
           callByBaseType<warp_1d_nearest_dispatcher>(CvDepth2BaseType(epi_ch.depth()),&channel, &epi_ch, line, i, d);
       }
-      
-      /*if (tmp[c].type() == CV_16UC1)
-       *       //warp_1d_nearest<uint16_t>(tmp[c].row(line), ch->row(i), d);
-       *       warp_1d_linear<uint16_t>(tmp[c].row(line), ch->row(i), d);
-       *     else if (tmp[c].type() == CV_8UC1)
-       *       warp_1d_linear<uint8_t>(tmp[c].row(line), ch->row(i), d);
-       *     else
-       *       abort();*/
-      //Matx23d warp(1,0,d, 0,1,0);
-      //warpAffine(tmp.row(line), m.row(i), warp, m.row(i).size(), CV_INTER_LANCZOS4);
     }
   }
+#pragma omp parallel
+  if (!cv_t_count)
+    cv::setNumThreads(cv_t_count);
 }
 
 int Subset3d::EPICount()
