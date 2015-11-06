@@ -27,6 +27,11 @@ cliini_opt opts[] = {
     CLIINI_STRING, //type
     0, //flags
     's'
+  },
+  {
+    "delete-on-exit",
+    0, //argcount
+    0, //argcount
   }
 };
 
@@ -47,8 +52,9 @@ int main(int argc, char *argv[])
     cliini_arg *input = cliargs_get(args, "input");
     cliini_arg *dataset = cliargs_get(args, "dataset");
     cliini_arg *store = cliargs_get(args, "store");
+    cliini_arg *del = cliargs_get(args, "delete-on-exit");
     
-    ClifView w(cliarg_str(input),cliarg_str(dataset),cliarg_str(store));
+    ClifView w(cliarg_str(input),cliarg_str(dataset),cliarg_str(store), (del != NULL));
     w.showMaximized();
 
     return a.exec();

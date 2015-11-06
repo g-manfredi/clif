@@ -103,6 +103,7 @@ ClifFile h5_memory_file()
   free(tmppath);
 #else
   close(handle);
+  unlink(tmpfilename);
 #endif
   
   return cf;

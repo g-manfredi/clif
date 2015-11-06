@@ -58,6 +58,7 @@ public:
     int imgCount();
     
     void flush();
+    void reset();
     
     const std::string& getDatastorePath() const { return _path; };
     

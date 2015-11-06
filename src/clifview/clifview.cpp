@@ -155,17 +155,17 @@ static QLocalServer* add_server(ClifView *clifview)
   return server;
 }
 
-ClifView::ClifView(const char *cliffile, const char *dataset,  const char *store, QWidget *parent) :
+ClifView::ClifView(const char *cliffile, const char *dataset,  const char *store, bool del, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::ClifView)
-{
+{    
     ui->setupUi(this);
 
     QStringList headerLabels = {QString("path"), QString("value")};
     ui->tree->setHeaderLabels(headerLabels);
     
     if (cliffile)
-      open(cliffile, dataset, store);
+      open(cliffile, dataset, store, del);
     
     _server = add_server(this);
 }
@@ -191,6 +191,7 @@ void ClifView::showFileReadyRead()
   QString filename;
   QString dataset;
   QString store;
+  bool del = false;
   printf("client connected!\n");
   
   QDataStream in(_server_socket);
@@ -199,6 +200,7 @@ void ClifView::showFileReadyRead()
   in >> filename;
   in >> dataset;
   in >> store;
+  in >> del;
 
   char *fs = strdup(filename.toUtf8().constData());
   char *ds = strdup(dataset.toUtf8().constData());
@@ -206,7 +208,7 @@ void ClifView::showFileReadyRead()
  
   delete _client_socket;
   
-  open(fs, ds, ss);
+  open(fs, ds, ss, del);
 
   free(fs);
   free(ds);
@@ -238,6 +240,11 @@ void ClifView::showFileClientError(QLocalSocket::LocalSocketError e)
 ClifView::~ClifView()
 {
     delete ui;
+
+#ifdef _WIN32
+  for(auto f : _del_on_exit)
+    remove(f->c_str());
+#endif
 }
 
 void ClifView::on_actionOpen_triggered()
@@ -253,15 +260,19 @@ void ClifView::on_actionOpen_triggered()
 }
 
 
-void ClifView::open(const char *cliffile, const char *dataset,  const char *store)
-{
+void ClifView::open(const char *cliffile, const char *dataset,  const char *store, bool del)
+{  
   lf_file.open(cliffile, H5F_ACC_RDONLY);
   _load_store = NULL;
+      
+#ifndef _WIN32
+    if (del)
+      unlink(cliffile);
+#else
+    _del_on_exit.push_back(cliffile);
+#endif
+    
   
-  printf("opening: %s - %s - %s\n", cliffile, dataset, store);
-  
-  //lffile = H5::H5File(filename.toLocal8Bit().constData(), H5F_ACC_RDONLY);
-
   vector<string> datasets = lf_file.datasetList();
   
   //FIXME clean root list!

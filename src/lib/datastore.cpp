@@ -117,10 +117,23 @@ void Datastore::write(cv::Mat &m)
   _mat = m;
 }
 
+void Datastore::reset()
+{
+  flush();
+  
+  this->~Datastore();
+  new(this) Datastore();
+}
+
 //FIXME check for actual h5datasets in mem-only stores and force copy on delete!
 void Datastore::link(const Datastore *other, Dataset *dataset)
 {
   assert(dataset);
+  
+  reset();
+  
+  if (!other->valid())
+    return;
   
   _readonly = true;
   
@@ -355,7 +368,7 @@ void Datastore::cache_set(const std::vector<int> idx, int flags, int extra_flags
   }
   
   uint64_t key = (idx_sum * PROCESS_FLAGS_MAX) | flags | (extra_flags << 16);
-#pragma omp critical
+#pragma omp critical(datastore_cache)
   image_cache[key] = data;
 }
 
@@ -654,7 +667,7 @@ void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int f
 
   //find out wether format changed?
 //protect hdf5
-#pragma omp critical
+#pragma omp critical(hdf5)
   {
   H5::DataSpace imgspace(idx.size(), size);
   H5::DataSpace space;
@@ -873,6 +886,8 @@ bool Datastore::valid() const
 {
   //FIXME memonly?
   if (_type <= BaseType::INVALID)
+    return false;
+  if (!_dataset)
     return false;
   return true;
 }

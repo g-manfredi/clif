@@ -23,11 +23,11 @@ class ClifView : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit ClifView(const char *cliffile = NULL, const char *dataset = NULL,  const char *store = NULL, QWidget *parent = 0);
+    explicit ClifView(const char *cliffile = NULL, const char *dataset = NULL,  const char *store = NULL, bool del = false, QWidget *parent = 0);
     ~ClifView();
 
     void setView(DatasetRoot *root, int idx);
-    void open(const char *cliffile = NULL, const char *dataset = NULL,  const char *store = NULL);
+    void open(const char *cliffile = NULL, const char *dataset = NULL,  const char *store = NULL, bool del = false);
 
 public slots:
     
@@ -52,6 +52,8 @@ private:
     QLocalServer *_server = NULL;
     QLocalSocket *_server_socket = NULL;
     QLocalSocket *_client_socket = NULL;
+    
+    std::vector<std::string> _del_on_exit;
 };
 
 #endif // CLIFVIEW_H

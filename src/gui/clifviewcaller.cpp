@@ -3,13 +3,14 @@
 #include <QDataStream>
 #include <QProcess>
 
-ExternalClifViewer::ExternalClifViewer(QString file, QString dataset, QString store)
+ExternalClifViewer::ExternalClifViewer(QString file, QString dataset, QString store, bool del_on_exit)
 {
   _socket = new QLocalSocket(this);
   
   _file = file;
   _dataset = dataset;
   _store = store;
+  _del = del_on_exit;
   
   connect(_socket, SIGNAL(connected()), this, SLOT(connected()));
   connect(_socket, SIGNAL(error(QLocalSocket::LocalSocketError)), this, SLOT(error(QLocalSocket::LocalSocketError)));
@@ -25,6 +26,7 @@ void ExternalClifViewer::connected()
   out << _file;
   out << _dataset;
   out << _store;
+  out << _del;
   
   _socket->write(block);
   
@@ -47,6 +49,8 @@ void ExternalClifViewer::error(QLocalSocket::LocalSocketError e)
     args << "-d" << _dataset;
   if (_store.size())
     args << "-s" << _store;
+  if (_del)
+    args << "--delete-on-exit";
   
 #if defined (_WIN32)
   QString file = "clifview.exe";
@@ -54,5 +58,6 @@ void ExternalClifViewer::error(QLocalSocket::LocalSocketError e)
   QString file = "clifview";
 #endif
 
+  process->setStandardOutputFile("debug.log");
   process->start(file, args);
 }
