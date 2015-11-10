@@ -340,6 +340,19 @@ std::string Attribute::toString()
   }
 }
 
+int Attribute::total()
+{
+  int t = 0;
+  
+  if (size.size())
+    t = size[0];
+  
+  for(int i=1;i<size.size();i++)
+    t *= size[i];
+  
+  return t;
+}
+
 void Attribute::write(H5::H5File f, std::string dataset_name)
 {  
   //FIXME we should have a path?
@@ -362,6 +375,13 @@ void Attribute::write(H5::H5File f, std::string dataset_name)
     h5_create_path_groups(f, grouppath.c_str());
   
   g = f.openGroup(grouppath.c_str());
+  
+  uint min, max;
+  
+  H5Pget_attr_phase_change(H5Gget_create_plist(g.getId()), &max, &min);
+  
+  if (min || max)
+    printf("WARNING: could not set dense storage on group, may not be able to write large attributes\n");
   
   if (H5Aexists(g.getId(), attr_name.c_str()))
     g.removeAttr(attr_name.c_str());

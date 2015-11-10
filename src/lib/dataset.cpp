@@ -286,6 +286,11 @@ Datastore *Dataset::getStore(const std::string &path)
     return it_find->second;
 }
 
+Datastore *Dataset::getStore(const boost::filesystem::path &path)
+{
+  return getStore(path.generic_string());
+}
+
 Datastore *Dataset::addStore(const std::string &path)
 {
   Datastore *store = new Datastore;
@@ -295,6 +300,11 @@ Datastore *Dataset::addStore(const std::string &path)
   _stores[store->getDatastorePath()] = store;
   
   return store;
+}
+
+Datastore *Dataset::addStore(const boost::filesystem::path &path)
+{
+  return addStore(path.generic_string());
 }
 
 void Dataset::reset()

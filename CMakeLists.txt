@@ -36,6 +36,15 @@ if (NOT OpenCV_FOUND)
   message(WARNING "WARNING: using internal cmake find macros!")
 endif()
 
+find_package(hdmarker)
+if (HDMARKER_FOUND)
+  list(APPEND CLIF_LINK_LIBRARIES ${HDMARKER_LIBRARIES})
+  list(APPEND CLIF_INCLUDE_DIRS ${HDMARKER_INCLUDE_DIRS})
+  list(APPEND CLIF_LIBRARY_DIRS ${HDMARKER_LIBRARY_DIRS})
+  
+  set(CLIF_WITH_HDMARKER true)
+  add_definitions(-DCLIF_WITH_HDMARKER)
+endif()
 
 find_package(OpenCV REQUIRED)
 list(APPEND CLIF_LINK_LIBRARIES ${OpenCV_LIBRARIES})

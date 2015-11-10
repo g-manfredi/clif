@@ -19,7 +19,7 @@ typedef unsigned int uint;
 namespace clif {
 
 bool h5_obj_exists(H5::H5File f, const char * const path)
-{
+{  
   H5E_auto2_t  oldfunc;
   void *old_client_data;
   
@@ -116,7 +116,15 @@ void h5_create_path_groups(H5::H5File &f, boost::filesystem::path path)
   for(auto it = path.begin(); it != path.end(); ++it) {
     part /= *it;
     if (!clif::h5_obj_exists(f, part)) {
-      f.createGroup(part.generic_string().c_str());
+      
+      hid_t gpid = H5Pcreate(H5P_GROUP_CREATE);
+      herr_t res = H5Pset_attr_phase_change(gpid, 0, 0);
+      if (res < 0)
+        abort();
+      
+      hid_t g = H5Gcreate(f.getId(), part.generic_string().c_str(), H5P_DEFAULT, gpid, H5P_DEFAULT);
+      uint min, max;
+      H5Pget_attr_phase_change(H5Gget_create_plist(g), &max, &min);
     }
   }
 }

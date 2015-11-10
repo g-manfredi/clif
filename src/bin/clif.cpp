@@ -14,7 +14,6 @@
 #endif
 
 #include "H5Cpp.h"
-#include "H5File.h"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
@@ -26,7 +25,6 @@
 using namespace clif;
 using namespace std;
 using namespace cv;
-using H5::H5File;
 
 cliini_opt opts[] = {
   {
@@ -140,7 +138,7 @@ int main(const int argc, const char *argv[])
   cliini_arg *include = cliargs_get(args, "include");
   cliini_arg *exclude = cliargs_get(args, "exclude");
   
-  if (!args || cliargs_get(args, "help\n") || !input || !output) {
+  if (!args || cliargs_get(args, "help\n") || (!input && !calib_imgs) || !output) {
     printf("TODO: print help!");
     return EXIT_FAILURE;
   }
@@ -205,6 +203,8 @@ int main(const int argc, const char *argv[])
       printf("INFO: creating new HDF5 DataSet %s\n", output_set_name.c_str());
       set = f_out.createDataset(output_set_name);
     }
+    if (!set->file().valid())
+      abort();
     
     for(uint i=0;i<input_clifs.size();i++) {
       ClifFile f_in(input_clifs[i], H5F_ACC_RDONLY);
@@ -293,7 +293,7 @@ int main(const int argc, const char *argv[])
       set->appendImage(&img);
     }
     
-    if (input_calib_imgs.size()) {
+     if (input_calib_imgs.size()) {
       Datastore *calib_store = set->createCalibStore();
       calib_store->setDims(4);
       

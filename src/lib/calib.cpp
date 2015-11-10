@@ -7,26 +7,38 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+#ifdef CLIF_WITH_HDMARKER
+  #include <hdmarker/hdmarker.hpp>
+  #include <hdmarker/subpattern.hpp>
+#endif
+  
 using namespace std;
 using namespace cv;
-using namespace clif;
+using namespace hdmarker;
 
 namespace clif {
     
 typedef unsigned int uint;
 
-  bool pattern_detect(Dataset *s, int imgset)
+  bool pattern_detect(Dataset *s, int imgset, bool write_debug_imgs)
   {
     path calib_path("calibration/images/sets");
     CalibPattern pattern;
     
     vector<string> imgsets;
     s->listSubGroups(calib_path, imgsets);
+    
      
     for(uint i=0;i<imgsets.size();i++) {
+      Datastore *debug_store = NULL;
       //int pointcount = 0;
       path cur_path = calib_path / imgsets[i];
       s->getEnum(cur_path / "type", pattern);
+      
+      if (write_debug_imgs && pattern == CalibPattern::HDMARKER) {
+        debug_store = s->addStore(cur_path / "debug_images");
+        debug_store->setDims(4);
+      }
       
       vector<vector<Point2f>> ipoints;
       vector<vector<Point2f>> wpoints;
@@ -74,9 +86,70 @@ typedef unsigned int uint;
           }
         }
       }
+#ifdef CLIF_WITH_HDMARKER
+      if (pattern == CalibPattern::HDMARKER) {
+        Mat img;
+        Datastore *imgs = s->getCalibStore();
+        
+        double unit_size; //marker size in mm
+        int recursion_depth;
+        
+        s->get(cur_path / "marker_size", unit_size);
+        s->get(cur_path / "hdmarker_recursion", recursion_depth);
+        
+        //FIXME remove this!
+        Marker::init();
+        
+        
+        assert(imgs);
+        
+        //FIXME range!
+        
+        assert(imgs->dims() == 4);
+        
+        for(int j=0;j<imgs->imgCount();j++) {
+          std::vector<Corner> corners;
+          std::vector<int> idx(4, 0);
+          idx[3] = j;
+          imgs->readImage(idx, &img, CVT_8U | CVT_GRAY | DEMOSAIC);
+          
+          Mat *debug_img_ptr = NULL;
+          Mat debug_img;
+          
+          if (debug_store)
+            debug_img_ptr = &debug_img;
+          
+          cv::Mat ch = clifMat_channel(img, 0);
+          
+          Marker::detect(ch, corners);
+          //FIXME use input size
+          //FIXME use input depht
+          hdmarker_detect_subpattern(ch, corners, corners, recursion_depth, &unit_size, debug_img_ptr);
+          
+          printf("found %6lu corners (img %d/%d)\n", corners.size(), j, imgs->imgCount());
+          
+          if (debug_store) {
+            debug_store->appendImage(debug_img_ptr);
+            imwrite("debug.tif", debug_img);
+          }
+
+          ipoints.push_back(std::vector<Point2f>());
+          wpoints.push_back(std::vector<Point2f>());
+          
+          for(int c=0;c<corners.size();c++) {
+            //FIXME multi-channel calib!
+            ipoints.back().push_back(corners[c].p);
+            wpoints.back().push_back(unit_size*Point2f(corners[c].id.x, corners[c].id.y));
+            //pointcount++;
+          }
+          break;
+        }
+      }
+#endif
       else
         abort();
       
+      //FIXME put into datastore!
       writeCalibPoints(s, imgsets[i], ipoints, wpoints);
     }
     

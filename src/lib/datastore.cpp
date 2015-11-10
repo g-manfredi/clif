@@ -921,7 +921,8 @@ const std::vector<int>& Datastore::extent() const
 
 std::ostream& operator<<(std::ostream& out, const Datastore& a)
 {  
-  assert(a._extent.size());
+  if(!a.valid() || !a._extent.size())
+    return out;
 
   for(int i=0;i<a._extent.size()-1;i++)
     out << a._extent[i] << " x ";

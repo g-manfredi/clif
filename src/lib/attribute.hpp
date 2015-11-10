@@ -196,6 +196,7 @@ class Attribute {
     
     friend std::ostream& operator<<(std::ostream& out, const Attribute& a);
 
+    int total();
     
     std::string name;
     BaseType type = BaseType::INVALID;
