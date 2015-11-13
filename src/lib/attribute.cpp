@@ -369,7 +369,7 @@ void Attribute::write(H5::H5File f, std::string dataset_name)
   H5::Attribute attr;
   H5::Group g;
 
-  delete dim;
+  delete[] dim;
   
   if (!h5_obj_exists(f, grouppath))
     h5_create_path_groups(f, grouppath.c_str());

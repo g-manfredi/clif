@@ -760,6 +760,7 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags, 
   cv::Mat channel_in, channel_out, tmp;
     
   if (demosaic) {
+    printf("demosaic!\n");
     cv::Mat channel, img_rgb;
     
     //read raw channels

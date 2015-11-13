@@ -10,11 +10,16 @@
 #ifdef CLIF_WITH_HDMARKER
   #include <hdmarker/hdmarker.hpp>
   #include <hdmarker/subpattern.hpp>
+  
+  using namespace hdmarker;
+#endif
+  
+#ifdef CLIF_WITH_UCALIB
+  #include <ucalib/corr_lines.hpp>
 #endif
   
 using namespace std;
 using namespace cv;
-using namespace hdmarker;
 
 namespace clif {
     
@@ -92,6 +97,7 @@ typedef unsigned int uint;
         Datastore *imgs = s->getCalibStore();
         
         double unit_size; //marker size in mm
+        double unit_size_res;
         int recursion_depth;
         
         s->get(cur_path / "marker_size", unit_size);
@@ -107,7 +113,7 @@ typedef unsigned int uint;
         
         assert(imgs->dims() == 4);
         
-        for(int j=0;j<imgs->imgCount();j++) {
+        for(int j=9;j<imgs->imgCount();j++) {
           std::vector<Corner> corners;
           std::vector<int> idx(4, 0);
           idx[3] = j;
@@ -124,14 +130,13 @@ typedef unsigned int uint;
           Marker::detect(ch, corners);
           //FIXME use input size
           //FIXME use input depht
-          hdmarker_detect_subpattern(ch, corners, corners, recursion_depth, &unit_size, debug_img_ptr);
+          unit_size_res = unit_size;
+          hdmarker_detect_subpattern(ch, corners, corners, recursion_depth, &unit_size_res, debug_img_ptr);
           
           printf("found %6lu corners (img %d/%d)\n", corners.size(), j, imgs->imgCount());
           
-          if (debug_store) {
+          if (debug_store)
             debug_store->appendImage(debug_img_ptr);
-            imwrite("debug.tif", debug_img);
-          }
 
           ipoints.push_back(std::vector<Point2f>());
           wpoints.push_back(std::vector<Point2f>());
@@ -139,7 +144,7 @@ typedef unsigned int uint;
           for(int c=0;c<corners.size();c++) {
             //FIXME multi-channel calib!
             ipoints.back().push_back(corners[c].p);
-            wpoints.back().push_back(unit_size*Point2f(corners[c].id.x, corners[c].id.y));
+            wpoints.back().push_back(unit_size_res*Point2f(corners[c].id.x, corners[c].id.y));
             //pointcount++;
           }
           break;
@@ -211,5 +216,92 @@ typedef unsigned int uint;
     
     return true;
   }
+  
+#ifdef CLIF_WITH_UCALIB
+
+  Cam_Config cam_config = {0.0065, 12.0, 300.0, -1, -1};
+  Calib_Config conf = {true, 190, 420};
+
+  bool generate_proxy_loess(Dataset *set, int proxy_w, int proxy_h , std::string imgset, std::string calibset)
+  {
+    cam_config.w = set->getCalibStore()->extent()[0];
+    cam_config.h = set->getCalibStore()->extent()[1];
+    
+    Mat cam;
+    vector<double> dist;
+    vector<Mat> rvecs;
+    vector<Mat> tvecs;
+    
+    vector<vector<Point2f>> ipoints_read;
+    vector<vector<Point2f>> wpoints_read;
+    vector<vector<Point2f>> ipoints;
+    vector<vector<Point3f>> wpoints;
+    
+    if (!imgset.size()) {
+      vector<string> imgsets;
+      set->listSubGroups("calibration/images/sets", imgsets);
+      assert(imgsets.size());
+      imgset = imgsets[0];
+    }
+    
+    if (!calibset.size())
+      calibset = imgset;
+      
+    readCalibPoints(set, imgset, ipoints_read, wpoints_read);
+    for(uint i=0;i<wpoints_read.size();i++) {
+      if (!wpoints_read[i].size())
+        continue;
+      ipoints.push_back(std::vector<Point2f>(wpoints_read[i].size()));
+      wpoints.push_back(std::vector<Point3f>(wpoints_read[i].size()));
+      for(uint j=0;j<wpoints_read[i].size();j++) {
+        wpoints.back()[j] = Point3f(wpoints_read[i][j].x,wpoints_read[i][j].y,0);
+        ipoints.back()[j] = ipoints_read[i][j];
+      }
+      
+      printf("%d points\n", wpoints_read[i].size());
+      printf("%fx%f points\n", wpoints[i][0].x,wpoints[i][0].y);
+    }
+    
+    Point2i proxy_size(proxy_w,proxy_h);
+    
+    DistCorrLines dist_lines = DistCorrLines(0, 0, 0, cam_config.w, cam_config.h, 100.0, cam_config, conf, proxy_size);
+    dist_lines.add(ipoints, wpoints, 0.0);
+    dist_lines.proxy_backwards_poly_generate();
+    
+    cv::Mat proxy_img;
+    proxy_img.create(Size(proxy_size.x, proxy_size.y), CV_32FC2);
+    Datastore *proxy_store = set->addStore(path("calibration/images/sets") / calibset / "proxy");
+    proxy_store->setDims(4);
+    
+    for(int img_n=0;img_n<ipoints.size();img_n++) {
+      printf("%fx%f\n", dist_lines.proxy_backwards[img_n][0].x, dist_lines.proxy_backwards[img_n][0].y);
+      for(int j=0;j<proxy_size.y;j++)
+        for(int i=0;i<proxy_size.x;i++) {
+          proxy_img.at<Point2f>(j,i) = dist_lines.proxy_backwards[img_n][j*proxy_size.x+i];
+        }
+      proxy_store->appendImage(&proxy_img);
+    }
+        
+        
+    
+    /*printf("opencv calibration rms %f\n", rms);
+    
+    std::cout << cam << std::endl;
+    
+    double f[2] = { cam.at<double>(0,0), cam.at<double>(1,1) };
+    double c[2] = { cam.at<double>(0,2), cam.at<double>(1,2) };
+    
+    //FIXME todo delete previous group!
+    path calib_path;
+    calib_path /= "calibration/intrinsics";
+    calib_path /= calibset;
+    set->setAttribute(calib_path / "type", "CV8");
+    set->setAttribute(calib_path / "projection", f, 2);
+    set->setAttribute(calib_path / "projection_center", c, 2);
+    set->setAttribute(calib_path / "opencv_distortion", dist);*/
+    
+    return true;
+  }
+#endif
 
 }

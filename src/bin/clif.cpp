@@ -84,6 +84,10 @@ cliini_opt opts[] = {
   {
     "opencv-calibrate",
     0,0
+  },
+  {
+    "gen-proxy-loess",
+    0,0
   }
 };
 
@@ -126,6 +130,8 @@ inline bool file_exists(const std::string& name)
 }
 
 typedef unsigned int uint;
+
+bool link_output = false;
 
 int main(const int argc, const char *argv[])
 {
@@ -197,14 +203,24 @@ int main(const int argc, const char *argv[])
     //FIXME multiple dataset handling!
     if (f_out.datasetCount()) {
       printf("INFO: appending to HDF5 DataSet %s\n", f_out.datasetList()[0].c_str());
-      set = f_out.openDataset(0);
+      if (link_output && input_clifs.size()) {
+        printf("FIXME: check if linking into existing dataset works\n");
+        set = new Dataset();
+      }
+      else
+        set = f_out.openDataset(0);
     }
     else {
       printf("INFO: creating new HDF5 DataSet %s\n", output_set_name.c_str());
-      set = f_out.createDataset(output_set_name);
+      
+      if (link_output && input_clifs.size()) {
+        set = new Dataset();
+      }
+      else
+        set = f_out.createDataset(output_set_name);
     }
-    if (!set->file().valid())
-      abort();
+    //if (!set->file().valid())
+      //abort();
     
     for(uint i=0;i<input_clifs.size();i++) {
       ClifFile f_in(input_clifs[i], H5F_ACC_RDONLY);
@@ -242,26 +258,37 @@ int main(const int argc, const char *argv[])
           if (!match_found)
             set->append(a);
         }
-      else
-        set->append(in_set);
-      
-      vector<string> h5datasets = listH5Datasets(f_in.f, in_set->path().generic_string());
-      for(uint j=0;j<h5datasets.size();j++) {
-        cout << "copy dataset" << h5datasets[j] << endl;
-        //FIXME handle dataset selection properly!
-        if (!h5_obj_exists(f_out.f, h5datasets[j])) {
-          h5_create_path_groups(f_out.f, path(h5datasets[j]).parent_path());
-          f_out.f.flush(H5F_SCOPE_GLOBAL);
-          H5Ocopy(f_in.f.getId(), h5datasets[j].c_str(), f_out.f.getId(), h5datasets[j].c_str(), H5P_DEFAULT, H5P_DEFAULT);
+      else {
+        if (!link_output)
+          set->append(in_set);
+        else {
+          printf("link!\n");
+          set->link(f_out, in_set);
         }
-        else
-          printf("TODO: dataset %s already exists in output, skipping!\n", h5datasets[j].c_str());
       }
       
+      if (link_output && (include || exclude))
+        printf("FIXME filtering not yet supported together with linking!\n");
+      
+      if (!link_output) {
+        vector<string> h5datasets = listH5Datasets(f_in.f, in_set->path().generic_string());
+        for(uint j=0;j<h5datasets.size();j++) {
+          cout << "copy dataset" << h5datasets[j] << endl;
+          //FIXME handle dataset selection properly!
+          if (!h5_obj_exists(f_out.f, h5datasets[j])) {
+            h5_create_path_groups(f_out.f, path(h5datasets[j]).parent_path());
+            f_out.f.flush(H5F_SCOPE_GLOBAL);
+            H5Ocopy(f_in.f.getId(), h5datasets[j].c_str(), f_out.f.getId(), h5datasets[j].c_str(), H5P_DEFAULT, H5P_DEFAULT);
+          }
+          else
+            printf("TODO: dataset %s already exists in output, skipping!\n", h5datasets[j].c_str());
+        }
+        
+        delete set;
+        //FIXME dataset idx!
+        set = f_out.openDataset(0);
+      }
       delete in_set;
-      delete set;
-      //FIXME dataset idx!
-      set = f_out.openDataset(0);
     }
     
     for(uint i=0;i<input_inis.size();i++) {
@@ -310,7 +337,10 @@ int main(const int argc, const char *argv[])
       pattern_detect(set);
       //set->writeAttributes();
     }
-    
+    if (cliargs_get(args, "gen-proxy-loess")) {
+      generate_proxy_loess(set, 33, 25);
+      //set->writeAttributes();
+    }
     if (cliargs_get(args, "opencv-calibrate")) {
       opencv_calibrate(set);
       //set->writeAttributes();

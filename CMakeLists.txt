@@ -46,6 +46,16 @@ if (HDMARKER_FOUND)
   add_definitions(-DCLIF_WITH_HDMARKER)
 endif()
 
+find_package(ucalib)
+if (UCALIB_FOUND)
+  list(APPEND CLIF_LINK_LIBRARIES ${UCALIB_LIBRARIES})
+  list(APPEND CLIF_INCLUDE_DIRS ${UCALIB_INCLUDE_DIRS})
+  list(APPEND CLIF_LIBRARY_DIRS ${UCALIB_LIBRARY_DIRS})
+  
+  set(CLIF_WITH_UCALIB true)
+  add_definitions(-DCLIF_WITH_UCALIB)
+endif()
+
 find_package(OpenCV REQUIRED)
 list(APPEND CLIF_LINK_LIBRARIES ${OpenCV_LIBRARIES})
 list(APPEND CLIF_INCLUDE_DIRS ${OpenCV_INCLUDE_DIRS})
@@ -116,15 +126,21 @@ message("build info:")
 message("  optional components:")
 
 if(CLIF_BUILD_QT)
-  message("    qt-widgets   -   yes")
+  message("    qt-widgets         -   yes")
 else()
-  message("    qt-widgets   -   no - ${CLIF_BUILD_QT_REASON}")
+  message("    qt-widgets         -   no - ${CLIF_BUILD_QT_REASON}")
 endif()
 
 if(FNMATCH_USE_INTERNAL)
   message("    internal fnmatch   -   yes (no fnmatch.h header found)")
 else()
   message("    internal fnmatch   -   no")
+endif()
+
+if(CLIF_WITH_HDMARKER)
+  message("    hdmarker detection -   yes")
+else()
+  message("    hdmarker detection -   no")
 endif()
 
 
