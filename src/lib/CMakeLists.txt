@@ -31,8 +31,9 @@ include_directories(${CLIF_BUILD_INCLUDE_DIRS})
 add_library(clif ${CLIF_BUILD_TYPE} clif.cpp subset3d.cpp calib.cpp hdf5.cpp attribute.cpp helpers.cpp datastore.cpp dataset.cpp core.cpp clif_cv.cpp clif_vigra.cpp enumtypes.cpp)
 add_library(clif_vigra ${CLIF_BUILD_TYPE} clif_vigra.cpp)
 
-target_link_libraries(clif ${CLIF_LINK_LIBRARIES})
-target_link_libraries(clif_vigra clif ${VIGRA_LIBRARIES})
+target_link_libraries(clif PUBLIC ${CLIF_LINK_LIBRARIES})
+target_link_libraries(clif PRIVATE ${CLIF_PRIVATE_LINK_LIBRARIES})
+target_link_libraries(clif_vigra PUBLIC clif)
 
 set(CLIF_LINK_LIBRARIES ${CLIF_LINK_LIBRARIES} clif clif_vigra PARENT_SCOPE)
 set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)

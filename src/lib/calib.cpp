@@ -113,7 +113,7 @@ typedef unsigned int uint;
         
         assert(imgs->dims() == 4);
         
-        for(int j=9;j<imgs->imgCount();j++) {
+        for(int j=0;j<imgs->imgCount();j++) {
           std::vector<Corner> corners;
           std::vector<int> idx(4, 0);
           idx[3] = j;
@@ -147,7 +147,6 @@ typedef unsigned int uint;
             wpoints.back().push_back(unit_size_res*Point2f(corners[c].id.x, corners[c].id.y));
             //pointcount++;
           }
-          break;
         }
       }
 #endif

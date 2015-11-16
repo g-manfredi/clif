@@ -148,11 +148,11 @@ static int _type_size(int type)
 }
 
 CLIF_EXPORT void _cliini_opt_arg_store_val(cliini_opt *opt, const char *arg, void *val)
-{  
+{  char *tmp;
   switch (opt->type) {
     //FIXME duplicate string?
     case CLIINI_ENUM :
-    case CLIINI_STRING : *(const char **)val = strdup(arg); break;
+    case CLIINI_STRING : tmp = strdup(arg); *(char **)val = tmp; printf("stored string: %s in %p\n", *(char **)val, val); break;
     case CLIINI_INT :    *(int*)val    = atoi(arg); break;
     case CLIINI_DOUBLE : *(double*)val = atof(arg); break;
     default:
@@ -243,8 +243,9 @@ static int _cliini_opt_parse(const int argc, const char *argv[], int argpos, cli
     arg->counts = (int*)realloc(arg->counts, sizeof(int)*arg->inst_count);
     arg->counts[arg->inst_count-1] = count;
     arg->vals = realloc(arg->vals, _type_size(opt->type)*arg->sum);
+    printf("opt %s val ar: %p count %d\n", opt->longflag, arg->vals, arg->sum);
     for(i=1;i<=count;i++) {
-      _cliini_opt_arg_store_val(opt, argv[argpos+i], (char*)arg->vals + _type_size(opt->type)*(arg->sum-count+i-1));
+      _cliini_opt_arg_store_val(opt, argv[argpos+i], (void*)arg->vals + _type_size(opt->type)*(arg->sum-count+i-1));
     }
   }
   

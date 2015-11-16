@@ -23,6 +23,15 @@ int combinedTypePlaneCount(BaseType type, DataOrg org, DataOrder order);
 H5::PredType H5PredType(BaseType type);
 H5::PredType H5PredType_Native(BaseType type);
 
+class Idx : public std::vector<int>
+{
+public:
+  Idx();
+  Idx(int size);
+  
+  static Idx zeroButOne(int size, int pos, int idx);
+};
+
 }
 
 #endif
