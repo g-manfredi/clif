@@ -243,7 +243,7 @@ ClifView::~ClifView()
 
 #ifdef _WIN32
   for(auto f : _del_on_exit)
-    remove(f->c_str());
+    remove(f.c_str());
 #endif
 }
 
