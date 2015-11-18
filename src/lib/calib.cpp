@@ -113,30 +113,91 @@ typedef unsigned int uint;
         
         assert(imgs->dims() == 4);
         
-        for(int j=0;j<imgs->imgCount();j++) {
+        for(int j=29;j<imgs->imgCount();j++) {
+          std::vector<Corner> corners_rough;
           std::vector<Corner> corners;
           std::vector<int> idx(4, 0);
           idx[3] = j;
-          imgs->readImage(idx, &img, CVT_8U | CVT_GRAY | DEMOSAIC);
+          bool *mask_ptr = NULL;
+          bool masks[3][4];
           
           Mat *debug_img_ptr = NULL;
-          Mat debug_img;
+          Mat debug_img;          
           
-          if (debug_store)
-            debug_img_ptr = &debug_img;
+          if (imgs->org() == DataOrg::BAYER_2x2) {
+            for(int mc=0;mc<3;mc++)
+              for(int m=0;m<4;m++)
+                masks[mc][m] = false;
+            
+            switch (imgs->order()) {
+              case DataOrder::RGGB : 
+                masks[0][0] = true;
+                masks[1][1] = true;
+                masks[1][2] = true;
+                masks[2][3] = true;
+                break;
+              default :
+                abort();
+            }
+            
+            
+            Mat debug_imgs[3];
+            
+            //grayscale rough detection
+            imgs->readImage(idx, &img, CVT_8U | CVT_GRAY | DEMOSAIC);
+            cv::Mat gray = clifMat_channel(img, 0);
+            Marker::detect(gray, corners_rough);
+            
+            imgs->readImage(idx, &img, CVT_8U);
+            cv::Mat bayer = clifMat_channel(img, 0);
+            
+            char buf[128];
+            
+            sprintf(buf, "orig_img%03d.tif", j);
+            imwrite(buf, bayer);
+            
+            for(int c=0;c<3;c++) {
+              if (debug_store)
+                debug_img_ptr = &debug_imgs[c];
+              
+              unit_size_res = unit_size;
+              mask_ptr = &masks[c][0];
+              hdmarker_detect_subpattern(bayer, corners_rough, corners, recursion_depth, &unit_size_res, debug_img_ptr, mask_ptr, 0);
+              
+              printf("found %6lu corners for channel %d (img %d/%d)\n", corners.size(), c, j, imgs->imgCount());
+              
+              sprintf(buf, "debug_img%03d_ch%d.tif", j, c);
+              imwrite(buf, *debug_img_ptr);
+            }
+            
+            if (debug_store)
+              cv::merge(debug_imgs, 3, debug_img);
+          }
+          else {
+            
+            if (debug_store)
+              debug_img_ptr = &debug_img;
+            
+            imgs->readImage(idx, &img, CVT_8U | CVT_GRAY | DEMOSAIC);
+            
+            cv::Mat ch = clifMat_channel(img, 0);
+            
+            Marker::detect(ch, corners);
+            //FIXME use input size
+            //FIXME use input depht
+            unit_size_res = unit_size;
+            hdmarker_detect_subpattern(ch, corners, corners, recursion_depth, &unit_size_res, debug_img_ptr, 0);
+            
+            printf("found %6lu corners (img %d/%d)\n", corners.size(), j, imgs->imgCount());
+          }
           
-          cv::Mat ch = clifMat_channel(img, 0);
-          
-          Marker::detect(ch, corners);
-          //FIXME use input size
-          //FIXME use input depht
-          unit_size_res = unit_size;
-          hdmarker_detect_subpattern(ch, corners, corners, recursion_depth, &unit_size_res, debug_img_ptr);
-          
-          printf("found %6lu corners (img %d/%d)\n", corners.size(), j, imgs->imgCount());
-          
-          if (debug_store)
-            debug_store->appendImage(debug_img_ptr);
+          if (debug_store) {
+            debug_store->appendImage(&debug_img);
+            
+            char buf[128];
+            sprintf(buf, "col_fit_img%03d.tif", j);
+            imwrite(buf, debug_img);
+          }
 
           ipoints.push_back(std::vector<Point2f>());
           wpoints.push_back(std::vector<Point2f>());
