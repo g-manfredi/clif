@@ -72,28 +72,54 @@ template<typename T> BaseType toBaseType()
   return BaseTypeMap[std::type_index(typeid(T))];
 }
   
+//deep dark black c++ magic :-D
 #define CODE(TYPE, BASE) case (BASE) : F<TYPE>()(args...); break;
 #define COMMA ,
-//deep dark black c++ magic :-D
 template<template<typename> class F, typename ... ArgTypes> void callByBaseType(BaseType type, ArgTypes ... args)
 {
   switch (type) {
     CLIFALL_T_B(CODE)
-    /*case BaseType::UINT8 :  F<uint8_t>()(args...); break;
-    case BaseType::UINT16 : F<uint16_t>()(args...); break;
-    case BaseType::INT :    F<int>()(args...); break;
-    case BaseType::FLOAT :  F<float>()(args...); break;
-    case BaseType::DOUBLE : F<double>()(args...); break;
-    //FIXME shouldn't string result in char* ?
-    case BaseType::STRING : F<char>()(args...); break;
-//vector types
-    case (BaseType::UINT8 | BaseType::VECTOR) :  F<std::vector<uint8_t>>()(args...); break;
-    case BaseType::UINT16 : F<uint16_t>()(args...); break;
-    case BaseType::INT :    F<int>()(args...); break;
-    case BaseType::FLOAT :  F<float>()(args...); break;
-    case BaseType::DOUBLE : F<double>()(args...); break;
-    //FIXME shouldn't string result in char* ?
-    case BaseType::STRING : F<char>()(args...); break;*/
+    default:
+      abort();
+  }
+}
+#undef COMMA
+#undef CODE
+
+
+//deep dark black c++ magic :-D
+#define CODE(TYPE, BASE) case (BASE) :  F<ExtraType COMMA TYPE>()(args...); break;
+#define COMMA ,
+template<typename ExtraType, template<typename,typename> class F, typename ... ArgTypes> void callByBaseType(BaseType type, ArgTypes ... args)
+{
+  switch (type) {
+    CLIFALL_T_B(CODE)
+    default:
+      abort();
+  }
+}
+#undef COMMA
+#undef CODE
+
+#define CODE(TYPE, BASE) case (BASE) : return F<TYPE>()(args...); break;
+#define COMMA ,
+template<template<typename> class F, typename R, typename ... ArgTypes> R callByBaseType(BaseType type, ArgTypes ... args)
+{
+  switch (type) {
+    CLIFALL_T_B(CODE)
+    default:
+      abort();
+  }
+}
+#undef COMMA
+#undef CODE
+
+#define CODE(TYPE, BASE) case (BASE) : return F<ExtraType COMMA TYPE>()(args...); break;
+#define COMMA ,
+template<typename ExtraType, template<typename,typename> class F, typename R, typename ... ArgTypes> R callByBaseType(BaseType type, ArgTypes ... args)
+{
+  switch (type) {
+    CLIFALL_T_B(CODE)
     default:
       abort();
   }
@@ -102,49 +128,6 @@ template<template<typename> class F, typename ... ArgTypes> void callByBaseType(
 #undef CODE
 
 BaseType toAtomicBaseType(BaseType &type);
-
-//deep dark black c++ magic :-D
-template<typename ExtraType, template<typename,typename> class F, typename ... ArgTypes> void callByBaseType(BaseType type, ArgTypes ... args)
-{
-  switch (type) {
-    case BaseType::UINT8 :  F<ExtraType,uint8_t>()(args...); break;
-    case BaseType::UINT16 : F<ExtraType,uint16_t>()(args...); break;
-    case BaseType::INT :    F<ExtraType,int>()(args...); break;
-    case BaseType::FLOAT :  F<ExtraType,float>()(args...); break;
-    case BaseType::DOUBLE : F<ExtraType,double>()(args...); break;
-    case BaseType::STRING : F<ExtraType,char>()(args...); break;
-    default:
-      abort();
-  }
-}
-
-template<template<typename> class F, typename R, typename ... ArgTypes> R callByBaseType(BaseType type, ArgTypes ... args)
-{
-  switch (type) {
-    case BaseType::UINT8 :  return F<uint8_t>()(args...); break;
-    case BaseType::UINT16 : return F<uint16_t>()(args...); break;
-    case BaseType::INT :    return F<int>()(args...); break;
-    case BaseType::FLOAT :  return F<float>()(args...); break;
-    case BaseType::DOUBLE : return F<double>()(args...); break;
-    case BaseType::STRING : return F<char>()(args...); break;
-    default:
-      abort();
-  }
-}
-
-template<typename ExtraType, template<typename,typename> class F, typename R, typename ... ArgTypes> R callByBaseType(BaseType type, ArgTypes ... args)
-{
-  switch (type) {
-    case BaseType::UINT8 :  return F<ExtraType,uint8_t>()(args...); break;
-    case BaseType::UINT16 : return F<ExtraType,uint16_t>()(args...); break;
-    case BaseType::INT :    return F<ExtraType,int>()(args...); break;
-    case BaseType::FLOAT :  return F<ExtraType,float>()(args...); break;
-    case BaseType::DOUBLE : return F<ExtraType,double>()(args...); break;
-    case BaseType::STRING : return F<ExtraType,char>()(args...); break;
-    default:
-      abort();
-  }
-}
 
   //enum class DataType : int {${DataTypeEnums}};
   enum class DataOrg : int {${DataOrgEnums}};
