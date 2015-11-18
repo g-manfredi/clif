@@ -113,7 +113,7 @@ typedef unsigned int uint;
         
         assert(imgs->dims() == 4);
         
-        for(int j=29;j<imgs->imgCount();j++) {
+        for(int j=0;j<imgs->imgCount();j++) {
           std::vector<Corner> corners_rough;
           std::vector<Corner> corners;
           std::vector<int> idx(4, 0);

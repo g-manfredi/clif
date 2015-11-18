@@ -120,6 +120,14 @@ public:
   }
 };
 
+template<typename T> class warp_1d_linear_dispatcher<std::vector<T>> {
+public:
+  void operator()(Mat *in, Mat *out, int line_in, int line_out, double offset)
+  {
+    abort();
+  }
+};
+
 template<typename T> void warp_1d_nearest(Mat *in, Mat *out, int line_in, int line_out, int offset)
 {
   

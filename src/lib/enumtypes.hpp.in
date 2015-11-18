@@ -5,6 +5,9 @@
 #include <typeindex>
 #include <string.h>
 #include <cstdint>
+#include <vector>
+
+#include <H5Cpp.h>
 
 #include "cliini.h"
 
@@ -18,39 +21,87 @@ struct InvalidBaseType {};
  */
   
 //base type for elements
-enum class BaseType : int {INVALID,UINT8,UINT16,INT,FLOAT,DOUBLE,STRING};
+enum class BaseType : int {
+  INVALID = 0,
+  UINT8   = 1,
+  UINT16  = 2,
+  INT     = 3,
+  FLOAT   = 4,
+  DOUBLE  = 5,
+  STRING  = 6,
+//now for complex types - flags in addition to regular type!
+  VECTOR  = 8};
+//WARNING: change BaseTypeAtomicMask in enumtypes.cpp if enum value changes
 
-static std::type_index BaseTypeTypes[] = {std::type_index(typeid(InvalidBaseType)), std::type_index(typeid(uint8_t)), std::type_index(typeid(uint16_t)), std::type_index(typeid(int)), std::type_index(typeid(float)), std::type_index(typeid(double)), std::type_index(typeid(char))};
+constexpr BaseType operator|(BaseType a, BaseType b)
+{
+  return (BaseType)((int)a | (int)b);
+}
 
-static std::unordered_map<std::type_index, BaseType> BaseTypeMap = { 
-    {std::type_index(typeid(char)), BaseType::STRING},
-    {std::type_index(typeid(uint8_t)), BaseType::UINT8},
-    {std::type_index(typeid(uint16_t)), BaseType::UINT16},
-    {std::type_index(typeid(int)), BaseType::INT},
-    {std::type_index(typeid(float)), BaseType::FLOAT},
-    {std::type_index(typeid(double)), BaseType::DOUBLE}
+constexpr BaseType operator&(BaseType a, BaseType b)
+{
+  return (BaseType)((int)a & (int)b);
+}
+
+std::type_index BaseType2typeid(BaseType &type);
+
+#define CLIFALLATOMIC_T_B(CODE) \
+CODE(char, BaseType::STRING) \
+CODE(uint8_t, BaseType::UINT8) \
+CODE(uint16_t, BaseType::UINT16) \
+CODE(int, BaseType::INT) \
+CODE(float, BaseType::FLOAT) \
+CODE(double, BaseType::DOUBLE)
+
+#define VECCODE(T, B) CODE(std::vector<T>, B | BaseType::VECTOR)
+#define CLIFALLVECTOR_T_B(CODE) CLIFALLATOMIC_T_B(VECCODE)
+
+#define CLIFALL_T_B(CODE) CLIFALLATOMIC_T_B(CODE) CLIFALLVECTOR_T_B(CODE)
+
+#define CODE(TYPE ,BASE) {std::type_index(typeid(TYPE)) COMMA (BASE)} COMMA
+#define COMMA ,
+
+static std::unordered_map<std::type_index, BaseType> BaseTypeMap = {
+  CLIFALL_T_B(CODE)
 };
+#undef COMMA
+#undef CODE
   
 template<typename T> BaseType toBaseType()
 {
   return BaseTypeMap[std::type_index(typeid(T))];
 }
   
+#define CODE(TYPE, BASE) case (BASE) : F<TYPE>()(args...); break;
+#define COMMA ,
 //deep dark black c++ magic :-D
 template<template<typename> class F, typename ... ArgTypes> void callByBaseType(BaseType type, ArgTypes ... args)
 {
   switch (type) {
-    case BaseType::UINT8 :  F<uint8_t>()(args...); break;
+    CLIFALL_T_B(CODE)
+    /*case BaseType::UINT8 :  F<uint8_t>()(args...); break;
     case BaseType::UINT16 : F<uint16_t>()(args...); break;
     case BaseType::INT :    F<int>()(args...); break;
     case BaseType::FLOAT :  F<float>()(args...); break;
     case BaseType::DOUBLE : F<double>()(args...); break;
     //FIXME shouldn't string result in char* ?
     case BaseType::STRING : F<char>()(args...); break;
+//vector types
+    case (BaseType::UINT8 | BaseType::VECTOR) :  F<std::vector<uint8_t>>()(args...); break;
+    case BaseType::UINT16 : F<uint16_t>()(args...); break;
+    case BaseType::INT :    F<int>()(args...); break;
+    case BaseType::FLOAT :  F<float>()(args...); break;
+    case BaseType::DOUBLE : F<double>()(args...); break;
+    //FIXME shouldn't string result in char* ?
+    case BaseType::STRING : F<char>()(args...); break;*/
     default:
       abort();
   }
 }
+#undef COMMA
+#undef CODE
+
+BaseType toAtomicBaseType(BaseType &type);
 
 //deep dark black c++ magic :-D
 template<typename ExtraType, template<typename,typename> class F, typename ... ArgTypes> void callByBaseType(BaseType type, ArgTypes ... args)
@@ -140,14 +191,21 @@ template<typename ExtraType, template<typename,typename> class F, typename R, ty
     return T(-1);
   }
   
-  BaseType CvDepth2BaseType(int cv_type);
-  int BaseType2CvDepth(BaseType t);
+BaseType CvDepth2BaseType(int cv_type);
+int BaseType2CvDepth(BaseType t);
 
 //FIXME single strings only atm!
 int basetype_size(BaseType type);
 
 BaseType cliini_type_to_BaseType(int type);
 
+H5::DataType toH5DataType(BaseType type);
+H5::DataType toH5NativeDataType(BaseType type);
+
+//BaseType toBaseType(H5::PredType type);
+BaseType toBaseType(hid_t type);
+
+//H5::DataType BaseType_to_PredType(BaseType type);
 }
 
 #define ClifEnumString(Type,Var) Type ## Str[ static_cast<int>(Var) ]

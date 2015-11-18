@@ -3,6 +3,7 @@
 #include "clif.hpp"
 #include "dataset.hpp"
 #include "clif_cv.hpp"
+#include "hdf5.hpp"
 
 #define CACHE_CONT_MAT_CHANNEL 1
 #define CACHE_CONT_MAT_IMG 2
@@ -78,7 +79,7 @@ void Datastore::create(std::string path, Dataset *dataset, const std::string for
   H5::DataSpace space(dimcount, dims, dims);
   
   _data = _dataset->f.createDataSet(dataset_path.c_str(), 
-                      H5PredType(_type), space, prop);
+                      toH5DataType(_type), space, prop);
 }*/
 
 void Datastore::create(std::string path, Dataset *dataset, cv::Mat &m, const std::string format_group)
@@ -251,7 +252,7 @@ void Datastore::create_store()
   H5::DataSpace space(_extent.size(), dims, maxdims);
   
   _data = _dataset->f().createDataSet(dataset_path.generic_string(), 
-                      H5PredType(_type), space, prop);
+                      toH5DataType(_type), space, prop);
   
   delete dims;
   delete maxdims;
@@ -335,7 +336,7 @@ void Datastore::create_dims_imgs(int w, int h, int chs)
   /*H5::DataSpace space(3, dims, maxdims);
   
   _data = _dataset->f.createDataSet(dataset_path.generic_string(), 
-                      H5PredType(_type), space, prop);
+                      toH5DataType(_type), space, prop);
 }*/
 
 //FIXME scale!
@@ -412,7 +413,7 @@ void Datastore::open(Dataset *dataset, std::string path_, const std::string form
       abort();
     }
   }
-  _type = hid_t_to_native_BaseType(H5Dget_type(_data.getId()));
+  _type = toBaseType(H5Dget_type(_data.getId()));
   
   assert(_type > BaseType::INVALID);
 }
@@ -445,7 +446,7 @@ void Datastore::writeRawImage(int idx, hsize_t w, hsize_t h, void *imgdata)
   
   H5::DataSpace imgspace(3, size);
   
-  _data.write(imgdata, H5PredType(_type), imgspace, space);
+  _data.write(imgdata, toH5DataType(_type), imgspace, space);
 }
 
 void Datastore::appendRawImage(hsize_t w, hsize_t h, void *imgdata)
@@ -516,7 +517,7 @@ void Datastore::writeChannel(const std::vector<int> &idx, cv::Mat *channel)
   
   H5::DataSpace imgspace(idx.size(), size);
   
-  _data.write(channel->data, H5PredType(_type), imgspace, space);
+  _data.write(channel->data, toH5DataType(_type), imgspace, space);
 }
 
 bool Datastore::mat_cache_get(cv::Mat *m, const std::vector<int> idx, int flags, int extra_flags, float scale)
@@ -673,7 +674,7 @@ void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int f
   H5::DataSpace space;
   space = _data.getSpace();
   space.selectHyperslab(H5S_SELECT_SET, size, start);
-  _data.read(reader.data, H5PredType(_type), imgspace, space);
+  _data.read(reader.data, toH5DataType(_type), imgspace, space);
   }
   
   //FIXME create channel wit correct parameters!
@@ -880,7 +881,7 @@ void Datastore::readRawImage(int idx, hsize_t w, hsize_t h, void *imgdata)
   
   H5::DataSpace imgspace(3, size);
   
-  _data.read(imgdata, H5PredType(_type), imgspace, space);
+  _data.read(imgdata, toH5DataType(_type), imgspace, space);
 }
 
 bool Datastore::valid() const
@@ -968,9 +969,9 @@ void Datastore::flush()
         abort();
       
       _data = _dataset->f().createDataSet(fullpath.generic_string().c_str(), 
-                                          H5PredType(CvDepth2BaseType(_mat.depth())), space);
+                                          toH5DataType(CvDepth2BaseType(_mat.depth())), space);
       
-      _data.write(_mat.data, H5::DataType(H5PredType(CvDepth2BaseType(_mat.depth()))), space, space);
+      _data.write(_mat.data, H5::DataType(toH5DataType(CvDepth2BaseType(_mat.depth()))), space, space);
       
       _readonly = false;
       _memonly = false;

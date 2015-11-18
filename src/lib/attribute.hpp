@@ -69,7 +69,7 @@ class Attribute {
     
     template<typename T> void get(T &val)
     {
-      if (BaseTypeTypes[int(type)] != std::type_index(typeid(T)))
+      if (BaseType2typeid(type) != std::type_index(typeid(T)))
         throw std::invalid_argument("Attribute type doesn't match requested type.");
       
       val = *(T*)data;
@@ -82,7 +82,7 @@ class Attribute {
     
     template<typename T> void get(T *val, int count)
     {
-      if (BaseTypeTypes[int(type)] != std::type_index(typeid(T)))
+      if (BaseType2typeid(type) != std::type_index(typeid(T)))
         throw std::invalid_argument("Attribute type doesn't match requested type.");
       
       if (size[0] != count)
@@ -94,7 +94,7 @@ class Attribute {
     
     template<typename T> void get(std::vector<T> &val)
     {
-      if (BaseTypeTypes[int(type)] != std::type_index(typeid(T)))
+      if (BaseType2typeid(type) != std::type_index(typeid(T)))
         throw std::invalid_argument("Attribute type doesn't match requested type.");
       
       //TODO n-D handling!
@@ -153,11 +153,30 @@ class Attribute {
       data = malloc(val.total()*val.elemSize());
       
       size.resize(val.dims);
+      //FIXME correct order?!?
       for(unsigned int i=0;i<size.size();i++)
-        size[i] = val.size[i];
+        size[i] = val.size[size.size()-i-1];
       
       memcpy(data, val.data, val.total()*val.elemSize());
     };
+    
+    //for now this should !only! be used with vector as elements
+    template<typename T> void set(cv::Mat &val)
+    {
+      type = toBaseType<T>();
+      assert(type != BaseType::INVALID);
+      assert(type & BaseType::VECTOR);
+      
+      data = malloc(val.total()*val.elemSize());
+      
+      size.resize(val.dims);
+      //FIXME correct order?!?
+      for(unsigned int i=0;i<size.size();i++)
+        size[i] = val.size[size.size()-i-1];
+      
+      memcpy(data, val.data, val.total()*val.elemSize());
+    };
+    
     
     template<typename T> void set(T *val, int count = 1)
     {

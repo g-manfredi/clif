@@ -222,9 +222,9 @@ namespace clif {
       H5::DataSpace space(DIM, dims, dims);
       
       H5::DataSet h5set = set->f().createDataSet(fullpath.generic_string().c_str(), 
-                          H5PredType(_type), space);
+                          toH5DataType(_type), space);
       
-      h5set.write(_mat.data, H5::DataType(H5PredType_Native(_type)), space, space);
+      h5set.write(_mat.data, toH5NativeDataType(_type), space, space);
       /*
       if (DIM == 2)
         cv::imwrite("debug_cv.tiff", _mat);

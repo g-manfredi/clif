@@ -6,6 +6,8 @@
 
 #include "cliini.h"
 
+#include "hdf5.hpp"
+
 namespace clif {
 
 typedef unsigned int uint;
@@ -15,7 +17,7 @@ static void read_attr(Attribute *attr, H5::Group g, std::string basename, std::s
   int total = 1;
   H5::Attribute h5attr = g.openAttribute(name.c_str());
   
-  type =  hid_t_to_native_BaseType(H5Aget_type(h5attr.getId()));
+  type =  toBaseType(H5Aget_type(h5attr.getId()));
   
   H5::DataSpace space = h5attr.getSpace();
   int dimcount = space.getSimpleExtentNdims();
@@ -29,7 +31,7 @@ static void read_attr(Attribute *attr, H5::Group g, std::string basename, std::s
   
   void *buf = malloc(basetype_size(type)*total);
   
-  h5attr.read(BaseType_to_PredType(type), buf);
+  h5attr.read(toH5NativeDataType(type), buf);
   
   group_path = group_path.substr(basename.length()+1, group_path.length()-basename.length()-1);
   name = group_path + '/' + name;
@@ -282,6 +284,16 @@ public:
   }
 };
 
+template<typename T> class insertionDispatcher<std::vector<T>> {
+public:
+  void operator()(std::ostream *stream, void *val, int idx)
+  {
+    printf("FIXME: vector string conversion!\n");
+    abort();
+    //*stream << ((T*)val)[idx];
+  }
+};
+
 template<typename T> void printthis(std::ostream *stream, void *val, int idx)
   {
     *stream << ((T*)val)[idx];
@@ -386,9 +398,9 @@ void Attribute::write(H5::H5File f, std::string dataset_name)
   if (H5Aexists(g.getId(), attr_name.c_str()))
     g.removeAttr(attr_name.c_str());
     
-  attr = g.createAttribute(attr_name.c_str(), BaseType_to_PredType(type), space);
+  attr = g.createAttribute(attr_name.c_str(), toH5DataType(type), space);
       
-  attr.write(BaseType_to_PredType(type), data);
+  attr.write(toH5NativeDataType(type), data);
 }
 
 std::string read_string_attr(H5::H5File &f, const char *parent_group_str, const char *name)

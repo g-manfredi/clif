@@ -4,7 +4,6 @@
 #include <boost/filesystem.hpp>
 
 #include "helpers.hpp"
-#include "hdf5.hpp"
 #include "enumtypes.hpp"
 
 
@@ -15,13 +14,9 @@ using boost::filesystem::path;
 enum class Interpolation : int {INVALID,NEAREST,LINEAR}; //TODO lanczos etc.
 enum class Unit : int {INVALID,MM,PIXELS};
 
-int baseType_size(BaseType t);
 
-int combinedTypeElementCount(BaseType type, DataOrg org, DataOrder order);
-int combinedTypePlaneCount(BaseType type, DataOrg org, DataOrder order);
-
-H5::PredType H5PredType(BaseType type);
-H5::PredType H5PredType_Native(BaseType type);
+//int combinedTypeElementCount(BaseType type, DataOrg org, DataOrder order);
+//int combinedTypePlaneCount(BaseType type, DataOrg org, DataOrder order);
 
 class Idx : public std::vector<int>
 {
