@@ -17,7 +17,18 @@ namespace clif {
 
 typedef unsigned int uint;
   
-  
+namespace {
+  hid_t _fapl_create()
+  {
+    hid_t fapl = H5Pcreate(H5P_FILE_ACCESS);
+    H5Pset_libver_bounds(fapl, H5F_LIBVER_18, H5F_LIBVER_18);
+    
+    return fapl;
+  }
+
+  static hid_t _file_acc_plist = _fapl_create();
+}
+
   /*std::string path_element(boost::filesystem::path path, int idx)
   {    
     auto it = path.begin();
@@ -106,14 +117,13 @@ typedef unsigned int uint;
     return list;
   }
 
-
 void ClifFile::open(const std::string &filename, unsigned int flags)
 {
   _path = get_abs_path(filename);
   
   try {
     printf("try openfile!\n");
-    f.openFile(filename.c_str(), flags);
+    f.openFile(filename.c_str(), flags, H5::FileAccPropList(_file_acc_plist));
   }
   catch (H5::FileIException e) {
     printf("catch openfile!\n");
@@ -151,7 +161,7 @@ void ClifFile::create(const std::string &filename)
 {
   _path = boost::filesystem::absolute(filename);
   
-  f = H5::H5File(filename.c_str(), H5F_ACC_TRUNC);
+  f = H5::H5File(filename.c_str(), H5F_ACC_TRUNC, H5::FileCreatPropList::DEFAULT, H5::FileAccPropList(_file_acc_plist));
   
   datasets.resize(0);
   
@@ -160,6 +170,7 @@ void ClifFile::create(const std::string &filename)
     return;
   }
   
+  //FIXME there will enver be /clif in a truncated file!
   if (!h5_obj_exists(f, "/clif"))
       return;
 //     
@@ -179,6 +190,7 @@ ClifFile::ClifFile(const std::string &filename, unsigned int flags)
 
 ClifFile::ClifFile(H5::H5File h5file, boost::filesystem::path &&path)
 {
+  //FIXME set libver?
   f = h5file;
   _path = path;
 }

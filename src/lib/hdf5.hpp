@@ -20,11 +20,6 @@ void h5_create_path_groups(H5::H5File &f, boost::filesystem::path path);
 ClifFile h5_memory_file();
 
 std::vector<std::string> listH5Datasets(H5::H5File &f, std::string parent);
-
-BaseType PredType_to_native_BaseType(H5::PredType type);
-BaseType hid_t_to_native_BaseType(hid_t type);
-H5::PredType BaseType_to_PredType(BaseType type);
-H5::PredType H5PredType(BaseType type);
 }
 
 #endif

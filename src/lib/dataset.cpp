@@ -78,7 +78,10 @@ void Dataset::datastores_append_group(Dataset *set, std::unordered_map<std::stri
     {
       if (_stores.find(name) == _stores.end()) {
         Datastore *store = new Datastore();
-        store->open(set, name);
+        if (!name.compare("calibration/images/data"))
+          store->open(set, name, "format");
+        else
+          store->open(set, name);
         assert(store->valid());
         set->addStore(store);
       }
@@ -150,7 +153,7 @@ Datastore *Dataset::createCalibStore()
 //return pointer to the calib image datastore - may be manipulated
 Datastore *Dataset::getCalibStore()
 {
-  boost::filesystem::path dataset_path;
+  /*boost::filesystem::path dataset_path;
   dataset_path = path() / "calibration/images/data";
   
   std::cout << dataset_path << clif::h5_obj_exists(f(), dataset_path) << calib_images << std::endl;
@@ -158,8 +161,13 @@ Datastore *Dataset::getCalibStore()
   if (!calib_images && clif::h5_obj_exists(f(), dataset_path)) {
     calib_images = new clif::Datastore();
     calib_images->open(this, "calibration/images/data");
-  }
+  }*/
   
+  if (!_stores.count("calibration/images/data"))
+    return NULL;
+  
+  return _stores["calibration/images/data"];
+
   return calib_images;
 }
 
@@ -286,6 +294,16 @@ Datastore *Dataset::getStore(const std::string &path)
     return it_find->second;
 }
 
+Datastore *Dataset::getStore(const char *path)
+{
+  return getStore(std::string(path));
+}
+
+Datastore *Dataset::getStore(const boost::filesystem::path &path)
+{
+  return getStore(path.generic_string());
+}
+
 Datastore *Dataset::addStore(const std::string &path)
 {
   Datastore *store = new Datastore;
@@ -295,6 +313,16 @@ Datastore *Dataset::addStore(const std::string &path)
   _stores[store->getDatastorePath()] = store;
   
   return store;
+}
+
+Datastore *Dataset::addStore(const char *path)
+{
+  return addStore(std::string(path));
+}
+
+Datastore *Dataset::addStore(const boost::filesystem::path &path)
+{
+  return addStore(path.generic_string());
 }
 
 void Dataset::reset()

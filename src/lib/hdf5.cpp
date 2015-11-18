@@ -19,7 +19,7 @@ typedef unsigned int uint;
 namespace clif {
 
 bool h5_obj_exists(H5::H5File f, const char * const path)
-{
+{  
   H5E_auto2_t  oldfunc;
   void *old_client_data;
   
@@ -116,72 +116,17 @@ void h5_create_path_groups(H5::H5File &f, boost::filesystem::path path)
   for(auto it = path.begin(); it != path.end(); ++it) {
     part /= *it;
     if (!clif::h5_obj_exists(f, part)) {
-      f.createGroup(part.generic_string().c_str());
+      
+      hid_t gpid = H5Pcreate(H5P_GROUP_CREATE);
+      herr_t res = H5Pset_attr_phase_change(gpid, 0, 0);
+      if (res < 0)
+        abort();
+      
+      hid_t g = H5Gcreate(f.getId(), part.generic_string().c_str(), H5P_DEFAULT, gpid, H5P_DEFAULT);
+      uint min, max;
+      H5Pget_attr_phase_change(H5Gget_create_plist(g), &max, &min);
     }
   }
 }
-
-
-BaseType PredType_to_native_BaseType(H5::PredType type)
-{    
-  switch (type.getClass()) {
-    case H5T_STRING : return BaseType::STRING;
-    case H5T_INTEGER : return BaseType::INT;
-    case H5T_FLOAT: return BaseType::DOUBLE;
-    default:
-      abort();
-  }
-  
-  printf("ERROR: unknown argument type!\n");
-  abort();
-}
-
-BaseType hid_t_to_native_BaseType(hid_t type)
-{
-  switch (H5Tget_class(type)) {
-    case H5T_STRING : return BaseType::STRING;
-    case H5T_INTEGER :
-      switch (H5Tget_size(type)) {
-        case 1 : 
-          if (H5Tget_sign(type) != H5T_SGN_NONE)
-            abort();
-          return BaseType::UINT8;
-        case 2 :
-          if (H5Tget_sign(type) != H5T_SGN_NONE)
-            abort();
-          return BaseType::UINT16;
-        case 3 :
-        case 4 :
-          if (H5Tget_sign(type) == H5T_SGN_NONE)
-            abort();
-          return BaseType::INT;
-      }
-    case H5T_FLOAT: 
-      if (H5Tget_size(type) == 4)
-        return BaseType::FLOAT;
-      else if (H5Tget_size(type) == 8)
-        return BaseType::DOUBLE;
-      break;
-    default:
-      printf("ERROR: unknown argument type!\n");
-      abort();
-  }
-}
-
-H5::PredType BaseType_to_PredType(BaseType type)
-{
-  switch (type) {
-    case BaseType::STRING : return H5::PredType::C_S1;
-    case BaseType::UINT8 : return H5::PredType::NATIVE_B8;
-    case BaseType::UINT16 : return H5::PredType::NATIVE_B16;
-    case BaseType::INT : return H5::PredType::NATIVE_INT;
-    case BaseType::FLOAT: return H5::PredType::NATIVE_FLOAT;
-    case BaseType::DOUBLE: return H5::PredType::NATIVE_DOUBLE;
-    default:
-    printf("ERROR: unknown argument type!\n");
-      abort();
-  }
-}
-
   
 }

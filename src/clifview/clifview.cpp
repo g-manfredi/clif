@@ -33,6 +33,11 @@ clifStoreView *_storeview = NULL;
 void attachTreeItem(QTreeWidgetItem *w, StringTree<Attribute*,Datastore*> *t, ClifView *view = NULL, const char *select_store = NULL)
 {
     if (std::get<0>(t->val.second)) {
+      Attribute *a = std::get<0>(t->val.second);
+      QString tmp;
+      if (a->total() > 20)
+        w->setData(1, Qt::DisplayRole, tmp.sprintf("%d elements", a->total()));
+      else
         w->setData(1, Qt::DisplayRole, QString(std::get<0>(t->val.second)->toString().c_str()));
     }
     else if (std::get<1>(t->val.second)) {

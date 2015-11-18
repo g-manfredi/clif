@@ -6,6 +6,7 @@ if (CLIF_COMPILER_MSVC)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /TP")
 else ()
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -std=c99 -fPIC")
+  add_definitions(-D_GNU_SOURCE) #for strdup()
 endif()
 
 add_library(cliini ${CLIF_BUILD_TYPE} cliini.c)

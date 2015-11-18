@@ -69,7 +69,7 @@ class Attribute {
     
     template<typename T> void get(T &val)
     {
-      if (BaseTypeTypes[int(type)] != std::type_index(typeid(T)))
+      if (BaseType2typeid(type) != std::type_index(typeid(T)))
         throw std::invalid_argument("Attribute type doesn't match requested type.");
       
       val = *(T*)data;
@@ -82,7 +82,7 @@ class Attribute {
     
     template<typename T> void get(T *val, int count)
     {
-      if (BaseTypeTypes[int(type)] != std::type_index(typeid(T)))
+      if (BaseType2typeid(type) != std::type_index(typeid(T)))
         throw std::invalid_argument("Attribute type doesn't match requested type.");
       
       if (size[0] != count)
@@ -94,7 +94,7 @@ class Attribute {
     
     template<typename T> void get(std::vector<T> &val)
     {
-      if (BaseTypeTypes[int(type)] != std::type_index(typeid(T)))
+      if (BaseType2typeid(type) != std::type_index(typeid(T)))
         throw std::invalid_argument("Attribute type doesn't match requested type.");
       
       //TODO n-D handling!
@@ -153,11 +153,60 @@ class Attribute {
       data = malloc(val.total()*val.elemSize());
       
       size.resize(val.dims);
+      //FIXME correct order?!?
       for(unsigned int i=0;i<size.size();i++)
-        size[i] = val.size[i];
+        size[i] = val.size[size.size()-i-1];
       
       memcpy(data, val.data, val.total()*val.elemSize());
     };
+    
+    
+    template<typename T> class vector_elements_from_mat_dispatcher {
+    public:
+      void* operator()(int count, cv::Mat *m)
+      {
+        std::vector<T> *v = new std::vector<T>[count];
+        
+        assert(m->isContinuous());
+        
+        for(int i=0;i<m->total();i++)
+          v[i] = ((std::vector<T>*)m->data)[i];
+        
+        return v;
+      }
+    };
+    
+    template<typename T> class vector_elements_delete_dispatcher {
+    public:
+      void* operator()(int count, cv::Mat *m)
+      {
+        std::vector<T> *v = new std::vector<T>[count];
+        
+        assert(m->isContinuous());
+        
+        for(int i=0;i<m->total();i++)
+          v[i] = ((std::vector<T>*)m->data)[i];
+        
+        return v;
+      }
+    };
+    
+    //FIXME for now this should _only_ be used with vector as elements
+    template<typename T> void set(cv::Mat &val)
+    {
+      type = toBaseType<T>();
+      assert(type != BaseType::INVALID);
+      assert(type & BaseType::VECTOR);
+      
+      //FIXME delete!!
+      data = callByBaseType<vector_elements_from_mat_dispatcher>(type, val.total());
+      
+      size.resize(val.dims);
+      //FIXME correct order?!?
+      for(unsigned int i=0;i<size.size();i++)
+        size[i] = val.size[size.size()-i-1];
+    };
+    
     
     template<typename T> void set(T *val, int count = 1)
     {
@@ -196,6 +245,7 @@ class Attribute {
     
     friend std::ostream& operator<<(std::ostream& out, const Attribute& a);
 
+    int total();
     
     std::string name;
     BaseType type = BaseType::INVALID;
