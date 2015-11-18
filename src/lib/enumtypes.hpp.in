@@ -30,15 +30,17 @@ enum class BaseType : int {
   DOUBLE  = 5,
   STRING  = 6,
 //now for complex types - flags in addition to regular type!
-  VECTOR  = 8};
+  VECTOR  = 8
+  };
 //WARNING: change BaseTypeAtomicMask in enumtypes.cpp if enum value changes
 
-constexpr BaseType operator|(BaseType a, BaseType b)
+//constexpr not working in MSVC2013 - reimplement at a later point
+inline BaseType operator|(BaseType a, BaseType b)
 {
   return (BaseType)((int)a | (int)b);
 }
 
-constexpr BaseType operator&(BaseType a, BaseType b)
+inline BaseType operator&(BaseType a, BaseType b)
 {
   return (BaseType)((int)a & (int)b);
 }
@@ -53,7 +55,9 @@ CODE(int, BaseType::INT) \
 CODE(float, BaseType::FLOAT) \
 CODE(double, BaseType::DOUBLE)
 
-#define VECCODE(T, B) CODE(std::vector<T>, B | BaseType::VECTOR)
+//sadly this does not due to missing constexpr with MSVC2013
+//#define VECCODE(T, B) CODE(std::vector<T>, B | BaseType::VECTOR)
+#define VECCODE(T, B) CODE(std::vector<T>, BaseType(int(B) | int(BaseType::VECTOR)))
 #define CLIFALLVECTOR_T_B(CODE) CLIFALLATOMIC_T_B(VECCODE)
 
 #define CLIFALL_T_B(CODE) CLIFALLATOMIC_T_B(CODE) CLIFALLVECTOR_T_B(CODE)

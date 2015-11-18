@@ -292,13 +292,14 @@ typedef unsigned int uint;
     return true;
   }
   
-#ifdef CLIF_WITH_UCALIB
 
-  Cam_Config cam_config = {0.0065, 12.0, 300.0, -1, -1};
-  Calib_Config conf = {true, 190, 420};
 
   bool generate_proxy_loess(Dataset *set, int proxy_w, int proxy_h , std::string imgset, std::string calibset)
+#ifdef CLIF_WITH_UCALIB
   {
+    Cam_Config cam_config = { 0.0065, 12.0, 300.0, -1, -1 };
+    Calib_Config conf = { true, 190, 420 };
+
     cam_config.w = set->getCalibStore()->extent()[0];
     cam_config.h = set->getCalibStore()->extent()[1];
     
@@ -376,6 +377,11 @@ typedef unsigned int uint;
     set->setAttribute(calib_path / "opencv_distortion", dist);*/
     
     return true;
+  }
+#else
+  {
+    //FIXME report error
+    return false;
   }
 #endif
 

@@ -245,7 +245,7 @@ static int _cliini_opt_parse(const int argc, const char *argv[], int argpos, cli
     arg->vals = realloc(arg->vals, _type_size(opt->type)*arg->sum);
     printf("opt %s val ar: %p count %d\n", opt->longflag, arg->vals, arg->sum);
     for(i=1;i<=count;i++) {
-      _cliini_opt_arg_store_val(opt, argv[argpos+i], (void*)arg->vals + _type_size(opt->type)*(arg->sum-count+i-1));
+      _cliini_opt_arg_store_val(opt, argv[argpos+i], (char*)arg->vals + _type_size(opt->type)*(arg->sum-count+i-1));
     }
   }
   
