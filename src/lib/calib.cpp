@@ -22,7 +22,7 @@ using namespace std;
 using namespace cv;
 
 namespace clif {
-    
+  
 typedef unsigned int uint;
 
   bool pattern_detect(Dataset *s, int imgset, bool write_debug_imgs)
@@ -48,6 +48,11 @@ typedef unsigned int uint;
       vector<vector<Point2f>> ipoints;
       vector<vector<Point2f>> wpoints;
       
+      //images(1D+), channels - at least 2d
+      /*int idx[2];
+      Mat_<std::vector<float>> wpoints_m;
+      Mat_<std::vector<float>> ipoints_m;*/
+      
       if (pattern == CalibPattern::CHECKERBOARD) {
         Mat img;
         int size[2];
@@ -56,11 +61,21 @@ typedef unsigned int uint;
         s->get(cur_path / "size", size, 2);
         
         assert(imgs);
-        
-        //FIXME range!
-        
         assert(imgs->dims() == 4);
         
+        /*printf("imgcount: %d %d %d\n", imgs->imgCount(), imgs->imgChannels(), sizeof(std::vector<float>));
+        
+        
+        wpoints_m = Mat(imgs->imgCount(), imgs->imgChannels(), DataType<std::vector<float>>::type);
+        ipoints_m = Mat_<std::vector<float>>(imgs->imgCount(), imgs->imgChannels());
+        
+        printf("element size?! : %d\n", wpoints_m.elemSize());
+        
+        new(wpoints_m.data) std::vector<float>[wpoints_m.total()]();
+        new(ipoints_m.data) std::vector<float>[ipoints_m.total()]();*/
+        //FIXME delete
+        
+        //FIXME range!
         for(int j=0;j<imgs->imgCount();j++) {
           vector<Point2f> corners;
           std::vector<int> idx(4, 0);
@@ -92,7 +107,7 @@ typedef unsigned int uint;
         }
       }
 #ifdef CLIF_WITH_HDMARKER
-      if (pattern == CalibPattern::HDMARKER) {
+      else if (pattern == CalibPattern::HDMARKER) {
         Mat img;
         Datastore *imgs = s->getCalibStore();
         
