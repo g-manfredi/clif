@@ -16,35 +16,6 @@
 #include "dataset.hpp"
 
 namespace clif {
-  
-  //same as callByBaseType but without char (cause vigra doesn't like it :-))
-  template<template<typename> class F, typename ... ArgTypes> void callByBaseType_flexmav(BaseType type, ArgTypes ... args)
-  {
-    switch (type) {
-      case BaseType::UINT8 :  F<uint8_t>()(args...); break;
-      case BaseType::UINT16 : F<uint16_t>()(args...); break;
-      case BaseType::INT :    F<int>()(args...); break;
-      case BaseType::FLOAT :  F<float>()(args...); break;
-      case BaseType::DOUBLE : F<double>()(args...); break;
-      default:
-        printf("unknown type %d\n", type);
-        abort();
-    }
-  }
-  
-  template<template<typename> class F, typename R, typename ... ArgTypes> R callByBaseType_flexmav_r(BaseType type, ArgTypes ... args)
-  {
-    switch (type) {
-      case BaseType::UINT8 :  return F<uint8_t>()(args...); break;
-      case BaseType::UINT16 : return F<uint16_t>()(args...); break;
-      case BaseType::INT :    return F<int>()(args...); break;
-      case BaseType::FLOAT :  return F<float>()(args...); break;
-      case BaseType::DOUBLE : return F<double>()(args...); break;
-      default:
-        printf("unknown type %d\n", type);
-        abort();
-    }
-  }
 
   static BaseType vigraPixelType2BaseType(vigra::ImageImportInfo::PixelType type){
     switch (type) {
@@ -112,7 +83,7 @@ namespace clif {
       _shape = shape;
       _type = type;
       _mat = input;
-      _data = call_r<new_dispatcher,void*>(this, &_mat);
+      _data = call<new_dispatcher,void*>(this, &_mat);
     }
     
     void create(cv::Mat &input)
@@ -128,7 +99,7 @@ namespace clif {
       _type = CvDepth2BaseType(input.depth());
       assert(_type > BaseType::INVALID);
       _mat = input;
-      _data = call_r<new_dispatcher,void*>(this, &_mat);
+      _data = call<new_dispatcher,void*>(this, &_mat);
     }
     
     //read from datastore
@@ -145,7 +116,7 @@ namespace clif {
       for (int i=0;i<DIM;i++)
         _shape[i] = _mat.size[DIM-i-1];
       
-      _data = call_r<new_dispatcher,void*>(this, &_mat);
+      _data = call<new_dispatcher,void*>(this, &_mat);
     }
     
     //write to datastore
@@ -173,7 +144,7 @@ namespace clif {
       _shape = shape;
       
       _mat = cv::Mat(DIM, size, BaseType2CvDepth(_type));
-      _data = call_r<new_dispatcher, void *>(this, &_mat);
+      _data = call<new_dispatcher, void *>(this, &_mat);
     }
     
     void reshape(difference_type shape)
@@ -243,8 +214,8 @@ namespace clif {
     }
 
     
-    template<template<typename> class F, typename ... ArgTypes> void call(ArgTypes ... args) { callByBaseType_flexmav<F>(_type, args...); }
-    template<template<typename> class F, typename R, typename ... ArgTypes> R call_r(ArgTypes ... args) { return callByBaseType_flexmav_r<F,R>(_type, args...); }
+    template<template<typename> class F, typename ... ArgTypes> void call(ArgTypes ... args) { callByBaseType<F>(_type, args...); }
+    template<template<typename> class F, typename R, typename ... ArgTypes> R call(ArgTypes ... args) { return callByBaseType<F,R>(_type, args...); }
     
     
     template<typename T> vigra::MultiArrayView<DIM,T> *get() { return static_cast<vigra::MultiArrayView<DIM,T>*>(_data); }

@@ -71,7 +71,11 @@ template<typename T> BaseType toBaseType()
 {
   return BaseTypeMap[std::type_index(typeid(T))];
 }
-  
+
+//disable warnungs about bitwise enum combinations not being in enum
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch"
+
 //deep dark black c++ magic :-D
 #define CODE(TYPE, BASE) case (BASE) : F<TYPE>()(args...); break;
 #define COMMA ,
@@ -126,6 +130,8 @@ template<typename ExtraType, template<typename,typename> class F, typename R, ty
 }
 #undef COMMA
 #undef CODE
+
+#pragma GCC diagnostic pop
 
 BaseType toAtomicBaseType(BaseType &type);
 
