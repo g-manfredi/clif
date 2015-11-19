@@ -50,6 +50,13 @@ inline BaseType operator&(BaseType a, BaseType b)
   return (BaseType)((int)a & (int)b);
 }
 
+
+inline BaseType operator~(BaseType a)
+{
+  return BaseType(~int(a));
+}
+
+
 std::type_index BaseType2typeid(BaseType &type);
 
 #define CLIFALLATOMIC_T_B(CODE) \
@@ -86,6 +93,7 @@ template<typename T> BaseType toBaseType()
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wswitch"
 
+//callbybasetype - reguler
 //deep dark black c++ magic :-D
 #define CODE(TYPE, BASE) case (BASE) : F<TYPE>()(args...); break;
 #define COMMA ,
@@ -100,7 +108,7 @@ template<template<typename> class F, typename ... ArgTypes> void callByBaseType(
 #undef COMMA
 #undef CODE
 
-
+//callbybasetype - with extra type
 //deep dark black c++ magic :-D
 #define CODE(TYPE, BASE) case (BASE) :  F<ExtraType COMMA TYPE>()(args...); break;
 #define COMMA ,
@@ -115,6 +123,22 @@ template<typename ExtraType, template<typename,typename> class F, typename ... A
 #undef COMMA
 #undef CODE
 
+//callbybasetype - reguler with exclude
+//deep dark black c++ magic :-D
+#define CODE(TYPE, BASE) case (BASE) : F<TYPE>()(args...); break;
+#define COMMA ,
+template<template<typename> class F, int EX, typename ... ArgTypes> void callByBaseTypeExcluding(BaseType type, ArgTypes ... args)
+{
+  switch (type) {
+    CLIFALL_T_B(CODE)
+    default:
+      abort();
+  }
+}
+#undef COMMA
+#undef CODE
+
+//callbybasetype - regular with return
 #define CODE(TYPE, BASE) case (BASE) : return F<TYPE>()(args...); break;
 #define COMMA ,
 template<template<typename> class F, typename R, typename ... ArgTypes> R callByBaseType(BaseType type, ArgTypes ... args)
@@ -128,6 +152,7 @@ template<template<typename> class F, typename R, typename ... ArgTypes> R callBy
 #undef COMMA
 #undef CODE
 
+//callbybasetype - regular with extra type
 #define CODE(TYPE, BASE) case (BASE) : return F<ExtraType COMMA TYPE>()(args...); break;
 #define COMMA ,
 template<typename ExtraType, template<typename,typename> class F, typename R, typename ... ArgTypes> R callByBaseType(BaseType type, ArgTypes ... args)

@@ -8,6 +8,8 @@
 #include "stringtree.hpp"
 #include "enumtypes.hpp"
 
+#include "mat.hpp"
+
 namespace clif {
   
 /** %Attribute (Metadata) handling for CLIF
@@ -191,20 +193,25 @@ class Attribute {
       }
     };
     
-    //FIXME for now this should _only_ be used with vector as elements
-    template<typename T> void set(cv::Mat &val)
+    void set(Mat &m)
     {
-      type = toBaseType<T>();
-      assert(type != BaseType::INVALID);
-      assert(type & BaseType::VECTOR);
+      type = m.type();
+      size = m;
       
-      //FIXME delete!!
-      data = callByBaseType<vector_elements_from_mat_dispatcher>(type, val.total());
+      printf("set attr mat to type %d\n", type);
       
-      size.resize(val.dims);
-      //FIXME correct order?!?
-      for(unsigned int i=0;i<size.size();i++)
-        size[i] = val.size[size.size()-i-1];
+      _m = m;
+    };
+    
+    //FIXME correct handling of Mat_?
+    template<typename T> void set(Mat_<T> &m)
+    {
+      type = m.type();
+      size = m;
+      
+      printf("set attr mat to type %d\n", type);
+      
+      _m = m;
     };
     
     
@@ -255,6 +262,8 @@ class Attribute {
     int dims = 0;
     std::vector<int> size;
     void *data = NULL;
+    
+    Mat _m;
 };
 
 /** Main class for metadata handling.

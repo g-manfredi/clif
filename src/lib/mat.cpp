@@ -74,6 +74,16 @@ struct BaseType_deleter
   BaseType _type;
 };
 
+BaseType Mat::type()
+{
+  return _type;
+}
+
+void* Mat::data()
+{
+  return _data.get();
+}
+
 Mat::Mat(BaseType type, Idx size)
 {
   create(type, size);
@@ -92,5 +102,41 @@ void Mat::release()
 {
   _data.reset();
 }
+
+template<typename T> class _vdata_dispatcher{
+public:
+  void operator()(hvl_t *v, Mat *m)
+  {
+    abort();
+  }
+};
+
+template<typename T> class _vdata_dispatcher<std::vector<T>>{
+public:
+  void operator()(hvl_t *v, Mat *m)
+  {
+    for(int i=0;i<m->total();i++) {
+      printf("size = %d\n", m->operator()<std::vector<T>>(i).size());
+      v[i].len = m->operator()<std::vector<T>>(i).size();
+      v[i].p = &m->operator()<std::vector<T>>(i)[0];
+    }
+  }
+};
+
+
+hvl_t *Mat_H5vlenbuf(Mat &m)
+{
+  hvl_t *vdata;
+  
+  if (int(m.type() & BaseType::VECTOR) == 0)
+    return NULL;
+  
+  vdata = (hvl_t*)malloc(sizeof(hvl_t)*m.total());
+  
+  callByBaseType<_vdata_dispatcher>(m.type(), vdata, &m);
+    
+  return vdata;
+}
+  
   
 } //namespace clif

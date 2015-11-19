@@ -54,8 +54,10 @@ typedef unsigned int uint;
       
       //images(1D+), channels - at least 2d
       /*int idx[2];*/
-      Mat_<std::vector<float>> wpoints_m(Idx(imgs->imgChannels(), imgs->imgCount()));
-      Mat_<std::vector<float>> ipoints_m(Idx(imgs->imgChannels(), imgs->imgCount()));
+      Mat_<std::vector<Point2f>> wpoints_m(Idx(imgs->imgChannels(), imgs->imgCount()));
+      Mat_<std::vector<Point2f>> ipoints_m(Idx(imgs->imgChannels(), imgs->imgCount()));
+      //Mat_<Point2f> wpoints_m(Idx(imgs->imgChannels(), imgs->imgCount()));
+      //Mat_<Point2f> ipoints_m(Idx(imgs->imgChannels(), imgs->imgCount()));
       
       if (pattern == CalibPattern::CHECKERBOARD) {
         cv::Mat img;
@@ -79,7 +81,7 @@ typedef unsigned int uint;
         //FIXME delete
         
         //FIXME range!
-        for(int j=0;j<imgs->imgCount();j++) {
+        for(int j=0;j<1/*imgs->imgCount()*/;j++) {
           vector<Point2f> corners;
           std::vector<int> idx(4, 0);
           idx[3] = j;
@@ -106,6 +108,7 @@ typedef unsigned int uint;
                 wpoints.back().push_back(Point2f(x,y));
                 //pointcount++;
               }
+
             wpoints_m(0, j) = wpoints.back();
             ipoints_m(0, j) = ipoints.back();
           }
@@ -235,6 +238,10 @@ typedef unsigned int uint;
       
       //FIXME put into datastore!
       writeCalibPoints(s, imgsets[i], ipoints, wpoints);
+      
+      
+      s->setAttribute(cur_path / "img_points", ipoints_m);
+      s->setAttribute(cur_path / "world_points", wpoints_m);
     }
     
     return false;

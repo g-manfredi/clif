@@ -58,7 +58,7 @@ namespace clif {
   
   void readQImage(Datastore *store, const std::vector<int> idx, QImage &img, int flags, double min, double max)
   {
-    Mat img_3d, img_2d;
+    cv::Mat img_3d, img_2d;
     store->readImage(idx, &img_3d, flags | CVT_8U, min, max);
     clifMat2cv(&img_3d, &img_2d);
     
@@ -68,7 +68,7 @@ namespace clif {
   
   void readEPI(clif::Subset3d *set, QImage &img, int line, double disp, int flags)
   {
-    Mat img_3d, img_2d;
+    cv::Mat img_3d, img_2d;
     set->readEPI(&img_3d, line, disp, Unit::PIXELS, flags | CVT_8U);
     clifMat2cv(&img_3d, &img_2d);
     

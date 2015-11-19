@@ -313,7 +313,7 @@ int main(const int argc, const char *argv[])
     
     for(uint i=0;i<input_imgs.size();i++) {
       printf("store idx %d: %s\n", i, input_imgs[i].c_str());
-      Mat img = imread(input_imgs[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+      cv::Mat img = imread(input_imgs[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
       assert(img.size().width && img.size().height);
       if (img.channels() == 3)
         cvtColor(img, img, COLOR_BGR2RGB);
@@ -326,7 +326,7 @@ int main(const int argc, const char *argv[])
       
       for(uint i=0;i<input_calib_imgs.size();i++) {
         printf("store calib img %d: %s\n", i, input_calib_imgs[i].c_str());
-        Mat img = imread(input_calib_imgs[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+        cv::Mat img = imread(input_calib_imgs[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
         if (img.channels() == 3)
           cvtColor(img, img, COLOR_BGR2RGB);
         calib_store->appendImage(&img);
@@ -374,7 +374,7 @@ int main(const int argc, const char *argv[])
         
       char buf[4096];
       for(int c=0;c<in_set->imgCount();c++) {
-        Mat img;
+        cv::Mat img;
         sprintf(buf, clif_extract_images[i].c_str(), c);
         printf("store idx %d: %s\n", c, buf);
         std::vector<int> idx(in_set->dims(), 0);

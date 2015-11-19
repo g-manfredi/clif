@@ -91,15 +91,40 @@ int baseType_size(BaseType t)
   return callByBaseType<basetype_size_dispatcher,int>(t);
 }
 
+H5::CompType _h5_cv_point2f_native_type()
+{
+  H5::CompType t(sizeof(cv::Point2f));
+  t.insertMember("x", HOFFSET(cv::Point2f, x), H5::PredType::NATIVE_FLOAT);
+  t.insertMember("y", HOFFSET(cv::Point2f, y), H5::PredType::NATIVE_FLOAT);
+
+  return t;
+}
+
+H5::CompType _h5_point2f_disk_type()
+{
+  H5::CompType t(sizeof(cv::Point2f));
+  t.insertMember("x", HOFFSET(cv::Point2f, x), H5::PredType::IEEE_F32LE);
+  t.insertMember("y", HOFFSET(cv::Point2f, y), H5::PredType::IEEE_F32LE);
+  t.pack();
+
+  return t;
+}
+
 //FIXME other types!
 H5::DataType toH5DataType(BaseType type)
-{
+{  
+  if (int(type & BaseType::VECTOR)) {
+    H5::DataType t = toH5DataType(type & ~BaseType::VECTOR);
+    return H5::VarLenType(&t);
+  }
+  
   switch (type) {
     case BaseType::UINT8 : return H5::PredType::STD_U8LE;
     case BaseType::UINT16 : return H5::PredType::STD_U16LE;
     case BaseType::INT :    return H5::PredType::STD_I32LE;
     case BaseType::FLOAT : return H5::PredType::IEEE_F32LE;
     case BaseType::DOUBLE:  return H5::PredType::IEEE_F64LE;
+    case BaseType::CV_POINT2F:  return _h5_point2f_disk_type();
     case BaseType::STRING : return H5::PredType::C_S1;
     default :
       assert(type != BaseType::UINT16);
@@ -110,12 +135,18 @@ H5::DataType toH5DataType(BaseType type)
 //FIXME other types!
 H5::DataType toH5NativeDataType(BaseType type)
 {
+  if (int(type & BaseType::VECTOR)) {
+    H5::DataType t = toH5NativeDataType(type & ~BaseType::VECTOR);
+    return H5::VarLenType(&t);
+  }
+  
   switch (type) {
     case BaseType::UINT8 :  return H5::PredType::NATIVE_UINT8;
     case BaseType::UINT16 : return H5::PredType::NATIVE_UINT16;
     case BaseType::INT :    return H5::PredType::NATIVE_INT;
     case BaseType::FLOAT :  return H5::PredType::NATIVE_FLOAT;
     case BaseType::DOUBLE:  return H5::PredType::NATIVE_DOUBLE;
+    case BaseType::CV_POINT2F:  return _h5_cv_point2f_native_type();
     case BaseType::STRING : return H5::PredType::C_S1;
     default :
       assert(type != BaseType::UINT16);

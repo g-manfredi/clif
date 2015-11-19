@@ -5,6 +5,9 @@
 
 #include "enumtypes.hpp"
 
+//FIXME use forward declaration!
+#include <hdf5.h>
+
 namespace clif {
   
 class Idx : public std::vector<int>
@@ -27,7 +30,7 @@ namespace {
   
   template<typename T, typename ... Idxs> off_t calc_offset(Idx &extent, int pos, int idx, Idxs ... rest)
   {
-    return idx + extent[pos]*calc_offset(extent, pos+1, rest...);
+    return idx + extent[pos]*calc_offset<T>(extent, pos+1, rest...);
   }
 }
   
@@ -39,20 +42,22 @@ public:
   void create(BaseType type, Idx size);
   void release();
   
+  void* data();
+  
   BaseType type();
   
   //FIXME/DOCUMENT: this should only be used after make-unique etc...
   template<typename T, typename ... Idxs> T& operator()(Idxs ... idxs)
   {
-    return ((T*)_data.get())[calc_offset(idxs...)];
+    return ((T*)_data.get())[calc_offset<T>(*(Idx*)this, 0, idxs...)];
   }
   
 protected:
   BaseType _type;
+  std::shared_ptr<void> _data;
   
 private:
   Idx _step; //not yet used!
-  std::shared_ptr<void> _data;
 };
 
 template<typename T> class Mat_ : public Mat {
@@ -63,12 +68,15 @@ public:
   
   void create(Idx size);
   void create(BaseType type, Idx size);
+  
   //FIXME/DOCUMENT: this should only be used after make-unique etc...
   template<typename ... Idxs> T& operator()(Idxs ... idxs)
-  {
-    return ((T*)_data.get())[calc_offset(idxs...)];
+  {   
+    return ((T*)_data.get())[calc_offset<T>(*(Idx*)this, 0, idxs...)];
   }
 };
+
+hvl_t *Mat_H5vlenbuf(Mat &m);
 
 namespace {
   void _set_array_from(int *ar) {};

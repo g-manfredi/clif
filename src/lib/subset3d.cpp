@@ -1,8 +1,8 @@
 #include "subset3d.hpp"
 
-#include "opencv2/core/core.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/highgui/highgui.hpp"
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 #include "dataset.hpp"
 
@@ -59,7 +59,7 @@ Subset3d::Subset3d(clif::Dataset *data, const int idx)
 
 typedef Vec<ushort, 3> Vec3us;
 
-template<typename V> void warp_1d_linear_rgb(Mat in, Mat out, double offset)
+template<typename V> void warp_1d_linear_rgb(cv::Mat in, cv::Mat out, double offset)
 {
   if (abs(offset) >= in.size().width) {
     return;
@@ -87,7 +87,34 @@ template<typename V> void warp_1d_linear_rgb(Mat in, Mat out, double offset)
   }*/
 }
 
-template<typename T> void warp_1d_linear(Mat *in, Mat *out, int line_in, int line_out, double offset)
+//FIXME fixed point only!?
+/*template<typename T> void warp_1d_linear(Mat *in, Mat *out, int line_in, int line_out, double offset)
+{
+  
+  if (abs(offset) >= in->size().width) {
+    return;
+  }
+  
+  T *in_ptr = (T*)in->ptr<T>(line_in);
+  T *out_ptr = (T*)out->ptr<T>(line_out);
+  
+  int off_i;
+  int f1, f2;
+  
+  if (offset >= 0)
+    off_i = offset;
+  else
+    off_i = offset-1;
+  
+  f1 = (offset - (double)off_i)*1024;
+  f2 = 1024 - f1;
+  
+  for(int i=clamp<int>(off_i, 1, out->size().width-1);i<clamp<int>(out->size().width+off_i, 1, out->size().width);i++)
+    out_ptr[i] = (f1*(int)in_ptr[i-off_i] + f2*(int)in_ptr[i-off_i+1])/1024;
+}*/
+
+//FIXME fixed point only!?
+template<typename T> void warp_1d_linear(cv::Mat *in, cv::Mat *out, int line_in, int line_out, double offset)
 {
   
   if (abs(offset) >= in->size().width) {
@@ -114,21 +141,27 @@ template<typename T> void warp_1d_linear(Mat *in, Mat *out, int line_in, int lin
 
 template<typename T> class warp_1d_linear_dispatcher {
 public:
-  void operator()(Mat *in, Mat *out, int line_in, int line_out, double offset)
+  void operator()(cv::Mat *in, cv::Mat *out, int line_in, int line_out, double offset)
   {
     warp_1d_linear<T>(in, out, line_in, line_out, offset);
   }
 };
-
 template<typename T> class warp_1d_linear_dispatcher<std::vector<T>> {
 public:
-  void operator()(Mat *in, Mat *out, int line_in, int line_out, double offset)
+  void operator()(cv::Mat *in, cv::Mat *out, int line_in, int line_out, double offset)
+  {
+    abort();
+  }
+};
+template<> class warp_1d_linear_dispatcher<cv::Point2f> {
+public:
+  void operator()(cv::Mat *in, cv::Mat *out, int line_in, int line_out, double offset)
   {
     abort();
   }
 };
 
-template<typename T> void warp_1d_nearest(Mat *in, Mat *out, int line_in, int line_out, int offset)
+template<typename T> void warp_1d_nearest(cv::Mat *in, cv::Mat *out, int line_in, int line_out, int offset)
 {
   
   if (abs(offset) >= in->size().width) {
@@ -150,7 +183,7 @@ template<typename T> void warp_1d_nearest(Mat *in, Mat *out, int line_in, int li
 
 template<typename T> class warp_1d_nearest_dispatcher {
 public:
-  void operator()(Mat *in, Mat *out, int line_in, int line_out, int offset)
+  void operator()(cv::Mat *in, cv::Mat *out, int line_in, int line_out, int offset)
   {
     warp_1d_nearest<T>(in, out, line_in, line_out, offset);
   }
@@ -188,7 +221,7 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
   if (abs(i_step - step) < 1.0/512.0)
     interp = Interpolation::NEAREST;
   
-  Mat tmp;
+  cv::Mat tmp;
   idx[3] = 0;
   //FIXME scale
   _data->readImage(idx, &tmp, flags | UNDISTORT);
@@ -214,7 +247,7 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
 #pragma omp parallel for
   for(int i=0;i<h;i++) {
     std::vector<int> idx_l(_data->dims(), 0);
-    Mat img;
+    cv::Mat img;
     idx_l[3] = i;
     _data->readImage(idx_l, &img, flags | UNDISTORT);
     

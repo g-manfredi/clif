@@ -8,6 +8,8 @@
 
 #include "hdf5.hpp"
 
+#include <opencv2/core/core.hpp>
+
 namespace clif {
 
 typedef unsigned int uint;
@@ -374,6 +376,7 @@ void Attribute::write(H5::H5File f, std::string dataset_name)
   std::string grouppath = remove_last_part(fullpath, '/');
   std::string attr_name = get_last_part(fullpath, '/');
   
+  //FIXME use size from _m
   hsize_t *dim = new hsize_t[size.size()+1];
   for(uint i=0;i<size.size();i++)
     dim[i] = size[i];
@@ -398,9 +401,22 @@ void Attribute::write(H5::H5File f, std::string dataset_name)
   if (H5Aexists(g.getId(), attr_name.c_str()))
     g.removeAttr(attr_name.c_str());
     
+  printf("create attr!\n");
   attr = g.createAttribute(attr_name.c_str(), toH5DataType(type), space);
+  
+  printf("created attr!\n");
       
-  attr.write(toH5NativeDataType(type), data);
+  if (_m.total() == 0)
+    attr.write(toH5NativeDataType(type), data);
+  else {
+     hvl_t *vdata = Mat_H5vlenbuf(_m);
+     if (vdata) {
+       attr.write(toH5NativeDataType(type), vdata);
+       free(vdata);
+      }
+      else
+        attr.write(toH5NativeDataType(type), _m.data());
+  }
 }
 
 std::string read_string_attr(H5::H5File &f, const char *parent_group_str, const char *name)
