@@ -26,12 +26,12 @@ static std::type_index BaseTypeVectorTypes[] = {
   std::type_index(typeid(std::vector<char>))
 };
 
-BaseType toAtomicBaseType(BaseType &type)
+BaseType toAtomicBaseType(const BaseType &type)
 {
   return type & BaseTypeAtomicMask;
 }
 
-std::type_index BaseType2typeid(BaseType &type)
+std::type_index BaseType2typeid(const BaseType &type)
 {
   if (int(type & BaseType::VECTOR) == 0)
     return BaseTypeSimpleTypes[int(type)];

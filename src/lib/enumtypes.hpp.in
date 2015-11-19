@@ -57,7 +57,7 @@ inline BaseType operator~(BaseType a)
 }
 
 
-std::type_index BaseType2typeid(BaseType &type);
+std::type_index BaseType2typeid(const BaseType &type);
 
 #define CLIFALLATOMIC_T_B(CODE) \
 CODE(char, BaseType::STRING) \
@@ -168,7 +168,7 @@ template<typename ExtraType, template<typename,typename> class F, typename R, ty
 
 #pragma GCC diagnostic pop
 
-BaseType toAtomicBaseType(BaseType &type);
+BaseType toAtomicBaseType(const BaseType &type);
 
   //enum class DataType : int {${DataTypeEnums}};
   enum class DataOrg : int {${DataOrgEnums}};

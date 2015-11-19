@@ -77,6 +77,25 @@ class Attribute {
       val = *(T*)data;
     };
     
+    void get(Mat &m)
+    {    
+      if (!_m.total())
+        abort();
+      
+      m = _m;
+    }
+    
+    template<typename T> void get(Mat_<T> &m)
+    {    
+      if (!_m.total())
+        abort();
+      if (m.type() != _m.type())
+        throw std::invalid_argument("Attribute type doesn't match requested type.");
+      
+      m = Mat_<T>();
+      m = *(Mat_<T>*)&_m;
+    }
+    
     template<typename T> void convert(T *val)
     {
       callByBaseType<T,convertFromBaseTypeDispatcher>(type, type, data, val);

@@ -45,7 +45,7 @@ public:
   
   void* data();
   
-  BaseType type();
+  BaseType const & type() const;
   
   //FIXME/DOCUMENT: this should only be used after make-unique etc...
   template<typename T, typename ... Idxs> T& operator()(Idxs ... idxs)

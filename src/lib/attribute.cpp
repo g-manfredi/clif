@@ -414,10 +414,7 @@ void Attribute::write(H5::H5File f, std::string dataset_name)
     if (H5Aexists(g.getId(), attr_name.c_str()))
       g.removeAttr(attr_name.c_str());
       
-    printf("create attr!\n");
     attr = g.createAttribute(attr_name.c_str(), toH5DataType(type), space);
-    
-    printf("created attr!\n");
         
     attr.write(toH5NativeDataType(type), data);
   }

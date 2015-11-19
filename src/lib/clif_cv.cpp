@@ -12,8 +12,11 @@ namespace clif {
 typedef unsigned int uint;
 
   cv::Size imgSize(Datastore *store)
-  {     
-    return cv::Size(store->extent()[0],store->extent()[1]);
+  {
+    if (store->dims() < 2)
+      return cv::Size(0, 0);
+    else
+      return cv::Size(store->extent()[0],store->extent()[1]);
   }
     
   //FIXME only power to scales at the moment
@@ -351,59 +354,6 @@ typedef unsigned int uint;
     outm = *m;
   }*/
   
-  
-  void writeCalibPoints(Dataset *set, std::string calib_set_name, std::vector<std::vector<cv::Point2f>> &imgpoints, std::vector<std::vector<cv::Point2f>> &worldpoints)
-  {
-    int pointcount = 0;
-    
-    for(uint i=0;i<imgpoints.size();i++)
-      for(uint j=0;j<imgpoints[i].size();j++)
-        pointcount++;
-      
-    float *pointbuf = new float[4*pointcount];
-    float *curpoint = pointbuf;
-    int *sizebuf = new int[imgpoints.size()];
-    
-    
-    for(uint i=0;i<imgpoints.size();i++) {
-      sizebuf[i] = imgpoints[i].size();
-      for(uint j=0;j<imgpoints[i].size();j++) {
-        curpoint[0] = imgpoints[i][j].x;
-        curpoint[1] = imgpoints[i][j].y;
-        curpoint[2] = worldpoints[i][j].x;
-        curpoint[3] = worldpoints[i][j].y;
-        curpoint += 4;
-      }
-    }
-      
-    set->setAttribute(path() / "calibration/images/sets" / calib_set_name / "pointdata", pointbuf, 4*pointcount);
-    set->setAttribute(path() / "calibration/images/sets" / calib_set_name / "pointcounts", sizebuf, imgpoints.size());
-  }
-  
-  void readCalibPoints(Dataset *set, std::string calib_set_name, std::vector<std::vector<cv::Point2f>> &imgpoints, std::vector<std::vector<cv::Point2f>> &worldpoints)
-  {
-    std::vector<float> pointbuf;
-    std::vector<int> sizebuf;
-    
-    set->get(path() / "calibration/images/sets" / calib_set_name / "pointdata", pointbuf);  
-    set->get(path() / "calibration/images/sets" / calib_set_name / "pointcounts", sizebuf);
-    
-    imgpoints.clear();
-    imgpoints.resize(sizebuf.size());
-    worldpoints.clear();
-    worldpoints.resize(sizebuf.size());
-
-    int idx = 0;
-    for(uint i=0;i<sizebuf.size();i++) {
-      imgpoints[i].resize(sizebuf[i]);
-      worldpoints[i].resize(sizebuf[i]);
-      for(int j=0;j<sizebuf[i];j++) {
-        imgpoints[i][j] = cv::Point2f(pointbuf[idx+0],pointbuf[idx+1]);
-        worldpoints[i][j] = cv::Point2f(pointbuf[idx+2],pointbuf[idx+3]);
-        idx += 4;
-      }
-    }
-  }
   
 static cv::Mat mat_2d_from_3d(const cv::Mat *m, int ch)
 {

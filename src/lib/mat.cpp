@@ -77,7 +77,7 @@ struct BaseType_deleter
   BaseType _type;
 };
 
-BaseType Mat::type()
+BaseType const & Mat::type() const
 {
   return _type;
 }
@@ -191,9 +191,7 @@ void Mat_H5AttrWrite(Mat &m, H5::H5File &f, const boost::filesystem::path &path)
   H5::Group g;
 
   delete[] dim;
-  
-  printf("write %s\n", path.c_str());
-  
+    
   if (!h5_obj_exists(f, parent))
     h5_create_path_groups(f, parent);
   
@@ -237,9 +235,7 @@ void Mat_H5AttrRead(Mat &m, H5::Attribute &a)
     extent[i] = dims[i];
   
   m.create(type, extent);
-  
-  printf("c m type: %d %d\n", type, m.type());
-  
+    
   hvl_t *v = Mat_H5vlenbuf_alloc(m);
   if (!v)
     a.read(toH5NativeDataType(type), m.data());
@@ -247,6 +243,7 @@ void Mat_H5AttrRead(Mat &m, H5::Attribute &a)
     //FIXME
     H5::DataType native = toH5NativeDataType(type);
     a.read(native, v);
+    Mat_H5vlenbuf_read(m, v);
     H5Dvlen_reclaim(native.getId(), space.getId(), H5P_DEFAULT, v);
     free(v);
   }

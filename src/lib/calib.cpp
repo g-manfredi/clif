@@ -81,7 +81,7 @@ typedef unsigned int uint;
         //FIXME delete
         
         //FIXME range!
-        for(int j=0;j<1/*imgs->imgCount()*/;j++) {
+        for(int j=0;j<imgs->imgCount();j++) {
           vector<Point2f> corners;
           std::vector<int> idx(4, 0);
           idx[3] = j;
@@ -236,10 +236,6 @@ typedef unsigned int uint;
       else
         abort();
       
-      //FIXME put into datastore!
-      writeCalibPoints(s, imgsets[i], ipoints, wpoints);
-      
-      
       s->setAttribute(cur_path / "img_points", ipoints_m);
       s->setAttribute(cur_path / "world_points", wpoints_m);
     }
@@ -253,9 +249,14 @@ typedef unsigned int uint;
     vector<double> dist;
     vector<cv::Mat> rvecs;
     vector<cv::Mat> tvecs;
+    Size im_size = imgSize(set);
     
-    vector<vector<Point2f>> ipoints_read;
-    vector<vector<Point2f>> wpoints_read;
+    if (!im_size.width)
+      im_size = imgSize(set->getCalibStore());
+    
+    Mat_<std::vector<Point2f>> wpoints_m;
+    Mat_<std::vector<Point2f>> ipoints_m;
+      
     vector<vector<Point2f>> ipoints;
     vector<vector<Point3f>> wpoints;
     
@@ -269,7 +270,29 @@ typedef unsigned int uint;
     if (!calibset.size())
       calibset = imgset;
       
-    readCalibPoints(set, imgset, ipoints_read, wpoints_read);
+    Attribute *w_a = set->get(path("calibration/images/sets") / imgset / "world_points");
+    Attribute *i_a = set->get(path("calibration/images/sets") / imgset / "img_points");
+    
+    //FIXME error handling
+    if (!w_a || !i_a)
+      abort();
+    
+    w_a->get(wpoints_m);
+    i_a->get(ipoints_m);
+    
+    for(int i=0;i<wpoints_m[1];i++) {
+      if (!wpoints_m(0, i).size())
+        continue;
+      
+      ipoints.push_back(ipoints_m(0, i));
+      wpoints.push_back(std::vector<Point3f>(wpoints_m(0, i).size()));
+      for(int j=0;j<wpoints_m(0, i).size();j++)
+        wpoints.back()[j] = Point3f(wpoints_m(0, i)[j].x,wpoints_m(0, i)[j].y,0);
+    }
+      
+    
+    /*readCalibPoints(set, imgset, ipoints_read, wpoints_read);
+    
     for(uint i=0;i<wpoints_read.size();i++) {
       if (!wpoints_read[i].size())
         continue;
@@ -279,9 +302,9 @@ typedef unsigned int uint;
         wpoints.back()[j] = Point3f(wpoints_read[i][j].x,wpoints_read[i][j].y,0);
         ipoints.back()[j] = ipoints_read[i][j];
       }
-    }
+    }*/
     
-    double rms = calibrateCamera(wpoints, ipoints, imgSize(set), cam, dist, rvecs, tvecs, flags);
+    double rms = calibrateCamera(wpoints, ipoints, im_size, cam, dist, rvecs, tvecs, flags);
     
     
     printf("opencv calibration rms %f\n", rms);
@@ -334,7 +357,7 @@ typedef unsigned int uint;
     if (!calibset.size())
       calibset = imgset;
       
-    readCalibPoints(set, imgset, ipoints_read, wpoints_read);
+    /*readCalibPoints(set, imgset, ipoints_read, wpoints_read);
     for(uint i=0;i<wpoints_read.size();i++) {
       if (!wpoints_read[i].size())
         continue;
@@ -347,7 +370,7 @@ typedef unsigned int uint;
       
       printf("%d points\n", wpoints_read[i].size());
       printf("%fx%f points\n", wpoints[i][0].x,wpoints[i][0].y);
-    }
+    }*/
     
     Point2i proxy_size(proxy_w,proxy_h);
     
