@@ -226,7 +226,6 @@ BaseType cliini_type_to_BaseType(int type);
 H5::DataType toH5DataType(BaseType type);
 H5::DataType toH5NativeDataType(BaseType type);
 
-//BaseType toBaseType(H5::PredType type);
 BaseType toBaseType(hid_t type);
 
 //H5::DataType BaseType_to_PredType(BaseType type);

@@ -195,6 +195,16 @@ BaseType toBaseType(hid_t type)
       else if (H5Tget_size(type) == 8)
         return BaseType::DOUBLE;
       break;
+    case H5T_VLEN: 
+      return BaseType::VECTOR | toBaseType(H5Tget_super(type));
+    case H5T_COMPOUND: 
+      if (H5Tget_nmembers(type) == 2
+          //TODO this matches _any_ float class, like double
+          && H5Tget_member_class(type, 0) == H5T_FLOAT
+          && H5Tget_member_class(type, 1) == H5T_FLOAT
+          && !strcmp(H5Tget_member_name(type, 0), "x")
+          && !strcmp(H5Tget_member_name(type, 1), "y"))
+          return BaseType::CV_POINT2F;
     default:
       printf("ERROR: unknown argument type!\n");
       abort();

@@ -5,8 +5,9 @@
 
 #include "enumtypes.hpp"
 
-//FIXME use forward declaration!
+//FIXME use forward declaration - better put in extra header...
 #include <hdf5.h>
+#include <boost/filesystem.hpp>
 
 namespace clif {
   
@@ -77,6 +78,7 @@ public:
 };
 
 hvl_t *Mat_H5vlenbuf(Mat &m);
+void   Mat_H5AttrWrite(Mat &m, H5::H5File &f, const boost::filesystem::path &path);
 
 namespace {
   void _set_array_from(int *ar) {};

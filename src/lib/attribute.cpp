@@ -18,7 +18,7 @@ static void read_attr(Attribute *attr, H5::Group g, std::string basename, std::s
 {
   int total = 1;
   H5::Attribute h5attr = g.openAttribute(name.c_str());
-  
+    
   type =  toBaseType(H5Aget_type(h5attr.getId()));
   
   H5::DataSpace space = h5attr.getSpace();
@@ -31,14 +31,20 @@ static void read_attr(Attribute *attr, H5::Group g, std::string basename, std::s
   for(int i=0;i<dimcount;i++)
     total *= dims[i];
   
-  void *buf = malloc(baseType_size(type)*total);
-  
-  h5attr.read(toH5NativeDataType(type), buf);
-  
-  group_path = group_path.substr(basename.length()+1, group_path.length()-basename.length()-1);
-  name = group_path + '/' + name;
-  
-  attr->set<hsize_t>(name, dimcount, dims, type, buf);
+  //legacy attribute reading
+  if (dimcount == 1) {
+    void *buf = malloc(baseType_size(type)*total);
+    
+    h5attr.read(toH5NativeDataType(type), buf);
+    
+    group_path = group_path.substr(basename.length()+1, group_path.length()-basename.length()-1);
+    name = group_path + '/' + name;
+    
+    attr->set<hsize_t>(name, dimcount, dims, type, buf);
+  }
+  else {
+    
+  }
 
   delete[] dims;
   delete[] maxdims;
@@ -290,8 +296,8 @@ template<typename T> class insertionDispatcher<std::vector<T>> {
 public:
   void operator()(std::ostream *stream, void *val, int idx)
   {
-    printf("FIXME: vector string conversion!\n");
-    abort();
+    printf("FIXME: vector string conversion!");
+    //abort();
     //*stream << ((T*)val)[idx];
   }
 };
@@ -376,47 +382,41 @@ void Attribute::write(H5::H5File f, std::string dataset_name)
   std::string grouppath = remove_last_part(fullpath, '/');
   std::string attr_name = get_last_part(fullpath, '/');
   
-  //FIXME use size from _m
-  hsize_t *dim = new hsize_t[size.size()+1];
-  for(uint i=0;i<size.size();i++)
-    dim[i] = size[i];
-  H5::DataSpace space(size.size(), dim);
-  H5::Attribute attr;
-  H5::Group g;
+  if (_m.total() == 0) {
+    //FIXME remove this (legacy) case
+    hsize_t *dim = new hsize_t[size.size()+1];
+    for(uint i=0;i<size.size();i++)
+      dim[i] = size[i];
+    H5::DataSpace space(size.size(), dim);
+    H5::Attribute attr;
+    H5::Group g;
 
-  delete[] dim;
-  
-  if (!h5_obj_exists(f, grouppath))
-    h5_create_path_groups(f, grouppath.c_str());
-  
-  g = f.openGroup(grouppath.c_str());
-  
-  uint min, max;
-  
-  H5Pget_attr_phase_change(H5Gget_create_plist(g.getId()), &max, &min);
-  
-  if (min || max)
-    printf("WARNING: could not set dense storage on group, may not be able to write large attributes\n");
-  
-  if (H5Aexists(g.getId(), attr_name.c_str()))
-    g.removeAttr(attr_name.c_str());
+    delete[] dim;
     
-  printf("create attr!\n");
-  attr = g.createAttribute(attr_name.c_str(), toH5DataType(type), space);
-  
-  printf("created attr!\n");
+    if (!h5_obj_exists(f, grouppath))
+      h5_create_path_groups(f, grouppath.c_str());
+    
+    g = f.openGroup(grouppath.c_str());
+    
+    uint min, max;
+    
+    H5Pget_attr_phase_change(H5Gget_create_plist(g.getId()), &max, &min);
+    
+    if (min || max)
+      printf("WARNING: could not set dense storage on group, may not be able to write large attributes\n");
+    
+    if (H5Aexists(g.getId(), attr_name.c_str()))
+      g.removeAttr(attr_name.c_str());
       
-  if (_m.total() == 0)
+    printf("create attr!\n");
+    attr = g.createAttribute(attr_name.c_str(), toH5DataType(type), space);
+    
+    printf("created attr!\n");
+        
     attr.write(toH5NativeDataType(type), data);
-  else {
-     hvl_t *vdata = Mat_H5vlenbuf(_m);
-     if (vdata) {
-       attr.write(toH5NativeDataType(type), vdata);
-       free(vdata);
-      }
-      else
-        attr.write(toH5NativeDataType(type), _m.data());
   }
+  else
+    Mat_H5AttrWrite(_m, f, fullpath);
 }
 
 std::string read_string_attr(H5::H5File &f, const char *parent_group_str, const char *name)

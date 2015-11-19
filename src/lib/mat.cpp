@@ -2,6 +2,9 @@
 
 #include "enumtypes.hpp"
 
+//FIXME move functions in extra header...
+#include "hdf5.hpp"
+
 namespace clif {
   
 typedef unsigned int uint;
@@ -116,7 +119,6 @@ public:
   void operator()(hvl_t *v, Mat *m)
   {
     for(int i=0;i<m->total();i++) {
-      printf("size = %d\n", m->operator()<std::vector<T>>(i).size());
       v[i].len = m->operator()<std::vector<T>>(i).size();
       v[i].p = &m->operator()<std::vector<T>>(i)[0];
     }
@@ -136,6 +138,49 @@ hvl_t *Mat_H5vlenbuf(Mat &m)
   callByBaseType<_vdata_dispatcher>(m.type(), vdata, &m);
     
   return vdata;
+}
+
+void Mat_H5AttrWrite(Mat &m, H5::H5File &f, const boost::filesystem::path &path)
+{
+  boost::filesystem::path parent = path.parent_path();
+  boost::filesystem::path name = path.filename();
+  
+  hsize_t *dim = new hsize_t[m.size()];
+  for(uint i=0;i<m.size();i++)
+    dim[i] = m[i];
+  
+  H5::DataSpace space(m.size(), dim);
+  H5::Attribute attr;
+  H5::Group g;
+
+  delete[] dim;
+  
+  printf("write %s\n", path.c_str());
+  
+  if (!h5_obj_exists(f, parent))
+    h5_create_path_groups(f, parent);
+  
+  g = f.openGroup(parent.generic_string().c_str());
+  
+  uint min, max;
+  
+  H5Pget_attr_phase_change(H5Gget_create_plist(g.getId()), &max, &min);
+  
+  if (min || max)
+    printf("WARNING: could not set dense storage on group, may not be able to write large attributes\n");
+  
+  if (H5Aexists(g.getId(), name.generic_string().c_str()))
+    g.removeAttr(name.generic_string().c_str());
+    
+  attr = g.createAttribute(name.generic_string().c_str(), toH5DataType(m.type()), space);
+  
+  hvl_t *vdata = Mat_H5vlenbuf(m);
+  if (vdata) {
+    attr.write(toH5NativeDataType(m.type()), vdata);
+    free(vdata);
+  }
+  else
+    attr.write(toH5NativeDataType(m.type()), m.data());
 }
   
   
