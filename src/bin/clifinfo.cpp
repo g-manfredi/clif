@@ -89,7 +89,7 @@ int main(const int argc, const char *argv[])
   
   string name(cliarg_str(input));
   
-  ClifFile f(name, H5F_ACC_RDWR);
+  ClifFile f(name, H5F_ACC_RDONLY);
   
   vector<string> datasets = f.datasetList();
   
