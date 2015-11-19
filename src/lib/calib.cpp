@@ -18,6 +18,8 @@
   #include <ucalib/corr_lines.hpp>
 #endif
   
+#include "mat.hpp"
+  
 using namespace std;
 using namespace cv;
 
@@ -45,18 +47,19 @@ typedef unsigned int uint;
         debug_store->setDims(4);
       }
       
+      Datastore *imgs = s->getCalibStore();
+      
       vector<vector<Point2f>> ipoints;
       vector<vector<Point2f>> wpoints;
       
       //images(1D+), channels - at least 2d
-      /*int idx[2];
-      Mat_<std::vector<float>> wpoints_m;
-      Mat_<std::vector<float>> ipoints_m;*/
+      /*int idx[2];*/
+      Mat_<std::vector<float>> wpoints_m(Idx(imgs->imgChannels(), imgs->imgCount()));
+      Mat_<std::vector<float>> ipoints_m(Idx(imgs->imgChannels(), imgs->imgCount()));
       
       if (pattern == CalibPattern::CHECKERBOARD) {
-        Mat img;
+        cv::Mat img;
         int size[2];
-        Datastore *imgs = s->getCalibStore();
         
         s->get(cur_path / "size", size, 2);
         
@@ -103,13 +106,14 @@ typedef unsigned int uint;
                 wpoints.back().push_back(Point2f(x,y));
                 //pointcount++;
               }
+            wpoints_m(0, j) = wpoints.back();
+            ipoints_m(0, j) = ipoints.back();
           }
         }
       }
 #ifdef CLIF_WITH_HDMARKER
       else if (pattern == CalibPattern::HDMARKER) {
-        Mat img;
-        Datastore *imgs = s->getCalibStore();
+        cv::Mat img;
         
         double unit_size; //marker size in mm
         double unit_size_res;
@@ -136,8 +140,8 @@ typedef unsigned int uint;
           bool *mask_ptr = NULL;
           bool masks[3][4];
           
-          Mat *debug_img_ptr = NULL;
-          Mat debug_img;          
+          cv::Mat *debug_img_ptr = NULL;
+          cv::Mat debug_img;          
           
           if (imgs->org() == DataOrg::BAYER_2x2) {
             for(int mc=0;mc<3;mc++)
@@ -156,7 +160,7 @@ typedef unsigned int uint;
             }
             
             
-            Mat debug_imgs[3];
+            cv::Mat debug_imgs[3];
             
             //grayscale rough detection
             imgs->readImage(idx, &img, CVT_8U | CVT_GRAY | DEMOSAIC);
@@ -238,10 +242,10 @@ typedef unsigned int uint;
   
   bool opencv_calibrate(Dataset *set, int flags, std::string imgset, std::string calibset)
   {
-    Mat cam;
+    cv::Mat cam;
     vector<double> dist;
-    vector<Mat> rvecs;
-    vector<Mat> tvecs;
+    vector<cv::Mat> rvecs;
+    vector<cv::Mat> tvecs;
     
     vector<vector<Point2f>> ipoints_read;
     vector<vector<Point2f>> wpoints_read;
@@ -303,10 +307,10 @@ typedef unsigned int uint;
     cam_config.w = set->getCalibStore()->extent()[0];
     cam_config.h = set->getCalibStore()->extent()[1];
     
-    Mat cam;
+    cv::Mat cam;
     vector<double> dist;
-    vector<Mat> rvecs;
-    vector<Mat> tvecs;
+    vector<cv::Mat> rvecs;
+    vector<cv::Mat> tvecs;
     
     vector<vector<Point2f>> ipoints_read;
     vector<vector<Point2f>> wpoints_read;

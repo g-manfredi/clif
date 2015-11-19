@@ -18,15 +18,6 @@ enum class Unit : int {INVALID,MM,PIXELS};
 //int combinedTypeElementCount(BaseType type, DataOrg org, DataOrder order);
 //int combinedTypePlaneCount(BaseType type, DataOrg org, DataOrder order);
 
-class Idx : public std::vector<int>
-{
-public:
-  Idx();
-  Idx(int size);
-  
-  static Idx zeroButOne(int size, int pos, int idx);
-};
-
 }
 
 #endif

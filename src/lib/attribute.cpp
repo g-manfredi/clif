@@ -29,7 +29,7 @@ static void read_attr(Attribute *attr, H5::Group g, std::string basename, std::s
   for(int i=0;i<dimcount;i++)
     total *= dims[i];
   
-  void *buf = malloc(basetype_size(type)*total);
+  void *buf = malloc(baseType_size(type)*total);
   
   h5attr.read(toH5NativeDataType(type), buf);
   

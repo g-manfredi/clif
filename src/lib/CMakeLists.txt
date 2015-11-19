@@ -28,7 +28,7 @@ list(APPEND LIBCLIF_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/enumtypes.hpp)
 set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} PARENT_SCOPE)
 include_directories(${CLIF_BUILD_INCLUDE_DIRS})
 
-add_library(clif ${CLIF_BUILD_TYPE} clif.cpp subset3d.cpp calib.cpp hdf5.cpp attribute.cpp helpers.cpp datastore.cpp dataset.cpp core.cpp clif_cv.cpp clif_vigra.cpp enumtypes.cpp)
+add_library(clif ${CLIF_BUILD_TYPE} clif.cpp subset3d.cpp calib.cpp hdf5.cpp attribute.cpp helpers.cpp datastore.cpp dataset.cpp core.cpp clif_cv.cpp clif_vigra.cpp enumtypes.cpp mat.cpp)
 add_library(clif_vigra ${CLIF_BUILD_TYPE} clif_vigra.cpp)
 
 target_link_libraries(clif PUBLIC ${CLIF_LINK_LIBRARIES})
@@ -39,7 +39,7 @@ set(CLIF_LINK_LIBRARIES ${CLIF_LINK_LIBRARIES} clif clif_vigra PARENT_SCOPE)
 set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
 set(CLIF_BUILD_LINK_DIRS ${CLIF_BUILD_LINK_DIRS} ${CMAKE_CURRENT_BINARY_DIR} PARENT_SCOPE)
 
-list(APPEND LIBCLIF_HEADERS attribute.hpp calib.hpp clif_cv.hpp clif.hpp clif_vigra.hpp core.hpp dataset.hpp datastore.hpp flexmav.hpp hdf5.hpp helpers.hpp matio.hpp stringtree.hpp subset3d.hpp)
+list(APPEND LIBCLIF_HEADERS attribute.hpp calib.hpp clif_cv.hpp clif.hpp clif_vigra.hpp core.hpp dataset.hpp datastore.hpp flexmav.hpp hdf5.hpp helpers.hpp matio.hpp stringtree.hpp subset3d.hpp mat.hpp)
 
 foreach(header ${LIBCLIF_HEADERS})
   if (IS_ABSOLUTE ${header})

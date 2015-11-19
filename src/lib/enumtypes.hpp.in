@@ -7,6 +7,8 @@
 #include <cstdint>
 #include <vector>
 
+#include <opencv2/core/core.hpp>
+
 #include <H5Cpp.h>
 
 #include "cliini.h"
@@ -28,11 +30,14 @@ enum class BaseType : int {
   INT     = 3,
   FLOAT   = 4,
   DOUBLE  = 5,
-  STRING  = 6,
+  CV_POINT2F = 6,
+//FIXME string is just a (free/malloc) pointer? how to handle delete/create?
+  STRING  = 7,
 //now for complex types - flags in addition to regular type!
   VECTOR  = 8
   };
 //WARNING: change BaseTypeAtomicMask in enumtypes.cpp if enum value changes
+static BaseType BaseTypeMaxAtomicType = BaseType::STRING;
 
 //constexpr not working in MSVC2013 - reimplement at a later point
 inline BaseType operator|(BaseType a, BaseType b)
@@ -53,7 +58,8 @@ CODE(uint8_t, BaseType::UINT8) \
 CODE(uint16_t, BaseType::UINT16) \
 CODE(int, BaseType::INT) \
 CODE(float, BaseType::FLOAT) \
-CODE(double, BaseType::DOUBLE)
+CODE(double, BaseType::DOUBLE) \
+CODE(cv::Point2f, BaseType::CV_POINT2F)
 
 //sadly this does not due to missing constexpr with MSVC2013
 //#define VECCODE(T, B) CODE(std::vector<T>, B | BaseType::VECTOR)
@@ -187,8 +193,8 @@ BaseType toAtomicBaseType(BaseType &type);
 BaseType CvDepth2BaseType(int cv_type);
 int BaseType2CvDepth(BaseType t);
 
-//FIXME single strings only atm!
-int basetype_size(BaseType type);
+//FIXME strings!
+int baseType_size(BaseType type);
 
 BaseType cliini_type_to_BaseType(int type);
 

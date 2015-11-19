@@ -65,21 +65,6 @@ int BaseType2CvDepth(BaseType t)
   }
 }
 
-
-//FIXME single strings only atm!
-int basetype_size(BaseType type)
-{ 
-  switch (type) {
-    case BaseType::STRING : return sizeof(char);
-    case BaseType::INT :    return sizeof(int);
-    case BaseType::FLOAT : return sizeof(float);
-    case BaseType::DOUBLE : return sizeof(double);
-    default:
-      printf("invalid type!\n");
-      abort();
-  }
-}
-
 BaseType cliini_type_to_BaseType(int type)
 {
   switch (type) {
@@ -137,8 +122,6 @@ H5::DataType toH5NativeDataType(BaseType type)
       abort();
   }
 }
-
-int baseType_size(BaseType t);
 
 //FIXME don't only use class? (double vs float , ints...
 /*BaseType toBaseType(H5::PredType type)
