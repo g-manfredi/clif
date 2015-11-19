@@ -18,7 +18,7 @@ public:
   Idx(int size);
   template<typename ... TS> Idx(TS ... idxs);
   
-  off_t total();
+  off_t total() const;
   
   static Idx zeroButOne(int size, int pos, int idx);
 };
@@ -79,6 +79,7 @@ public:
 
 hvl_t *Mat_H5vlenbuf(Mat &m);
 void   Mat_H5AttrWrite(Mat &m, H5::H5File &f, const boost::filesystem::path &path);
+void   Mat_H5AttrRead(Mat &m, H5::Attribute &a);
 
 namespace {
   void _set_array_from(int *ar) {};

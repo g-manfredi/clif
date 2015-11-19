@@ -31,19 +31,22 @@ static void read_attr(Attribute *attr, H5::Group g, std::string basename, std::s
   for(int i=0;i<dimcount;i++)
     total *= dims[i];
   
+  group_path = group_path.substr(basename.length()+1, group_path.length()-basename.length()-1);
+  name = group_path + '/' + name;
+  
   //legacy attribute reading
   if (dimcount == 1) {
     void *buf = malloc(baseType_size(type)*total);
     
     h5attr.read(toH5NativeDataType(type), buf);
     
-    group_path = group_path.substr(basename.length()+1, group_path.length()-basename.length()-1);
-    name = group_path + '/' + name;
-    
     attr->set<hsize_t>(name, dimcount, dims, type, buf);
   }
   else {
-    
+    Mat m;
+    Mat_H5AttrRead(m, h5attr);
+    attr->setName(name);
+    attr->set(m);
   }
 
   delete[] dims;
@@ -309,7 +312,10 @@ template<typename T> void printthis(std::ostream *stream, void *val, int idx)
 
 std::ostream& operator<<(std::ostream& out, const Attribute& a)
 {
-  if (a.type == BaseType::STRING) {
+  if (a._m.total()) {
+    printf("FIXME: print N-D attr\n");
+  }
+  else if (a.type == BaseType::STRING) {
     out << (char*)a.data;
     return out;
   }

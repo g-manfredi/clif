@@ -13,7 +13,7 @@ Idx::Idx() : std::vector<int>() {};
 
 Idx::Idx(int size) : std::vector<int>(size) {};
 
-off_t Idx::total()
+off_t Idx::total() const
 {
   off_t t = 1;
   
@@ -97,6 +97,7 @@ void Mat::create(BaseType type, Idx size)
   off_t count = size.total();
   
   static_cast<Idx&>(*this) = size;
+  _type = type;
   
   _data = std::shared_ptr<void>(BaseType_new(type, count), BaseType_deleter(count, type));
 }
@@ -106,7 +107,7 @@ void Mat::release()
   _data.reset();
 }
 
-template<typename T> class _vdata_dispatcher{
+template<typename T> class _vdata_write_dispatcher{
 public:
   void operator()(hvl_t *v, Mat *m)
   {
@@ -114,7 +115,16 @@ public:
   }
 };
 
-template<typename T> class _vdata_dispatcher<std::vector<T>>{
+template<typename T> class _vdata_read_dispatcher{
+public:
+  void operator()(hvl_t *v, Mat *m)
+  {
+    abort();
+  }
+};
+
+
+template<typename T> class _vdata_write_dispatcher<std::vector<T>>{
 public:
   void operator()(hvl_t *v, Mat *m)
   {
@@ -125,8 +135,19 @@ public:
   }
 };
 
+template<typename T> class _vdata_read_dispatcher<std::vector<T>>{
+public:
+  void operator()(hvl_t *v, Mat *m)
+  {
+    for(int i=0;i<m->total();i++) {
+      m->operator()<std::vector<T>>(i).resize(v[i].len);
+      memcpy(&m->operator()<std::vector<T>>(i)[0], v[i].p, sizeof(T)*v[i].len);
+    }
+  }
+};
 
-hvl_t *Mat_H5vlenbuf(Mat &m)
+
+hvl_t *Mat_H5vlenbuf_alloc(Mat &m)
 {
   hvl_t *vdata;
   
@@ -134,8 +155,24 @@ hvl_t *Mat_H5vlenbuf(Mat &m)
     return NULL;
   
   vdata = (hvl_t*)malloc(sizeof(hvl_t)*m.total());
+    
+  return vdata;
+}
+
+void Mat_H5vlenbuf_read(Mat &m, hvl_t *v)
+{
+  if (int(m.type() & BaseType::VECTOR) == 0)
+    abort();
+
+  callByBaseType<_vdata_read_dispatcher>(m.type(), v, &m);
+}
+
+hvl_t *Mat_H5vlenbuf(Mat &m)
+{
+  hvl_t *vdata = Mat_H5vlenbuf_alloc(m);
   
-  callByBaseType<_vdata_dispatcher>(m.type(), vdata, &m);
+  if (vdata)
+    callByBaseType<_vdata_write_dispatcher>(m.type(), vdata, &m);
     
   return vdata;
 }
@@ -181,6 +218,42 @@ void Mat_H5AttrWrite(Mat &m, H5::H5File &f, const boost::filesystem::path &path)
   }
   else
     attr.write(toH5NativeDataType(m.type()), m.data());
+}
+
+void Mat_H5AttrRead(Mat &m, H5::Attribute &a)
+{
+  Idx extent;
+  BaseType type = toBaseType(H5Aget_type(a.getId()));
+  
+  H5::DataSpace space = a.getSpace();
+  int dimcount = space.getSimpleExtentNdims();
+
+  hsize_t *dims = new hsize_t[dimcount];
+  hsize_t *maxdims = new hsize_t[dimcount];
+  extent.resize(dimcount);
+  
+  space.getSimpleExtentDims(dims, maxdims);
+  for(int i=0;i<dimcount;i++)
+    extent[i] = dims[i];
+  
+  m.create(type, extent);
+  
+  printf("c m type: %d %d\n", type, m.type());
+  
+  hvl_t *v = Mat_H5vlenbuf_alloc(m);
+  if (!v)
+    a.read(toH5NativeDataType(type), m.data());
+  else {
+    //FIXME
+    H5::DataType native = toH5NativeDataType(type);
+    a.read(native, v);
+    H5Dvlen_reclaim(native.getId(), space.getId(), H5P_DEFAULT, v);
+    free(v);
+  }
+
+
+  delete[] dims;
+  delete[] maxdims;
 }
   
   
