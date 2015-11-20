@@ -31,10 +31,53 @@ namespace {
         //convert string to numbers with atof
         *convertto = atof((char*)data);
       else
-        // try simple implicit cast
+        //try simple implicit cast
         *convertto = *(T*)data;
     }
   };
+  
+  template<typename CT> class convertFromBaseTypeDispatcher<CT, cv::Point2f> {
+  public:
+    void operator()(BaseType type, void *data, CT *convertto)
+    {
+      abort();
+    }
+  };
+  
+  template<typename CT, typename T> class convertFromBaseTypeDispatcher<CT, std::vector<T>> {
+  public:
+    void operator()(BaseType type, void *data, CT *convertto)
+    {
+      abort();
+    }
+  };
+  
+  
+  /*template<typename CT, typename T, typename std::enable_if<std::is_convertible<CT,T>::value, int>::type* = nullptr> class convertFromBaseTypeDispatcher {
+  public:
+    void operator()(BaseType type, void *data, CT *convertto)
+    {
+      if (type == BaseType::STRING && _type_is_number<CT>::value)
+        //convert string to numbers with atof
+        *convertto = atof((char*)data);
+      else
+        //try simple implicit cast
+        *convertto = *(T*)data;
+    }
+  };*/
+  
+  /*template<typename CT, typename T, class = typename std::enable_if<std::is_integral<T>::value>::type> class convertFromBaseTypeDispatcher {
+  public:
+    void operator()(BaseType type, void *data, CT *convertto)
+    {
+      if (type == BaseType::STRING && _type_is_number<CT>::value)
+        //convert string to numbers with atof
+        *convertto = atof((char*)data);
+      else
+        //try simple implicit cast
+        *convertto = *(T*)data;
+    }
+  };*/
 }
 
 class Attribute {  
