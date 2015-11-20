@@ -215,6 +215,7 @@ typedef unsigned int uint;
           
           if (debug_store) {
             debug_store->appendImage(&debug_img);
+            s->flush();
             
             char buf[128];
             sprintf(buf, "col_fit_img%03d.tif", j);

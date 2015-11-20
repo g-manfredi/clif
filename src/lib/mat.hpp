@@ -1,6 +1,8 @@
 #ifndef _CLIF_MAT_H
 #define _CLIF_MAT_H
 
+#include <vigra/multi_array.hxx>
+
 #include <memory>
 
 #include "enumtypes.hpp"
@@ -87,6 +89,17 @@ void   Mat_H5AttrWrite(Mat &m, H5::H5File &f, const boost::filesystem::path &pat
 void   Mat_H5AttrRead(Mat &m, H5::Attribute &a);
 
 cv::Mat cvMat(Mat &m);
+
+//FIXME implement stride
+template<int DIM, typename T> vigra::MultiArrayView<DIM,T> MultiArrayView(Mat &m)
+{
+  vigra::TinyVector<vigra::MultiArrayIndex, DIM> shape;
+  
+  for(int i=0;i<m.size();i++)
+    shape[i] = m[i];
+  
+  return vigra::MultiArrayView<DIM,T>(shape, (T*)m.data());
+}
 
 
 template<typename T, typename ... Idxs> T& Mat::operator()(Idxs ... idxs)

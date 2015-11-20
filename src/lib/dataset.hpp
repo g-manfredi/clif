@@ -58,6 +58,7 @@ class Dataset : public Attributes, public Datastore {
     /** Sync attributes back to the underlying HDF5 file 
      */
     void writeAttributes() { Attributes::write(f(), _path); }
+    void flush();
     
     /** Get the calibration Datastore - use methods of Datastore to access calibration images 
      */

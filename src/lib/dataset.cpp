@@ -191,6 +191,11 @@ ClifFile& Dataset::file()
   return _file;
 }
 
+void Dataset::flush()
+{
+  _file.f.flush(H5F_SCOPE_LOCAL);
+}
+
 Dataset::~Dataset()
 {
   Datastore::flush();
