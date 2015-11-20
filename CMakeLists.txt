@@ -164,7 +164,7 @@ foreach(dir ${CLIF_BUILD_LINK_DIRS})
     set(CLIF_INSTALL_LIBRARY_DIR ${CLIF_INSTALL_LIBRARY_DIR} "${CMAKE_CURRENT_BINARY_DIR}/${dir}")
   endif()
 endforeach()
-set(CLIF_INSTALL_LIBRARIES clif clif_vigra cliini clif-qt)
+set(CLIF_INSTALL_LIBRARIES clif cliini clif-qt)
 set(CLIF_INSTALL_CMAKE_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(INSTALL_PREFIX_BACKUP ${CMAKE_INSTALL_PREFIX})
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
@@ -177,7 +177,7 @@ set(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX_BACKUP})
 # for the installed package
 set(CLIF_INSTALL_INCLUDE_DIR "include" "include/clif")
 set(CLIF_INSTALL_LIBRARY_DIR "lib")
-set(CLIF_INSTALL_LIBRARIES clif clif_vigra cliini clif-qt)
+set(CLIF_INSTALL_LIBRARIES clif cliini clif-qt)
 set(CLIF_INSTALL_CMAKE_DIR "lib/cmake/clif")
 configure_package_config_file(cmake/clifConfig.cmake.in
                               "config/clifConfig.cmake"
