@@ -93,31 +93,28 @@ template<typename T> BaseType toBaseType()
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wswitch"
 
-template<typename DUMMY, typename T, typename CONV, template<typename> class F, typename ... ARGS> class _doCallConv
+template<typename DUMMY, template<typename> class CHECK, typename T, template<typename> class F, typename ... ARGS> class _doCallCheck
 {
 public:
   void operator()(DUMMY d, ARGS ... args)
   {
-    printf("ERROR: function call was not compiled for type\n");
+    printf("ERROR: template functor was disabled for type!\n");
     abort();
   }
 };
-
-//this is whats expressed in the template below
-template<template<typename> class F, typename CONV, typename ... ARGS> class _doCallConv<typename std::enable_if<std::is_convertible<float,CONV>::value,int>::type,float,CONV,F,ARGS...>
+/*template<template<typename> class CHECK, template<typename> class F, typename ... ARGS> class _doCallCheck<typename std::enable_if<CHECK<float>::value,int>::type,CHECK,float,F,ARGS...>
 {
 public:
   void operator()(int d, ARGS ... args)
   {
     F<float>()(args...);
   }
-};
-/*
+};*/
 
-#define CODE(TYPE, BASE) template<template<typename> class F COMMA typename CONV COMMA typename ... ARGS> class _doCallConv<typename std::enable_if<std::is_convertible<TYPE CONV>::value,int>::type COMMA TYPE COMMA CONV COMMA F COMMA ARGS...> \
+#define CODE(TYPE, BASE) template<template<typename> class CHECK COMMA  template<typename> class F COMMA  typename ... ARGS> class _doCallCheck<typename std::enable_if<CHECK<TYPE>::value COMMA int>::type COMMA CHECK COMMA TYPE COMMA F COMMA ARGS...> \
 { \
 public: \
-  template <typename DUMMY> void operator()(COMMA ARGS ... args) \
+  void operator()(int d COMMA ARGS ... args) \
   { \
     F<TYPE>()(args...); \
   } \
@@ -127,14 +124,14 @@ public: \
 #define COMMA ,
 CLIFALL_T_B(CODE)
 #undef COMMA
-#undef CODE*/
+#undef CODE
 
 
 //callbybasetype - reguler
 //deep dark black c++ magic :-D
-#define CODE(TYPE, BASE) case (BASE) : _doCallConv<int,TYPE,CONV,F,ArgTypes...>()(0, args...); break;
+#define CODE(TYPE, BASE) case (BASE) : _doCallCheck<int,CHECK,TYPE,F,ArgTypes...>()(0, args...); break;
 #define COMMA ,
-template<template<typename> class F, typename CONV, typename ... ArgTypes> void callIfConvertible(BaseType type, ArgTypes ... args)
+template<template<typename> class F, template<typename> class CHECK, typename ... ArgTypes> void callIf(BaseType type, ArgTypes ... args)
 {
   switch (type) {
     CLIFALL_T_B(CODE)
