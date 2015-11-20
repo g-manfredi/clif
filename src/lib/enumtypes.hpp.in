@@ -93,6 +93,58 @@ template<typename T> BaseType toBaseType()
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wswitch"
 
+template<typename DUMMY, typename T, typename CONV, template<typename> class F, typename ... ARGS> class _doCallConv
+{
+public:
+  void operator()(DUMMY d, ARGS ... args)
+  {
+    printf("ERROR: function call was not compiled for type\n");
+    abort();
+  }
+};
+
+//this is whats expressed in the template below
+template<template<typename> class F, typename CONV, typename ... ARGS> class _doCallConv<typename std::enable_if<std::is_convertible<float,CONV>::value,int>::type,float,CONV,F,ARGS...>
+{
+public:
+  void operator()(int d, ARGS ... args)
+  {
+    F<float>()(args...);
+  }
+};
+/*
+
+#define CODE(TYPE, BASE) template<template<typename> class F COMMA typename CONV COMMA typename ... ARGS> class _doCallConv<typename std::enable_if<std::is_convertible<TYPE CONV>::value,int>::type COMMA TYPE COMMA CONV COMMA F COMMA ARGS...> \
+{ \
+public: \
+  template <typename DUMMY> void operator()(COMMA ARGS ... args) \
+  { \
+    F<TYPE>()(args...); \
+  } \
+};
+
+//for all types
+#define COMMA ,
+CLIFALL_T_B(CODE)
+#undef COMMA
+#undef CODE*/
+
+
+//callbybasetype - reguler
+//deep dark black c++ magic :-D
+#define CODE(TYPE, BASE) case (BASE) : _doCallConv<int,TYPE,CONV,F,ArgTypes...>()(0, args...); break;
+#define COMMA ,
+template<template<typename> class F, typename CONV, typename ... ArgTypes> void callIfConvertible(BaseType type, ArgTypes ... args)
+{
+  switch (type) {
+    CLIFALL_T_B(CODE)
+    default:
+      abort();
+  }
+}
+#undef COMMA
+#undef CODE
+
 //callbybasetype - reguler
 //deep dark black c++ magic :-D
 #define CODE(TYPE, BASE) case (BASE) : F<TYPE>()(args...); break;

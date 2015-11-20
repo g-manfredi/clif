@@ -215,6 +215,7 @@ namespace clif {
 
     
     template<template<typename> class F, typename ... ArgTypes> void call(ArgTypes ... args) { callByBaseType<F>(_type, args...); }
+    template<template<typename> class F, typename CONV, typename ... ArgTypes> void callConv(ArgTypes ... args) { callIfConvertible<F,CONV>(_type, args...); }
     template<template<typename> class F, typename R, typename ... ArgTypes> R call(ArgTypes ... args) { return callByBaseType<F,R>(_type, args...); }
     
     
