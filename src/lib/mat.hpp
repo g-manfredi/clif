@@ -95,12 +95,22 @@ template<int DIM, typename T> vigra::MultiArrayView<DIM,T> vigraMAV(Mat &m)
 {
   vigra::TinyVector<vigra::MultiArrayIndex, DIM> shape;
   
-  for(int i=0;i<m.size();i++)
+  if (DIM != m.size())
+    abort();
+  
+  if (toBaseType<T>() != m.type())
+    abort();
+  
+  for(int i=0;i<DIM;i++)
     shape[i] = m[i];
   
   return vigra::MultiArrayView<DIM,T>(shape, (T*)m.data());
 }
 
+template<int DIM, typename T> vigra::MultiArrayView<DIM,T> vigraMAV(Mat *m)
+{
+  return vigraMAV<DIM,T>(*m);
+}
 
 template<typename T, typename ... Idxs> T& Mat::operator()(Idxs ... idxs)
 {
