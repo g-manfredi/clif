@@ -39,6 +39,8 @@ class Mat : public Idx {
 public:
   Mat() {};
   Mat(BaseType type, Idx size);
+  //warning - document sharing semantics between opencv mat and us (extra user)
+  Mat(cv::Mat &m);
   
   void create(BaseType type, Idx size);
   void release();
@@ -80,6 +82,8 @@ public:
 hvl_t *Mat_H5vlenbuf(Mat &m);
 void   Mat_H5AttrWrite(Mat &m, H5::H5File &f, const boost::filesystem::path &path);
 void   Mat_H5AttrRead(Mat &m, H5::Attribute &a);
+
+cv::Mat cvMat(Mat &m);
 
 namespace {
   void _set_array_from(int *ar) {};

@@ -77,6 +77,19 @@ struct BaseType_deleter
   BaseType _type;
 };
 
+struct cvMat_deleter
+{
+  cvMat_deleter(cv::Mat &m) : _m(m) {};
+  
+  void operator()(void* ptr)
+  {
+    //this is not actually necessary, _m should be freed when deleter is destroyed
+    _m.release();
+  }
+  
+  cv::Mat _m;
+};
+
 BaseType const & Mat::type() const
 {
   return _type;
@@ -91,6 +104,19 @@ Mat::Mat(BaseType type, Idx size)
 {
   create(type, size);
 }
+
+Mat::Mat(cv::Mat &m)
+{
+  _type = CvDepth2BaseType(m.depth());
+  
+  resize(m.dims);
+  
+  for(int i=0;i<m.dims;i++)
+    operator[](i) = m.size[m.dims-i-1];
+  
+  _data = std::shared_ptr<void>(m.data, cvMat_deleter(m));
+}
+
 
 void Mat::create(BaseType type, Idx size)
 {
@@ -253,5 +279,15 @@ void Mat_H5AttrRead(Mat &m, H5::Attribute &a)
   delete[] maxdims;
 }
   
+//FIXME implement non-dense matrix!
+cv::Mat cvMat(Mat &m)
+{
+  int *idx = new int[m.size()];
+  
+  for(int i=0;i<m.size();i++)
+    idx[i] = m[m.size()-i-1];
+  
+  return cv::Mat(m.size(), idx, BaseType2CvDepth(m.type()), m.data());
+}
   
 } //namespace clif
