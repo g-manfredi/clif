@@ -91,7 +91,7 @@ void   Mat_H5AttrRead(Mat &m, H5::Attribute &a);
 cv::Mat cvMat(Mat &m);
 
 //FIXME implement stride
-template<int DIM, typename T> vigra::MultiArrayView<DIM,T> MultiArrayView(Mat &m)
+template<int DIM, typename T> vigra::MultiArrayView<DIM,T> vigraMAV(Mat &m)
 {
   vigra::TinyVector<vigra::MultiArrayIndex, DIM> shape;
   
