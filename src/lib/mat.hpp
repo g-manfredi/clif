@@ -49,11 +49,14 @@ public:
   
   BaseType const & type() const;
   
-  //FIXME/DOCUMENT: this should only be used after make-unique etc...
-  template<typename T, typename ... Idxs> T& operator()(Idxs ... idxs)
-  {
-    return ((T*)_data.get())[calc_offset<T>(*(Idx*)this, 0, idxs...)];
-  }
+  template<typename T, typename ... Idxs>
+    T& operator()(Idxs ... idxs);
+  
+  template<template<typename> class F, typename ... ArgTypes>
+    void call(ArgTypes ... args);
+  template<template<typename> class F, template<typename> class CHECK, typename ... ArgTypes>
+    void callIf(ArgTypes ... args);
+
   
 protected:
   BaseType _type;
@@ -84,6 +87,22 @@ void   Mat_H5AttrWrite(Mat &m, H5::H5File &f, const boost::filesystem::path &pat
 void   Mat_H5AttrRead(Mat &m, H5::Attribute &a);
 
 cv::Mat cvMat(Mat &m);
+
+
+template<typename T, typename ... Idxs> T& Mat::operator()(Idxs ... idxs)
+{
+  return ((T*)_data.get())[calc_offset<T>(*(Idx*)this, 0, idxs...)];
+} 
+
+template<template<typename> class F, typename ... ArgTypes> void Mat::call(ArgTypes ... args)
+{
+  callByBaseType<F>(_type, args...);
+}
+template<template<typename> class F, template<typename> class CHECK, typename ... ArgTypes> void Mat::callIf(ArgTypes ... args)
+{
+  clif::callIf<F,CHECK>(_type, args...);
+  
+}
 
 namespace {
   void _set_array_from(int *ar) {};

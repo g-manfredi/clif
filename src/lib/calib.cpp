@@ -289,20 +289,6 @@ typedef unsigned int uint;
       for(int j=0;j<wpoints_m(0, i).size();j++)
         wpoints.back()[j] = Point3f(wpoints_m(0, i)[j].x,wpoints_m(0, i)[j].y,0);
     }
-      
-    
-    /*readCalibPoints(set, imgset, ipoints_read, wpoints_read);
-    
-    for(uint i=0;i<wpoints_read.size();i++) {
-      if (!wpoints_read[i].size())
-        continue;
-      ipoints.push_back(std::vector<Point2f>(wpoints_read[i].size()));
-      wpoints.push_back(std::vector<Point3f>(wpoints_read[i].size()));
-      for(uint j=0;j<wpoints_read[i].size();j++) {
-        wpoints.back()[j] = Point3f(wpoints_read[i][j].x,wpoints_read[i][j].y,0);
-        ipoints.back()[j] = ipoints_read[i][j];
-      }
-    }*/
     
     double rms = calibrateCamera(wpoints, ipoints, im_size, cam, dist, rvecs, tvecs, flags);
     
@@ -333,17 +319,20 @@ typedef unsigned int uint;
   {
     Cam_Config cam_config = { 0.0065, 12.0, 300.0, -1, -1 };
     Calib_Config conf = { true, 190, 420 };
+    Size im_size = imgSize(set);
+    
+    if (!im_size.width)
+      im_size = imgSize(set->getCalibStore());
 
     cam_config.w = set->getCalibStore()->extent()[0];
     cam_config.h = set->getCalibStore()->extent()[1];
     
-    cv::Mat cam;
-    vector<double> dist;
-    vector<cv::Mat> rvecs;
-    vector<cv::Mat> tvecs;
+    if (!im_size.width)
+      im_size = imgSize(set->getCalibStore());
     
-    vector<vector<Point2f>> ipoints_read;
-    vector<vector<Point2f>> wpoints_read;
+    Mat_<std::vector<Point2f>> wpoints_m;
+    Mat_<std::vector<Point2f>> ipoints_m;
+      
     vector<vector<Point2f>> ipoints;
     vector<vector<Point3f>> wpoints;
     
@@ -357,20 +346,25 @@ typedef unsigned int uint;
     if (!calibset.size())
       calibset = imgset;
       
-    /*readCalibPoints(set, imgset, ipoints_read, wpoints_read);
-    for(uint i=0;i<wpoints_read.size();i++) {
-      if (!wpoints_read[i].size())
+    Attribute *w_a = set->get(path("calibration/images/sets") / imgset / "world_points");
+    Attribute *i_a = set->get(path("calibration/images/sets") / imgset / "img_points");
+    
+    //FIXME error handling
+    if (!w_a || !i_a)
+      abort();
+    
+    w_a->get(wpoints_m);
+    i_a->get(ipoints_m);
+    
+    for(int i=0;i<wpoints_m[1];i++) {
+      if (!wpoints_m(0, i).size())
         continue;
-      ipoints.push_back(std::vector<Point2f>(wpoints_read[i].size()));
-      wpoints.push_back(std::vector<Point3f>(wpoints_read[i].size()));
-      for(uint j=0;j<wpoints_read[i].size();j++) {
-        wpoints.back()[j] = Point3f(wpoints_read[i][j].x,wpoints_read[i][j].y,0);
-        ipoints.back()[j] = ipoints_read[i][j];
-      }
       
-      printf("%d points\n", wpoints_read[i].size());
-      printf("%fx%f points\n", wpoints[i][0].x,wpoints[i][0].y);
-    }*/
+      ipoints.push_back(ipoints_m(0, i));
+      wpoints.push_back(std::vector<Point3f>(wpoints_m(0, i).size()));
+      for(int j=0;j<wpoints_m(0, i).size();j++)
+        wpoints.back()[j] = Point3f(wpoints_m(0, i)[j].x,wpoints_m(0, i)[j].y,0);
+    }
     
     Point2i proxy_size(proxy_w,proxy_h);
     
