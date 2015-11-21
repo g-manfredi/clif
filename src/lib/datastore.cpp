@@ -33,6 +33,47 @@ void Datastore::create(std::string path, Dataset *dataset, const std::string for
   _memonly = false;
 }
 
+static bool _get_cache_path(path &cache_path)
+{
+  char *xdg_cache;
+  
+  xdg_cache = getenv("XDG_CACHE_HOME");
+  
+  if (xdg_cache) {
+    cache_path = xdg_cache;
+    return true;
+  }
+  else {
+    char *home = getenv("HOME");
+    if (home) {
+      cache_path = home;
+      cache_path /= ".cache";
+      return true;
+    }
+    else
+      return false;
+  }
+}
+
+static path _cache_filename(Datastore *store, int idx, int flags, float scale)
+{
+  path name;
+  std::ostringstream longkey_stream;
+  std::ostringstream shortkey_stream;
+  std::string shortkey, longkey;
+  
+  shortkey_stream << "_" << idx << "_" << flags << " " << scale;
+  shortkey = shortkey_stream.str();
+  
+  name = "clif/001/cached_imgs";
+  std::hash<std::string> hasher;
+  std::string dset_path = store->getDataset()->path().generic_string();
+  longkey_stream << hasher(dset_path) << "_" << hasher(store->getDatastorePath()) << "_" << hasher(shortkey);
+  longkey = longkey_stream.str();
+  name /= longkey + ".bin";
+  
+  return name;
+}
 
 //create new datastore with specified size and type
 /*void Datastore::create(std::string path, Dataset *dataset, BaseType type, const int dimcount, const int *size)
@@ -751,6 +792,8 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags, 
   int channel_flags = flags;
   bool demosaic = false;
   bool disable_cache = false;
+  path cache_file;
+  bool use_disk_cache = false;
   
   if (!isnan(min) && !isnan(max))
     disable_cache = true;
@@ -782,6 +825,17 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags, 
   img->create(3,output_size,output_depth);
   //for now
   assert(img->isContinuous());
+  
+  if (flags & NO_DISK_CACHE != 0 && _get_cache_path(cache_file)) {
+    use_disk_cache = true;
+    cache_file /= _cache_filename(this, idx[3], flags, scale);
+    
+    Mat clif_img = Mat(img);
+    if (!clif_img.read(cache_file.string().c_str())) {
+      mat_cache_set(img,idx,flags,CACHE_CONT_MAT_IMG,scale);
+      return;
+    }
+  }
   
   std::vector<int> ch_idx = idx;
   
@@ -829,6 +883,12 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags, 
   }
   
   mat_cache_set(img,idx,flags,CACHE_CONT_MAT_IMG,scale);
+  
+  if (use_disk_cache) {
+    create_directories(cache_file.parent_path());
+    Mat clif_img = Mat(img);
+    clif_img.write(cache_file.string().c_str());
+  }
 }
 
 void Datastore::setDims(int dims)

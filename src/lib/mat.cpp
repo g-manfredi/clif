@@ -117,6 +117,10 @@ Mat::Mat(cv::Mat &m)
   _data = std::shared_ptr<void>(m.data, cvMat_deleter(m));
 }
 
+Mat::Mat(cv::Mat *m)
+: Mat(*m)
+{
+}
 
 void Mat::create(BaseType type, Idx size)
 {
@@ -132,6 +136,40 @@ void Mat::create(BaseType type, Idx size)
   _type = type;
   
   _data = std::shared_ptr<void>(BaseType_new(type, count), BaseType_deleter(count, type));
+}
+
+
+int Mat::write(const char *path)
+{
+  FILE *f = fopen(path, "w");
+  
+  if (!f)
+    return -1;
+  
+  int len = fwrite(data(), 1, baseType_size(_type)*total(), f);
+  fclose(f);
+  
+  if (len != baseType_size(_type)*total())
+    return -1;
+  return 0;
+}
+
+int Mat::read(const char *path)
+{
+  FILE *f = fopen(path, "r");
+  
+  create(type(), *(Idx*)this);
+  
+  if (!f)
+    return -1;
+  
+  int len = fread(data(), 1, baseType_size(_type)*total(), f);
+  fclose(f);
+  
+  if (len != baseType_size(_type)*total())
+    return -1;
+  
+  return 0;
 }
 
 void Mat::release()

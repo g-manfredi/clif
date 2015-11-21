@@ -43,9 +43,13 @@ public:
   Mat(BaseType type, Idx size);
   //warning - document sharing semantics between opencv mat and us (extra user)
   Mat(cv::Mat &m);
+  Mat(cv::Mat *m);
   
   void create(BaseType type, Idx size);
   void release();
+  
+  int read(const char *path);
+  int write(const char *path);
   
   void* data();
   

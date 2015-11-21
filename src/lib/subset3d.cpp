@@ -241,10 +241,10 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
   
   int cv_t_count = cv::getNumThreads();
   
-#pragma omp parallel
+#pragma omp critical
   if (!cv_t_count)
     cv::setNumThreads(0);
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic)
   for(int i=0;i<h;i++) {
     std::vector<int> idx_l(_data->dims(), 0);
     cv::Mat img;
@@ -274,7 +274,7 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
       }
     }
   }
-#pragma omp parallel
+#pragma omp critical
   if (!cv_t_count)
     cv::setNumThreads(cv_t_count);
 }
