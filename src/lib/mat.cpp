@@ -120,6 +120,12 @@ Mat::Mat(cv::Mat &m)
 
 void Mat::create(BaseType type, Idx size)
 {
+  if (type == _type && size.total() == total())
+  {
+    static_cast<Idx&>(*this) = size;
+    return;
+  }
+  
   off_t count = size.total();
   
   static_cast<Idx&>(*this) = size;

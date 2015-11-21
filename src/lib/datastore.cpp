@@ -97,6 +97,14 @@ void Datastore::read(cv::Mat &m)
 {
   assert(_memonly);
   
+  m = cvMat(_mat);
+}
+
+//read store into m 
+void Datastore::read(clif::Mat &m)
+{
+  assert(_memonly);
+  
   m = _mat;
 }
     
@@ -111,11 +119,34 @@ void Datastore::write(cv::Mat &m)
     _memonly = true;
     
     _type = CvDepth2BaseType(m.depth());
+    assert(m.channels() == 1);
   }
   
   assert(_type == CvDepth2BaseType(m.depth()));
   
+  _mat = Mat(m);
+}
+
+void Datastore::write(clif::Mat &m)
+{
+  assert(!_readonly);
+  
+  if (!_memonly) {
+    assert(_type == BaseType::INVALID);
+    
+    _memonly = true;
+    
+    _type = m.type();
+  }
+  
+  assert(_type == m.type());
+  
   _mat = m;
+}
+
+void Datastore::write(clif::Mat *m)
+{
+  write(*m);
 }
 
 void Datastore::reset()
@@ -956,22 +987,19 @@ void Datastore::flush()
       
       h5_create_path_groups(_dataset->f(), fullpath.parent_path());
       
-      hsize_t *dims = new hsize_t[_mat.dims];
-      for(int i=0;i<_mat.dims;i++)
-        dims[i] = _mat.size[i];
+      hsize_t *dims = new hsize_t[_mat.size()];
+      for(int i=0;i<_mat.size();i++)
+        dims[i] = _mat[_mat.size()-i-1];
       
       //H5::DSetCreatPropList prop;    
       //prop.setChunk(dimcount, chunk_dims);
       
-      H5::DataSpace space(_mat.dims, dims, dims);
-      
-      if (_mat.channels() != 1)
-        abort();
+      H5::DataSpace space(_mat.size(), dims, dims);
       
       _data = _dataset->f().createDataSet(fullpath.generic_string().c_str(), 
-                                          toH5DataType(CvDepth2BaseType(_mat.depth())), space);
+                                          toH5DataType(_mat.type()), space);
       
-      _data.write(_mat.data, H5::DataType(toH5DataType(CvDepth2BaseType(_mat.depth()))), space, space);
+      _data.write(_mat.data(), H5::DataType(toH5DataType(_mat.type())), space, space);
       
       _readonly = false;
       _memonly = false;

@@ -4,6 +4,7 @@
 #include "opencv2/core/core.hpp"
 
 #include "core.hpp"
+#include "mat.hpp"
 
 namespace clif {
 class Dataset;
@@ -44,8 +45,11 @@ public:
     
     //read store into m 
     void read(cv::Mat &m);
+    void read(clif::Mat &m);
     //write m into store
     void write(cv::Mat &m);
+    void write(clif::Mat &m);
+    void write(clif::Mat *m);
     
     int imgMemSize();
     
@@ -114,7 +118,7 @@ private:
   std::string _link_file;
   std::string _link_path;
   
-  cv::Mat _mat;
+  clif::Mat _mat;
   
   Dataset& operator=(const Dataset& other) = delete;
   
