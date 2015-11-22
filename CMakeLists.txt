@@ -12,7 +12,7 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
   # using GCC
   message("use gcc")
   set(CLIF_BUILD_TYPE "SHARED")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O1 -fno-omit-frame-pointer -fPIC -std=c++11 -Wall -march=native -fopenmp")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O2 -fno-omit-frame-pointer -fPIC -std=c++11 -Wall -march=native -fopenmp")
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   # using Visual Studio C++
   message("use msvc")
@@ -82,6 +82,20 @@ find_package(Boost REQUIRED COMPONENTS filesystem system)
 list(APPEND CLIF_LINK_LIBRARIES ${Boost_LIBRARIES})
 list(APPEND CLIF_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
 list(APPEND CLIF_LIBRARY_DIRS ${Boost_LIBRARY_DIRS})
+
+
+find_package(Qt5Widgets QUIET)
+
+if (Qt5Widgets_FOUND)
+  set(CLIF_BUILD_QT TRUE)
+  add_definitions(-DCLIF_BUILD_QT)
+  
+  list(APPEND CLIF_LINK_LIBRARIES ${Qt5Widgets_LIBRARIES})
+  list(APPEND CLIF_INCLUDE_DIRS ${Qt5Widgets_INCLUDE_DIRS})
+  list(APPEND CLIF_LIBRARY_DIRS ${Qt5Widgets_LIBRARY_DIRS})
+else()
+  set(CLIF_BUILD_QT_REASON "[Qt5Widgets not found]")
+endif()
 
 #WARNING no find_package after this line! (would use our included find... macros!)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)

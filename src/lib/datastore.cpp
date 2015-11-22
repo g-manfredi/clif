@@ -623,10 +623,11 @@ void Datastore::mat_cache_set(cv::Mat *m, const std::vector<int> idx, int flags,
   bool shared = m->refcount;
 #endif
 
-  if (shared)
+  //FIXME why should this be necessary?
+  //if (shared)
     *cached = *m;
-  else
-    m->copyTo(*cached);
+  /*else
+    m->copyTo(*cached);*/
   cache_set(idx,flags,extra_flags,scale,cached);
 }
 
@@ -832,6 +833,8 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags, 
     
     Mat clif_img = Mat(img);
     if (!clif_img.read(cache_file.string().c_str())) {
+      //backing memory location might have changed due to mmap
+      *img = cvMat(clif_img);
       mat_cache_set(img,idx,flags,CACHE_CONT_MAT_IMG,scale);
       return;
     }

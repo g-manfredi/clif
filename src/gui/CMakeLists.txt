@@ -5,20 +5,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/mod
 
 #set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -std=c++11 -Wall")
 
-find_package(Qt5Widgets QUIET)
-
-set(CLIF_BUILD_QT TRUE)
-set(CLIF_BUILD_QT_REASON "")
-
-if (Qt5Widgets_FOUND)
-else()
-  set(CLIF_BUILD_QT FALSE)
-  set(CLIF_BUILD_QT_REASON "[Qt5Widgets not found]")
-endif()
-
-set(CLIF_BUILD_QT ${CLIF_BUILD_QT} PARENT_SCOPE)
-set(CLIF_BUILD_QT_REASON ${CLIF_BUILD_QT_REASON} PARENT_SCOPE)
-
 if(CLIF_BUILD_QT)
   find_package(Qt5Core)
   find_package(Qt5Network)

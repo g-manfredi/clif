@@ -1,5 +1,9 @@
 #include "mat.hpp"
 
+#ifdef CLIF_BUILD_QT
+  #include <QFile>
+#endif
+  
 #include "enumtypes.hpp"
 
 //FIXME move functions in extra header...
@@ -76,6 +80,22 @@ struct BaseType_deleter
   off_t _count;
   BaseType _type;
 };
+
+#ifdef CLIF_BUILD_QT
+struct QFile_deleter
+{
+  QFile_deleter(QFile *f) : _f(f) {};
+  
+  void operator()(void* ptr)
+  {
+    //FIXME delete QFile and mapping
+    printf("FIXME qfile delete!\n");
+    //delete _f;
+  }
+  
+  QFile *_f;
+};
+#endif
 
 struct cvMat_deleter
 {
@@ -156,6 +176,7 @@ int Mat::write(const char *path)
 
 int Mat::read(const char *path)
 {
+#ifndef CLIF_BUILD_QT 
   FILE *f = fopen(path, "r");
   
   create(type(), *(Idx*)this);
@@ -170,6 +191,24 @@ int Mat::read(const char *path)
     return -1;
   
   return 0;
+#else
+  QFile *f = new QFile(path);
+  
+  if (!f->open(QIODevice::ReadOnly)) {
+    delete f;
+    return -1;
+  }
+  
+  void *cdata = (void*)f->map(0, baseType_size(_type)*total());
+  if (!cdata) {
+    delete f;
+    return -1;
+  }
+  
+  _data = std::shared_ptr<void>(cdata, QFile_deleter(f));
+  
+  return 0;
+#endif
 }
 
 void Mat::release()
