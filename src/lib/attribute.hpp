@@ -260,8 +260,6 @@ class Attribute {
       type = m.type();
       size = m;
       
-      printf("set attr mat to type %d\n", type);
-      
       _m = m;
     };
     
@@ -270,8 +268,6 @@ class Attribute {
     {
       type = m.type();
       size = m;
-      
-      printf("set attr mat to type %d\n", type);
       
       _m = m;
     };

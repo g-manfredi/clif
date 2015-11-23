@@ -282,10 +282,11 @@ void Datastore::create_store()
   path dataset_path = _dataset->path() / _path;
   
   if (h5_obj_exists(_dataset->f(), dataset_path.generic_string())) {
-    //FIXME
-    printf("FIXME dataset already exists, check size?");
-    _data = _dataset->f().openDataSet(dataset_path.generic_string());
-    abort();
+    _dataset->f().unlink(dataset_path.generic_string());
+    printf("FIXME dataset already exists, replacing\n");
+    //FIXME optional overwrite?
+    //_data = _dataset->f().openDataSet(dataset_path.generic_string());
+    //abort();
   }
   
   hsize_t *dims = new hsize_t[_extent.size()];

@@ -157,6 +157,12 @@ else()
   message("    hdmarker detection -   no")
 endif()
 
+if(CLIF_WITH_UCALIB)
+  message("    ucalib calibration -   yes")
+else()
+  message("    ucalib calibration -   no")
+endif()
+
 
 message("")
 

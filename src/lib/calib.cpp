@@ -52,12 +52,12 @@ typedef unsigned int uint;
       vector<vector<Point2f>> ipoints;
       vector<vector<Point2f>> wpoints;
       
-      //images(1D+), channels - at least 2d
-      /*int idx[2];*/
-      Mat_<std::vector<Point2f>> wpoints_m(Idx(imgs->imgChannels(), imgs->imgCount()));
-      Mat_<std::vector<Point2f>> ipoints_m(Idx(imgs->imgChannels(), imgs->imgCount()));
-      //Mat_<Point2f> wpoints_m(Idx(imgs->imgChannels(), imgs->imgCount()));
-      //Mat_<Point2f> ipoints_m(Idx(imgs->imgChannels(), imgs->imgCount()));
+      int channels = imgs->imgChannels();
+      if (imgs->org() == DataOrg::BAYER_2x2)
+        channels = 3;
+        
+      Mat_<std::vector<Point2f>> wpoints_m(Idx(channels, imgs->imgCount()));
+      Mat_<std::vector<Point2f>> ipoints_m(Idx(channels, imgs->imgCount()));
       
       if (pattern == CalibPattern::CHECKERBOARD) {
         cv::Mat img;
@@ -116,7 +116,6 @@ typedef unsigned int uint;
       }
 #ifdef CLIF_WITH_HDMARKER
       else if (pattern == CalibPattern::HDMARKER) {
-        cv::Mat img;
         
         double unit_size; //marker size in mm
         double unit_size_res;
@@ -166,12 +165,15 @@ typedef unsigned int uint;
             cv::Mat debug_imgs[3];
             
             //grayscale rough detection
+            //FIXME move this up - mmapped reallocation not possible...
+            cv::Mat img;
             imgs->readImage(idx, &img, CVT_8U | CVT_GRAY | DEMOSAIC);
             cv::Mat gray = clifMat_channel(img, 0);
             Marker::detect(gray, corners_rough);
             
-            imgs->readImage(idx, &img, CVT_8U);
-            cv::Mat bayer = clifMat_channel(img, 0);
+            cv::Mat bayer_img;
+            imgs->readImage(idx, &bayer_img, CVT_8U);
+            cv::Mat bayer = clifMat_channel(bayer_img, 0);
             
             char buf[128];
             
@@ -190,6 +192,20 @@ typedef unsigned int uint;
               
               sprintf(buf, "debug_img%03d_ch%d.tif", j, c);
               imwrite(buf, *debug_img_ptr);
+              
+              std::vector<Point2f> ipoints_v(corners.size());
+              std::vector<Point2f> wpoints_v(corners.size());
+              
+              for(int j=0;j<corners.size();j++) {
+                //FIXME multi-channel calib!
+                ipoints_v[j] = corners[j].p;
+                Point2f w_2d = unit_size_res*Point2f(corners[c].id.x, corners[c].id.y);
+                wpoints_v[j] = Point2f(w_2d.x, w_2d.y);
+              }
+              
+              wpoints_m(c, j) = wpoints_v;
+              ipoints_m(c, j) = ipoints_v;
+              s->flush();
             }
             
             if (debug_store)
@@ -200,6 +216,7 @@ typedef unsigned int uint;
             if (debug_store)
               debug_img_ptr = &debug_img;
             
+            cv::Mat img;
             imgs->readImage(idx, &img, CVT_8U | CVT_GRAY | DEMOSAIC);
             
             cv::Mat ch = clifMat_channel(img, 0);
@@ -222,15 +239,18 @@ typedef unsigned int uint;
             imwrite(buf, debug_img);
           }
 
-          ipoints.push_back(std::vector<Point2f>());
-          wpoints.push_back(std::vector<Point2f>());
+          /*ipoints.push_back(std::vector<Point2f>());
+          wpoints.push_back(std::vector<Point3f>());
           
           for(int c=0;c<corners.size();c++) {
             //FIXME multi-channel calib!
-            ipoints.back().push_back(corners[c].p);
-            wpoints.back().push_back(unit_size_res*Point2f(corners[c].id.x, corners[c].id.y));
+            //ipoints.back().push_back(corners[c].p);
+            //wpoints.back().push_back(unit_size_res*Point2f(corners[c].id.x, corners[c].id.y));
             //pointcount++;
           }
+          
+          wpoints_m(0, j) = wpoints.back();
+          ipoints_m(0, j) = ipoints.back();*/
         }
       }
 #endif
@@ -356,10 +376,13 @@ typedef unsigned int uint;
     
     w_a->get(wpoints_m);
     i_a->get(ipoints_m);
-    
+        
     for(int i=0;i<wpoints_m[1];i++) {
+      printf("push %d points\n", ipoints_m(0,i).size());
+      
       if (!wpoints_m(0, i).size())
         continue;
+      
       
       ipoints.push_back(ipoints_m(0, i));
       wpoints.push_back(std::vector<Point3f>(wpoints_m(0, i).size()));
