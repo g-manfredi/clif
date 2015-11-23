@@ -1,6 +1,8 @@
 #ifndef _CLIF_CV_H
 #define _CLIF_CV_H
 
+//we don't need mat but vigra needs to be included berfore opencv...
+#include "mat.hpp"
 #include "clif.hpp"
 #include "opencv2/core/core.hpp"
 

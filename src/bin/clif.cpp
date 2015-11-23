@@ -13,14 +13,15 @@
 #include <unistd.h>
 #endif
 
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/calib3d/calib3d.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
 
+#include "dataset.hpp"
 #include "hdf5.hpp"
 #include "clif_cv.hpp"
 #include "calib.hpp"
-#include "dataset.hpp"
+
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/calib3d/calib3d.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
 
 using namespace clif;
 using namespace std;

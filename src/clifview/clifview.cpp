@@ -6,11 +6,9 @@
 #include <QGraphicsPixmapItem>
 #include <QtNetwork>
 
-#include <opencv2/opencv.hpp>
-
+#include "dataset.hpp"
 #include "clifepiview.hpp"
 #include "clif_qt.hpp"
-#include "dataset.hpp"
 #include "clifstoreview.hpp"
 #include "clifviewcaller.hpp"
 

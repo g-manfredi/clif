@@ -1,6 +1,8 @@
 #ifndef _CLIF_ATTRIBUTE_H
 #define _CLIF_ATTRIBUTE_H
 
+#include "mat.hpp"
+
 #include <opencv2/core/core.hpp>
 #include "fnmatch.h"
 
@@ -8,7 +10,6 @@
 #include "stringtree.hpp"
 #include "enumtypes.hpp"
 
-#include "mat.hpp"
 
 namespace clif {
   

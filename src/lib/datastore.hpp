@@ -1,10 +1,10 @@
 #ifndef _CLIF_DATASTORE_H
 #define _CLIF_DATASTORE_H
 
+#include "mat.hpp"
 #include "opencv2/core/core.hpp"
 
 #include "core.hpp"
-#include "mat.hpp"
 
 namespace clif {
 class Dataset;

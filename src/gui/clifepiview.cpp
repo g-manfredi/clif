@@ -7,11 +7,12 @@
 #include <QSlider>
 #include <QVBoxLayout>
 
+#include "dataset.hpp"
+
 #include "clifepiview.hpp"
 #include "clif_qt.hpp"
 
 #include "subset3d.hpp"
-#include "dataset.hpp"
 
 namespace clif {
 

@@ -15,10 +15,12 @@
 
 #include "H5Cpp.h"
 #include "H5File.h"
+
+#include "dataset.hpp"
+#include "clif.hpp"
+
 #include "opencv2/highgui/highgui.hpp"
 
-#include "clif.hpp"
-#include "dataset.hpp"
 
 using namespace clif;
 using namespace H5;

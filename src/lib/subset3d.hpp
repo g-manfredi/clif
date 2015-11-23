@@ -1,6 +1,8 @@
 #ifndef _CLIF3DSUBSET_H
 #define _CLIF3DSUBSET_H
 
+#include "dataset.hpp"
+
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include "enumtypes.hpp"

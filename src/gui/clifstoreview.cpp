@@ -16,8 +16,8 @@
 #include "clifepiview.hpp"
 #include "clif_qt.hpp"
 
-#include "subset3d.hpp"
 #include "dataset.hpp"
+#include "subset3d.hpp"
 
 namespace clif {
 

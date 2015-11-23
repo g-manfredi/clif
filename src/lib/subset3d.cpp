@@ -4,8 +4,6 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-#include "dataset.hpp"
-
 namespace clif {
 
 using namespace std;

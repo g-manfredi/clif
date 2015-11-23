@@ -1,8 +1,8 @@
 #ifndef _CLIFQT_H
 #define _CLIFQT_H
 
-#include "clif.hpp"
 #include "subset3d.hpp"
+#include "clif.hpp"
 
 #include <QImage>
 

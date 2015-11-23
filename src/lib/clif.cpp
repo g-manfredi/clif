@@ -5,11 +5,12 @@
 
 #include <exception>
 
+#include "dataset.hpp"
+#include "hdf5.hpp"
+
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-#include "hdf5.hpp"
-#include "dataset.hpp"
 
 #include "cliini.h"
 

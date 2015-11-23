@@ -1,11 +1,11 @@
 #include "clif_cv.hpp"
 
+#include "dataset.hpp"
+
 #include <sstream>
 #include <string>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
-
-#include "dataset.hpp"
 
 namespace clif {
   
