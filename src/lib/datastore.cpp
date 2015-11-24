@@ -514,7 +514,7 @@ void Datastore::writeRawImage(int idx, hsize_t w, hsize_t h, void *imgdata)
   }
   
   hsize_t size[3] = {1, dims[1],dims[2]};
-  hsize_t start[3] = {idx, 0,0};
+  hsize_t start[3] = {hsize_t(idx), 0,0};
   space.selectHyperslab(H5S_SELECT_SET, size, start);
   
   H5::DataSpace imgspace(3, size);
@@ -976,7 +976,7 @@ void Datastore::readRawImage(int idx, hsize_t w, hsize_t h, void *imgdata)
     throw std::invalid_argument("requested index out or range");
   
   hsize_t size[3] = {1, dims[1],dims[2]};
-  hsize_t start[3] = {idx, 0,0};
+  hsize_t start[3] = {hsize_t(idx), 0,0};
   space.selectHyperslab(H5S_SELECT_SET, size, start);
   
   H5::DataSpace imgspace(3, size);
