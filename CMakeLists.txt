@@ -8,6 +8,9 @@ set(CLIF_VERSION ${FOOBAR_MAJOR_VERSION}.${FOOBAR_MINOR_VERSION}.${FOOBAR_PATCH_
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
   # using Clang
   message("use clang")
+  list(APPEND CMAKE_CXX_FLAGS "-std=c++11")
+  #FIXME
+  add_definitions(-DFNM_EXTMATCH=0)
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
   # using GCC
   message("use gcc")
