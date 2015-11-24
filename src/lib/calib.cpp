@@ -135,7 +135,7 @@ typedef unsigned int uint;
         
         assert(imgs->dims() == 4);
         
-        for(int j=0;j<imgs->imgCount();j++) {
+        for(int j=0;j<1/*imgs->imgCount()*/;j++) {
           std::vector<Corner> corners_rough;
           std::vector<Corner> corners;
           std::vector<int> idx(4, 0);
@@ -197,11 +197,11 @@ typedef unsigned int uint;
               std::vector<Point2f> ipoints_v(corners.size());
               std::vector<Point2f> wpoints_v(corners.size());
               
-              for(int j=0;j<corners.size();j++) {
+              for(int ci=0;ci<corners.size();ci++) {
                 //FIXME multi-channel calib!
-                ipoints_v[j] = corners[j].p;
-                Point2f w_2d = unit_size_res*Point2f(corners[c].id.x, corners[c].id.y);
-                wpoints_v[j] = Point2f(w_2d.x, w_2d.y);
+                ipoints_v[ci] = corners[ci].p;
+                Point2f w_2d = unit_size_res*Point2f(corners[ci].id.x, corners[ci].id.y);
+                wpoints_v[ci] = Point2f(w_2d.x, w_2d.y);
               }
               
               wpoints_m(c, j) = wpoints_v;
@@ -387,8 +387,9 @@ typedef unsigned int uint;
       
       ipoints.push_back(ipoints_m(0, i));
       wpoints.push_back(std::vector<Point3f>(wpoints_m(0, i).size()));
-      for(int j=0;j<wpoints_m(0, i).size();j++)
+      for(int j=0;j<wpoints_m(0, i).size();j++) {
         wpoints.back()[j] = Point3f(wpoints_m(0, i)[j].x,wpoints_m(0, i)[j].y,0);
+      }
     }
     
     Point2i proxy_size(proxy_w,proxy_h);
