@@ -213,13 +213,12 @@ static void attributes_append_group(Attributes &attrs, H5::Group &g, std::string
     H5::Attribute h5attr = g.openAttribute(i);
     Attribute attr;
     BaseType type;
-	char attr_name[1024];
-
-	h5attr.getName(attr_name, 1024);
-	std::string name = appendToPath(group_path, attr_name);
+    char attr_name[1024];
     
-	read_attr(&attr, g, basename, group_path, attr_name, type);
-          
+    H5Aget_name(h5attr.getId(), 1024, attr_name);
+    std::string name = appendToPath(group_path, attr_name);
+    read_attr(&attr, g, basename, group_path, attr_name, type);
+    
     attrs.append(attr);
   }
 }
