@@ -804,8 +804,10 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags, 
     flags |= DEMOSAIC;
   if (flags & UNDISTORT)
     flags |= DEMOSAIC;
-  if (disable_cache)
+  if (disable_cache) {
     flags |= NO_MEM_CACHE;
+    flags |= NO_DISK_CACHE;
+  }
     
   if (mat_cache_get(img,idx,flags,CACHE_CONT_MAT_IMG,scale))
     return;
@@ -828,7 +830,7 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags, 
   //for now
   assert(img->isContinuous());
   
-  if (flags & NO_DISK_CACHE != 0 && _get_cache_path(cache_file)) {
+  if (((flags & NO_DISK_CACHE) == 0) && _get_cache_path(cache_file)) {
     use_disk_cache = true;
     cache_file /= _cache_filename(this, idx[3], flags, scale);
     
