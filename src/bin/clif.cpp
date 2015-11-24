@@ -87,6 +87,10 @@ cliini_opt opts[] = {
     0,0
   },
   {
+    "ucalib-calibrate",
+    0,0
+  },
+  {
     "gen-proxy-loess",
     0,0
   }
@@ -341,10 +345,14 @@ int main(const int argc, const char *argv[])
     if (cliargs_get(args, "gen-proxy-loess")) {
       printf("loess?\n");
       generate_proxy_loess(set, 33, 25);
-      set->writeAttributes();
+      //set->writeAttributes();
     }
     if (cliargs_get(args, "opencv-calibrate")) {
       opencv_calibrate(set);
+      //set->writeAttributes();
+    }
+    if (cliargs_get(args, "ucalib-calibrate")) {
+      ucalib_calibrate(set);
       //set->writeAttributes();
     }
     delete set;

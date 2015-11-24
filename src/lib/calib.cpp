@@ -135,7 +135,7 @@ typedef unsigned int uint;
         
         assert(imgs->dims() == 4);
         
-        for(int j=0;j<1/*imgs->imgCount()*/;j++) {
+        for(int j=0;j<imgs->imgCount();j++) {
           std::vector<Corner> corners_rough;
           std::vector<Corner> corners;
           std::vector<int> idx(4, 0);
@@ -334,8 +334,69 @@ typedef unsigned int uint;
     return true;
   }
   
+  
+  bool ucalib_calibrate(Dataset *set, std::string imgset, std::string calibset)
+#ifdef CLIF_WITH_UCALIB
+  {
+    Cam_Config cam_config = { 0.0065, 12.0, 300.0, -1, -1 };
+    Calib_Config conf = { true, 190, 420 };
+    Size im_size = imgSize(set);
+    
+    if (!im_size.width)
+      im_size = imgSize(set->getCalibStore());
 
+    cam_config.w = set->getCalibStore()->extent()[0];
+    cam_config.h = set->getCalibStore()->extent()[1];
+    
+    if (!im_size.width)
+      im_size = imgSize(set->getCalibStore());
 
+    if (!imgset.size()) {
+      vector<string> imgsets;
+      set->listSubGroups("calibration/images/sets", imgsets);
+      assert(imgsets.size());
+      imgset = imgsets[0];
+    }
+    
+    if (!calibset.size())
+      calibset = imgset;
+      
+    Datastore *proxy_store = set->getStore(path("calibration/images/sets") / calibset / "proxy");
+    
+    Point2i proxy_size(proxy_store->extent()[0],proxy_store->extent()[1]);
+    
+    DistCorrLines dist_lines = DistCorrLines(0, 0, 0, cam_config.w, cam_config.h, 100.0, cam_config, conf, proxy_size);
+    dist_lines.proxy_backwards.resize(proxy_store->imgCount());
+    
+    cv::Mat proxy_img;
+    
+    Idx pos(proxy_store->dims());
+    
+    for(int img_n=0;img_n<proxy_store->imgCount();img_n++) {
+      pos[3] = img_n;
+      proxy_store->readImage(pos, &proxy_img);
+      printf("%dx%dx%d\n", proxy_img.size[0], proxy_img.size[1], proxy_img.size[2]);
+      
+      dist_lines.proxy_backwards[img_n].resize(proxy_size.y*proxy_size.x);
+      for(int j=0;j<proxy_size.y;j++)
+        for(int i=0;i<proxy_size.x;i++) {
+          dist_lines.proxy_backwards[img_n][j*proxy_size.x+i].x = proxy_img.at<float>(0, j,i);
+          dist_lines.proxy_backwards[img_n][j*proxy_size.x+i].y = proxy_img.at<float>(1, j,i);
+        }
+    }
+    
+    dist_lines.proxy_fit_lines_global();
+    dist_lines.Draw("center");
+    
+    return true;
+  }
+#else
+  {
+    //FIXME report error
+    return false;
+  }
+#endif
+  
   bool generate_proxy_loess(Dataset *set, int proxy_w, int proxy_h , std::string imgset, std::string calibset)
 #ifdef CLIF_WITH_UCALIB
   {
@@ -395,7 +456,7 @@ typedef unsigned int uint;
     Point2i proxy_size(proxy_w,proxy_h);
     
     DistCorrLines dist_lines = DistCorrLines(0, 0, 0, cam_config.w, cam_config.h, 100.0, cam_config, conf, proxy_size);
-    dist_lines.add(ipoints, wpoints, 0.0);
+    dist_lines.add(ipoints, wpoints, 20.0);
     dist_lines.proxy_backwards_poly_generate();
     
     cv::Mat proxy_img;
@@ -411,24 +472,6 @@ typedef unsigned int uint;
         }
       proxy_store->appendImage(&proxy_img);
     }
-        
-        
-    
-    /*printf("opencv calibration rms %f\n", rms);
-    
-    std::cout << cam << std::endl;
-    
-    double f[2] = { cam.at<double>(0,0), cam.at<double>(1,1) };
-    double c[2] = { cam.at<double>(0,2), cam.at<double>(1,2) };
-    
-    //FIXME todo delete previous group!
-    path calib_path;
-    calib_path /= "calibration/intrinsics";
-    calib_path /= calibset;
-    set->setAttribute(calib_path / "type", "CV8");
-    set->setAttribute(calib_path / "projection", f, 2);
-    set->setAttribute(calib_path / "projection_center", c, 2);
-    set->setAttribute(calib_path / "opencv_distortion", dist);*/
     
     return true;
   }

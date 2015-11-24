@@ -65,7 +65,7 @@ public:
 
   
 protected:
-  BaseType _type;
+  BaseType _type = BaseType::INVALID;
   std::shared_ptr<void> _data;
   
 private:

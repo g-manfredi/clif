@@ -88,6 +88,7 @@ struct QFile_deleter
   
   void operator()(void* ptr)
   {
+    //FIXME call destruct dispatcher
     //FIXME delete QFile and mapping
     printf("FIXME qfile delete!\n");
     //delete _f;
@@ -104,7 +105,7 @@ struct cvMat_deleter
   void operator()(void* ptr)
   {
     //this is not actually necessary, _m should be freed when deleter is destroyed
-    _m.release();
+    //_m.release();
   }
   
   cv::Mat _m;
@@ -176,7 +177,7 @@ int Mat::write(const char *path)
 
 int Mat::read(const char *path)
 {
-#ifndef CLIF_BUILD_QT 
+//#ifndef CLIF_BUILD_QT 
   FILE *f = fopen(path, "r");
   
   create(type(), *(Idx*)this);
@@ -191,7 +192,7 @@ int Mat::read(const char *path)
     return -1;
   
   return 0;
-#else
+/*#else
   QFile *f = new QFile(path);
   
   if (!f->open(QIODevice::ReadOnly)) {
@@ -208,7 +209,7 @@ int Mat::read(const char *path)
   _data = std::shared_ptr<void>(cdata, QFile_deleter(f));
   
   return 0;
-#endif
+#endif*/
 }
 
 void Mat::release()
