@@ -53,7 +53,7 @@ public:
   const boost::filesystem::path& path();
   
   bool valid();
-  
+  void flush();
   void close();
   
   const std::vector<std::string> & datasetList() const {return datasets;};

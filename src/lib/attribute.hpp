@@ -85,12 +85,12 @@ class Attribute {
   public:
     template<typename T> void set(std::string name_, int dims_, T *size_, BaseType type_, void *data_);
     
-    void setName(std::string name_) { name = name_; };
+    void setName(boost::filesystem::path name_) { name = name_.generic_string(); };
     
     Attribute() {};
     Attribute(std::string name_)  { name = name_; };
     Attribute(const char *name_)  { name = std::string(name_); };
-    Attribute(boost::filesystem::path &name_)  { name = name_.generic_string(); };
+    Attribute(boost::filesystem::path name_)  { name = name_.generic_string(); };
     
     const char *getStr()
     {
@@ -210,7 +210,7 @@ class Attribute {
       
     };
     
-    void setLink(const std::string &l);
+    void setLink(const boost::filesystem::path &l);
     const std::string& link() const;
     
     void set(cv::Mat &val)
@@ -452,6 +452,7 @@ class Attributes {
     void append(Attribute *attr);
     void append(Attributes attrs);
     void append(Attributes *attrs);
+    void addLink(path name, path to);
     //@}
     
     /** get number of attributes
