@@ -213,22 +213,51 @@ typedef unsigned int uint;
               cv::merge(debug_imgs, 3, debug_img);
           }
           else {
+            cv::Mat debug_imgs[imgs->imgChannels()];
             
-            if (debug_store)
-              debug_img_ptr = &debug_img;
-            
+            //grayscale rough detection
+            //FIXME move this up - mmapped reallocation not possible...
             cv::Mat img;
             imgs->readImage(idx, &img, CVT_8U | CVT_GRAY | DEMOSAIC);
+            cv::Mat gray = clifMat_channel(img, 0);
+            Marker::detect(gray, corners_rough);
             
-            cv::Mat ch = clifMat_channel(img, 0);
+            cv::Mat img_color;
+            imgs->readImage(idx, &img_color, CVT_8U);
             
-            Marker::detect(ch, corners);
-            //FIXME use input size
-            //FIXME use input depht
-            unit_size_res = unit_size;
-            hdmarker_detect_subpattern(ch, corners, corners, recursion_depth, &unit_size_res, debug_img_ptr, 0);
             
-            printf("found %6lu corners (img %d/%d)\n", corners.size(), j, imgs->imgCount());
+            for(int c=0;c<imgs->imgChannels();c++) {
+              if (debug_store)
+                debug_img_ptr = &debug_imgs[c];
+              
+              cv::Mat ch = clifMat_channel(img_color, 0);
+              
+              unit_size_res = unit_size;
+              hdmarker_detect_subpattern(ch, corners_rough, corners, recursion_depth, &unit_size_res, debug_img_ptr);
+              
+              printf("found %6lu corners for channel %d (img %d/%d)\n", corners.size(), c, j, imgs->imgCount());
+              
+              char buf[128];
+              sprintf(buf, "debug_img%03d_ch%d.tif", j, c);
+              imwrite(buf, *debug_img_ptr);
+              
+              std::vector<Point2f> ipoints_v(corners.size());
+              std::vector<Point2f> wpoints_v(corners.size());
+              
+              for(int ci=0;ci<corners.size();ci++) {
+                //FIXME multi-channel calib!
+                ipoints_v[ci] = corners[ci].p;
+                Point2f w_2d = unit_size_res*Point2f(corners[ci].id.x, corners[ci].id.y);
+                wpoints_v[ci] = Point2f(w_2d.x, w_2d.y);
+              }
+              
+              wpoints_m(c, j) = wpoints_v;
+              ipoints_m(c, j) = ipoints_v;
+              s->flush();
+            }
+            
+            if (debug_store)
+              cv::merge(debug_imgs, 3, debug_img);
           }
           
           if (debug_store) {
