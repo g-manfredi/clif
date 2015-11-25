@@ -256,8 +256,12 @@ typedef unsigned int uint;
               s->flush();
             }
             
-            if (debug_store)
-              cv::merge(debug_imgs, 3, debug_img);
+            if (debug_store) {
+              if (imgs->imgChannels() == 1)
+                debug_img = debug_imgs[0];
+              else
+              	cv::merge(debug_imgs, imgs->imgChannels(), debug_img);
+	    }
           }
           
           if (debug_store) {
