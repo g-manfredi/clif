@@ -1,0 +1,22 @@
+#include "types.hpp"
+
+#include <cstddef>
+
+namespace clif {
+  
+static const char *types_buf = "@CLIF_DEFAULT_TYPES_BUF@";
+  
+cliini_args *default_types()
+{
+  cliini_optgroup group = {
+    NULL,
+    NULL,
+    0,
+    0,
+    CLIINI_ALLOW_UNKNOWN_OPT
+  };
+  
+  return cliini_parsebuf(types_buf, &group);
+}
+  
+}
