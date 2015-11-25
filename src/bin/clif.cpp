@@ -218,12 +218,13 @@ int main(const int argc, const char *argv[])
     //FIXME multiple dataset handling!
     if (f_out.datasetCount()) {
       printf("INFO: appending to HDF5 DataSet %s\n", f_out.datasetList()[0].c_str());
-      if (link_output && input_clifs.size()) {
+      /*if (link_output && input_clifs.size()) {
         printf("FIXME: check if linking into existing dataset works\n");
         set = new Dataset();
       }
       else
-        set = f_out.openDataset(0);
+        */
+      set = f_out.openDataset(0);
     }
     else {
       printf("INFO: creating new HDF5 DataSet %s\n", output_set_name.c_str());
@@ -277,7 +278,7 @@ int main(const int argc, const char *argv[])
         if (!link_output)
           set->append(in_set);
         else {
-          printf("link!\n");
+          printf("create dataset by linking!\n");
           set->link(f_out, in_set);
         }
       }

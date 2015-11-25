@@ -56,9 +56,9 @@ static void read_attr(Attribute *attr, H5::Group g, std::string basename, std::s
   delete[] maxdims;
 }
 
-void Attribute::setLink(const std::string &l)
+void Attribute::setLink(const boost::filesystem::path &l)
 {
-  _link = l;
+  _link = l.generic_string();
   
   data = NULL;
   _m = Mat();
@@ -267,32 +267,34 @@ Attribute Attributes::operator[](int pos)
 static void attributes_append_group(Attributes &attrs, H5::Group &g, std::string basename, std::string group_path)
 {    
   for(uint i=0;i<g.getNumObjs();i++) {
-    H5G_obj_t type = g.getObjTypeByIdx(i);
     
-	char g_name[1024];
-	g.getObjnameByIdx(hsize_t(i), g_name, 1024);
+    char g_name[1024];
+    g.getObjnameByIdx(hsize_t(i), g_name, 1024);
     std::string name = appendToPath(group_path, g_name);
     
+    H5G_stat_t stat;
+    g.getObjinfo(g_name, false, stat);
+    printf("%s type: %d\n", g_name, stat.type);
     
-    
-    if (type == H5G_GROUP) {
+    if (stat.type == H5G_GROUP) {
       H5::Group sub = g.openGroup(g_name);
       attributes_append_group(attrs, sub, basename, name);
     }
-    /*else if (type == H5G_LINK_SOFT)
+    else if (stat.type == H5G_LINK)
     {
+      //FIXME we assume soft link!
       Attribute attr;
       char attr_name[1024];
-      H5Aget_name(h5attr.getId(), 1024, attr_name);
-      std::string name = appendToPath(group_path, attr_name);
+      char link[1024];
       
-      attr.setName(name);
+      attr.setName(remove_prefix(name, basename));
       
-      H5Lget_val_by_idx(g., const char *group_name, H5_index_t index_type, H5_iter_order_t order, hsize_t n, void *link_val, size_t size, hid_t lapl_id )
-      attr.setLink();
+      H5L_info_t info;
+      H5Lget_val(g.getId(), g_name, link, 1024, H5P_DEFAULT);
+      attr.setLink(remove_prefix(link, basename));
       
       attrs.append(attr);
-    }*/
+    }
   }
   
   
@@ -334,6 +336,14 @@ void Attributes::append(Attribute *attr)
 {
   attr->name = resolve(attr->name).generic_string();
   append(*attr);
+}
+
+void Attributes::addLink(path name, path to)
+{
+  Attribute a(resolve(name));
+  a.setLink(to.generic_string());
+  
+  append(a);
 }
 
 //TODO document:
@@ -476,7 +486,17 @@ void Attribute::write(H5::H5File f, std::string dataset_name)
   std::string grouppath = remove_last_part(fullpath, '/');
   std::string attr_name = get_last_part(fullpath, '/');
   
-  if (_m.total() == 0) {
+  if (_link.size())
+  {
+    printf("write link %s\n", (path(dataset_name) / _link).generic_string().c_str());
+    
+    if (!h5_obj_exists(f, grouppath))
+      h5_create_path_groups(f, grouppath.c_str());
+    
+    H5::Group g = f.openGroup(grouppath.c_str());
+    g.link(H5G_LINK_SOFT, (path(dataset_name) / _link).generic_string().c_str(), name.c_str());
+  }
+  else if (_m.total() == 0) {
     //FIXME remove this (legacy) case
     hsize_t *dim = new hsize_t[size.size()+1];
     for(uint i=0;i<size.size();i++)

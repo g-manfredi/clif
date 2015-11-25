@@ -134,8 +134,10 @@ void ClifFile::open(const std::string &filename, unsigned int flags)
   
   datasets.resize(0);
   
-  if (f.getId() == H5I_INVALID_HID)
+  if (f.getId() == H5I_INVALID_HID) {
+    printf("error opening file!\n");
     return;
+  }
   
   if (!h5_obj_exists(f, "/clif"))
       return;
@@ -155,7 +157,13 @@ void ClifFile::open(const std::string &filename, unsigned int flags)
 //FIXME delete datasets?
 void ClifFile::close()
 {
+  flush();
   f.close();
+}
+
+void ClifFile::flush()
+{
+  f.flush(H5F_SCOPE_LOCAL);
 }
 
 void ClifFile::create(const std::string &filename)

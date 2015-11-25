@@ -53,4 +53,24 @@ boost::filesystem::path get_abs_path(boost::filesystem::path path)
     return current_path() / path;
 }
 
+boost::filesystem::path remove_prefix(boost::filesystem::path path, boost::filesystem::path prefix)
+{
+  boost::filesystem::path res;
+  
+  auto it_path = path.begin();
+  auto it_prefix = prefix.begin();
+  
+  while (*it_path == *it_prefix) {
+    ++it_path;
+    ++it_prefix;
+  }
+  
+  while (it_path != path.end()) {
+    res /= *it_path;
+    ++it_path;
+  }
+  
+  return res;
+}
+
 }

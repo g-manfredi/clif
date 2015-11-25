@@ -212,6 +212,8 @@ Dataset::~Dataset()
   
   if (intent != H5F_ACC_RDONLY)
     Attributes::write(f(),_path);
+  
+  _file.flush();
 }
 
 //link second dataset into the place of current dataset
