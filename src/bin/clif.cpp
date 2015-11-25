@@ -67,6 +67,14 @@ cliini_opt opts[] = {
     CLIINI_STRING
   },
   {
+    "store",
+    2, //argcount
+    CLIINI_ARGCOUNT_ANY, //argcount
+    CLIINI_STRING,
+    0,
+    's'
+  },
+  {
     "include",
     1, //argcount
     CLIINI_ARGCOUNT_ANY, //argcount
@@ -148,8 +156,9 @@ int main(const int argc, const char *argv[])
   cliini_arg *calib_imgs = cliargs_get(args, "calib-images");
   cliini_arg *include = cliargs_get(args, "include");
   cliini_arg *exclude = cliargs_get(args, "exclude");
+  cliini_arg *stores = cliargs_get(args, "store");
   
-  if (!args || cliargs_get(args, "help\n") || (!input && !calib_imgs) || !output) {
+  if (!args || cliargs_get(args, "help\n") || (!input && !calib_imgs && !stores) || !output) {
     printf("TODO: print help!");
     return EXIT_FAILURE;
   }
@@ -192,6 +201,9 @@ int main(const int argc, const char *argv[])
       errorexit("only single input clif file allowed!");
     output_clif = false;
   }
+  
+  if (!output_clif && stores)
+    errorexit("can only add datastores to clif output!");
   
   if (output_clif) {
     ClifFile f_out;
@@ -303,6 +315,29 @@ int main(const int argc, const char *argv[])
       else
         others.open(input_inis[i].c_str());
       set->append(others);
+    }
+    
+    if (stores) {
+      int sum = 0;
+      for(uint i=0;i<cliarg_inst_count(stores);i++) {
+        int count = cliarg_inst_arg_count(stores, i);
+        char *store_path = cliarg_nth_str(stores, sum);
+        int dim = atoi(cliarg_nth_str(stores, sum+1));
+        sum += 2;
+        if (dim < 3) {
+          printf("ERROR: datastore %s needs at least 4 dimensions, but dimension was %d (%s)\n", store_path, dim, cliarg_nth_str(stores, sum));
+          exit(EXIT_FAILURE);
+        }
+        printf("add store %s\n", store_path);
+        Datastore *store = set->addStore(store_path, dim);
+        for(int j=2;j<cliarg_inst_arg_count(stores, i);j++,sum++) {
+          printf("%s\n", cliarg_nth_str(stores, sum));
+          cv::Mat img = imread(cliarg_nth_str(stores, sum), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+          if (img.channels() == 3)
+            cvtColor(img, img, COLOR_BGR2RGB);
+          store->appendImage(&img);
+        }
+      }
     }
     
     //FIXME allow "empty" datasets with only attributes!

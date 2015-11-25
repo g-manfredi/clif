@@ -309,10 +309,11 @@ Datastore *Dataset::getStore(const boost::filesystem::path &path)
   return getStore(path.generic_string());
 }
 
-Datastore *Dataset::addStore(const std::string &path)
+Datastore *Dataset::addStore(const std::string &path, int dims)
 {
   Datastore *store = new Datastore;
   store->create(path, this);
+  store->setDims(dims);
   //FIXME delete previous store!
   assert(store);
   _stores[store->getDatastorePath()] = store;
@@ -320,14 +321,14 @@ Datastore *Dataset::addStore(const std::string &path)
   return store;
 }
 
-Datastore *Dataset::addStore(const char *path)
+Datastore *Dataset::addStore(const char *path, int dims)
 {
-  return addStore(std::string(path));
+  return addStore(std::string(path), dims);
 }
 
-Datastore *Dataset::addStore(const boost::filesystem::path &path)
+Datastore *Dataset::addStore(const boost::filesystem::path &path, int dims)
 {
-  return addStore(path.generic_string());
+  return addStore(path.generic_string(), dims);
 }
 
 void Dataset::reset()

@@ -210,6 +210,9 @@ class Attribute {
       
     };
     
+    void setLink(const std::string &l);
+    const std::string& link() const;
+    
     void set(cv::Mat &val)
     {
       type = CvDepth2BaseType(val.depth());
@@ -322,6 +325,8 @@ class Attribute {
     std::vector<int> size;
     void *data = NULL;
     
+    std::string _link;
+    
     Mat _m;
 };
 
@@ -370,24 +375,11 @@ class Attributes {
     {    
       return &attrs[idx];
     }
-    Attribute *get(boost::filesystem::path name)
-    {    
-      for(unsigned int i=0;i<attrs.size();i++)
-        if (!attrs[i].name.compare(name.generic_string()))
-          return &attrs[i];
-        
-        return NULL;
-    }
     //other types
-    template<typename STRINGTYPE> Attribute *get(STRINGTYPE name)
-    {    
-	  for (unsigned int i = 0; i<attrs.size(); i++)
-        if (!attrs[i].name.compare(name))
-          return &attrs[i];
-
-      return NULL;
-    }
-    Attribute *getMatch(const char *name)
+    Attribute *get(boost::filesystem::path name);
+    
+    //FIXME links?!
+    /*Attribute *getMatch(const char *name)
     {    
       for(unsigned int i=0;i<attrs.size();i++)
         if (!fnmatch(attrs[i].name.c_str(), name, FNM_PATHNAME))
@@ -402,8 +394,10 @@ class Attributes {
     Attribute *getMatch(std::string name)
     {    
       return getMatch(name.c_str());
-    }
+    }*/
     //@}
+    
+    boost::filesystem::path resolve(boost::filesystem::path name);
     
     /** export attributes to an ini file which can reimported using open().
      */
@@ -454,9 +448,9 @@ class Attributes {
       * @name Append Attributes
      */ 
     //@{
-    void append(Attribute &attr);
+    void append(Attribute attr);
     void append(Attribute *attr);
-    void append(Attributes &attrs);
+    void append(Attributes attrs);
     void append(Attributes *attrs);
     //@}
     

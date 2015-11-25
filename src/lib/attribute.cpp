@@ -12,6 +12,8 @@
 #include <opencv2/core/core.hpp>
 
 namespace clif {
+  
+using boost::filesystem::path;
 
 typedef unsigned int uint;
   
@@ -53,7 +55,64 @@ static void read_attr(Attribute *attr, H5::Group g, std::string basename, std::s
   delete[] dims;
   delete[] maxdims;
 }
+
+void Attribute::setLink(const std::string &l)
+{
+  _link = l;
   
+  data = NULL;
+  _m = Mat();
+  dims = 0;
+  size.resize(0);
+}
+
+const std::string& Attribute::link() const
+{
+  return _link;
+}
+
+//FIXME make faster!
+static Attribute *_search_attr(std::vector<Attribute> &attrs, std::string name)
+{
+  for (uint i=0;i<attrs.size();i++)
+    if (!attrs[i].name.compare(name))
+      return &attrs[i];
+    
+    return NULL;
+}
+
+path Attributes::resolve(path name)
+{
+  Attribute *a = _search_attr(attrs, name.generic_string());
+  
+  if (a && a->link().size() == 0)
+    return name;
+  
+  path partial;
+  for(auto it=name.begin();it!=name.end();++it) {
+    partial /= *it;
+    a = _search_attr(attrs, partial.generic_string());
+    if (a) {
+      if (a->link().size()) {
+        path rest(a->link());
+        for(++it;it!=name.end();++it)
+          rest /= *it;
+        return resolve(rest);
+      }
+      else //name is no valid path!
+        return name;
+    }
+  }
+  
+  return name;
+}
+
+Attribute *Attributes::get(boost::filesystem::path name)
+{    
+  name = resolve(name);
+  
+  return _search_attr(attrs, name.generic_string());
+}
   
 void Attributes::open(const char *inifile, cliini_args *types) 
 {
@@ -74,48 +133,43 @@ void Attributes::open(const char *inifile, cliini_args *types)
   
   attrs.resize(0);
   
+  
   if (attr_args) {
-	  attrs.resize(cliargs_count(attr_args));
-
-	  //FIXME for now only 1d attributes :-P
-	  for (int i = 0; i < cliargs_count(attr_args); i++) {
-		  cliini_arg *arg = cliargs_nth(attr_args, i);
-
-		  //int dims = 1;
-		  int size = cliarg_sum(arg);
-
-		  attrs[i].setName(arg->opt->longflag);
-
-		  switch (arg->opt->type) {
-		  case CLIINI_ENUM:
-		  case CLIINI_STRING:
-			  assert(size == 1);
-			  attrs[i].set(((char**)(arg->vals))[0], strlen(((char**)(arg->vals))[0]) + 1);
-			  break;
-		  case CLIINI_INT:
-			  attrs[i].set((int*)(arg->vals), size);
-			  break;
-		  case CLIINI_DOUBLE:
-			  attrs[i].set((double*)(arg->vals), size);
-			  break;
-		  default:
-			  abort();
-		  }
-
-		  /*if (arg->opt->type == CLIINI_STRING) {
-			assert(size == 1);
-			//only single string supported!
-			size = strlen(((char**)(arg->vals))[0])+1;
-			attrs[i].Set<int>(arg->opt->longflag, dims, &size, cliini_type_to_BaseType(arg->opt->type), ((char**)(arg->vals))[0]);
-			}
-			if else (arg->opt->type == CLIINI_INT) {
-			attrs[i].set( size);
-			//attrs[i].Set<int>(arg->opt->longflag, dims, &size, cliini_type_to_BaseType(arg->opt->type), arg->vals);
-			}*/
-	  }
+    attrs.resize(cliargs_count(attr_args));
+    
+    //FIXME for now only 1d attributes :-P
+    for (int i = 0; i < cliargs_count(attr_args); i++) {
+      cliini_arg *arg = cliargs_nth(attr_args, i);
+      
+      //int dims = 1;
+      int size = cliarg_sum(arg);
+      
+      //FIXME check link/name clash!
+      attrs[i].setName(arg->opt->longflag);
+      
+      if (!strcmp(arg->opt->longflag, "source")) {
+        assert(arg->opt->type == CLIINI_STRING);
+        attrs[i].setLink(((char**)(arg->vals))[0]);
+      }
+      else 
+        switch (arg->opt->type) {
+          case CLIINI_ENUM:
+          case CLIINI_STRING:
+            assert(size == 1);
+            attrs[i].set(((char**)(arg->vals))[0], strlen(((char**)(arg->vals))[0]) + 1);
+            break;
+          case CLIINI_INT:
+            attrs[i].set((int*)(arg->vals), size);
+            break;
+          case CLIINI_DOUBLE:
+            attrs[i].set((double*)(arg->vals), size);
+            break;
+          default:
+            abort();
+        }
+    }
   }
-    
-    
+  
   //FIXME free cliini allocated memory!
 }
   
@@ -222,9 +276,23 @@ static void attributes_append_group(Attributes &attrs, H5::Group &g, std::string
     
     
     if (type == H5G_GROUP) {
-	  H5::Group sub = g.openGroup(g_name);
+      H5::Group sub = g.openGroup(g_name);
       attributes_append_group(attrs, sub, basename, name);
     }
+    /*else if (type == H5G_LINK_SOFT)
+    {
+      Attribute attr;
+      char attr_name[1024];
+      H5Aget_name(h5attr.getId(), 1024, attr_name);
+      std::string name = appendToPath(group_path, attr_name);
+      
+      attr.setName(name);
+      
+      H5Lget_val_by_idx(g., const char *group_name, H5_index_t index_type, H5_iter_order_t order, hsize_t n, void *link_val, size_t size, hid_t lapl_id )
+      attr.setLink();
+      
+      attrs.append(attr);
+    }*/
   }
   
   
@@ -251,24 +319,26 @@ void Attributes::open(H5::H5File &f, std::string &path)
   attributes_append_group(*this, group, path, path);
 }
 
-
-void Attributes::append(Attribute &attr)
+void Attributes::append(Attribute attr)
 {
   Attribute *at = get(attr.name);
-  if (!at)
+  if (!at) {
+    attr.setName(resolve(attr.name).generic_string());
     attrs.push_back(attr);
+  }
   else 
     *at = attr;
 }
 
 void Attributes::append(Attribute *attr)
 {
+  attr->name = resolve(attr->name).generic_string();
   append(*attr);
 }
 
 //TODO document:
 //overwrites existing attributes of same name
-void Attributes::append(Attributes &other)
+void Attributes::append(Attributes other)
 {
   for(uint i=0;i<other.attrs.size();i++)
     append(other.attrs[i]);

@@ -153,7 +153,7 @@ CLIF_EXPORT void _cliini_opt_arg_store_val(cliini_opt *opt, const char *arg, voi
   switch (opt->type) {
     //FIXME duplicate string?
     case CLIINI_ENUM :
-    case CLIINI_STRING : tmp = strdup(arg); *(char **)val = tmp; printf("stored string: %s in %p\n", *(char **)val, val); break;
+    case CLIINI_STRING : tmp = strdup(arg); *(char **)val = tmp; break;
     case CLIINI_INT :    *(int*)val    = atoi(arg); break;
     case CLIINI_DOUBLE : *(double*)val = atof(arg); break;
     default:
@@ -244,7 +244,6 @@ static int _cliini_opt_parse(const int argc, const char *argv[], int argpos, cli
     arg->counts = (int*)realloc(arg->counts, sizeof(int)*arg->inst_count);
     arg->counts[arg->inst_count-1] = count;
     arg->vals = realloc(arg->vals, _type_size(opt->type)*arg->sum);
-    printf("opt %s val ar: %p count %d\n", opt->longflag, arg->vals, arg->sum);
     for(i=1;i<=count;i++) {
       _cliini_opt_arg_store_val(opt, argv[argpos+i], (char*)arg->vals + _type_size(opt->type)*(arg->sum-count+i-1));
     }
@@ -281,8 +280,6 @@ CLIF_EXPORT cliini_args *cliini_parsopts(const int argc, const char *argv[], cli
     arg = cliini_args_get_add(args, opt);
     error += _cliini_opt_parse(argc, argv, i, arg, &len, 0);
     i += len;
-    
-    printf("parsed opt %s, %d args\n", opt->longflag, len-1);
   }
   
   if (error) {
@@ -745,6 +742,21 @@ CLIF_EXPORT cliini_arg *cliargs_get_glob(cliini_args *args, const char *name)
     if (!fnmatch(args->args[i].opt->longflag, name, FNM_PATHNAME))
       return &args->args[i];
   return NULL;
+}
+
+CLIF_EXPORT int cliarg_inst_count(cliini_arg *arg)
+{
+  RETNULLONFALSE(arg)
+
+  return arg->inst_count;
+}
+
+CLIF_EXPORT int cliarg_inst_arg_count(cliini_arg *arg, int inst)
+{
+  if (!arg || inst >= arg->inst_count)
+    return 0;
+  
+  return arg->counts[inst];
 }
 
 CLIF_EXPORT int cliargs_count(cliini_args *args)
