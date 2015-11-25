@@ -354,6 +354,8 @@ class Attributes {
      */
     void open(const char *inifile, const char *typefile);
     
+    void open(const char *inifile, cliini_args *types = NULL);
+    
     /** read Attributes from and hdf5 file
      * @param f hdf5 file handler
      * @param path the dataset root path (e.g. "/clif/datasetname")

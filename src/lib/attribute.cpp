@@ -7,6 +7,7 @@
 #include "cliini.h"
 
 #include "hdf5.hpp"
+#include "types.hpp"
 
 #include <opencv2/core/core.hpp>
 
@@ -53,7 +54,8 @@ static void read_attr(Attribute *attr, H5::Group g, std::string basename, std::s
   delete[] maxdims;
 }
   
-void Attributes::open(const char *inifile, const char *typefile) 
+  
+void Attributes::open(const char *inifile, cliini_args *types) 
 {
   cliini_optgroup group = {
     NULL,
@@ -63,10 +65,12 @@ void Attributes::open(const char *inifile, const char *typefile)
     CLIINI_ALLOW_UNKNOWN_OPT
   };
   
+  if (!types)
+    types = default_types();
+  
   cliini_args *attr_args = cliini_parsefile(inifile, &group);
-  cliini_args *attr_types = cliini_parsefile(typefile, &group);
-  if (attr_args && attr_types)
-	  cliini_fit_typeopts(attr_args, attr_types);
+  if (attr_args && types)
+	  cliini_fit_typeopts(attr_args, types);
   
   attrs.resize(0);
   
@@ -113,6 +117,21 @@ void Attributes::open(const char *inifile, const char *typefile)
     
     
   //FIXME free cliini allocated memory!
+}
+  
+void Attributes::open(const char *inifile, const char *typefile) 
+{  
+  cliini_optgroup group = {
+    NULL,
+    NULL,
+    0,
+    0,
+    CLIINI_ALLOW_UNKNOWN_OPT
+  };
+  
+  cliini_args *types = cliini_parsefile(typefile, &group);
+  
+  open(inifile, types);
 }
 
 void Attributes::reset()

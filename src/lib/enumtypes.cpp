@@ -3,7 +3,7 @@
 #include <opencv2/core/core.hpp>
 
 namespace clif {
-  
+
 static BaseType BaseTypeAtomicMask = BaseType(int(BaseType::VECTOR)-1);
 
 static std::type_index BaseTypeSimpleTypes[] = {

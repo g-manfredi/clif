@@ -541,6 +541,45 @@ CLIF_EXPORT cliini_args *cliini_parsefile(const char *filename, cliini_optgroup 
   return args;
 }
 
+
+CLIF_EXPORT cliini_args *cliini_parsebuf(const char *buf, cliini_optgroup *group)
+{
+  char *line_end;
+  char currsection[SECTION_MAXLEN];
+  
+  int error = 0;
+  int filepos = 0;
+  int bufpos = 0;
+  int curlen = strlen(buf);
+  
+  if (!buf) {
+    printf("error: passed NULL buffer!\n");
+    return NULL;
+  }  
+  cliini_args *args = cliini_args_new();
+  currsection[0] = '\0';
+  
+  buf = strdup(buf);
+  
+  while(1) {
+    line_end = (char*)memchr(buf+bufpos,'\n',curlen-bufpos);
+    if (!line_end)
+      break;
+    *line_end = '\0';
+    error += parse_line(buf+bufpos, args, group, currsection);
+    bufpos = line_end-buf+1;
+  }
+  
+  free(buf);
+  
+  if (error) {
+    printf("encountered %d errors while parsing\n", error);
+    return NULL;
+  }
+  
+  return args;
+}
+
 static int gettype_string(char *str)
 {
   if (!strcmp(str, "STRING"))

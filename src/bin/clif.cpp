@@ -179,8 +179,6 @@ int main(const int argc, const char *argv[])
   std::string output_set_name("default");
   
   if (clif_append.size()) {
-    if (!types)
-      errorexit("FIXME add global type declaration!");
     if (clif_append.size() > 1)
       errorexit("only a single output clif file may be specififed!");
     if (clif_extract_images.size() || clif_extract_attributes.size())
@@ -298,9 +296,12 @@ int main(const int argc, const char *argv[])
     
     for(uint i=0;i<input_inis.size();i++) {
       printf("append ini file!\n");
-      //FIXME multiple type files?
       Attributes others;
-      others.open(input_inis[i].c_str(), cliarg_str(types));
+      //FIXME append types (not replace!)
+      if (types)
+        others.open(input_inis[i].c_str(), cliarg_str(types));
+      else
+        others.open(input_inis[i].c_str());
       set->append(others);
     }
     
