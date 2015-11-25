@@ -378,8 +378,8 @@ class Attributes {
     //other types
     Attribute *get(boost::filesystem::path name);
     
-    //FIXME links?!
-    /*Attribute *getMatch(const char *name)
+    //TODO will not work with soft links (but is also not required?)
+    Attribute *getMatch(const char *name)
     {    
       for(unsigned int i=0;i<attrs.size();i++)
         if (!fnmatch(attrs[i].name.c_str(), name, FNM_PATHNAME))
@@ -394,7 +394,7 @@ class Attributes {
     Attribute *getMatch(std::string name)
     {    
       return getMatch(name.c_str());
-    }*/
+    }
     //@}
     
     boost::filesystem::path resolve(boost::filesystem::path name);
