@@ -243,6 +243,7 @@ void Datastore::link(const Datastore *other, Dataset *dataset)
     
     h5_create_path_groups(dataset->f(), path(_link_path).parent_path().generic_string().c_str());
     H5Lcreate_external(_link_file.c_str(), _link_path.c_str(), dataset->f().getId(), _link_path.c_str(), H5P_DEFAULT, H5P_DEFAULT);
+    dataset->flush();
   }  
 }
 

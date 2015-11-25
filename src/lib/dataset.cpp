@@ -60,8 +60,6 @@ cv::Mat* Intrinsics::getUndistMap(double depth, int w, int h)
 void Dataset::datastores_append_group(Dataset *set, std::unordered_map<std::string,Datastore*> &stores, H5::Group &g, std::string basename, std::string group_path)
 {
   for(uint i=0;i<g.getNumObjs();i++) {
-    H5G_obj_t type = g.getObjTypeByIdx(i);
-    
     char g_name[1024];
     g.getObjnameByIdx(hsize_t(i), g_name, 1024);
     std::string name;
@@ -70,11 +68,15 @@ void Dataset::datastores_append_group(Dataset *set, std::unordered_map<std::stri
     else
       name = g_name;
     
-    if (type == H5G_GROUP) {
+    H5G_stat_t stat;
+    
+    g.getObjinfo(g_name, true, stat);
+
+    if (stat.type == H5G_GROUP) {
       H5::Group sub = g.openGroup(g_name);
       datastores_append_group(set, stores, sub, basename, name);
     }
-    else if (type == H5G_DATASET)
+    else if (stat.type == H5G_DATASET)
     {
       if (_stores.find(name) == _stores.end()) {
         Datastore *store = new Datastore();
@@ -85,9 +87,6 @@ void Dataset::datastores_append_group(Dataset *set, std::unordered_map<std::stri
         assert(store->valid());
         set->addStore(store);
       }
-    }
-    else if (type == H5G_LINK) {
-      printf("FIXME implement link handling for datastore!");
     }
   }
 }

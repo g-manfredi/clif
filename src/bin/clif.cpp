@@ -144,7 +144,7 @@ inline bool file_exists(const std::string& name)
 
 typedef unsigned int uint;
 
-bool link_output = false;
+bool link_output = true;
 
 int main(const int argc, const char *argv[])
 {
