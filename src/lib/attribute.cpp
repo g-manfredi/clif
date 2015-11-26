@@ -10,6 +10,7 @@
 #include "types.hpp"
 
 #include <opencv2/core/core.hpp>
+#include <stdexcept>
 
 namespace clif {
   
@@ -141,34 +142,36 @@ void Attributes::open(const char *inifile, cliini_args *types)
       cliini_arg *arg = cliargs_nth(attr_args, i);
   
       //FIXME check link/name clash!
-      std::string c_name = arg->opt->longflag;
-      std::replace(c_name.begin(), c_name.end(), '.', '/');
-      attrs[i].setName(c_name);
-      cpath name = c_name;
+      std::string name = arg->opt->longflag;
+      std::replace(name.begin(), name.end(), '.', '/');
+      attrs[i].setName(name);
+      
+      printf("found %s\n", name.c_str());
       
       //int dims = 1;
       int size = cliarg_sum(arg);
       
-      if (!name.filename().compare("source")) {
-        assert(arg->opt->type == CLIINI_STRING);
-        attrs[i].setLink(((char**)(arg->vals))[0]);
-      }
-      else 
-        switch (arg->opt->type) {
-          case CLIINI_ENUM:
-          case CLIINI_STRING:
-            assert(size == 1);
+      switch (arg->opt->type) {
+        case CLIINI_ENUM:
+        case CLIINI_STRING: {
+          assert(size == 1);
+          const char *str = ((char**)(arg->vals))[0];
+          printf("payload: %s\n", str);
+          if (strlen(str) < 3 || str[0] != '-' || str[1] != '>')
             attrs[i].set(((char**)(arg->vals))[0], strlen(((char**)(arg->vals))[0]) + 1);
-            break;
-          case CLIINI_INT:
-            attrs[i].set((int*)(arg->vals), size);
-            break;
-          case CLIINI_DOUBLE:
-            attrs[i].set((double*)(arg->vals), size);
-            break;
-          default:
-            abort();
+          else
+            attrs[i].setLink(((char**)(arg->vals))[0]+2);
+          break;
         }
+        case CLIINI_INT:
+          attrs[i].set((int*)(arg->vals), size);
+          break;
+        case CLIINI_DOUBLE:
+          attrs[i].set((double*)(arg->vals), size);
+          break;
+        default:
+          abort();
+      }
     }
   }
   
@@ -247,6 +250,58 @@ void Attributes::listSubGroups(std::string parent, std::vector<std::string> &mat
   
   for(auto it = match_map.begin(); it != match_map.end(); ++it )
     matches.push_back(it->first);
+}
+
+cpath Attributes::getSubGroup(cpath parent, cpath child)
+{
+  if (!child.empty())
+    return parent / child;
+  
+  std::vector<cpath> candidates;
+  Attribute *res = NULL;
+  float res_p;
+  
+  parent = resolve(parent);
+  
+  for(uint i=0;i<attrs.size();i++)
+    if (attrs[i].link().empty() && has_prefix(attrs[i].name, parent))
+      candidates.push_back(parent / *remove_prefix(attrs[i].name, parent).begin());
+
+  if (!candidates.size())
+    throw std::runtime_error("getSubGroup: not child found for: "+parent.generic_string());
+
+  //FIXME implement priorities!
+  for(auto c : candidates) {
+    printf("found: %s\n", c.c_str());
+    return c;
+  }
+}
+
+bool Attributes::deriveGroup(const cpath & in_parent, cpath in_child, const cpath & out_parent, cpath out_child, cpath &in_root, cpath &out_root)
+{
+  in_root = getSubGroup(in_parent, in_child);
+  if (in_child.empty())
+    in_child = in_root.filename();
+  if (out_child.empty())
+    out_child = in_child;
+  
+  out_root = out_parent / out_child;
+  
+  Attribute a(out_root / "source");
+  a.setLink(in_root);
+  
+  append(a);
+  
+  return true;
+}
+
+bool Attributes::groupExists(const cpath & path)
+{
+  for(uint i=0;i<attrs.size();i++)
+    if (has_prefix(attrs[i].name, path))
+      return true;
+    
+  return false;
 }
 
 Attribute Attributes::operator[](int pos)
@@ -490,13 +545,21 @@ void Attribute::write(H5::H5File f, const cpath & dataset_root)
   cpath fullpath = dataset_root / name;
   cpath grouppath = fullpath.parent_path();
   
+  printf("write %s\n", name.c_str());
+  
   if (_link.size())
   {
     if (!h5_obj_exists(f, grouppath))
       h5_create_path_groups(f, grouppath.c_str());
-    f.flush(H5F_SCOPE_LOCAL);
     
     H5::Group g = f.openGroup(grouppath.c_str());
+    
+    //if (h5_obj_exists(f, fullpath))
+      //g.unlink(name.filename().generic_string().c_str());
+    
+    printf("write link %s in %s ", name.filename().generic_string().c_str(), grouppath.c_str());
+    printf("to  %s\n", (dataset_root/_link).generic_string().c_str());
+    
     g.link(H5G_LINK_SOFT, (dataset_root/_link).generic_string().c_str(), name.filename().generic_string().c_str());
   }
   else if (_m.total() == 0) {

@@ -76,9 +76,7 @@ void Dataset::datastores_append_group(Dataset *set, std::unordered_map<std::stri
     {
       if (_stores.find(name.generic_string()) == _stores.end()) {
         Datastore *store = new Datastore();
-        if (!name.compare("calibration/images/data"))
-          store->open(set, name, "format");
-        else
+        if (name.compare("data"))
           store->open(set, name);
         assert(store->valid());
         set->addStore(store);
@@ -111,7 +109,7 @@ void Dataset::open(ClifFile &f, const cpath &name)
     return;
   }
   
-  Datastore::open(this, "data", "format");
+  Datastore::open(this, "data");
   addStore(this);
   
   H5::Group group = _file.f.openGroup(_path.c_str());
@@ -235,7 +233,7 @@ void Dataset::link(const Dataset *other)
       continue;
     }
     addStore(iter.first);
-    _stores[iter.first]->link(iter.second, this);
+    _stores[resolve(iter.first).generic_string()]->link(iter.second, this);
   }
 }
 
@@ -288,12 +286,12 @@ void Dataset::load_intrinsics(std::string intrset)
   intrinsics.load(this, boost::filesystem::path("calibration/intrinsics") / intrset);
 }
 
-Datastore *Dataset::getStore(const boost::filesystem::path &path)
+Datastore *Dataset::getStore(const boost::filesystem::path &path, bool create, int create_dims)
 {
   auto it_find = _stores.find(resolve(path).generic_string());
   
   if (it_find == _stores.end())
-    return NULL;
+    return addStore(path);
   else
     return it_find->second;
 }

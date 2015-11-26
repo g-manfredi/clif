@@ -15,7 +15,7 @@ typedef unsigned int uint;
 
 //FIXME wether dataset already exists and overwrite?
 //FIXME set remaining members!
-void Datastore::create(const cpath & path, Dataset *dataset, const cpath format_group)
+void Datastore::create(const cpath & path, Dataset *dataset)
 {
   assert(dataset);
   
@@ -24,10 +24,8 @@ void Datastore::create(const cpath & path, Dataset *dataset, const cpath format_
   _order = DataOrder(-1); 
     
   _data = H5::DataSet();
-  _path = path;
+  _path = dataset->resolve(path);
   _dataset = dataset;
-  
-  _format_group = format_group;
   
   _readonly = false;
   _memonly = false;
@@ -123,9 +121,9 @@ static cpath _cache_filename(Datastore *store, int idx, int flags, float scale)
                       toH5DataType(_type), space, prop);
 }*/
 
-void Datastore::create(const cpath & path, Dataset *dataset, cv::Mat &m, const cpath format_group)
+void Datastore::create(const cpath & path, Dataset *dataset, cv::Mat &m)
 {  
-  create(path, dataset, format_group);
+  create(path, dataset);
   
   _readonly = false;
   _memonly = true;
@@ -215,13 +213,11 @@ void Datastore::link(const Datastore *other, Dataset *dataset)
   _order = other->_order; 
     
   _data = other->_data;
-  _path = other->_path;
+  _path = dataset->resolve(other->_path);
   _dataset = dataset;
   
   _extent = other->_extent;
   _basesize = other->_basesize;
-  
-  _format_group = other->_format_group;
   
   //just copy opencv matrix - storage is shared (data must no be written from original owner afterwards!)
   if (other->_memonly) {
@@ -334,9 +330,11 @@ void Datastore::create_store()
 
 void Datastore::create_types(BaseType type)
 {
-  if (!_format_group.empty()) {
+  cpath format_group = _path.parent_path()/"format";
+  
+  if (_dataset->groupExists(format_group)) {
     int channels;
-    get_format_fields(_dataset, _format_group, _org, _order, channels);
+    get_format_fields(_dataset, format_group, _org, _order, channels);
     if (_extent.size() >= 3 && channels && _extent[2] && _extent[2] != channels) {
       printf("ERROR: channel count mismatch detected!\n");
       abort();
@@ -447,10 +445,10 @@ void Datastore::cache_set(const std::vector<int> idx, int flags, int extra_flags
   image_cache[key] = data;
 }
 
-void Datastore::open(Dataset *dataset, cpath path_, const cpath format_group)
+void Datastore::open(Dataset *dataset, cpath path_)
 {
   //only fills in internal data
-  create(path_, dataset, format_group);
+  create(path_, dataset);
       
   cpath dataset_path = dataset->path() / path_;
       
@@ -480,7 +478,10 @@ void Datastore::open(Dataset *dataset, cpath path_, const cpath format_group)
   }
 
   int channels;
-  if (!_format_group.empty()) {
+  
+  cpath format_group = _path.parent_path()/"format";
+  
+  if (_dataset->groupExists(format_group)) {
     get_format_fields(dataset, format_group, _org, _order, channels);
     if (_basesize.size() >= 2 && _basesize[2] && channels && channels != _basesize[2]) {
       printf("ERROR: channel count mismatch detected!\n");

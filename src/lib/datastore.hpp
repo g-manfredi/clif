@@ -17,18 +17,18 @@ public:
     friend class Dataset;
     
     //create new datastore
-    void create(const cpath & path, Dataset *dataset, const cpath format_group = cpath());
+    void create(const cpath & path, Dataset *dataset);
     
     //create new datastore with specified size and type
     //void create(std::string path, Dataset *dataset, BaseType type, int dims, int *size);
     //create from opencv matrix
-    void create(const cpath & path, Dataset *dataset, cv::Mat &m, const cpath format_group = cpath());
+    void create(const cpath & path, Dataset *dataset, cv::Mat &m);
     
     //create this datastore as a link to other in dataset - dataset is then readonly!
      void link(const Datastore *other, Dataset *dataset);
     
     //open existing datastore
-    void open(Dataset *dataset, cpath path, const cpath format_group = cpath());
+    void open(Dataset *dataset, cpath path);
     
     void writeRawImage(int idx, hsize_t w, hsize_t h, void *data);
     void appendRawImage(hsize_t w, hsize_t h, void *data);
@@ -121,8 +121,6 @@ private:
   clif::Mat _mat;
   
   Dataset& operator=(const Dataset& other) = delete;
-  
-  cpath _format_group;
   
   //size of img (w chanels, others 0)
   std::vector<int> _basesize;

@@ -67,7 +67,7 @@ class Dataset : public Attributes, public Datastore {
      */
     Datastore *createCalibStore();
     
-    Datastore *getStore(const boost::filesystem::path &path);
+    Datastore *getStore(const boost::filesystem::path &path, bool create = true, int create_dims = 4);
     Datastore *addStore(const boost::filesystem::path &path, int dims = 4);
     void addStore(Datastore *store);
     

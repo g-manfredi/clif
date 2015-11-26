@@ -477,6 +477,12 @@ class Attributes {
     void listSubGroups(const char *parent, std::vector<std::string> &matches) {listSubGroups(std::string(parent),matches); };
     //@}
     
+    cpath getSubGroup(cpath parent, cpath child);
+    //new group and link ->source to old group
+    bool deriveGroup(const cpath & in_parent, cpath in_child, const cpath & out_parent, cpath out_child, cpath &in_root, cpath &out_root);
+    bool groupExists(const cpath & path);
+
+    
     void reset();
     
   protected:

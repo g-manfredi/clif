@@ -2,6 +2,8 @@
 
 #include <boost/filesystem.hpp>
 
+#include "core.hpp"
+
 using namespace boost::filesystem;
 
 namespace clif {
@@ -71,6 +73,22 @@ boost::filesystem::path remove_prefix(boost::filesystem::path path, boost::files
   }
   
   return res;
+}
+
+bool has_prefix(cpath path, cpath prefix)
+{
+  auto it_path = path.begin();
+  auto it_prefix = prefix.begin();
+  
+  while (it_prefix != prefix.end() && *it_path == *it_prefix) {
+    ++it_path;
+    ++it_prefix;
+  }
+  
+  if (it_prefix == prefix.end())
+    return true;
+  
+  return false;
 }
 
 }
