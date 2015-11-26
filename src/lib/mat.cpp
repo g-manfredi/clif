@@ -241,7 +241,10 @@ public:
   {
     for(int i=0;i<m->total();i++) {
       v[i].len = m->operator()<std::vector<T>>(i).size();
-      v[i].p = &m->operator()<std::vector<T>>(i)[0];
+      if (v[i].len)
+        v[i].p = &m->operator()<std::vector<T>>(i)[0];
+      else
+        v[i].p = NULL;
     }
   }
 };
