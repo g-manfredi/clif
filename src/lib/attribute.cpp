@@ -237,7 +237,7 @@ void Attributes::listSubGroups(std::string parent, std::vector<std::string> &mat
   parent = appendToPath(parent, "*");
   
   for(uint i=0;i<attrs.size();i++) {
-    if (!fnmatch(parent.c_str(), attrs[i].name.c_str(), 0)) {
+    if (!fnmatch(parent.c_str(), attrs[i].name.generic_string().c_str(), 0)) {
       std::string name_str = attrs[i].name.generic_string();
       match = name_str.substr(parent.length()-1, name_str.length());
       match = get_first_part(match, '/');
@@ -369,7 +369,7 @@ void Attributes::open(H5::H5File &f, const cpath &path)
 {
   attrs.resize(0);
   
-  H5::Group group = f.openGroup(path.c_str());
+  H5::Group group = f.openGroup(path.generic_string().c_str());
   
   attributes_append_group(*this, group, path, path);
 }
@@ -550,7 +550,7 @@ void Attribute::write(H5::H5File f, const cpath & dataset_root)
     if (!h5_obj_exists(f, grouppath))
       h5_create_path_groups(f, grouppath.c_str());
     
-    H5::Group g = f.openGroup(grouppath.c_str());
+    H5::Group g = f.openGroup(grouppath.generic_string().c_str());
     
     if (h5_obj_exists(f, fullpath))
       g.unlink(name.filename().generic_string().c_str());
@@ -571,7 +571,7 @@ void Attribute::write(H5::H5File f, const cpath & dataset_root)
     if (!h5_obj_exists(f, grouppath))
       h5_create_path_groups(f, grouppath.c_str());
     
-    g = f.openGroup(grouppath.c_str());
+    g = f.openGroup(grouppath.generic_string().c_str());
     
     uint min, max;
     
@@ -581,10 +581,10 @@ void Attribute::write(H5::H5File f, const cpath & dataset_root)
       printf("WARNING: could not set dense storage on group, may not be able to write large attributes\n");
     
     //FIXME relative to what?
-    if (H5Aexists(g.getId(), name.filename().c_str()))
-      g.removeAttr(name.filename().c_str());
+    if (H5Aexists(g.getId(), name.filename().generic_string().c_str()))
+      g.removeAttr(name.filename().generic_string().c_str());
       
-    attr = g.createAttribute(name.filename().c_str(), toH5DataType(type), space);
+    attr = g.createAttribute(name.filename().generic_string().c_str(), toH5DataType(type), space);
         
     attr.write(toH5NativeDataType(type), data);
   }

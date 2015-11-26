@@ -108,7 +108,7 @@ void Dataset::open(ClifFile &f, const cpath &name)
     return;
   }
   
-  H5::Group group = _file.f.openGroup(_path.c_str());
+  H5::Group group = _file.f.openGroup(_path.generic_string().c_str());
   datastores_append_group(this, _stores, group, _path, std::string());
 }
 

@@ -380,7 +380,7 @@ class Attributes {
     Attribute *getMatch(const char *name)
     {    
       for(unsigned int i=0;i<attrs.size();i++)
-        if (!fnmatch(attrs[i].name.c_str(), name, FNM_PATHNAME))
+        if (!fnmatch(attrs[i].name.generic_string().c_str(), name, FNM_PATHNAME))
           return &attrs[i];
         
         return NULL;

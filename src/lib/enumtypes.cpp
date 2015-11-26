@@ -95,8 +95,8 @@ int baseType_size(BaseType t)
 H5::CompType _h5_cv_point2f_native_type()
 {
   H5::CompType t(sizeof(cv::Point2f));
-  t.insertMember("x", HOFFSET(cv::Point2f, x), H5::PredType::NATIVE_FLOAT);
-  t.insertMember("y", HOFFSET(cv::Point2f, y), H5::PredType::NATIVE_FLOAT);
+  H5Tinsert(t.getId(), "x", HOFFSET(cv::Point2f, x), H5T_NATIVE_FLOAT);
+  H5Tinsert(t.getId(), "y", HOFFSET(cv::Point2f, y), H5T_NATIVE_FLOAT);
 
   return t;
 }
@@ -104,8 +104,8 @@ H5::CompType _h5_cv_point2f_native_type()
 H5::CompType _h5_point2f_disk_type()
 {
   H5::CompType t(sizeof(cv::Point2f));
-  t.insertMember("x", HOFFSET(cv::Point2f, x), H5::PredType::IEEE_F32LE);
-  t.insertMember("y", HOFFSET(cv::Point2f, y), H5::PredType::IEEE_F32LE);
+  H5Tinsert(t.getId(), "x", HOFFSET(cv::Point2f, x), H5T_IEEE_F32LE);
+  H5Tinsert(t.getId(), "y", HOFFSET(cv::Point2f, y), H5T_IEEE_F32LE);
   t.pack();
 
   return t;

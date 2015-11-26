@@ -51,7 +51,8 @@ template<typename T> class creation_dispatcher {
 public:
   void operator()(void *ptr, off_t count)
   {
-    new(ptr) T[count]();
+    for (int i=0;i<count;i++)
+      new(((T*)ptr)+i) T;
   }
 };
 
@@ -250,8 +251,11 @@ public:
   void operator()(hvl_t *v, Mat *m)
   {
     for(int i=0;i<m->total();i++) {
-      m->operator()<std::vector<T>>(i).resize(v[i].len);
-      memcpy(&m->operator()<std::vector<T>>(i)[0], v[i].p, sizeof(T)*v[i].len);
+      std::vector<T> &vec = m->operator()<std::vector<T>>(i);
+      vec.resize(v[i].len);
+      //TODO will not work for actual class types!
+      if (v[i].len)
+        memcpy(&vec[0], v[i].p, sizeof(T)*v[i].len);
     }
   }
 };
