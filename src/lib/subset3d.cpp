@@ -10,11 +10,17 @@ using namespace std;
 using namespace clif;
 using namespace cv;
 
-void Subset3d::create(Dataset *data, std::string extr_group)
+Subset3d::Subset3d(Dataset *data, cpath extr_group)
+{
+  create(data, extr_group);
+}
+
+void Subset3d::create(Dataset *data, cpath extr_group)
 {
   _data = data;
   
   cpath root = _data->getSubGroup("calibration/extrinsics", extr_group);
+  _store = _data->getStore(root/"data");
   
   ExtrType type;
   
@@ -36,24 +42,6 @@ void Subset3d::create(Dataset *data, std::string extr_group)
   //TODO which intrinsic to select!
   _data->get(_data->getSubGroup("calibration/intrinsics")/"/projection", f, 2);
 }
-
-
-Subset3d::Subset3d(Dataset *data, std::string extr_group)
-{  
-  create(data, extr_group);
-}
-
-Subset3d::Subset3d(clif::Dataset *data, const int idx)
-{
-  std::vector<std::string> subs;
-  
-  data->listSubGroups("calibration/extrinsics", subs);
-  
-  assert((int)subs.size() >= idx);
-  
-  create(data, subs[idx]);
-}
-
 
 typedef Vec<ushort, 3> Vec3us;
 
@@ -208,7 +196,7 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
 {
   int w, h;
   double step;
-  std::vector<int> idx(_data->dims(), 0);
+  std::vector<int> idx(_store->dims(), 0);
   
   if (unit == Unit::PIXELS)
     step = disparity;
@@ -222,9 +210,9 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
   cv::Mat tmp;
   idx[3] = 0;
   //FIXME scale
-  _data->readImage(idx, &tmp, flags | UNDISTORT);
+  _store->readImage(idx, &tmp, flags | UNDISTORT);
   w = tmp.size[2];
-  h = _data->clif::Datastore::imgCount();
+  h = _store->clif::Datastore::imgCount();
   
   int epi_size[3];
   epi_size[2] = w;
@@ -244,12 +232,12 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
     cv::setNumThreads(0);
 #pragma omp parallel for schedule(dynamic)
   for(int i=0;i<h;i++) {
-    std::vector<int> idx_l(_data->dims(), 0);
+    std::vector<int> idx_l(_store->dims(), 0);
     cv::Mat img;
     idx_l[3] = i;
-    _data->readImage(idx_l, &img, flags | UNDISTORT);
+    _store->readImage(idx_l, &img, flags | UNDISTORT);
     
-    for(int c=0;c<_data->imgChannels();c++) {    
+    for(int c=0;c<_store->imgChannels();c++) {    
       cv::Mat channel = clifMat_channel(img, c);
       cv::Mat epi_ch = clifMat_channel(*epi, c);
 
@@ -281,19 +269,19 @@ int Subset3d::EPICount()
 {
   //FIXME use extrinsics group size! (for cross type...)  
   //FIXME depends on rotation!
-  return _data->extent()[1];
+  return _store->extent()[1];
 }
 
 int Subset3d::EPIWidth()
 {
   //FIXME depends on rotation!
-  return _data->extent()[0];
+  return _store->extent()[0];
 }
 
 int Subset3d::EPIHeight()
 {
   //FIXME use extrinsics group size! (for cross type...)  
-  return _data->clif::Datastore::imgCount();
+  return _store->clif::Datastore::imgCount();
 }
 
 }

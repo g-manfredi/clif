@@ -61,12 +61,6 @@ cliini_opt opts[] = {
     't'
   },
   {
-    "calib-images",
-    1, //argcount
-    CLIINI_ARGCOUNT_ANY, //argcount
-    CLIINI_STRING
-  },
-  {
     "store",
     2, //argcount
     CLIINI_ARGCOUNT_ANY, //argcount
@@ -355,8 +349,8 @@ int main(const int argc, const char *argv[])
     //set->writeAttributes();
     
     //set dims for 3d LG (imgs are 3d themselves...)
-    if (!set->dims())
-      set->setDims(4);
+    
+    Datastore *store = set->getStore("data");
     
     for(uint i=0;i<input_imgs.size();i++) {
       printf("store idx %d: %s\n", i, input_imgs[i].c_str());
@@ -364,20 +358,7 @@ int main(const int argc, const char *argv[])
       assert(img.size().width && img.size().height);
       if (img.channels() == 3)
         cvtColor(img, img, COLOR_BGR2RGB);
-      set->appendImage(&img);
-    }
-    
-     if (input_calib_imgs.size()) {
-      Datastore *calib_store = set->createCalibStore();
-      calib_store->setDims(4);
-      
-      for(uint i=0;i<input_calib_imgs.size();i++) {
-        printf("store calib img %d: %s\n", i, input_calib_imgs[i].c_str());
-        cv::Mat img = imread(input_calib_imgs[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
-        if (img.channels() == 3)
-          cvtColor(img, img, COLOR_BGR2RGB);
-        calib_store->appendImage(&img);
-      }
+      store->appendImage(&img);
     }
     
     if (cliargs_get(args, "detect-patterns")) {
@@ -420,17 +401,17 @@ int main(const int argc, const char *argv[])
       if (f_in.datasetCount() != 1)
         errorexit("FIXME: at the moment only files with a single dataset are supported by this program.");
       
-      //FIXME implement dataset handling for datasets without datastore!
       Dataset *in_set = f_in.openDataset(0);
+      Datastore *in_imgs = in_set->getStore("data");
         
       char buf[4096];
-      for(int c=0;c<in_set->imgCount();c++) {
+      for(int c=0;c<in_imgs->imgCount();c++) {
         cv::Mat img;
         sprintf(buf, clif_extract_images[i].c_str(), c);
         printf("store idx %d: %s\n", c, buf);
-        std::vector<int> idx(in_set->dims(), 0);
+        std::vector<int> idx(in_imgs->dims(), 0);
         idx[3] = c;
-        in_set->readImage(idx, &img);
+        in_imgs->readImage(idx, &img);
         clifMat2cv(&img, &img);
         imwrite(buf, img);
       }

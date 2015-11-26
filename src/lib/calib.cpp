@@ -334,34 +334,28 @@ bool opencv_calibrate(Dataset *set, int flags, cpath map, cpath calib)
   return true;
 }
   
-  
-  bool ucalib_calibrate(Dataset *set, std::string imgset, std::string calibset)
+  //FIXME repair!
+  bool ucalib_calibrate(Dataset *set, cpath proxy, cpath calib)
 #ifdef CLIF_WITH_UCALIB
   {
+    cpath proxy_root, calib_root;
+    if (!set->deriveGroup("calibration/mapping", proxy, "calibration/intrinsics", calib, proxy_root, calib_root))
+      abort();
+    
+    int im_size[2];
+      
+    vector<vector<Point2f>> ipoints;
+    vector<vector<Point3f>> wpoints;
+    
+    set->get(proxy_root/"img_size", im_size, 2);
+    
     Cam_Config cam_config = { 0.0065, 12.0, 300.0, -1, -1 };
     Calib_Config conf = { true, 190, 420 };
-    Size im_size = imgSize(set);
-    
-    if (!im_size.width)
-      im_size = imgSize(set->getCalibStore());
 
-    cam_config.w = set->getCalibStore()->extent()[0];
-    cam_config.h = set->getCalibStore()->extent()[1];
-    
-    if (!im_size.width)
-      im_size = imgSize(set->getCalibStore());
-
-    if (!imgset.size()) {
-      vector<string> imgsets;
-      set->listSubGroups("calibration/images/sets", imgsets);
-      assert(imgsets.size());
-      imgset = imgsets[0];
-    }
-    
-    if (!calibset.size())
-      calibset = imgset;
+    cam_config.w = im_size[0];
+    cam_config.h = im_size[1];
       
-    Datastore *proxy_store = set->getStore(cpath("calibration/images/sets") / calibset / "proxy");
+    Datastore *proxy_store = set->getStore(proxy_root/"proxy");
     
     Point2i proxy_size(proxy_store->extent()[0],proxy_store->extent()[1]);
     
@@ -396,86 +390,77 @@ bool opencv_calibrate(Dataset *set, int flags, cpath map, cpath calib)
   }
 #endif
   
-  bool generate_proxy_loess(Dataset *set, int proxy_w, int proxy_h , std::string imgset, std::string calibset)
+bool generate_proxy_loess(Dataset *set, int proxy_w, int proxy_h , cpath map, cpath proxy)
 #ifdef CLIF_WITH_UCALIB
-  {
-    Cam_Config cam_config = { 0.0065, 12.0, 300.0, -1, -1 };
-    Calib_Config conf = { true, 190, 420 };
-    Size im_size = imgSize(set);
+{
+  cpath map_root, proxy_root;
+  if (!set->deriveGroup("calibration/mapping", map, "calibration/proxy", proxy, map_root, proxy_root))
+    abort();
+  
+  cv::Mat cam;
+  vector<double> dist;
+  vector<cv::Mat> rvecs;
+  vector<cv::Mat> tvecs;
+  int im_size[2];
+  
+  Mat_<std::vector<Point2f>> wpoints_m;
+  Mat_<std::vector<Point2f>> ipoints_m;
+  
+  vector<vector<Point2f>> ipoints;
+  vector<vector<Point3f>> wpoints;
+  
+  Attribute *w_a = set->get(map_root/"world_points");
+  Attribute *i_a = set->get(map_root/"img_points");
+  set->get(map_root/"img_size", im_size, 2);
+  
+  //FIXME error handling
+  if (!w_a || !i_a)
+    abort();
+  
+  w_a->get(wpoints_m);
+  i_a->get(ipoints_m);
+  
+  Cam_Config cam_config = { 0.0065, 12.0, 300.0, im_size[0], im_size[1] };
+  Calib_Config conf = { true, 190, 420 };
+  
+  for(int i=0;i<wpoints_m[1];i++) {      
+    if (!wpoints_m(0, i).size())
+      continue;
     
-    if (!im_size.width)
-      im_size = imgSize(set->getCalibStore());
-
-    cam_config.w = set->getCalibStore()->extent()[0];
-    cam_config.h = set->getCalibStore()->extent()[1];
     
-    if (!im_size.width)
-      im_size = imgSize(set->getCalibStore());
-    
-    Mat_<std::vector<Point2f>> wpoints_m;
-    Mat_<std::vector<Point2f>> ipoints_m;
-      
-    vector<vector<Point2f>> ipoints;
-    vector<vector<Point3f>> wpoints;
-    
-    if (!imgset.size()) {
-      vector<string> imgsets;
-      set->listSubGroups("calibration/images/sets", imgsets);
-      assert(imgsets.size());
-      imgset = imgsets[0];
+    ipoints.push_back(ipoints_m(0, i));
+    wpoints.push_back(std::vector<Point3f>(wpoints_m(0, i).size()));
+    for(int j=0;j<wpoints_m(0, i).size();j++) {
+      wpoints.back()[j] = Point3f(wpoints_m(0, i)[j].x,wpoints_m(0, i)[j].y,0);
     }
-    
-    if (!calibset.size())
-      calibset = imgset;
-      
-    Attribute *w_a = set->get(cpath("calibration/images/sets") / imgset / "world_points");
-    Attribute *i_a = set->get(cpath("calibration/images/sets") / imgset / "img_points");
-    
-    //FIXME error handling
-    if (!w_a || !i_a)
-      abort();
-    
-    w_a->get(wpoints_m);
-    i_a->get(ipoints_m);
-        
-    for(int i=0;i<wpoints_m[1];i++) {      
-      if (!wpoints_m(0, i).size())
-        continue;
-      
-      
-      ipoints.push_back(ipoints_m(0, i));
-      wpoints.push_back(std::vector<Point3f>(wpoints_m(0, i).size()));
-      for(int j=0;j<wpoints_m(0, i).size();j++) {
-        wpoints.back()[j] = Point3f(wpoints_m(0, i)[j].x,wpoints_m(0, i)[j].y,0);
+  }
+  
+  Point2i proxy_size(proxy_w,proxy_h);
+  
+  DistCorrLines dist_lines = DistCorrLines(0, 0, 0, cam_config.w, cam_config.h, 100.0, cam_config, conf, proxy_size);
+  dist_lines.add(ipoints, wpoints, 20.0);
+  dist_lines.proxy_backwards_poly_generate();
+  
+  cv::Mat proxy_img;
+  proxy_img.create(Size(proxy_size.x, proxy_size.y), CV_32FC2);
+  Datastore *proxy_store = set->addStore(proxy_root/"proxy");
+  proxy_store->setDims(4);
+  
+  for(int img_n=0;img_n<ipoints.size();img_n++) {
+    for(int j=0;j<proxy_size.y;j++)
+      for(int i=0;i<proxy_size.x;i++) {
+        proxy_img.at<Point2f>(j,i) = dist_lines.proxy_backwards[img_n][j*proxy_size.x+i];
       }
-    }
-    
-    Point2i proxy_size(proxy_w,proxy_h);
-    
-    DistCorrLines dist_lines = DistCorrLines(0, 0, 0, cam_config.w, cam_config.h, 100.0, cam_config, conf, proxy_size);
-    dist_lines.add(ipoints, wpoints, 20.0);
-    dist_lines.proxy_backwards_poly_generate();
-    
-    cv::Mat proxy_img;
-    proxy_img.create(Size(proxy_size.x, proxy_size.y), CV_32FC2);
-    Datastore *proxy_store = set->addStore(cpath("calibration/images/sets") / calibset / "proxy");
-    proxy_store->setDims(4);
-    
-    for(int img_n=0;img_n<ipoints.size();img_n++) {
-      for(int j=0;j<proxy_size.y;j++)
-        for(int i=0;i<proxy_size.x;i++) {
-          proxy_img.at<Point2f>(j,i) = dist_lines.proxy_backwards[img_n][j*proxy_size.x+i];
-        }
       proxy_store->appendImage(&proxy_img);
-    }
-    
-    return true;
   }
+  
+  return true;
+}
 #else
-  {
-    //FIXME report error
-    return false;
-  }
+{
+  //FIXME report error
+  return false;
+}
 #endif
 
 }

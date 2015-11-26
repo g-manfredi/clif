@@ -30,7 +30,7 @@ class Intrinsics {
  * The class mostly wraps functionality from the inherited classes, while higher level light field handling like EPI generation is available in the respective library bindings (TODO ref and document opencv/vigra interfaces)
  * Not that functions taking a path (either as std::string or boost::filesystem::path) all reference the path relative to the dataset root. An attribute adressed as \a /blub/someattribute is actually stored under \a /clif/datasetname/blub/someattribute.
  */
-class Dataset : public Attributes, public Datastore {
+class Dataset : public Attributes {
   public:
     Dataset() {};
     ~Dataset();
@@ -51,7 +51,7 @@ class Dataset : public Attributes, public Datastore {
     void memory_link(const Dataset *other);
     
     /** Create or open (if existing) the dataset \a name in file \a f_ */
-    void create(ClifFile &file, const boost::filesystem::path &name);
+    void create(ClifFile &file, cpath name = cpath());
       
     //writes only Attributes! FIXME hide Attributes::Write
     //TODO automatically call this on file close (destructor)
@@ -59,13 +59,6 @@ class Dataset : public Attributes, public Datastore {
      */
     void writeAttributes() { Attributes::write(f(), _path); }
     void flush();
-    
-    /** Get the calibration Datastore - use methods of Datastore to access calibration images 
-     */
-    Datastore *getCalibStore();
-    /** Create new or open (if existing) calibration Datastore 
-     */
-    Datastore *createCalibStore();
     
     Datastore *getStore(const boost::filesystem::path &path, bool create = true, int create_dims = 4);
     Datastore *addStore(const boost::filesystem::path &path, int dims = 4);

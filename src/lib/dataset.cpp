@@ -76,8 +76,7 @@ void Dataset::datastores_append_group(Dataset *set, std::unordered_map<std::stri
     {
       if (_stores.find(name.generic_string()) == _stores.end()) {
         Datastore *store = new Datastore();
-        if (name.compare("data"))
-          store->open(set, name);
+        store->open(set, name);
         assert(store->valid());
         set->addStore(store);
       }
@@ -109,57 +108,17 @@ void Dataset::open(ClifFile &f, const cpath &name)
     return;
   }
   
-  Datastore::open(this, "data");
-  addStore(this);
-  
   H5::Group group = _file.f.openGroup(_path.c_str());
   datastores_append_group(this, _stores, group, _path, std::string());
 }
 
-Datastore *Dataset::createCalibStore()
+void Dataset::create(ClifFile &f, cpath name)
 {
-  if (calib_images)
-    return calib_images;
+  if (name.empty())
+    name = "default";
   
-  getCalibStore();
-  
-  if (calib_images)
-    return calib_images;
-    
-  calib_images = new clif::Datastore();
-  calib_images->create("calibration/images/data", this);
-  return calib_images;
-}
-
-//return pointer to the calib image datastore - may be manipulated
-Datastore *Dataset::getCalibStore()
-{
-  /*boost::filesystem::path dataset_path;
-  dataset_path = path() / "calibration/images/data";
-  
-  std::cout << dataset_path << clif::h5_obj_exists(f(), dataset_path) << calib_images << std::endl;
-  
-  if (!calib_images && clif::h5_obj_exists(f(), dataset_path)) {
-    calib_images = new clif::Datastore();
-    calib_images->open(this, "calibration/images/data");
-  }*/
-  
-  if (!_stores.count("calibration/images/data"))
-    return NULL;
-  
-  return _stores["calibration/images/data"];
-
-  return calib_images;
-}
-
-void Dataset::create(ClifFile &f, const cpath &name)
-{
   _path = "/clif" / name;
   _file = f;
-  
-  //TODO check if already exists and fail if it does?
-  
-  Datastore::create("data", this);
 }
 
 H5::H5File& Dataset::f()
@@ -178,13 +137,10 @@ void Dataset::flush()
 }
 
 Dataset::~Dataset()
-{
-  Datastore::flush();
-  
+{  
   //delete stores
   for (auto& it: _stores)
-    if (it.second != this)
-      delete it.second;
+    delete it.second;
   
   uint intent;
   if (!_file.valid())
@@ -210,14 +166,8 @@ void Dataset::link(const Dataset *other)
   intrinsics = other->intrinsics;
   calib_images = NULL;
   
-  Datastore::link(other, this);
-  addStore(this);
-  
   //iterate stores...
   for(auto iter : other->_stores) {
-    if (iter.second == other) {
-      continue;
-    }
     addStore(iter.first);
     _stores[resolve(iter.first).generic_string()]->link(iter.second, this);
   }
@@ -272,7 +222,7 @@ Datastore *Dataset::getStore(const boost::filesystem::path &path, bool create, i
   auto it_find = _stores.find(resolve(path).generic_string());
   
   if (it_find == _stores.end())
-    return addStore(path);
+    return addStore(path, create_dims);
   else
     return it_find->second;
 }
