@@ -148,6 +148,7 @@ bool link_output = true;
 
 int main(const int argc, const char *argv[])
 {
+  bool inplace = false;
   cliini_args *args = cliini_parsopts(argc, argv, &group);
 
   cliini_arg *input = cliargs_get(args, "input");
@@ -202,6 +203,9 @@ int main(const int argc, const char *argv[])
     output_clif = false;
   }
   
+  if (output_clif && input_clifs.size() && !clif_append[0].compare(input_clifs[0]))
+    inplace = true;
+  
   if (!output_clif && stores)
     errorexit("can only add datastores to clif output!");
   
@@ -238,6 +242,7 @@ int main(const int argc, const char *argv[])
     //if (!set->file().valid())
       //abort();
     
+    if (!inplace)
     for(uint i=0;i<input_clifs.size();i++) {
       ClifFile f_in(input_clifs[i], H5F_ACC_RDONLY);
       
@@ -380,7 +385,6 @@ int main(const int argc, const char *argv[])
       //set->writeAttributes();
     }
     if (cliargs_get(args, "gen-proxy-loess")) {
-      printf("loess?\n");
       generate_proxy_loess(set, 33, 25);
       //set->writeAttributes();
     }

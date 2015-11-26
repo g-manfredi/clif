@@ -166,8 +166,8 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
           
           char buf[128];
           
-          sprintf(buf, "orig_img%03d.tif", j);
-          imwrite(buf, bayer);
+          //sprintf(buf, "orig_img%03d.tif", j);
+          //imwrite(buf, bayer);
           
           for(int c=0;c<3;c++) {
             if (debug_store)
@@ -179,8 +179,8 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
             
             printf("found %6lu corners for channel %d (img %d/%d)\n", corners.size(), c, j, imgs->imgCount());
             
-            sprintf(buf, "debug_img%03d_ch%d.tif", j, c);
-            imwrite(buf, *debug_img_ptr);
+            //sprintf(buf, "debug_img%03d_ch%d.tif", j, c);
+            //imwrite(buf, *debug_img_ptr);
             
             std::vector<Point2f> ipoints_v(corners.size());
             std::vector<Point2f> wpoints_v(corners.size());
@@ -225,9 +225,9 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
           
           printf("found %6lu corners for channel %d (img %d/%d)\n", corners.size(), c, j, imgs->imgCount());
           
-          char buf[128];
-          sprintf(buf, "debug_img%03d_ch%d.tif", j, c);
-          imwrite(buf, *debug_img_ptr);
+          //char buf[128];
+          //sprintf(buf, "debug_img%03d_ch%d.tif", j, c);
+          //imwrite(buf, *debug_img_ptr);
           
           std::vector<Point2f> ipoints_v(corners.size());
           std::vector<Point2f> wpoints_v(corners.size());
@@ -256,9 +256,9 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
         debug_store->appendImage(&debug_img);
         s->flush();
         
-        char buf[128];
-        sprintf(buf, "col_fit_img%03d.tif", j);
-        imwrite(buf, debug_img);
+        //char buf[128];
+        //sprintf(buf, "col_fit_img%03d.tif", j);
+        //imwrite(buf, debug_img);
       }
     }
   }
@@ -268,6 +268,10 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
   
   s->setAttribute(map_root / "img_points", ipoints_m);
   s->setAttribute(map_root / "world_points", wpoints_m);
+  
+  std::vector<int> imgsize = { imgSize(imgs).width, imgSize(imgs).height };
+  
+  s->setAttribute(map_root / "img_size", imgsize);
   
   return false;
 }
@@ -282,8 +286,7 @@ bool opencv_calibrate(Dataset *set, int flags, cpath map, cpath calib)
   vector<double> dist;
   vector<cv::Mat> rvecs;
   vector<cv::Mat> tvecs;
-  
-  cv::Size im_size = imgSize(set->getStore(map_root/"source/data"));
+  int im_size[2];
   
   Mat_<std::vector<Point2f>> wpoints_m;
   Mat_<std::vector<Point2f>> ipoints_m;
@@ -291,8 +294,9 @@ bool opencv_calibrate(Dataset *set, int flags, cpath map, cpath calib)
   vector<vector<Point2f>> ipoints;
   vector<vector<Point3f>> wpoints;
   
-  Attribute *w_a = set->get(map_root / "world_points");
-  Attribute *i_a = set->get(map_root / "img_points");
+  Attribute *w_a = set->get(map_root/"world_points");
+  Attribute *i_a = set->get(map_root/"img_points");
+  set->get(map_root/"img_size", im_size, 2);
   
   //FIXME error handling
   if (!w_a || !i_a)
@@ -311,7 +315,7 @@ bool opencv_calibrate(Dataset *set, int flags, cpath map, cpath calib)
       wpoints.back()[j] = Point3f(wpoints_m(0, i)[j].x,wpoints_m(0, i)[j].y,0);
   }
   
-  double rms = calibrateCamera(wpoints, ipoints, im_size, cam, dist, rvecs, tvecs, flags);
+  double rms = calibrateCamera(wpoints, ipoints, cv::Size(im_size[0],im_size[1]), cam, dist, rvecs, tvecs, flags);
   
   
   printf("opencv calibration rms %f\n", rms);
@@ -371,7 +375,6 @@ bool opencv_calibrate(Dataset *set, int flags, cpath map, cpath calib)
     for(int img_n=0;img_n<proxy_store->imgCount();img_n++) {
       pos[3] = img_n;
       proxy_store->readImage(pos, &proxy_img);
-      printf("%dx%dx%d\n", proxy_img.size[0], proxy_img.size[1], proxy_img.size[2]);
       
       dist_lines.proxy_backwards[img_n].resize(proxy_size.y*proxy_size.x);
       for(int j=0;j<proxy_size.y;j++)
@@ -435,9 +438,7 @@ bool opencv_calibrate(Dataset *set, int flags, cpath map, cpath calib)
     w_a->get(wpoints_m);
     i_a->get(ipoints_m);
         
-    for(int i=0;i<wpoints_m[1];i++) {
-      printf("push %d points\n", ipoints_m(0,i).size());
-      
+    for(int i=0;i<wpoints_m[1];i++) {      
       if (!wpoints_m(0, i).size())
         continue;
       
@@ -461,7 +462,6 @@ bool opencv_calibrate(Dataset *set, int flags, cpath map, cpath calib)
     proxy_store->setDims(4);
     
     for(int img_n=0;img_n<ipoints.size();img_n++) {
-      printf("%fx%f\n", dist_lines.proxy_backwards[img_n][0].x, dist_lines.proxy_backwards[img_n][0].y);
       for(int j=0;j<proxy_size.y;j++)
         for(int i=0;i<proxy_size.x;i++) {
           proxy_img.at<Point2f>(j,i) = dist_lines.proxy_backwards[img_n][j*proxy_size.x+i];

@@ -340,8 +340,12 @@ void Datastore::create_types(BaseType type)
       abort();
     }
     if (type > BaseType::INVALID && type != _type) {
-      printf("ERROR: supplied type differs from specification in format group!\n");
-      abort();
+      if (_type <= BaseType::INVALID)
+        _type = type;
+      else {
+        printf("ERROR: supplied type differs from specification in format group!\n");
+        abort();
+      }
     }
   }
   else {

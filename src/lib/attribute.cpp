@@ -145,9 +145,7 @@ void Attributes::open(const char *inifile, cliini_args *types)
       std::string name = arg->opt->longflag;
       std::replace(name.begin(), name.end(), '.', '/');
       attrs[i].setName(name);
-      
-      printf("found %s\n", name.c_str());
-      
+            
       //int dims = 1;
       int size = cliarg_sum(arg);
       
@@ -156,7 +154,6 @@ void Attributes::open(const char *inifile, cliini_args *types)
         case CLIINI_STRING: {
           assert(size == 1);
           const char *str = ((char**)(arg->vals))[0];
-          printf("payload: %s\n", str);
           if (strlen(str) < 3 || str[0] != '-' || str[1] != '>')
             attrs[i].set(((char**)(arg->vals))[0], strlen(((char**)(arg->vals))[0]) + 1);
           else
@@ -375,9 +372,6 @@ void Attributes::open(H5::H5File &f, const cpath &path)
   H5::Group group = f.openGroup(path.c_str());
   
   attributes_append_group(*this, group, path, path);
-  
-  for(int i=0;i<attrs.size();i++)
-    std::cout << attrs[i].name << std::endl;
 }
 
 void Attributes::append(Attribute attr)
@@ -507,6 +501,12 @@ std::string Attribute::toString()
   if (type == BaseType::STRING) {
     return std::string((char*)data);
   }
+  else if (!_link.empty()) {
+    return std::string("->")  + _link;
+  }
+  else if (_m.total()) {
+    return "FIXME: print N-D attr\n";
+  }
   else {
     std::ostringstream stream;
     if (size[0] == 1) {
@@ -544,9 +544,7 @@ void Attribute::write(H5::H5File f, const cpath & dataset_root)
   //FIXME we should have a path?
   cpath fullpath = dataset_root / name;
   cpath grouppath = fullpath.parent_path();
-  
-  printf("write %s\n", name.c_str());
-  
+    
   if (_link.size())
   {
     if (!h5_obj_exists(f, grouppath))
@@ -554,11 +552,8 @@ void Attribute::write(H5::H5File f, const cpath & dataset_root)
     
     H5::Group g = f.openGroup(grouppath.c_str());
     
-    //if (h5_obj_exists(f, fullpath))
-      //g.unlink(name.filename().generic_string().c_str());
-    
-    printf("write link %s in %s ", name.filename().generic_string().c_str(), grouppath.c_str());
-    printf("to  %s\n", (dataset_root/_link).generic_string().c_str());
+    if (h5_obj_exists(f, fullpath))
+      g.unlink(name.filename().generic_string().c_str());
     
     g.link(H5G_LINK_SOFT, (dataset_root/_link).generic_string().c_str(), name.filename().generic_string().c_str());
   }
