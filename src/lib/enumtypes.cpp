@@ -5,6 +5,7 @@
 namespace clif {
 
 static BaseType BaseTypeAtomicMask = BaseType(int(BaseType::VECTOR)-1);
+BaseType BaseTypeMaxAtomicType = BaseType::STRING;
 
 static std::type_index BaseTypeSimpleTypes[] = {
   std::type_index(typeid(InvalidBaseType)),

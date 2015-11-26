@@ -39,7 +39,7 @@ class Dataset : public Attributes, public Datastore {
     //Dataset(H5::H5File &f_, std::string path);
     
     /** Open the dataset \a name from file \a f_ */
-    void open(ClifFile &f, std::string name);
+    void open(ClifFile &f, const cpath &name);
     
     //link other into this file, attributes are copied, "main" datastore is linked read-only
     //TODO link other existing datastores!
@@ -51,7 +51,7 @@ class Dataset : public Attributes, public Datastore {
     void memory_link(const Dataset *other);
     
     /** Create or open (if existing) the dataset \a name in file \a f_ */
-    void create(ClifFile &file, std::string name);
+    void create(ClifFile &file, const boost::filesystem::path &name);
       
     //writes only Attributes! FIXME hide Attributes::Write
     //TODO automatically call this on file close (destructor)
@@ -67,12 +67,7 @@ class Dataset : public Attributes, public Datastore {
      */
     Datastore *createCalibStore();
     
-    Datastore *getStore(const std::string &path);
-    Datastore *getStore(const char *path);
     Datastore *getStore(const boost::filesystem::path &path);
-    
-    Datastore *addStore(const std::string &path, int dims = 4);
-    Datastore *addStore(const char *path, int dims = 4);
     Datastore *addStore(const boost::filesystem::path &path, int dims = 4);
     void addStore(Datastore *store);
     
@@ -93,6 +88,7 @@ class Dataset : public Attributes, public Datastore {
     /** Create path from \a parent path and \a child name.
      * the default empty string for \a child will create a path to the first child found under parent
      */
+    //FIXME priority, resolve, etc..
     boost::filesystem::path subGroupPath(boost::filesystem::path parent, std::string child = std::string());
     
     /** return the actual full path of the dataset root in the HDF5 file
@@ -110,7 +106,7 @@ private:
      */
     ClifFile _file;
     Datastore *calib_images = NULL;
-    std::string _path;
+    cpath _path;
     
     //hide copy assignment operator
     Dataset& operator=(const Dataset& other) = delete;
@@ -119,7 +115,7 @@ private:
     std::unordered_map<std::string,Datastore*> _stores;
     bool _memory_file = false;
     
-    void datastores_append_group(Dataset *set, std::unordered_map<std::string,Datastore*> &stores, H5::Group &g, std::string basename, std::string group_path);
+    void datastores_append_group(Dataset *set, std::unordered_map<std::string,Datastore*> &stores, H5::Group &g, cpath basename, cpath group_path);
 };
   
 }

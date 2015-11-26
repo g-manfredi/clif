@@ -14,7 +14,7 @@ void Subset3d::create(Dataset *data, std::string extr_group)
 {
   _data = data;
   
-  path root = _data->subGroupPath("calibration/extrinsics", extr_group);
+  cpath root = _data->subGroupPath("calibration/extrinsics", extr_group);
   
   ExtrType type;
   

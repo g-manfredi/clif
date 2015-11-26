@@ -83,14 +83,12 @@ namespace {
 
 class Attribute {  
   public:
-    template<typename T> void set(std::string name_, int dims_, T *size_, BaseType type_, void *data_);
+    template<typename T> void set(cpath name_, int dims_, T *size_, BaseType type_, void *data_);
     
     void setName(boost::filesystem::path name_) { name = name_.generic_string(); };
     
     Attribute() {};
-    Attribute(std::string name_)  { name = name_; };
-    Attribute(const char *name_)  { name = std::string(name_); };
-    Attribute(boost::filesystem::path name_)  { name = name_.generic_string(); };
+    Attribute(const cpath &name_)  { name = name_; };
     
     const char *getStr()
     {
@@ -309,14 +307,14 @@ class Attribute {
         ((char*)data)[i] = val[i];
     };
 
-    void write(H5::H5File f, std::string dataset_name);
+    void write(H5::H5File f, const cpath & dataset_root);
     std::string toString();
     
     friend std::ostream& operator<<(std::ostream& out, const Attribute& a);
 
     int total();
     
-    std::string name;
+    cpath name;
     BaseType type = BaseType::INVALID;
   private:
     
@@ -365,7 +363,7 @@ class Attributes {
      * @param f hdf5 file handler
      * @param path the dataset root path (e.g. "/clif/datasetname")
      */
-    void open(H5::H5File &f, std::string &path);
+    void open(H5::H5File &f, const cpath &path);
     
     /** get single attribute by name or index, not normally used directly \anchor getattribute_group
      * @name Read Attributes
@@ -452,7 +450,7 @@ class Attributes {
     void append(Attribute *attr);
     void append(Attributes attrs);
     void append(Attributes *attrs);
-    void addLink(path name, path to);
+    void addLink(cpath name, cpath to);
     //@}
     
     /** get number of attributes
@@ -465,7 +463,7 @@ class Attributes {
     /** write all attributes under \b path into file \b f.
      * [TODO](@ref #todo_attr_write) see Dataset::writeAttributes for a more convenient method.
      */
-    void write(H5::H5File f, std::string &path);
+    void write(H5::H5File f, const cpath & path);
     
     /** generate a StringTree of the stored Attributes
      */
@@ -490,12 +488,12 @@ inline StringTree<Attribute*> Attributes::getTree()
   StringTree<Attribute*> tree;
   
   for (unsigned int i = 0; i<attrs.size(); i++)
-    tree.add(attrs[i].name, &attrs[i], '/');
+    tree.add(attrs[i].name.generic_string(), &attrs[i], '/');
   
   return tree;
 }
 
-template<typename T> void Attribute::set(std::string name_, int dims_, T *size_, BaseType type_, void *data_)
+template<typename T> void Attribute::set(cpath name_, int dims_, T *size_, BaseType type_, void *data_)
 {
   name = name_;
   type = type_;

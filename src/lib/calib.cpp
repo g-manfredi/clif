@@ -30,7 +30,7 @@ typedef unsigned int uint;
 
   bool pattern_detect(Dataset *s, int imgset, bool write_debug_imgs)
   {
-    path calib_path("calibration/images/sets");
+    cpath calib_path("calibration/images/sets");
     CalibPattern pattern;
     
     vector<string> imgsets;
@@ -40,7 +40,7 @@ typedef unsigned int uint;
     for(uint i=0;i<imgsets.size();i++) {
       Datastore *debug_store = NULL;
       //int pointcount = 0;
-      path cur_path = calib_path / imgsets[i];
+      cpath cur_path = calib_path / imgsets[i];
       s->getEnum(cur_path / "type", pattern);
       
       if (write_debug_imgs && pattern == CalibPattern::HDMARKER) {
@@ -325,8 +325,8 @@ typedef unsigned int uint;
     if (!calibset.size())
       calibset = imgset;
       
-    Attribute *w_a = set->get(path("calibration/images/sets") / imgset / "world_points");
-    Attribute *i_a = set->get(path("calibration/images/sets") / imgset / "img_points");
+    Attribute *w_a = set->get(cpath("calibration/images/sets") / imgset / "world_points");
+    Attribute *i_a = set->get(cpath("calibration/images/sets") / imgset / "img_points");
     
     //FIXME error handling
     if (!w_a || !i_a)
@@ -356,7 +356,7 @@ typedef unsigned int uint;
     double c[2] = { cam.at<double>(0,2), cam.at<double>(1,2) };
     
     //FIXME todo delete previous group!
-    path calib_path;
+    cpath calib_path;
     calib_path /= "calibration/intrinsics";
     calib_path /= calibset;
     set->setAttribute(calib_path / "type", "CV8");
@@ -394,7 +394,7 @@ typedef unsigned int uint;
     if (!calibset.size())
       calibset = imgset;
       
-    Datastore *proxy_store = set->getStore(path("calibration/images/sets") / calibset / "proxy");
+    Datastore *proxy_store = set->getStore(cpath("calibration/images/sets") / calibset / "proxy");
     
     Point2i proxy_size(proxy_store->extent()[0],proxy_store->extent()[1]);
     
@@ -462,8 +462,8 @@ typedef unsigned int uint;
     if (!calibset.size())
       calibset = imgset;
       
-    Attribute *w_a = set->get(path("calibration/images/sets") / imgset / "world_points");
-    Attribute *i_a = set->get(path("calibration/images/sets") / imgset / "img_points");
+    Attribute *w_a = set->get(cpath("calibration/images/sets") / imgset / "world_points");
+    Attribute *i_a = set->get(cpath("calibration/images/sets") / imgset / "img_points");
     
     //FIXME error handling
     if (!w_a || !i_a)
@@ -494,7 +494,7 @@ typedef unsigned int uint;
     
     cv::Mat proxy_img;
     proxy_img.create(Size(proxy_size.x, proxy_size.y), CV_32FC2);
-    Datastore *proxy_store = set->addStore(path("calibration/images/sets") / calibset / "proxy");
+    Datastore *proxy_store = set->addStore(cpath("calibration/images/sets") / calibset / "proxy");
     proxy_store->setDims(4);
     
     for(int img_n=0;img_n<ipoints.size();img_n++) {

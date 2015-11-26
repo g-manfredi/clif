@@ -25,7 +25,7 @@ int main(const int argc, const char *argv[])
   link.setLink("blub");
   attrs.append(link);
 
-  path r = attrs.resolve("rudi/flop");
+  cpath r = attrs.resolve("rudi/flop");
   cout << r << endl;
   r = attrs.resolve("blub/dir");
   cout << r << endl;

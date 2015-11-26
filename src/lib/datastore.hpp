@@ -17,18 +17,18 @@ public:
     friend class Dataset;
     
     //create new datastore
-    void create(std::string path, Dataset *dataset, const std::string format_group = std::string());
+    void create(const cpath & path, Dataset *dataset, const cpath format_group = cpath());
     
     //create new datastore with specified size and type
     //void create(std::string path, Dataset *dataset, BaseType type, int dims, int *size);
     //create from opencv matrix
-    void create(std::string path, Dataset *dataset, cv::Mat &m, const std::string format_group = std::string());
+    void create(const cpath & path, Dataset *dataset, cv::Mat &m, const cpath format_group = cpath());
     
     //create this datastore as a link to other in dataset - dataset is then readonly!
      void link(const Datastore *other, Dataset *dataset);
     
     //open existing datastore
-    void open(Dataset *dataset, std::string path, const std::string format_group = std::string());
+    void open(Dataset *dataset, cpath path, const cpath format_group = cpath());
     
     void writeRawImage(int idx, hsize_t w, hsize_t h, void *data);
     void appendRawImage(hsize_t w, hsize_t h, void *data);
@@ -64,7 +64,7 @@ public:
     void flush();
     void reset();
     
-    const std::string& getDatastorePath() const { return _path; };
+    const cpath& getDatastorePath() const { return _path; };
     
     friend std::ostream& operator<<(std::ostream& out, const Datastore& a);
     
@@ -107,7 +107,7 @@ public:
     DataOrder _order = DataOrder::INVALID;
     
     H5::DataSet _data;
-    std::string _path;
+    cpath _path;
     
 private:
   std::unordered_map<uint64_t,void*> image_cache;
@@ -115,14 +115,14 @@ private:
   Dataset *_dataset = NULL;
   bool _readonly = false; //linked dataset - convert to not-linked data to make read/write (no doing this implicitly may save a copy)
   bool _memonly = false; //dataset may be in memory and linked or not linked - TODO check all possible cases and uses
-  std::string _link_file;
-  std::string _link_path;
+  cpath _link_file;
+  cpath _link_path;
   
   clif::Mat _mat;
   
   Dataset& operator=(const Dataset& other) = delete;
   
-  std::string _format_group;
+  cpath _format_group;
   
   //size of img (w chanels, others 0)
   std::vector<int> _basesize;

@@ -240,7 +240,7 @@ bool ClifFile::valid()
   return f.getId() != H5I_INVALID_HID;
 }
 
-const path& ClifFile::path()
+const cpath& ClifFile::path()
 {
   return _path;
 }

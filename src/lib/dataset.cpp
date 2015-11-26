@@ -57,16 +57,12 @@ cv::Mat* Intrinsics::getUndistMap(double depth, int w, int h)
 }
 
 
-void Dataset::datastores_append_group(Dataset *set, std::unordered_map<std::string,Datastore*> &stores, H5::Group &g, std::string basename, std::string group_path)
+void Dataset::datastores_append_group(Dataset *set, std::unordered_map<std::string,Datastore*> &stores, H5::Group &g, cpath basename, cpath group_path)
 {
   for(uint i=0;i<g.getNumObjs();i++) {
     char g_name[1024];
     g.getObjnameByIdx(hsize_t(i), g_name, 1024);
-    std::string name;
-    if (group_path.size())
-      name = appendToPath(group_path, g_name);
-    else
-      name = g_name;
+    cpath name = group_path / g_name;
     
     H5G_stat_t stat;
     
@@ -78,7 +74,7 @@ void Dataset::datastores_append_group(Dataset *set, std::unordered_map<std::stri
     }
     else if (stat.type == H5G_DATASET)
     {
-      if (_stores.find(name) == _stores.end()) {
+      if (_stores.find(name.generic_string()) == _stores.end()) {
         Datastore *store = new Datastore();
         if (!name.compare("calibration/images/data"))
           store->open(set, name, "format");
@@ -92,9 +88,11 @@ void Dataset::datastores_append_group(Dataset *set, std::unordered_map<std::stri
 }
 
 //FIXME f could point to core driver (memory only) file!
-void Dataset::open(ClifFile &f, std::string name)
+void Dataset::open(ClifFile &f, const cpath &name)
 {
-  _path = std::string("/clif/").append(name);
+  _path = "/clif";
+  _path /= name;
+  
   _memory_file = false;
   _file = f;
     
@@ -170,9 +168,9 @@ Datastore *Dataset::getCalibStore()
   return calib_images;
 }
 
-void Dataset::create(ClifFile &f, std::string name)
+void Dataset::create(ClifFile &f, const cpath &name)
 {
-  _path = std::string("/clif/").append(name);
+  _path = "/clif" / name;
   _file = f;
   
   //TODO check if already exists and fail if it does?
@@ -290,9 +288,9 @@ void Dataset::load_intrinsics(std::string intrset)
   intrinsics.load(this, boost::filesystem::path("calibration/intrinsics") / intrset);
 }
 
-Datastore *Dataset::getStore(const std::string &path)
+Datastore *Dataset::getStore(const boost::filesystem::path &path)
 {
-  auto it_find = _stores.find(path);
+  auto it_find = _stores.find(resolve(path).generic_string());
   
   if (it_find == _stores.end())
     return NULL;
@@ -300,36 +298,16 @@ Datastore *Dataset::getStore(const std::string &path)
     return it_find->second;
 }
 
-Datastore *Dataset::getStore(const char *path)
-{
-  return getStore(std::string(path));
-}
-
-Datastore *Dataset::getStore(const boost::filesystem::path &path)
-{
-  return getStore(path.generic_string());
-}
-
-Datastore *Dataset::addStore(const std::string &path, int dims)
+Datastore *Dataset::addStore(const boost::filesystem::path &path, int dims)
 {
   Datastore *store = new Datastore;
-  store->create(path, this);
+  store->create(resolve(path), this);
   store->setDims(dims);
   //FIXME delete previous store!
   assert(store);
-  _stores[store->getDatastorePath()] = store;
+  _stores[store->getDatastorePath().generic_string()] = store;
   
   return store;
-}
-
-Datastore *Dataset::addStore(const char *path, int dims)
-{
-  return addStore(std::string(path), dims);
-}
-
-Datastore *Dataset::addStore(const boost::filesystem::path &path, int dims)
-{
-  return addStore(path.generic_string(), dims);
 }
 
 void Dataset::reset()
@@ -341,7 +319,7 @@ void Dataset::reset()
 void Dataset::addStore(Datastore *store)
 {
   assert(store);
-  _stores[store->getDatastorePath()] = store;
+  _stores[store->getDatastorePath().generic_string()] = store;
 }
 
 StringTree<Attribute*,Datastore*> Dataset::getTree()
@@ -349,7 +327,7 @@ StringTree<Attribute*,Datastore*> Dataset::getTree()
   StringTree<Attribute*,Datastore*> tree;
   
   for(uint i=0;i<attrs.size();i++)
-    tree.add(attrs[i].name, &attrs[i], (Datastore*)NULL, '/');
+    tree.add(attrs[i].name.generic_string(), &attrs[i], (Datastore*)NULL, '/');
   
   for(auto it=_stores.begin();it!=_stores.end();++it) {
     printf("add store %s\n", it->first.c_str());

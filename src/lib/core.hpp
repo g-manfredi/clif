@@ -9,14 +9,10 @@
 
 namespace clif {
   
-using boost::filesystem::path;
+typedef boost::filesystem::path cpath;
 
 enum class Interpolation : int {INVALID,NEAREST,LINEAR}; //TODO lanczos etc.
 enum class Unit : int {INVALID,MM,PIXELS};
-
-
-//int combinedTypeElementCount(BaseType type, DataOrg org, DataOrder order);
-//int combinedTypePlaneCount(BaseType type, DataOrg org, DataOrder order);
 
 }
 

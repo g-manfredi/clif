@@ -292,7 +292,7 @@ int main(const int argc, const char *argv[])
           cout << "copy dataset" << h5datasets[j] << endl;
           //FIXME handle dataset selection properly!
           if (!h5_obj_exists(f_out.f, h5datasets[j])) {
-            h5_create_path_groups(f_out.f, path(h5datasets[j]).parent_path());
+            h5_create_path_groups(f_out.f, cpath(h5datasets[j]).parent_path());
             f_out.f.flush(H5F_SCOPE_GLOBAL);
             H5Ocopy(f_in.f.getId(), h5datasets[j].c_str(), f_out.f.getId(), h5datasets[j].c_str(), H5P_DEFAULT, H5P_DEFAULT);
           }

@@ -15,7 +15,7 @@ typedef unsigned int uint;
 
 //FIXME wether dataset already exists and overwrite?
 //FIXME set remaining members!
-void Datastore::create(std::string path, Dataset *dataset, const std::string format_group)
+void Datastore::create(const cpath & path, Dataset *dataset, const cpath format_group)
 {
   assert(dataset);
   
@@ -33,7 +33,7 @@ void Datastore::create(std::string path, Dataset *dataset, const std::string for
   _memonly = false;
 }
 
-static bool _get_cache_path(path &cache_path)
+static bool _get_cache_path(cpath &cache_path)
 {
   char *xdg_cache;
   
@@ -55,9 +55,9 @@ static bool _get_cache_path(path &cache_path)
   }
 }
 
-static path _cache_filename(Datastore *store, int idx, int flags, float scale)
+static cpath _cache_filename(Datastore *store, int idx, int flags, float scale)
 {
-  path name;
+  cpath name;
   std::ostringstream longkey_stream;
   std::ostringstream shortkey_stream;
   std::string shortkey, longkey;
@@ -68,7 +68,7 @@ static path _cache_filename(Datastore *store, int idx, int flags, float scale)
   name = "clif/001/cached_imgs";
   std::hash<std::string> hasher;
   std::string dset_path = store->getDataset()->path().generic_string();
-  longkey_stream << hasher(dset_path) << "_" << hasher(store->getDatastorePath()) << "_" << hasher(shortkey);
+  longkey_stream << hasher(dset_path) << "_" << hasher(store->getDatastorePath().generic_string()) << "_" << hasher(shortkey);
   longkey = longkey_stream.str();
   name /= longkey + ".bin";
   
@@ -123,7 +123,7 @@ static path _cache_filename(Datastore *store, int idx, int flags, float scale)
                       toH5DataType(_type), space, prop);
 }*/
 
-void Datastore::create(std::string path, Dataset *dataset, cv::Mat &m, const std::string format_group)
+void Datastore::create(const cpath & path, Dataset *dataset, cv::Mat &m, const cpath format_group)
 {  
   create(path, dataset, format_group);
   
@@ -232,7 +232,7 @@ void Datastore::link(const Datastore *other, Dataset *dataset)
   }
   else { //link to an actual dataset in a file
     _memonly = false;
-    if (other->_link_file.size()) {
+    if (!other->_link_file.empty()) {
       _link_file = other->_link_file;
       _link_path = other->_link_path;
     }
@@ -241,13 +241,13 @@ void Datastore::link(const Datastore *other, Dataset *dataset)
       _link_path = (other->_dataset->path() / other->_path).generic_string();
     }
     
-    h5_create_path_groups(dataset->f(), path(_link_path).parent_path().generic_string().c_str());
+    h5_create_path_groups(dataset->f(), _link_path.parent_path().generic_string().c_str());
     H5Lcreate_external(_link_file.c_str(), _link_path.c_str(), dataset->f().getId(), _link_path.c_str(), H5P_DEFAULT, H5P_DEFAULT);
     dataset->flush();
   }  
 }
 
-static void get_format_fields(Dataset *set, path format_group, DataOrg &org, DataOrder &order, int &channels)
+static void get_format_fields(Dataset *set, cpath format_group, DataOrg &org, DataOrder &order, int &channels)
 {
   channels = 0;
   set->getEnum(format_group / "organisation", org);
@@ -280,7 +280,7 @@ static void get_format_fields(Dataset *set, path format_group, DataOrg &org, Dat
 //FIXME difference between create/open
 void Datastore::create_store()
 {
-  path dataset_path = _dataset->path() / _path;
+  cpath dataset_path = _dataset->path() / _path;
   
   if (h5_obj_exists(_dataset->f(), dataset_path.generic_string())) {
     _dataset->f().unlink(dataset_path.generic_string());
@@ -303,7 +303,7 @@ void Datastore::create_store()
       maxdims[_extent.size()-i-1] = H5S_UNLIMITED;
     }
   
-  h5_create_path_groups(_dataset->f(), path(dataset_path.generic_string().c_str()).parent_path());
+  h5_create_path_groups(_dataset->f(), dataset_path.parent_path());
   
   H5::DSetCreatPropList prop; 
   
@@ -334,7 +334,7 @@ void Datastore::create_store()
 
 void Datastore::create_types(BaseType type)
 {
-  if (_format_group.size()) {
+  if (!_format_group.empty()) {
     int channels;
     get_format_fields(_dataset, _format_group, _org, _order, channels);
     if (_extent.size() >= 3 && channels && _extent[2] && _extent[2] != channels) {
@@ -447,12 +447,12 @@ void Datastore::cache_set(const std::vector<int> idx, int flags, int extra_flags
   image_cache[key] = data;
 }
 
-void Datastore::open(Dataset *dataset, std::string path_, const std::string format_group)
+void Datastore::open(Dataset *dataset, cpath path_, const cpath format_group)
 {
   //only fills in internal data
   create(path_, dataset, format_group);
       
-  path dataset_path = dataset->path() / path_;
+  cpath dataset_path = dataset->path() / path_;
       
   if (!h5_obj_exists(dataset->f(), dataset_path.generic_string().c_str())) {
     printf("error: could not find requested datset: %s\n", dataset_path.generic_string().c_str());
@@ -480,7 +480,7 @@ void Datastore::open(Dataset *dataset, std::string path_, const std::string form
   }
 
   int channels;
-  if (_format_group.size()) {
+  if (!_format_group.empty()) {
     get_format_fields(dataset, format_group, _org, _order, channels);
     if (_basesize.size() >= 2 && _basesize[2] && channels && channels != _basesize[2]) {
       printf("ERROR: channel count mismatch detected!\n");
@@ -795,7 +795,7 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags, 
   int channel_flags = flags;
   bool demosaic = false;
   bool disable_cache = false;
-  path cache_file;
+  cpath cache_file;
   bool use_disk_cache = false;
   
   if (!isnan(min) && !isnan(max))
@@ -1048,7 +1048,7 @@ void Datastore::flush()
       //write memory-only data into file (and convert datastore to regular)
       //FIXME _data should be empty/invalid h5dataset!
       
-      path fullpath = _dataset->path() / _path;
+      cpath fullpath = _dataset->path() / _path;
       
       if (h5_obj_exists(_dataset->f(), fullpath)) {
         printf("TODO overwrite (store %s exists)!\n", fullpath.c_str());

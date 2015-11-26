@@ -17,10 +17,10 @@ using boost::filesystem::path;
 
 typedef unsigned int uint;
   
-static void read_attr(Attribute *attr, H5::Group g, std::string basename, std::string group_path, std::string name, BaseType &type)
+static void read_attr(Attribute *attr, H5::Group g, cpath basename, cpath group_path, cpath fullname, BaseType &type)
 {
   int total = 1;
-  H5::Attribute h5attr = g.openAttribute(name.c_str());
+  H5::Attribute h5attr = g.openAttribute(fullname.c_str());
     
   type =  toBaseType(H5Aget_type(h5attr.getId()));
   
@@ -34,8 +34,7 @@ static void read_attr(Attribute *attr, H5::Group g, std::string basename, std::s
   for(int i=0;i<dimcount;i++)
     total *= dims[i];
   
-  group_path = group_path.substr(basename.length()+1, group_path.length()-basename.length()-1);
-  name = group_path + '/' + name;
+  cpath name = remove_prefix(fullname, basename);
   
   //legacy attribute reading
   if (dimcount == 1) {
@@ -133,21 +132,22 @@ void Attributes::open(const char *inifile, cliini_args *types)
   
   attrs.resize(0);
   
-  
   if (attr_args) {
     attrs.resize(cliargs_count(attr_args));
     
     //FIXME for now only 1d attributes :-P
     for (int i = 0; i < cliargs_count(attr_args); i++) {
       cliini_arg *arg = cliargs_nth(attr_args, i);
+  
+      //FIXME check link/name clash!
+      std::string name = arg->opt->longflag;
+      std::replace(name.begin(), name.end(), '.', '/');
+      attrs[i].setName(name);
       
       //int dims = 1;
       int size = cliarg_sum(arg);
       
-      //FIXME check link/name clash!
-      attrs[i].setName(arg->opt->longflag);
-      
-      if (!strcmp(arg->opt->longflag, "source")) {
+      if (!name.compare("source")) {
         assert(arg->opt->type == CLIINI_STRING);
         attrs[i].setLink(((char**)(arg->vals))[0]);
       }
@@ -194,10 +194,10 @@ void Attributes::reset()
 }
 
 
-void Attributes::write(H5::H5File f, std::string &name)
+void Attributes::write(H5::H5File f, const cpath & dataset_root)
 {
   for(uint i=0;i<attrs.size();i++)
-    attrs[i].write(f, name);
+    attrs[i].write(f, dataset_root);
   
   f.flush(H5F_SCOPE_GLOBAL);
 }
@@ -211,13 +211,13 @@ void Attributes::writeIni(std::string &filename)
   std::string nextsection;
   
   for(uint i=0;i<attrs.size();i++) {
-    nextsection = remove_last_part(attrs[i].name, '/');
+    nextsection = attrs[i].name.parent_path().generic_string();
     if (nextsection.compare(currsection)) {
       currsection = nextsection;
       std::replace(nextsection.begin(), nextsection.end(), '/', '.');
       f << std::endl << std::endl << "[" << nextsection << "]" << std::endl << std::endl;
     }
-    f << get_last_part(attrs[i].name,'/') << " = " << attrs[i] << std::endl;
+    f << attrs[i].name.filename() << " = " << attrs[i] << std::endl;
   }
 }
 
@@ -236,7 +236,8 @@ void Attributes::listSubGroups(std::string parent, std::vector<std::string> &mat
   
   for(uint i=0;i<attrs.size();i++) {
     if (!fnmatch(parent.c_str(), attrs[i].name.c_str(), 0)) {
-      match = attrs[i].name.substr(parent.length()-1, attrs[i].name.length());
+      std::string name_str = attrs[i].name.generic_string();
+      match = name_str.substr(parent.length()-1, name_str.length());
       match = get_first_part(match, '/');
       match_map[match] = 1;
     }
@@ -264,13 +265,15 @@ Attribute Attributes::operator[](int pos)
 
 
 
-static void attributes_append_group(Attributes &attrs, H5::Group &g, std::string basename, std::string group_path)
+static void attributes_append_group(Attributes &attrs, H5::Group &g, cpath basename, cpath group_path)
 {    
+  std::cout << basename << " - " << group_path << std::endl;
+  
   for(uint i=0;i<g.getNumObjs();i++) {
     
     char g_name[1024];
     g.getObjnameByIdx(hsize_t(i), g_name, 1024);
-    std::string name = appendToPath(group_path, g_name);
+    cpath name = group_path / g_name;
     
     H5G_stat_t stat;
     g.getObjinfo(g_name, false, stat);
@@ -302,23 +305,25 @@ static void attributes_append_group(Attributes &attrs, H5::Group &g, std::string
     H5::Attribute h5attr = g.openAttribute(i);
     Attribute attr;
     BaseType type;
-    char attr_name[1024];
+    char fullname[1024];
     
-    H5Aget_name(h5attr.getId(), 1024, attr_name);
-    std::string name = appendToPath(group_path, attr_name);
-    read_attr(&attr, g, basename, group_path, attr_name, type);
+    H5Aget_name(h5attr.getId(), 1024, fullname);
+    read_attr(&attr, g, basename, group_path, fullname, type);
     
     attrs.append(attr);
   }
 }
 
-void Attributes::open(H5::H5File &f, std::string &path)
+void Attributes::open(H5::H5File &f, const cpath &path)
 {
   attrs.resize(0);
   
   H5::Group group = f.openGroup(path.c_str());
   
   attributes_append_group(*this, group, path, path);
+  
+  for(int i=0;i<attrs.size();i++)
+    std::cout << attrs[i].name << std::endl;
 }
 
 void Attributes::append(Attribute attr)
@@ -477,24 +482,21 @@ int Attribute::total()
   return t;
 }
 
-void Attribute::write(H5::H5File f, std::string dataset_name)
+void Attribute::write(H5::H5File f, const cpath & dataset_root)
 {  
   //FIXME we should have a path?
-  std::string attr_path = name;
-  std::replace(attr_path.begin(), attr_path.end(), '.', '/');
-  std::string fullpath = appendToPath(dataset_name, attr_path);
-  std::string grouppath = remove_last_part(fullpath, '/');
-  std::string attr_name = get_last_part(fullpath, '/');
+  cpath fullpath = dataset_root / name;
+  cpath grouppath = fullpath.parent_path();
   
   if (_link.size())
   {
-    printf("write link %s\n", (path(dataset_name) / _link).generic_string().c_str());
+    printf("write link %s\n", (dataset_root / _link).generic_string().c_str());
     
     if (!h5_obj_exists(f, grouppath))
       h5_create_path_groups(f, grouppath.c_str());
     
     H5::Group g = f.openGroup(grouppath.c_str());
-    g.link(H5G_LINK_SOFT, (path(dataset_name) / _link).generic_string().c_str(), name.c_str());
+    g.link(H5G_LINK_SOFT, (dataset_root / _link).generic_string().c_str(), name.c_str());
   }
   else if (_m.total() == 0) {
     //FIXME remove this (legacy) case
@@ -519,10 +521,10 @@ void Attribute::write(H5::H5File f, std::string dataset_name)
     if (min || max)
       printf("WARNING: could not set dense storage on group, may not be able to write large attributes\n");
     
-    if (H5Aexists(g.getId(), attr_name.c_str()))
-      g.removeAttr(attr_name.c_str());
+    if (H5Aexists(g.getId(), name.c_str()))
+      g.removeAttr(name.c_str());
       
-    attr = g.createAttribute(attr_name.c_str(), toH5DataType(type), space);
+    attr = g.createAttribute(name.c_str(), toH5DataType(type), space);
         
     attr.write(toH5NativeDataType(type), data);
   }

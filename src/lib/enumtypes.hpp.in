@@ -37,7 +37,7 @@ enum class BaseType : int {
   VECTOR  = 8
   };
 //WARNING: change BaseTypeAtomicMask in enumtypes.cpp if enum value changes
-static BaseType BaseTypeMaxAtomicType = BaseType::STRING;
+extern BaseType BaseTypeMaxAtomicType;
 
 //constexpr not working in MSVC2013 - reimplement at a later point
 inline BaseType operator|(BaseType a, BaseType b)
