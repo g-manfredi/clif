@@ -14,7 +14,7 @@ void Subset3d::create(Dataset *data, std::string extr_group)
 {
   _data = data;
   
-  cpath root = _data->subGroupPath("calibration/extrinsics", extr_group);
+  cpath root = _data->getSubGroup("calibration/extrinsics", extr_group);
   
   ExtrType type;
   
@@ -34,7 +34,7 @@ void Subset3d::create(Dataset *data, std::string extr_group)
   step_length = line_step[0];
   
   //TODO which intrinsic to select!
-  _data->get(_data->subGroupPath("calibration/intrinsics/")/"/projection", f, 2);
+  _data->get(_data->getSubGroup("calibration/intrinsics")/"/projection", f, 2);
 }
 
 

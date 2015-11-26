@@ -116,20 +116,6 @@ void Dataset::open(ClifFile &f, const cpath &name)
   datastores_append_group(this, _stores, group, _path, std::string());
 }
 
-//TODO use priority!
-boost::filesystem::path Dataset::subGroupPath(boost::filesystem::path parent, std::string child)
-{
-  std::vector<std::string> list;
-  
-  if (child.size())
-    return parent / child;
-
-  listSubGroups(parent, list);
-  assert(list.size());
-  
-  return parent / list[0];
-}
-
 Datastore *Dataset::createCalibStore()
 {
   if (calib_images)
@@ -273,17 +259,12 @@ bool Dataset::valid()
 
 void Dataset::load_intrinsics(std::string intrset)
 {
-  std::vector<std::string> sets;
-  
-  if (!intrset.size()) {
-    listSubGroups("calibration/intrinsics", sets);
-    if (!sets.size())
-      return;
-    //TODO select with priority?!
-    intrset = sets[0];
+  try {
+    intrinsics.load(this, getSubGroup("calibration/intrinsics",intrset));
   }
-  
-  intrinsics.load(this, boost::filesystem::path("calibration/intrinsics") / intrset);
+  catch (std::runtime_error e) {
+    
+  }
 }
 
 Datastore *Dataset::getStore(const boost::filesystem::path &path, bool create, int create_dims)

@@ -85,12 +85,6 @@ class Dataset : public Attributes, public Datastore {
      */
     void load_intrinsics(std::string intrset = std::string());
     
-    /** Create path from \a parent path and \a child name.
-     * the default empty string for \a child will create a path to the first child found under parent
-     */
-    //FIXME priority, resolve, etc..
-    boost::filesystem::path subGroupPath(boost::filesystem::path parent, std::string child = std::string());
-    
     /** return the actual full path of the dataset root in the HDF5 file
      */
     boost::filesystem::path path();
