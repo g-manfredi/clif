@@ -17,10 +17,10 @@ using boost::filesystem::path;
 
 typedef unsigned int uint;
   
-static void read_attr(Attribute *attr, H5::Group g, cpath basename, cpath group_path, cpath fullname, BaseType &type)
+static void read_attr(Attribute *attr, H5::Group g, cpath basename, cpath group_path, cpath name, BaseType &type)
 {
   int total = 1;
-  H5::Attribute h5attr = g.openAttribute(fullname.c_str());
+  H5::Attribute h5attr = g.openAttribute(name.generic_string().c_str());
     
   type =  toBaseType(H5Aget_type(h5attr.getId()));
   
@@ -34,7 +34,8 @@ static void read_attr(Attribute *attr, H5::Group g, cpath basename, cpath group_
   for(int i=0;i<dimcount;i++)
     total *= dims[i];
   
-  cpath name = remove_prefix(fullname, basename);
+  group_path = remove_prefix(group_path, basename);
+  name = group_path / name;
   
   //legacy attribute reading
   if (dimcount == 1) {
@@ -140,14 +141,15 @@ void Attributes::open(const char *inifile, cliini_args *types)
       cliini_arg *arg = cliargs_nth(attr_args, i);
   
       //FIXME check link/name clash!
-      std::string name = arg->opt->longflag;
-      std::replace(name.begin(), name.end(), '.', '/');
-      attrs[i].setName(name);
+      std::string c_name = arg->opt->longflag;
+      std::replace(c_name.begin(), c_name.end(), '.', '/');
+      attrs[i].setName(c_name);
+      cpath name = c_name;
       
       //int dims = 1;
       int size = cliarg_sum(arg);
       
-      if (!name.compare("source")) {
+      if (!name.filename().compare("source")) {
         assert(arg->opt->type == CLIINI_STRING);
         attrs[i].setLink(((char**)(arg->vals))[0]);
       }
@@ -266,9 +268,7 @@ Attribute Attributes::operator[](int pos)
 
 
 static void attributes_append_group(Attributes &attrs, H5::Group &g, cpath basename, cpath group_path)
-{    
-  std::cout << basename << " - " << group_path << std::endl;
-  
+{     
   for(uint i=0;i<g.getNumObjs();i++) {
     
     char g_name[1024];
@@ -277,7 +277,6 @@ static void attributes_append_group(Attributes &attrs, H5::Group &g, cpath basen
     
     H5G_stat_t stat;
     g.getObjinfo(g_name, false, stat);
-    printf("%s type: %d\n", g_name, stat.type);
     
     if (stat.type == H5G_GROUP) {
       H5::Group sub = g.openGroup(g_name);
@@ -305,10 +304,10 @@ static void attributes_append_group(Attributes &attrs, H5::Group &g, cpath basen
     H5::Attribute h5attr = g.openAttribute(i);
     Attribute attr;
     BaseType type;
-    char fullname[1024];
+    char name[1024];
     
-    H5Aget_name(h5attr.getId(), 1024, fullname);
-    read_attr(&attr, g, basename, group_path, fullname, type);
+    H5Aget_name(h5attr.getId(), 1024, name);
+    read_attr(&attr, g, basename, group_path, name, type);
     
     attrs.append(attr);
   }
@@ -415,7 +414,10 @@ template<typename T> void printthis(std::ostream *stream, void *val, int idx)
 
 std::ostream& operator<<(std::ostream& out, const Attribute& a)
 {
-  if (a._m.total()) {
+  if (!a._link.empty()) {
+    printf("-> %s", a._link.c_str());
+  }
+  else if (a._m.total()) {
     printf("FIXME: print N-D attr\n");
   }
   else if (a.type == BaseType::STRING) {
@@ -490,13 +492,12 @@ void Attribute::write(H5::H5File f, const cpath & dataset_root)
   
   if (_link.size())
   {
-    printf("write link %s\n", (dataset_root / _link).generic_string().c_str());
-    
     if (!h5_obj_exists(f, grouppath))
       h5_create_path_groups(f, grouppath.c_str());
+    f.flush(H5F_SCOPE_LOCAL);
     
     H5::Group g = f.openGroup(grouppath.c_str());
-    g.link(H5G_LINK_SOFT, (dataset_root / _link).generic_string().c_str(), name.c_str());
+    g.link(H5G_LINK_SOFT, (dataset_root/_link).generic_string().c_str(), name.filename().generic_string().c_str());
   }
   else if (_m.total() == 0) {
     //FIXME remove this (legacy) case
@@ -521,10 +522,11 @@ void Attribute::write(H5::H5File f, const cpath & dataset_root)
     if (min || max)
       printf("WARNING: could not set dense storage on group, may not be able to write large attributes\n");
     
-    if (H5Aexists(g.getId(), name.c_str()))
-      g.removeAttr(name.c_str());
+    //FIXME relative to what?
+    if (H5Aexists(g.getId(), name.filename().c_str()))
+      g.removeAttr(name.filename().c_str());
       
-    attr = g.createAttribute(name.c_str(), toH5DataType(type), space);
+    attr = g.createAttribute(name.filename().c_str(), toH5DataType(type), space);
         
     attr.write(toH5NativeDataType(type), data);
   }
