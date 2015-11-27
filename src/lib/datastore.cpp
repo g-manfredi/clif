@@ -495,8 +495,6 @@ void Datastore::open(Dataset *dataset, cpath path_)
   _type = toBaseType(H5Dget_type(_data.getId()));
   
   assert(_type > BaseType::INVALID);
-  
-  printf("open %s type %d \n", _path.c_str(), _type);
 }
 
 //FIXME chekc w,h?

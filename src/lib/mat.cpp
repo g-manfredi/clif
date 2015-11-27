@@ -42,8 +42,8 @@ template<typename T> class destruction_dispatcher {
 public:
   void operator()(void *ptr, off_t count)
   {
-    printf("FIXME: destruct array elements!\n");
-    //delete[]...
+    for (int i=0;i<count;i++)
+      ((T*)ptr)[i].~T();
   }
 };
 

@@ -58,7 +58,7 @@ static void read_attr(Attribute *attr, H5::Group g, cpath basename, cpath group_
 }
 
 void Attribute::setLink(const boost::filesystem::path &l)
-{
+{  
   _link = l.generic_string();
   
   data = NULL;
@@ -88,7 +88,7 @@ path Attributes::resolve(path name)
   
   if (a && a->link().size() == 0)
     return name;
-  
+    
   path partial;
   for(auto it=name.begin();it!=name.end();++it) {
     partial /= *it;
@@ -96,7 +96,12 @@ path Attributes::resolve(path name)
     if (a) {
       if (a->link().size()) {
         path rest(a->link());
-        for(++it;it!=name.end();++it)
+        ++it;
+        //everything matched - this is a link!
+        if (it == name.end())
+          return name.c_str();
+          
+        for(;it!=name.end();++it)
           rest /= *it;
         return resolve(rest);
       }
@@ -144,7 +149,7 @@ void Attributes::open(const char *inifile, cliini_args *types)
       //FIXME check link/name clash!
       std::string name = arg->opt->longflag;
       std::replace(name.begin(), name.end(), '.', '/');
-      attrs[i].setName(name);
+      attrs[i].setName(resolve(name));
             
       //int dims = 1;
       int size = cliarg_sum(arg);
@@ -284,7 +289,7 @@ bool Attributes::deriveGroup(const cpath & in_parent, cpath in_child, const cpat
   
   out_root = out_parent / out_child;
   
-  Attribute a(out_root / "source");
+  Attribute a(out_root/"source");
   a.setLink(in_root);
   
   append(a);
@@ -376,12 +381,14 @@ void Attributes::open(H5::H5File &f, const cpath &path)
 
 void Attributes::append(Attribute attr)
 {
+  attr.name = resolve(attr.name);
+  
   Attribute *at = get(attr.name);
   if (!at) {
-    attr.setName(resolve(attr.name).generic_string());
+    attr.setName(attr.name.generic_string());
     attrs.push_back(attr);
   }
-  else 
+  else
     *at = attr;
 }
 
