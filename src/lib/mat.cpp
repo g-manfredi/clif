@@ -163,7 +163,7 @@ void Mat::create(BaseType type, Idx size)
 
 int Mat::write(const char *path)
 {
-  FILE *f = fopen(path, "w");
+  FILE *f = fopen(path, "wb");
   
   if (!f)
     return -1;
@@ -179,7 +179,7 @@ int Mat::write(const char *path)
 int Mat::read(const char *path)
 {
 //#ifndef CLIF_BUILD_QT 
-  FILE *f = fopen(path, "r");
+  FILE *f = fopen(path, "rb");
   
   create(type(), *(Idx*)this);
   

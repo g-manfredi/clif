@@ -826,7 +826,7 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags, 
   if (mat_cache_get(img,idx,flags,CACHE_CONT_MAT_IMG,scale))
     return;
   
-  printf("read idx %d\n", idx[3]);
+  printf("read idx %d", idx[3]);
   
   if ((flags & DEMOSAIC) && _org == DataOrg::BAYER_2x2)
     demosaic = true;
@@ -850,6 +850,7 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags, 
     
     Mat clif_img = Mat(img);
     if (!clif_img.read(cache_file.string().c_str())) {
+      printf("...cached\n");
       //backing memory location might have changed due to mmap
       //FIXME
       //*img = cvMat(clif_img);
@@ -857,6 +858,7 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags, 
       return;
     }
   }
+  printf("\n");
   
   std::vector<int> ch_idx = idx;
   
