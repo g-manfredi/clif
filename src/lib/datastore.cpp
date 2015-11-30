@@ -43,12 +43,20 @@ static bool _get_cache_path(cpath &cache_path)
   }
   else {
     char *home = getenv("HOME");
+
     if (home) {
       cache_path = home;
       cache_path /= ".cache";
       return true;
     }
-    else
+    else {
+      home = getenv("LocalAppData");
+      if (!home)
+        return false;
+
+      cache_path = home;
+      return true;
+    }
       return false;
   }
 }
