@@ -21,32 +21,20 @@ extrinsics:
 [calibration.extrinsics.default]
 type = LINE
 
+data = ->data
 world_to_camera = -1 0 0   0 0 -500
 camera_to_line_start = 0 0 0  -50 0 0
 line_step = 1.04 0 0
 ~~~~~~~~~~~~~
 
-extrinsics:
+hdmarkers calibration:
 ~~~~~~~~~~~~~
-[calibration.extrinsics.default]
-type = LINE
-
-world_to_camera = -1 0 0   0 0 -500
-camera_to_line_start = 0 0 0  -50 0 0
-line_step = 1.04 0 0
-~~~~~~~~~~~~~
-
-hdmarkers:
-~~~~~~~~~~~~~
-[calibration.images.sets.hdmarker]
+[calibration.imgs.hdmarker]
 
 type = HDMARKER
 marker_size = 39.64
 ~~~~~~~~~~~~~
 
-### Type Specification {#ini_type_system}
-
-Ini files are used to specify type information and can be passed to the [clif](@ref tool_clif) tool (using -t):
 
 ## Command Line Tools {#cli_tools}
 
@@ -61,30 +49,34 @@ clifinfo -i somefile.clif
 ~~~~~~~~~~~~~
 output:
 ~~~~~~~~~~~~~
-calibration                
+calibration
   extrinsics              
-      mobilets             
-        type              LINE
+    default              
+        data              -> data
         world_to_camera   [-1,0,0,0,0,-500]
+        type              LINE
         camera_to_line_start[0,0,0,-50,0,0]
         line_step         [1.04,0,0]
-  images                  
-      sets                 
-        checkers          
-            type           CHECKERBOARD
-            size           [8,5]
-            pointdata      [248.593,828.244,0,0,400.939,828.961,1,0,554.742,830.049,2, ... ]
-            pointcounts    [40,40,0,40,40,0,40,40,40,0,40, ... ]
+  imgs                    
+    checkers             
+        type              CHECKERBOARD
+        size              [8,5]
+        data              1536 x 2160 x 3 x 22
   intrinsics              
-      checkers             
+    checkers             
+        source            -> calibration/mapping/checkers
+        projection        [1907.35,1908.23]
+        projection_center [773.234,1068.11]
         type              CV8
-        projection        [1905.52,1905.52]
-        projection_center [767.5,1079.5]
-        opencv_distortion [-0.082782,0.0610704,0,0,0]
-format                     
-  type                    UINT16
-  organisation            INTERLEAVED
-  order                   RGB
+        opencv_distortion [-0.0731169,-0.0448424,-0.000689215,-0.000424101,0.349493]
+  mapping                 
+    checkers             
+        source            -> calibration/imgs/checkers
+        img_size          [1536,2160]
+        img_points           81 x 3
+
+        world_points         81 x 3
+  data                       1536 x 2160 x 3 x 81
 ~~~~~~~~~~~~~
 
 
@@ -104,7 +96,7 @@ clif -i import.ini *.tif -o set.clif
 
 - add calibration images
 ~~~~~~~~~~~~~
-clif -i import.ini set.clif --calib-images *.tif -o set2.clif
+clif -i import.ini set.clif --store calibration/imgs/hdmarker/data 4 *.tif -o set2.clif
 ~~~~~~~~~~~~~
 
 - Extract images
@@ -112,7 +104,7 @@ clif -i import.ini set.clif --calib-images *.tif -o set2.clif
 clif -i set2.clif -o img%06d.jpg
 ~~~~~~~~~~~~~
 
-- detect calibration pattern and store result in same file
+- detect calibration pattern and store result
 ~~~~~~~~~~~~~
 clif -i set2.clif -o set3.clif --detect-patterns
 ~~~~~~~~~~~~~
@@ -120,4 +112,9 @@ clif -i set2.clif -o set3.clif --detect-patterns
 - execute opencv-camera calibration (with 8-parameter distortion model) and store everything in a second file
 ~~~~~~~~~~~~~
 clif -i set3.clif -o calibrated_set.clif --opencv-calibrate
+~~~~~~~~~~~~~
+
+The *clif* tool always links datastores of the output file to the input file to avoid copying data if not necessary. You can also combine any of the commands above which will then be executed one after another on the output file. You can also use the same input and output file, in which case processing is performed inplace, e.g. to add calibration images and perform calibration in one step:
+~~~~~~~~~~~~~
+clif -i set.clif calib.ini -o set.clif --store calibration/imgs/hdmarker/data 4 *.tif --detect-patterns --opencv-calibrate
 ~~~~~~~~~~~~~
