@@ -36,15 +36,14 @@ void ExternalClifViewer::connected()
 }
 
 void ExternalClifViewer::error(QLocalSocket::LocalSocketError e)
-{
-  if (!_file.size())
-    return;
-  
+{  
   printf("could not find/connect running clifview %s!\n", _socket->errorString().toUtf8().constData());
   printf("starting new instance\n");
   
   QProcess *process = new QProcess();
-  QStringList args = {"-i", _file};
+  QStringList args;
+  if (_file.size())
+    args << "-i" <<  _file;
   if (_dataset.size())
     args << "-d" << _dataset;
   if (_store.size())
