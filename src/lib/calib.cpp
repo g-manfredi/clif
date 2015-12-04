@@ -339,7 +339,7 @@ bool opencv_calibrate(Dataset *set, int flags, cpath map, cpath calib)
 #ifdef CLIF_WITH_UCALIB
   {
     cpath proxy_root, calib_root;
-    if (!set->deriveGroup("calibration/mapping", proxy, "calibration/intrinsics", calib, proxy_root, calib_root))
+    if (!set->deriveGroup("calibration/proxy", proxy, "calibration/intrinsics", calib, proxy_root, calib_root))
       abort();
     
     int im_size[2];
@@ -347,7 +347,10 @@ bool opencv_calibrate(Dataset *set, int flags, cpath map, cpath calib)
     vector<vector<Point2f>> ipoints;
     vector<vector<Point3f>> wpoints;
     
-    set->get(proxy_root/"img_size", im_size, 2);
+    Mat_<float> proxy_m;
+    Mat_<float> corr_line_m;
+    
+    set->get(proxy_root/"source/img_size", im_size, 2);
     
     Cam_Config cam_config = { 0.0065, 12.0, 300.0, -1, -1 };
     Calib_Config conf = { true, 190, 420 };
@@ -355,31 +358,47 @@ bool opencv_calibrate(Dataset *set, int flags, cpath map, cpath calib)
     cam_config.w = im_size[0];
     cam_config.h = im_size[1];
       
-    Datastore *proxy_store = set->getStore(proxy_root/"proxy");
+    Datastore *proxy_store = set->store(proxy_root/"proxy");
+    proxy_store->read(proxy_m);
     
-    Point2i proxy_size(proxy_store->extent()[0],proxy_store->extent()[1]);
+    corr_line_m.create(Idx({4, proxy_m[1],proxy_m[2], proxy_m[3]}));
     
-    DistCorrLines dist_lines = DistCorrLines(0, 0, 0, cam_config.w, cam_config.h, 100.0, cam_config, conf, proxy_size);
-    dist_lines.proxy_backwards.resize(proxy_store->imgCount());
+    Point2i proxy_size(proxy_m[1],proxy_m[2]);
     
-    cv::Mat proxy_img;
-    
-    Idx pos(proxy_store->dims());
-    
-    for(int img_n=0;img_n<proxy_store->imgCount();img_n++) {
-      pos[3] = img_n;
-      proxy_store->readImage(pos, &proxy_img);
+    for(int color=0;color<proxy_m[3];color++) {
+      DistCorrLines dist_lines = DistCorrLines(0, 0, 0, cam_config.w, cam_config.h, 100.0, cam_config, conf, proxy_size);
+      dist_lines.proxy_backwards.resize(proxy_m[4]);
       
-      dist_lines.proxy_backwards[img_n].resize(proxy_size.y*proxy_size.x);
+      Idx pos(proxy_store->dims());
+      assert(proxy_store->dims() == 5);
+      
+      for(int img_n=0;img_n<proxy_m[4];img_n++) {
+        dist_lines.proxy_backwards[img_n].resize(proxy_size.y*proxy_size.x);
+        for(int j=0;j<proxy_size.y;j++)
+          for(int i=0;i<proxy_size.x;i++) {
+            dist_lines.proxy_backwards[img_n][j*proxy_size.x+i].x = proxy_m(0, i, j, color, img_n);
+            dist_lines.proxy_backwards[img_n][j*proxy_size.x+i].y = proxy_m(1, i, j, color, img_n);
+          }
+      }
+      
+      dist_lines.proxy_fit_lines_global();
+      char buf[64];
+      sprintf(buf, "center%02d", color);
+      dist_lines.Draw(buf);
+      
       for(int j=0;j<proxy_size.y;j++)
         for(int i=0;i<proxy_size.x;i++) {
-          dist_lines.proxy_backwards[img_n][j*proxy_size.x+i].x = proxy_img.at<float>(0, j,i);
-          dist_lines.proxy_backwards[img_n][j*proxy_size.x+i].y = proxy_img.at<float>(1, j,i);
+          corr_line_m(0, i, j, color) = dist_lines.linefits[j*proxy_size.y+i][0];
+          corr_line_m(1, i, j, color) = dist_lines.linefits[j*proxy_size.y+i][1];
+          corr_line_m(2, i, j, color) = dist_lines.linefits[j*proxy_size.y+i][2];
+          corr_line_m(3, i, j, color) = dist_lines.linefits[j*proxy_size.y+i][3];
         }
     }
     
-    dist_lines.proxy_fit_lines_global();
-    dist_lines.Draw("center");
+    Datastore *line_store = set->addStore(calib_root/"lines");
+    line_store->write(proxy_m);
+    
+    set->setAttribute(calib_root/"type", "ucalib");
     
     return true;
   }
@@ -406,12 +425,13 @@ bool generate_proxy_loess(Dataset *set, int proxy_w, int proxy_h , cpath map, cp
   Mat_<std::vector<Point2f>> wpoints_m;
   Mat_<std::vector<Point2f>> ipoints_m;
   
-  vector<vector<Point2f>> ipoints;
-  vector<vector<Point3f>> wpoints;
+  Mat_<float> proxy_m;
   
+  //2-d (color, imgs)
   Attribute *w_a = set->get(map_root/"world_points");
   Attribute *i_a = set->get(map_root/"img_points");
   set->get(map_root/"img_size", im_size, 2);
+  
   
   //FIXME error handling
   if (!w_a || !i_a)
@@ -420,39 +440,55 @@ bool generate_proxy_loess(Dataset *set, int proxy_w, int proxy_h , cpath map, cp
   w_a->get(wpoints_m);
   i_a->get(ipoints_m);
   
+  proxy_m.create(Idx({2, proxy_w, proxy_h, wpoints_m[0], wpoints_m[1]}));
+  
   Cam_Config cam_config = { 0.0065, 12.0, 300.0, im_size[0], im_size[1] };
   Calib_Config conf = { true, 190, 420 };
   
-  for(int i=0;i<wpoints_m[1];i++) {      
-    if (!wpoints_m(0, i).size())
-      continue;
+  for(int color=0;color<wpoints_m[0];color++) {
+    vector<vector<Point2f>> ipoints;
+    vector<vector<Point3f>> wpoints;
     
-    
-    ipoints.push_back(ipoints_m(0, i));
-    wpoints.push_back(std::vector<Point3f>(wpoints_m(0, i).size()));
-    for(int j=0;j<wpoints_m(0, i).size();j++) {
-      wpoints.back()[j] = Point3f(wpoints_m(0, i)[j].x,wpoints_m(0, i)[j].y,0);
-    }
-  }
-  
-  Point2i proxy_size(proxy_w,proxy_h);
-  
-  DistCorrLines dist_lines = DistCorrLines(0, 0, 0, cam_config.w, cam_config.h, 100.0, cam_config, conf, proxy_size);
-  dist_lines.add(ipoints, wpoints, 20.0);
-  dist_lines.proxy_backwards_poly_generate();
-  
-  cv::Mat proxy_img;
-  proxy_img.create(Size(proxy_size.x, proxy_size.y), CV_32FC2);
-  Datastore *proxy_store = set->addStore(proxy_root/"proxy");
-  proxy_store->setDims(4);
-  
-  for(int img_n=0;img_n<ipoints.size();img_n++) {
-    for(int j=0;j<proxy_size.y;j++)
-      for(int i=0;i<proxy_size.x;i++) {
-        proxy_img.at<Point2f>(j,i) = dist_lines.proxy_backwards[img_n][j*proxy_size.x+i];
+    for(int i=0;i<wpoints_m[1];i++) {
+      if (!wpoints_m(color, i).size())
+        continue;
+      
+      ipoints.push_back(ipoints_m(color, i));
+      wpoints.push_back(std::vector<Point3f>(wpoints_m(color, i).size()));
+      for(int j=0;j<wpoints_m(color, i).size();j++) {
+        wpoints.back()[j] = Point3f(wpoints_m(color, i)[j].x,wpoints_m(color, i)[j].y,0);
       }
-      proxy_store->appendImage(&proxy_img);
+    }
+    
+    Point2i proxy_size(proxy_w,proxy_h);
+    
+    DistCorrLines dist_lines = DistCorrLines(0, 0, 0, cam_config.w, cam_config.h, 100.0, cam_config, conf, proxy_size);
+    dist_lines.add(ipoints, wpoints, 20.0);
+    dist_lines.proxy_backwards_poly_generate();
+    
+    for(int img_n=0;img_n<ipoints.size();img_n++)
+      for(int j=0;j<proxy_size.y;j++)
+        for(int i=0;i<proxy_size.x;i++) {
+          proxy_m(0, i, j, color, img_n) = dist_lines.proxy_backwards[img_n][j*proxy_size.x+i].x;
+          proxy_m(1, i, j, color, img_n) = dist_lines.proxy_backwards[img_n][j*proxy_size.x+i].y;
+        }
+      
+    /*cv::Mat proxy_img;
+    proxy_img.create(Size(proxy_size.x, proxy_size.y), CV_32FC2);
+    Datastore *proxy_store = set->addStore(proxy_root/"proxy");
+    proxy_store->setDims(4);
+    
+    for(int img_n=0;img_n<ipoints.size();img_n++) {
+      for(int j=0;j<proxy_size.y;j++)
+        for(int i=0;i<proxy_size.x;i++) {
+          proxy_img.at<Point2f>(j,i) = dist_lines.proxy_backwards[img_n][j*proxy_size.x+i];
+        }
+        proxy_store->appendImage(&proxy_img);
+    }*/
   }
+  
+  Datastore *proxy_store = set->addStore(proxy_root/"proxy");
+  proxy_store->write(proxy_m);
   
   return true;
 }
