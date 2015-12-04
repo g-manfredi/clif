@@ -60,7 +60,8 @@ class Dataset : public Attributes {
     void writeAttributes() { Attributes::write(f(), _path); }
     void flush();
     
-    Datastore *getStore(const boost::filesystem::path &path, bool create = true, int create_dims = 4);
+    Datastore *store(const boost::filesystem::path &path);
+    Datastore *getStore(const boost::filesystem::path &path, int create_dims = 4);
     Datastore *addStore(const boost::filesystem::path &path, int dims = 4);
     void addStore(Datastore *store);
     

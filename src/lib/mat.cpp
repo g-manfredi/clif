@@ -17,6 +17,20 @@ Idx::Idx() : std::vector<int>() {};
 
 Idx::Idx(int size) : std::vector<int>(size) {};
 
+
+Idx::Idx(const H5::DataSpace &space)
+{
+  hsize_t *dims = new hsize_t[space.getSimpleExtentNdims()];
+  
+  space.getSimpleExtentDims(dims);
+  
+  
+  *this = Idx::invert(space.getSimpleExtentNdims(), dims);
+  
+  delete[] dims;
+};
+
+
 off_t Idx::total() const
 {
   off_t t = 1;
@@ -365,9 +379,29 @@ void Mat_H5AttrRead(Mat &m, H5::Attribute &a)
     free(v);
   }
 
-
   delete[] dims;
   delete[] maxdims;
+}
+
+void h5_dataset_read(H5::H5File f, const cpath &path, Mat &m)
+{
+  H5::DataSet data = f.openDataSet(path.string().c_str());
+  H5::DataSpace space = data.getSpace();
+  BaseType type = toBaseType(H5Dget_type(data.getId()));
+  
+  m.create(type, Idx(space));
+  
+  hvl_t *v = Mat_H5vlenbuf_alloc(m);
+  if (!v)
+    data.read(m.data(), toH5NativeDataType(type));
+  else {
+    //FIXME
+    H5::DataType native = toH5NativeDataType(type);
+    data.read(v, native);
+    Mat_H5vlenbuf_read(m, v);
+    H5Dvlen_reclaim(native.getId(), space.getId(), H5P_DEFAULT, v);
+    free(v);
+  }
 }
   
 //FIXME implement non-dense matrix!

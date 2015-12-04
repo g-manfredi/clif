@@ -74,7 +74,7 @@ static cpath _cache_filename(Datastore *store, int idx, int flags, float scale)
   name = "clif/001/cached_imgs";
   std::hash<std::string> hasher;
   std::string dset_path = store->getDataset()->path().generic_string();
-  longkey_stream << hasher(dset_path) << "_" << hasher(store->getDatastorePath().generic_string()) << "_" << hasher(shortkey);
+  longkey_stream << hasher(dset_path) << "_" << hasher(store->path().generic_string()) << "_" << hasher(shortkey);
   longkey = longkey_stream.str();
   name /= longkey + ".bin";
   
@@ -129,6 +129,12 @@ static cpath _cache_filename(Datastore *store, int idx, int flags, float scale)
                       toH5DataType(_type), space, prop);
 }*/
 
+cpath Datastore::fullPath() const
+{
+  assert(_dataset);
+  return _dataset->path()/_path;
+};
+
 void Datastore::create(const cpath & path, Dataset *dataset, cv::Mat &m)
 {  
   create(path, dataset);
@@ -150,9 +156,12 @@ void Datastore::read(cv::Mat &m)
 //read store into m 
 void Datastore::read(clif::Mat &m)
 {
-  assert(_memonly);
-  
-  m = _mat;
+  if (_memonly)
+    m = _mat;
+  else {
+    assert(_dataset);
+    h5_dataset_read(_dataset->f(), fullPath(), m);
+  }
 }
     
 //write m into store

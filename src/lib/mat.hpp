@@ -6,10 +6,12 @@
 #include <memory>
 
 #include "enumtypes.hpp"
+#include "core.hpp"
 
 //FIXME use forward declaration - better put in extra header...
 #include <hdf5.h>
 #include <boost/filesystem.hpp>
+#include <H5File.h>
 
 namespace clif {
   
@@ -18,11 +20,13 @@ class Idx : public std::vector<int>
 public:
   Idx();
   Idx(int size);
+  Idx(const H5::DataSpace &space);
   template<typename ... TS> Idx(TS ... idxs);
   
   off_t total() const;
   
   static Idx zeroButOne(int size, int pos, int idx);
+  template<typename T> static Idx invert(int size, const T * const dims);
 };
   
 namespace {
@@ -35,6 +39,17 @@ namespace {
   {
     return idx + extent[pos]*calc_offset<T>(extent, pos+1, rest...);
   }
+}
+
+
+template<typename T> Idx Idx::invert(int size, const T * const dims)
+{
+  Idx idx = Idx(size);
+  
+  for(int i=0;i<size;i++)
+    idx[i] = dims[size-i-1];
+  
+  return idx;
 }
   
 class Mat : public Idx {
@@ -180,6 +195,7 @@ template <typename T> void Mat_<T>::create(BaseType type, Idx size)
   Mat::create(_type, size);
 }
 
+void h5_dataset_read(H5::H5File f, const cpath &path, Mat &m);
 
 } //namespace clif
 

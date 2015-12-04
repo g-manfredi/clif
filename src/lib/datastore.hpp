@@ -64,7 +64,8 @@ public:
     void flush();
     void reset();
     
-    const cpath& getDatastorePath() const { return _path; };
+    const cpath& path() const { return _path; };
+    cpath fullPath() const;
     
     friend std::ostream& operator<<(std::ostream& out, const Datastore& a);
     

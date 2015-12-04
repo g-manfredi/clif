@@ -217,12 +217,22 @@ void Dataset::load_intrinsics(std::string intrset)
   }
 }
 
-Datastore *Dataset::getStore(const boost::filesystem::path &path, bool create, int create_dims)
+Datastore *Dataset::getStore(const boost::filesystem::path &path, int create_dims)
 {
   auto it_find = _stores.find(resolve(path).generic_string());
   
   if (it_find == _stores.end())
     return addStore(path, create_dims);
+  else
+    return it_find->second;
+}
+
+Datastore *Dataset::store(const boost::filesystem::path &path)
+{
+  auto it_find = _stores.find(resolve(path).generic_string());
+  
+  if (it_find == _stores.end())
+    return NULL;
   else
     return it_find->second;
 }
@@ -234,7 +244,7 @@ Datastore *Dataset::addStore(const boost::filesystem::path &path, int dims)
   store->setDims(dims);
   //FIXME delete previous store!
   assert(store);
-  _stores[store->getDatastorePath().generic_string()] = store;
+  _stores[store->path().generic_string()] = store;
   
   return store;
 }
@@ -248,7 +258,7 @@ void Dataset::reset()
 void Dataset::addStore(Datastore *store)
 {
   assert(store);
-  _stores[store->getDatastorePath().generic_string()] = store;
+  _stores[store->path().generic_string()] = store;
 }
 
 StringTree<Attribute*,Datastore*> Dataset::getTree()

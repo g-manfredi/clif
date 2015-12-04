@@ -266,11 +266,11 @@ cpath Attributes::getSubGroup(cpath parent, cpath child)
   parent = resolve(parent);
   
   for(uint i=0;i<attrs.size();i++)
-    if (attrs[i].link().empty() && has_prefix(attrs[i].name, parent))
+    if (has_prefix(attrs[i].name, parent))
       candidates.push_back(parent / *remove_prefix(attrs[i].name, parent).begin());
 
   if (!candidates.size())
-    throw std::runtime_error("getSubGroup: not child found for: "+parent.generic_string());
+    throw std::runtime_error("getSubGroup: no child found for: "+parent.generic_string());
 
   //FIXME implement priorities!
   for(auto c : candidates) {
@@ -576,7 +576,7 @@ void Attribute::write(H5::H5File f, const cpath & dataset_root)
     delete[] dim;
     
     if (!h5_obj_exists(f, grouppath))
-      h5_create_path_groups(f, grouppath.c_str());
+      h5_create_path_groups(f, grouppath);
     
     g = f.openGroup(grouppath.generic_string().c_str());
     

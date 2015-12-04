@@ -43,7 +43,7 @@ void attachTreeItem(QTreeWidgetItem *w, StringTree<Attribute*,Datastore*> *t, Cl
         stream << *std::get<1>(t->val.second);
         w->setData(1, Qt::DisplayRole, stream.str().c_str());
         w->setData(1, Qt::UserRole, qVariantFromValue((void*)std::get<1>(t->val.second)));
-        if (select_store && !std::get<1>(t->val.second)->getDatastorePath().generic_string().compare(select_store)) {
+        if (select_store && !std::get<1>(t->val.second)->path().generic_string().compare(select_store)) {
           w->setSelected(true);
           view->on_tree_itemActivated(w, 0);
         }
