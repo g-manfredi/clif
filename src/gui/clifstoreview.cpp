@@ -61,9 +61,15 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   w = new QWidget(this);
   _vbox ->addWidget(w);
   w->setLayout(hbox);
+  
+  _try_out_new_reader = new QCheckBox("experimental flexibel reader", this);
+  connect(_try_out_new_reader, SIGNAL(stateChanged(int)), this, SLOT(rangeStateChanged(int)));
+  hbox->addWidget(_try_out_new_reader);
+  
   _range_ck = new QCheckBox("scale for range", this);
   connect(_range_ck, SIGNAL(stateChanged(int)), this, SLOT(rangeStateChanged(int)));
   hbox->addWidget(_range_ck);
+  
   _sp_min = new QDoubleSpinBox(this);
   _sp_min->setRange(-1000000000,std::numeric_limits<double>::max());
   _sp_min->setDisabled(true);
@@ -126,19 +132,37 @@ void clifStoreView::load_img()
   if (_timer)
     _timer = NULL;
   
-  if (_curr_idx == _show_idx && _curr_flags == _sel->itemData(_sel->currentIndex()).value<int>() && _range_ck->checkState() != Qt::Checked)
-    return;
+  //FIXME disable for now - add flexibel read configuration to check!
+  //if (_curr_idx == _show_idx && _curr_flags == _sel->itemData(_sel->currentIndex()).value<int>() && _range_ck->checkState() != Qt::Checked)
+    //return;
   
   _curr_flags = _sel->itemData(_sel->currentIndex()).value<int>();
   _curr_idx = _show_idx;
   
-  std::vector<int> n_idx(_store->dims(),0);
-  n_idx[3] = _curr_idx;
+  if (_try_out_new_reader->checkState() == Qt::Checked) {
+    Idx pos(_store->dims());
+    Idx sub = {0, 3}; //x and imgs -> an epi :-)
+    
+    pos[1] = _curr_idx;
+    
+    clif::Mat m;
+    
+    _store->read_full_subdims(m, sub, pos);
+    cv::Mat m_cv = cvMat(m);
+    //FIXME hardcoded conversion from 16bit - move this somewhere decent in the processing chain...
+    m_cv.convertTo(m_cv, CV_8U, 1/256.0);
+    *_qimg = clifMatToQImage(m_cv).copy();
+  }
+  else {
+    std::vector<int> n_idx(_store->dims(),0);
+    n_idx[3] = _curr_idx;
+    
+    if (_range_ck->checkState() == Qt::Checked)
+      readQImage(_store, n_idx, *_qimg, _curr_flags, _sp_min->value(), _sp_max->value());
+    else
+      readQImage(_store, n_idx, *_qimg, _curr_flags);
+  }
   
-  if (_range_ck->checkState() == Qt::Checked)
-    readQImage(_store, n_idx, *_qimg, _curr_flags, _sp_min->value(), _sp_max->value());
-  else
-    readQImage(_store, n_idx, *_qimg, _curr_flags);
   _view->setImage(*_qimg);
   
   //force results of this slow operation to be displayed

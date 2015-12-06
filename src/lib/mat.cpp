@@ -15,7 +15,9 @@ typedef unsigned int uint;
  
 Idx::Idx() : std::vector<int>() {};
 
-Idx::Idx(int size) : std::vector<int>(size) {};
+Idx::Idx(std::initializer_list<int> l) : std::vector<int>(l) {};
+
+Idx::Idx(int size) : std::vector<int>(size) { printf("vec constr %d\n", size); };
 
 
 Idx::Idx(const H5::DataSpace &space)
@@ -386,6 +388,11 @@ void Mat_H5AttrRead(Mat &m, H5::Attribute &a)
 void h5_dataset_read(H5::H5File f, const cpath &path, Mat &m)
 {
   H5::DataSet data = f.openDataSet(path.string().c_str());
+  read(data, m);
+}
+
+void read(H5::DataSet &data, Mat &m)
+{
   H5::DataSpace space = data.getSpace();
   BaseType type = toBaseType(H5Dget_type(data.getId()));
   
@@ -402,6 +409,50 @@ void h5_dataset_read(H5::H5File f, const cpath &path, Mat &m)
     H5Dvlen_reclaim(native.getId(), space.getId(), H5P_DEFAULT, v);
     free(v);
   }
+}
+
+//FIXME dim_order must be sorted atm!
+void read_full_subdims(H5::DataSet &data, Mat &m, std::vector<int> dim_order, Idx offset)
+{
+  int dims = offset.size();
+  H5::DataSpace space = data.getSpace();
+  Idx data_size(space);
+  Idx size(dim_order.size());
+  hsize_t *count_h = new hsize_t[dims];
+  hsize_t *offset_h = new hsize_t[dims];
+  hsize_t *size_h = new hsize_t[dim_order.size()];
+  
+  assert(size.size() == dim_order.size());
+  
+  //FIXME assert offset == space dims #
+  
+  BaseType type = toBaseType(H5Dget_type(data.getId()));
+  
+  for(int i=0;i<dims;i++) {
+    offset_h[dims-i-1] = offset[i];
+    count_h[dims-i-1] = 1;
+  }
+  
+  for(int i=0;i<dim_order.size();i++) {
+    if (dim_order[i] > dims)
+      abort();
+    
+    size[i] = data_size[dim_order[i]] - offset[dim_order[i]];
+    size_h[dim_order.size()-i-1] = size[i];
+    
+    count_h[dims-dim_order[i]-1] = size[i];
+  }
+  
+  m.create(type, size);
+  
+  space.selectHyperslab(H5S_SELECT_SET, count_h, offset_h);
+  H5::DataSpace memspace(size.size(), size_h);
+  
+  data.read(m.data(), toH5DataType(type), memspace, space);
+  
+  
+  delete[] offset_h;
+  delete[] count_h;
 }
   
 //FIXME implement non-dense matrix!

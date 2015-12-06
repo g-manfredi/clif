@@ -58,8 +58,8 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
   if (pattern == CalibPattern::CHECKERBOARD)
     channels = 1;
   
-  Mat_<std::vector<Point2f>> wpoints_m(Idx(channels, imgs->imgCount()));
-  Mat_<std::vector<Point2f>> ipoints_m(Idx(channels, imgs->imgCount()));
+  Mat_<std::vector<Point2f>> wpoints_m(Idx{channels, imgs->imgCount()});
+  Mat_<std::vector<Point2f>> ipoints_m(Idx{channels, imgs->imgCount()});
   
   if (pattern == CalibPattern::CHECKERBOARD) {
     cv::Mat img;

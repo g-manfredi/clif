@@ -4,6 +4,7 @@
 #include "dataset.hpp"
 #include "clif_cv.hpp"
 #include "hdf5.hpp"
+#include "mat.hpp"
 
 #define CACHE_CONT_MAT_CHANNEL 1
 #define CACHE_CONT_MAT_IMG 2
@@ -161,6 +162,16 @@ void Datastore::read(clif::Mat &m)
   else {
     assert(_dataset);
     h5_dataset_read(_dataset->f(), fullPath(), m);
+  }
+}
+
+void Datastore::read_full_subdims(Mat &m, std::vector<int> dim_order, Idx offset)
+{
+  if (_memonly)
+    printf("FIXME implement subdims for clif::Mat!\n");
+  else {
+    assert(_dataset);
+    clif::read_full_subdims(_data, m, dim_order, offset);
   }
 }
     

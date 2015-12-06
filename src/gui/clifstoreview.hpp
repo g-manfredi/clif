@@ -43,6 +43,7 @@ private:
   QComboBox *_sel = NULL;
   bool _rendering = false;
   QCheckBox *_range_ck = NULL;
+  QCheckBox *_try_out_new_reader = NULL;
   QDoubleSpinBox *_sp_min = NULL;
   QDoubleSpinBox *_sp_max = NULL;
   

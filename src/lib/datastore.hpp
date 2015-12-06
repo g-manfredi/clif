@@ -46,6 +46,7 @@ public:
     //read store into m 
     void read(cv::Mat &m);
     void read(clif::Mat &m);
+    void read_full_subdims(Mat &m, std::vector<int> dim_order, Idx offset);
     //write m into store
     void write(cv::Mat &m);
     void write(clif::Mat &m);

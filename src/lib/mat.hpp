@@ -20,8 +20,8 @@ class Idx : public std::vector<int>
 public:
   Idx();
   Idx(int size);
+  Idx(std::initializer_list<int> l);
   Idx(const H5::DataSpace &space);
-  template<typename ... TS> Idx(TS ... idxs);
   
   off_t total() const;
   
@@ -107,6 +107,13 @@ hvl_t *Mat_H5vlenbuf(Mat &m);
 void   Mat_H5AttrWrite(Mat &m, H5::H5File &f, const boost::filesystem::path &path);
 void   Mat_H5AttrRead(Mat &m, H5::Attribute &a);
 
+void read(H5::DataSet &data, Mat &m);
+void write(Mat &m, H5::DataSet &data);
+
+//reads into m number dims_order.size() dimensional subset
+//dim order specifies mapping from m dims to dataset dims
+void read_full_subdims(H5::DataSet &data, Mat &m, std::vector<int> dim_order, Idx offset);
+
 cv::Mat cvMat(Mat &m);
 
 //FIXME implement stride
@@ -144,25 +151,6 @@ template<template<typename> class F, template<typename> class CHECK, typename ..
 {
   clif::callIf<F,CHECK>(_type, args...);
   
-}
-
-namespace {
-  void _set_array_from(int *ar) {};
-  
-  template<typename T, typename ... TS> void _set_array_from(int *ar, T idx, TS ... rest)
-  {
-    *ar = idx;
-    _set_array_from(ar+1,rest...);
-  }
-}
-
-template <typename ... TS> Idx::Idx(TS ... idxs)
-{
-  const int n = sizeof...(TS);
-  
-  resize(n);
-  
-  _set_array_from(&(*this)[0], idxs...);
 }
 
 template <typename T> Mat_<T>::Mat_()
