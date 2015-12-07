@@ -53,6 +53,23 @@ void proc_image(Datastore *store, Mat &in, Mat &out, int flags, double min, doub
   Mat curr_in;
   Mat curr_out = in;
   
+  bool sub = false;
+  bool scale = false;
+  double scale_val;
+  
+  if (!isnan(min))
+    sub = true;
+  else
+    min = 0.0;
+  
+  if (!isnan(max)) {
+    scale = true;
+    scale_val = max-min;
+  }
+  else
+    scale_val = BaseType_max(in.type())-min;
+    
+  
   //FIXME hdr may need 4!
   assert(in.size() == 3);
   
@@ -85,7 +102,25 @@ void proc_image(Datastore *store, Mat &in, Mat &out, int flags, double min, doub
   if (_handle_preproc(Improc::CVT_8U, curr_in, curr_out, out, flags)) {
     curr_out.create(BaseType::UINT8, curr_in);
     
-    cvMat(curr_in).convertTo(cvMat(curr_out), CV_8U, BaseType_max<uint8_t>()/BaseType_max(curr_in.type()));
+    cvMat(curr_in).convertTo(cvMat(curr_out), CV_8U, BaseType_max<uint8_t>()/scale_val);
+    printf("scale %f\n", BaseType_max<uint8_t>()/scale_val);
+    sub = false;
+    scale = false;
+  }
+  
+  if (sub || scale) {
+    curr_in = curr_out;
+
+    if (!flags)
+      //write to final output  
+      curr_out = out;  
+    else  
+      //use new matrix  
+      curr_out.release();
+    
+    curr_out.create(curr_in.type(), curr_in);
+    
+    cvMat(curr_out) = (cvMat(curr_in)-sub) * BaseType_max(curr_in.type())/scale_val;
   }
   
   if (_handle_preproc(Improc::UNDISTORT, curr_in, curr_out, out, flags)) {

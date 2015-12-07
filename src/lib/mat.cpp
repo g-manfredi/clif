@@ -161,10 +161,6 @@ Mat::Mat(cv::Mat &m)
       _step[0] = baseType_size(_type);
   }
   
-  //FIXME check _step logic!
-  printf("FIXME check _step logic in Mat::Mat(cv::Mat &m)\n!");
-  //abort();
-  
   _data = m.data;
   _mem = std::shared_ptr<void>(_data, cvMat_deleter(m));
 }
@@ -427,21 +423,24 @@ void h5_dataset_read(H5::H5File f, const cpath &path, Mat &m)
 
 void read(H5::DataSet &data, Mat &m)
 {
-  H5::DataSpace space = data.getSpace();
-  BaseType type = toBaseType(H5Dget_type(data.getId()));
-  
-  m.create(type, Idx(space));
-  
-  hvl_t *v = Mat_H5vlenbuf_alloc(m);
-  if (!v)
-    data.read(m.data(), toH5NativeDataType(type));
-  else {
-    //FIXME
-    H5::DataType native = toH5NativeDataType(type);
-    data.read(v, native);
-    Mat_H5vlenbuf_read(m, v);
-    H5Dvlen_reclaim(native.getId(), space.getId(), H5P_DEFAULT, v);
-    free(v);
+#pragma omp critical(hdf5)
+  {
+    H5::DataSpace space = data.getSpace();
+    BaseType type = toBaseType(H5Dget_type(data.getId()));
+    
+    m.create(type, Idx(space));
+    
+    hvl_t *v = Mat_H5vlenbuf_alloc(m);
+    if (!v)
+      data.read(m.data(), toH5NativeDataType(type));
+    else {
+      //FIXME
+      H5::DataType native = toH5NativeDataType(type);
+      data.read(v, native);
+      Mat_H5vlenbuf_read(m, v);
+      H5Dvlen_reclaim(native.getId(), space.getId(), H5P_DEFAULT, v);
+      free(v);
+    }
   }
 }
 
@@ -450,12 +449,14 @@ void read(H5::DataSet &data, Mat &m)
 void read_full_subdims(H5::DataSet &data, Mat &m, const Idx& dim_order, const Idx& offset)
 {
   int dims = offset.size();
-  H5::DataSpace space = data.getSpace();
-  Idx data_size(space);
-  Idx size(dim_order.size());
   hsize_t *count_h = new hsize_t[dims];
   hsize_t *offset_h = new hsize_t[dims];
   hsize_t *size_h = new hsize_t[dim_order.size()];
+#pragma omp critical(hdf5)
+  {
+  H5::DataSpace space = data.getSpace();
+  Idx data_size(space);
+  Idx size(dim_order.size());
   
   assert(size.size() == dim_order.size());
   
@@ -484,8 +485,8 @@ void read_full_subdims(H5::DataSet &data, Mat &m, const Idx& dim_order, const Id
   H5::DataSpace memspace(size.size(), size_h);
   
   data.read(m.data(), toH5DataType(type), memspace, space);
-  
-  
+  }
+
   delete[] offset_h;
   delete[] count_h;
 }
