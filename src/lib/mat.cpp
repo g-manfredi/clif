@@ -135,7 +135,7 @@ BaseType const & Mat::type() const
   return _type;
 }
 
-void* Mat::data()
+void* Mat::data() const
 {
   return _data;
 }
@@ -155,8 +155,11 @@ Mat::Mat(cv::Mat &m)
   for(int i=0;i<m.dims;i++) {
     operator[](i) = m.size[m.dims-i-1];
 
-    if (i < m.dims-i)
-      _step[i] = m.step[m.dims-i-2]/baseType_size(_type);
+    if (i)
+      _step[i] = m.step[m.dims-i-1];
+    else
+      _step[0] = baseType_size(_type);
+    
   }
   
   _data = m.data;
@@ -168,22 +171,22 @@ Mat::Mat(cv::Mat *m)
 {
 }
 
-void Mat::create(BaseType type, Idx size)
+void Mat::create(BaseType type, Idx newsize)
 {
-  if (type == _type && size.total() == total())
+  if (type == _type && newsize.total() == total())
   {
-    static_cast<Idx&>(*this) = size;
+    static_cast<Idx&>(*this) = newsize;
     return;
   }
-  
-  off_t count = size.total();
-  
-  static_cast<Idx&>(*this) = size;
-  _step = size;
+    
+  static_cast<Idx&>(*this) = newsize;
+  _step[0] = baseType_size(_type);
+  for(int i=1;i<size();i++)
+    _step[i] = _step[i-1]*newsize[i];
   _type = type;
   
-  _data = BaseType_new(type, count);
-  _mem = std::shared_ptr<void>(_data, BaseType_deleter(count, type));
+  _data = BaseType_new(type, total());
+  _mem = std::shared_ptr<void>(_data, BaseType_deleter(total(), type));
 }
 
 
@@ -241,16 +244,14 @@ int Mat::read(const char *path)
 
 void Mat::release()
 {
-  _data.reset();
+  _mem.reset();
 }
 
-void Mat::resape(const Idx &newsize)
+void Mat::reshape(const Idx &newsize)
 {
   //FIXME add more checks (for stride/step)
   
-  if (size.total != newsize.total())
-    abort();
-  if (size != step)
+  if (total() != newsize.total())
     abort();
   
   static_cast<Idx&>(*this) = newsize;
@@ -531,7 +532,7 @@ void write_full_subdims(H5::DataSet &data, Mat &m, std::vector<int> dim_order, I
 
 //FIXME avoid new/delete!
 //FIXME implement re-conversion if clif::Mat was created from cv::Mat
-cv::Mat cvMat(Mat &m)
+cv::Mat cvMat(const Mat &m)
 {
   cv::Mat tmp;
   int *idx = new int[m.size()];
@@ -564,10 +565,10 @@ Mat Mat::bind(int dim, int pos)
   }
   //if dim is not last idx!
   if (dim < b_mat.size()) {
-    b_mat[dim] = operator[](i+1);
+    b_mat[dim] = operator[](dim+1);
     b_mat._step[dim] = _step[dim]*_step[dim+1];
   }
-  for(int i=dims+1;i<b_mat.size();i++) {
+  for(int i=dim+1;i<b_mat.size();i++) {
     b_mat[i] = operator[](i+1);
     b_mat._step[i] = _step[i+1];
   }

@@ -14,7 +14,7 @@ CVT_8U = 2,
 UNDISTORT = 4,
 CVT_GRAY = 8,
 */
-
+/*
 #define CHECK_FLAG_PREPARE(FLAG) if (flags & FLAG) { \
     curr_in = curr_out; \
     if (!(flags ^ FLAG)) \
@@ -24,18 +24,18 @@ CVT_GRAY = 8,
       //use new matrix \
       curr_out.release(); \
     } \
-    if (flags & FLAG) \
+    if (flags & FLAG) \*/
 
   
 void proc_image(Datastore *store, Mat &in, Mat &out, int flags, int scaledown, double min, double max)
 {
-  /*int flags_remain;
+  int flags_remain;
   Mat curr_in;
   Mat curr_out = in;
   
   assert(in.size() == 3);
   
-  CHECK_FLAG_PREPARE(CVT_GRAY) {
+  /*CHECK_FLAG_PREPARE(CVT_GRAY) {
     cv::Mat accumulate;
     
     for(int c=0;c<in[2];c++) {

@@ -69,7 +69,7 @@ public:
   int write(const char *path);
   Mat bind(int dim, int pos);
   
-  void* data();
+  void* data() const;
   
   const std::vector<int> & step() const;
   
@@ -104,8 +104,8 @@ public:
   
   //FIXME/DOCUMENT: this should only be used after make-unique etc...
   template<typename ... Idxs> T& operator()(Idxs ... idxs)
-  {   
-    return ((char*)_data)[calc_offset<T>(_step, 0, idxs...)];
+  {
+    return *(T*)(((char*)_data)+calc_offset<T>(_step, 0, idxs...));
   }
 };
 
@@ -120,7 +120,7 @@ void write(Mat &m, H5::DataSet &data);
 //dim order specifies mapping from m dims to dataset dims
 void read_full_subdims(H5::DataSet &data, Mat &m, std::vector<int> dim_order, Idx offset);
 
-cv::Mat cvMat(Mat &m);
+cv::Mat cvMat(const Mat &m);
 
 //FIXME implement stride
 template<int DIM, typename T> vigra::MultiArrayView<DIM,T> vigraMAV(Mat &m)
@@ -146,7 +146,7 @@ template<int DIM, typename T> vigra::MultiArrayView<DIM,T> vigraMAV(Mat *m)
 
 template<typename T, typename ... Idxs> T& Mat::operator()(Idxs ... idxs)
 {
-  return ((char*)_data)[calc_offset<T>(_step, 0, idxs...)];
+  return *(T*)(((char*)_data)+calc_offset<T>(_step, 0, idxs...));
 } 
 
 template<template<typename> class F, typename ... ArgTypes> void Mat::call(ArgTypes ... args)
