@@ -130,6 +130,12 @@ public: \
   } \
 };
 
+//for all types
+#define COMMA ,
+CLIFALL_T_B(CODE)
+#undef COMMA
+#undef CODE
+
 #define CODE(TYPE, BASE) template<typename R COMMA template<typename> class CHECK COMMA  template<typename> class F COMMA  typename ... ARGS> class _doCallCheckR<R COMMA typename std::enable_if<CHECK<TYPE>::value COMMA int>::type COMMA CHECK COMMA TYPE COMMA F COMMA ARGS...> \
 { \
 public: \
