@@ -29,7 +29,7 @@ static bool _handle_preproc(int flag, Mat &curr_in, Mat &curr_out, Mat &out, int
 {
   if (flags & flag) {
     curr_in = curr_out;
-    printf("curr in data: %p = %p\n", curr_in.data(), curr_out.data());
+
     if (!(flags & (~flag)))  
       //write to final output  
       curr_out = out;  
@@ -44,7 +44,7 @@ static bool _handle_preproc(int flag, Mat &curr_in, Mat &curr_out, Mat &out, int
   
   return false;
 }
-  
+
 void proc_image(Datastore *store, Mat &in, Mat &out, int flags, double min, double max, int scaledown)
 {
   int flags_remain;

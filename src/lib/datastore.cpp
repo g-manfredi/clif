@@ -63,6 +63,7 @@ static bool _get_cache_path(cpath &cache_path)
   }
 }
 
+//FIXME add file timestamp!
 static cpath _cache_filename(Datastore *store, int idx, int flags, float scale)
 {
   cpath name;
@@ -851,107 +852,53 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double min, d
   
   assert((flags & FORCE_REUSE) == 0);
   
-  if (flags & CVT_8U)
-    output_depth = CV_8U;
-  if (flags & CVT_GRAY)
-    output_size[0] = 1;
-  else if (demosaic)
-    output_size[0] = 3;
-  
-  img->create(3,output_size,output_depth);
-  //for now
-  assert(img->isContinuous());
-  
-  /*if (((flags & NO_DISK_CACHE) == 0) && _get_cache_path(cache_file)) {
+  if (((flags & NO_DISK_CACHE) == 0) && _get_cache_path(cache_file)) {
     use_disk_cache = true;
     cache_file /= _cache_filename(this, idx[3], flags, scale);
     
-    Mat clif_img = Mat(img);
-    if (!clif_img.read(cache_file.string().c_str())) {
+    Idx _fixme_storage_size(3);
+    BaseType _fixme_storage_type = type();
+    
+    for(int i=0;i<3;i++)
+      _fixme_storage_size[i] = _basesize[i];
+    
+    if (demosaic)
+      _fixme_storage_size[2] = 3;
+    if (flags & Improc::CVT_GRAY)
+      _fixme_storage_size[2] = 1;
+    if (flags & Improc::CVT_8U)
+      _fixme_storage_type = BaseType::UINT8;
+      
+    //FIXME only create, don't allocate - calc in read!
+    tmp.create(_fixme_storage_type, _fixme_storage_size);
+    
+    if (!tmp.read(cache_file.string().c_str())) {
       printf("...cached\n");
       //backing memory location might have changed due to mmap
       //FIXME
-      //*img = cvMat(clif_img);
-      mat_cache_set(img,idx,flags,CACHE_CONT_MAT_IMG,scale);
+      *img = cvMat(tmp);
+      mat_cache_set(&tmp,idx,flags,CACHE_CONT_MAT_IMG,scale);
       return;
     }
   }
-  printf("\n");*/
+  printf("\n");
   
   //FIXME implement flexible datastore layouts (hdr, etc...)
   Idx subspace = {0,1,2};
   
   Mat m_read;
-  
   clif::read_full_subdims(_data, m_read, subspace, idx);
-  //cv::Mat cv = cvMat(m_read);//.clone() is not working (data is 0) (operator= neither)
-  //img->release();
-  //*img = cvMat(m_read);
-  //cv::Mat cv = cvMat(m_read);
-  //cv.convertTo(*img, CV_8U, 1/256.0);
   
   clif::Mat processed;
   proc_image(this, m_read, processed, flags);
-  *img = cvMat(processed);
-  
-  clif::Mat *store_aways = new Mat();
-  *store_aways = processed;
-  
-  /*std::vector<int> ch_idx = idx;
-  
-  cv::Mat reader = *img;
-  //if input and output are the same type this is a no-op
-  reader.create(3,imgsize,depth);
-  
-  cv::Mat channel_in, channel_out, tmp;
-    
-  if (demosaic) {
-    printf("demosaic!\n");
-    cv::Mat channel, img_rgb;
-    
-    //read raw channels
-    readChannel(ch_idx, &channel, NO_MEM_CACHE);
-    cv::cvtColor(channel, channel, order2cv_conf_flag(_order));
-    
-    cv2ClifMat(&channel, &img_rgb);
-    
-    apply_flags_image(&img_rgb, &tmp, flags);
-    
-    assert(tmp.size[0] = output_size[0]);
-    
-    //convert
-    for(int i=0;i<tmp.size[0];i++) {
-      channel_in = mat_2d_from_3d(tmp, i);
-      channel_out = mat_2d_from_3d(*img, i);
-      apply_flags_channel(this, &channel_in, &channel_out, flags, min, max);
-    }
-  }
-  else {
-    for(int i=0;i<_extent[2];i++) {
-      channel_in = mat_2d_from_3d(reader, i);
-      ch_idx[2] = i;    
-      readChannel(ch_idx, &channel_in, NO_MEM_CACHE | FORCE_REUSE);
-    }
-  
-    apply_flags_image(&reader, &tmp, flags);
-    
-    for(int i=0;i<output_size[0];i++) {
-      channel_in = mat_2d_from_3d(tmp, i);
-      channel_out = mat_2d_from_3d(*img, i);
-      apply_flags_channel(this, &channel_in, &channel_out, flags, min, max);
-    }
-  }*/
-  
-  //FIXME what if a cv::Mat was reused? make-unique?
-  //how to avoid clone?
   
   mat_cache_set(&processed,idx,flags,CACHE_CONT_MAT_IMG,scale);
-  
-  /*if (use_disk_cache) {
+  if (use_disk_cache) {
     create_directories(cache_file.parent_path());
-    Mat clif_img = Mat(img);
-    clif_img.write(cache_file.string().c_str());
-  }*/
+    processed.write(cache_file.string().c_str());
+  }
+  
+  *img = cvMat(processed);
 }
 
 void Datastore::setDims(int dims)
