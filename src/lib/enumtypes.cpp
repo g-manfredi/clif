@@ -92,6 +92,34 @@ int baseType_size(BaseType t)
   return callByBaseType<basetype_size_dispatcher,int>(t);
 }
 
+template<typename T> class basetype_max_dispatcher {
+public:
+  double operator()()
+  {
+    return std::numeric_limits<T>::max();
+  }
+};
+
+template<class FROM> struct _is_convertible_to_float : public std::is_convertible<FROM,float> {};
+
+double BaseType_max(BaseType type)
+{
+  if (type == BaseType::FLOAT || type == BaseType::DOUBLE)
+    return 1.0;
+  
+  return callIf<double,basetype_max_dispatcher,_is_convertible_to_float>(type);
+}
+
+template<> double BaseType_max<float>()
+{
+  return 1.0;
+}
+
+template<> double BaseType_max<double>()
+{
+  return 1.0;
+}
+
 H5::CompType _h5_cv_point2f_native_type()
 {
   H5::CompType t(sizeof(cv::Point2f));

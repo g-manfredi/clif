@@ -19,7 +19,7 @@ Idx::Idx() : std::vector<int>() {};
 
 Idx::Idx(std::initializer_list<int> l) : std::vector<int>(l) {};
 
-Idx::Idx(int size) : std::vector<int>(size) { printf("vec constr %d\n", size); };
+Idx::Idx(int size) : std::vector<int>(size) {};
 
 
 Idx::Idx(const H5::DataSpace &space)
@@ -159,8 +159,11 @@ Mat::Mat(cv::Mat &m)
       _step[i] = m.step[m.dims-i-1];
     else
       _step[0] = baseType_size(_type);
-    
   }
+  
+  //FIXME check _step logic!
+  printf("FIXME check _step logic in Mat::Mat(cv::Mat &m)\n!");
+  //abort();
   
   _data = m.data;
   _mem = std::shared_ptr<void>(_data, cvMat_deleter(m));
@@ -178,11 +181,14 @@ void Mat::create(BaseType type, Idx newsize)
     static_cast<Idx&>(*this) = newsize;
     return;
   }
-    
+  
+  _type = type;
   static_cast<Idx&>(*this) = newsize;
+  _step.resize(size());
+  
   _step[0] = baseType_size(_type);
   for(int i=1;i<size();i++)
-    _step[i] = _step[i-1]*newsize[i];
+    _step[i] = _step[i-1]*newsize[i-1];
   _type = type;
   
   _data = BaseType_new(type, total());
@@ -245,6 +251,10 @@ int Mat::read(const char *path)
 void Mat::release()
 {
   _mem.reset();
+  _data = NULL;
+  resize(0);
+  _step.resize(0);
+  _type = BaseType::INVALID;
 }
 
 void Mat::reshape(const Idx &newsize)
@@ -437,7 +447,7 @@ void read(H5::DataSet &data, Mat &m)
 
 //FIXME dim_order must be sorted atm!
 //FIXME ignore vlen reads!
-void read_full_subdims(H5::DataSet &data, Mat &m, std::vector<int> dim_order, Idx offset)
+void read_full_subdims(H5::DataSet &data, Mat &m, const Idx& dim_order, const Idx& offset)
 {
   int dims = offset.size();
   H5::DataSpace space = data.getSpace();
@@ -541,7 +551,7 @@ cv::Mat cvMat(const Mat &m)
   for(int i=0;i<m.size();i++) {
     idx[i] = m[m.size()-i-1];
     if (i)
-      step[m.size()-i-1] = m.step()[i-1]*baseType_size(m.type());
+      step[m.size()-i-1] = m.step()[i];
   }
   
   tmp = cv::Mat(m.size(), idx, BaseType2CvDepth(m.type()), m.data(), step);
@@ -572,6 +582,10 @@ Mat Mat::bind(int dim, int pos)
     b_mat[i] = operator[](i+1);
     b_mat._step[i] = _step[i+1];
   }
+  
+  b_mat._data = (char*)_data + _step[dim]*pos;
+  
+  return b_mat;
 }
 
 const std::vector<int> & Mat::step() const

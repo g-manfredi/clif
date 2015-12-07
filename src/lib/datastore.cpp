@@ -446,7 +446,7 @@ void Datastore::create_dims_imgs(int w, int h, int chs)
 
 //FIXME scale!
 //WARNING idx will change if size changes!
-void * Datastore::cache_get(const std::vector<int> idx, int flags, int extra_flags, float scale)
+void * Datastore::cache_get(const Idx& idx, int flags, int extra_flags, float scale)
 {
   uint64_t idx_sum = 0;
   uint64_t mul = 1;
@@ -464,7 +464,7 @@ void * Datastore::cache_get(const std::vector<int> idx, int flags, int extra_fla
     return it_find->second;
 }
 
-void Datastore::cache_set(const std::vector<int> idx, int flags, int extra_flags, float scale, void *data)
+void Datastore::cache_set(const Idx& idx, int flags, int extra_flags, float scale, void *data)
 {  
   uint64_t idx_sum = 0;
   uint64_t mul = 1;
@@ -628,43 +628,35 @@ void Datastore::writeChannel(const std::vector<int> &idx, cv::Mat *channel)
   _data.write(channel->data, toH5DataType(_type), imgspace, space);
 }
 
-bool Datastore::mat_cache_get(cv::Mat *m, const std::vector<int> idx, int flags, int extra_flags, float scale)
+bool Datastore::mat_cache_get(clif::Mat *m, const Idx& idx, int flags, int extra_flags, float scale)
 {
   if (flags & NO_MEM_CACHE)
     return false;
   
-  cv::Mat *cached = (cv::Mat*)cache_get(idx,flags,extra_flags,scale);
+  clif::Mat *cached = (clif::Mat*)cache_get(idx,flags,extra_flags,scale);
   
   if (!cached)
     return false;
   
-  if (flags & FORCE_REUSE)
-    cached->copyTo(*m);
-  else
-    *m = *cached;
+  if (flags & FORCE_REUSE) {
+    printf("FIXME implement cache copy again!\n");
+    abort();
+  }
+  
+  *m = *cached;
   
   return true;
 }
 
-void Datastore::mat_cache_set(cv::Mat *m, const std::vector<int> idx, int flags, int extra_flags, float scale)
+void Datastore::mat_cache_set(clif::Mat *m, const Idx& idx, int flags, int extra_flags, float scale)
 {
   if (flags & NO_MEM_CACHE)
     return;
-  
-  cv::Mat *cached = new cv::Mat();
-  //operator= should references if self-managed matrix, else copies
-#if CV_MAJOR_VERSION >= 3
-  bool shared = m->u;
-#else
-  bool shared = m->refcount;
-#endif
 
-  //FIXME fix this with clif::Mat
-  //if (shared)
-    m->copyTo(*cached);
-  /*else
-    *cached = *m;*/
-  cache_set(idx,flags,extra_flags,scale,cached);
+  Mat *cache_mat = new Mat();
+  *cache_mat = *m;
+  
+  cache_set(idx,flags,extra_flags,scale,cache_mat);
 }
 
 
@@ -744,9 +736,10 @@ void apply_flags_image(cv::Mat *in, cv::Mat *out, int flags)
   }
 }
 
-void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int flags)
+void Datastore::readChannel(const Idx &idx, cv::Mat *channel, int flags)
 {
-  std::vector<int> ch_size(idx.size(), 1);
+  abort();
+  /*std::vector<int> ch_size(idx.size(), 1);
   float scale = -1.0;
   
   if (mat_cache_get(channel,idx,flags,CACHE_CONT_MAT_CHANNEL,scale))
@@ -793,7 +786,7 @@ void Datastore::readChannel(const std::vector<int> &idx, cv::Mat *channel, int f
     abort();
   }
   
-  mat_cache_set(channel,idx,flags,CACHE_CONT_MAT_CHANNEL,scale);
+  mat_cache_set(channel,idx,flags,CACHE_CONT_MAT_CHANNEL,scale);*/
 }
 
 int order2cv_conf_flag(DataOrder order)
@@ -813,7 +806,7 @@ int order2cv_conf_flag(DataOrder order)
 }
 
 //this is always a 3d mat!
-void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags, double min, double max)
+void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double min, double max)
 {
   float scale = -1.0;
   int imgsize[3], output_size[3];
@@ -844,8 +837,12 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags, 
     flags |= NO_DISK_CACHE;
   }
     
-  if (mat_cache_get(img,idx,flags,CACHE_CONT_MAT_IMG,scale))
+  clif::Mat tmp;
+    
+  if (mat_cache_get(&tmp,idx,flags,CACHE_CONT_MAT_IMG,scale)) {
+    *img = cvMat(tmp);
     return;
+  }
   
   printf("read idx %d", idx[3]);
   
@@ -865,7 +862,7 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags, 
   //for now
   assert(img->isContinuous());
   
-  if (((flags & NO_DISK_CACHE) == 0) && _get_cache_path(cache_file)) {
+  /*if (((flags & NO_DISK_CACHE) == 0) && _get_cache_path(cache_file)) {
     use_disk_cache = true;
     cache_file /= _cache_filename(this, idx[3], flags, scale);
     
@@ -879,9 +876,28 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags, 
       return;
     }
   }
-  printf("\n");
+  printf("\n");*/
   
-  std::vector<int> ch_idx = idx;
+  //FIXME implement flexible datastore layouts (hdr, etc...)
+  Idx subspace = {0,1,2};
+  
+  Mat m_read;
+  
+  clif::read_full_subdims(_data, m_read, subspace, idx);
+  //cv::Mat cv = cvMat(m_read);//.clone() is not working (data is 0) (operator= neither)
+  //img->release();
+  //*img = cvMat(m_read);
+  //cv::Mat cv = cvMat(m_read);
+  //cv.convertTo(*img, CV_8U, 1/256.0);
+  
+  clif::Mat processed;
+  proc_image(this, m_read, processed, flags);
+  *img = cvMat(processed);
+  
+  clif::Mat *store_aways = new Mat();
+  *store_aways = processed;
+  
+  /*std::vector<int> ch_idx = idx;
   
   cv::Mat reader = *img;
   //if input and output are the same type this is a no-op
@@ -924,17 +940,18 @@ void Datastore::readImage(const std::vector<int> &idx, cv::Mat *img, int flags, 
       channel_out = mat_2d_from_3d(*img, i);
       apply_flags_channel(this, &channel_in, &channel_out, flags, min, max);
     }
-  }
+  }*/
   
   //FIXME what if a cv::Mat was reused? make-unique?
   //how to avoid clone?
-  mat_cache_set(img,idx,flags,CACHE_CONT_MAT_IMG,scale);
   
-  if (use_disk_cache) {
+  mat_cache_set(&processed,idx,flags,CACHE_CONT_MAT_IMG,scale);
+  
+  /*if (use_disk_cache) {
     create_directories(cache_file.parent_path());
     Mat clif_img = Mat(img);
     clif_img.write(cache_file.string().c_str());
-  }
+  }*/
 }
 
 void Datastore::setDims(int dims)

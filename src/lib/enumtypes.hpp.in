@@ -102,6 +102,16 @@ public:
     abort();
   }
 };
+
+template<typename R, typename DUMMY, template<typename> class CHECK, typename T, template<typename> class F, typename ... ARGS> class _doCallCheckR
+{
+public:
+  R operator()(DUMMY d, ARGS ... args)
+  {
+    printf("ERROR: template functor was disabled for type!\n");
+    abort();
+  }
+};
 /*template<template<typename> class CHECK, template<typename> class F, typename ... ARGS> class _doCallCheck<typename std::enable_if<CHECK<float>::value,int>::type,CHECK,float,F,ARGS...>
 {
 public:
@@ -120,6 +130,15 @@ public: \
   } \
 };
 
+#define CODE(TYPE, BASE) template<typename R COMMA template<typename> class CHECK COMMA  template<typename> class F COMMA  typename ... ARGS> class _doCallCheckR<R COMMA typename std::enable_if<CHECK<TYPE>::value COMMA int>::type COMMA CHECK COMMA TYPE COMMA F COMMA ARGS...> \
+{ \
+public: \
+  R operator()(int d COMMA ARGS ... args) \
+  { \
+    return F<TYPE>()(args...); \
+  } \
+};
+
 //for all types
 #define COMMA ,
 CLIFALL_T_B(CODE)
@@ -132,6 +151,21 @@ CLIFALL_T_B(CODE)
 #define CODE(TYPE, BASE) case (BASE) : _doCallCheck<int,CHECK,TYPE,F,ArgTypes...>()(0, args...); break;
 #define COMMA ,
 template<template<typename> class F, template<typename> class CHECK, typename ... ArgTypes> void callIf(BaseType type, ArgTypes ... args)
+{
+  switch (type) {
+    CLIFALL_T_B(CODE)
+    default:
+      abort();
+  }
+}
+#undef COMMA
+#undef CODE
+
+//callbybasetype - reguler
+//deep dark black c++ magic :-D
+#define CODE(TYPE, BASE) case (BASE) : return _doCallCheckR<R, int,CHECK,TYPE,F,ArgTypes...>()(0, args...); break;
+#define COMMA ,
+template<typename R, template<typename> class F, template<typename> class CHECK, typename ... ArgTypes> R callIf(BaseType type, ArgTypes ... args)
 {
   switch (type) {
     CLIFALL_T_B(CODE)
@@ -177,6 +211,21 @@ template<typename ExtraType, template<typename,typename> class F, typename ... A
 #define CODE(TYPE, BASE) case (BASE) : F<TYPE>()(args...); break;
 #define COMMA ,
 template<template<typename> class F, int EX, typename ... ArgTypes> void callByBaseTypeExcluding(BaseType type, ArgTypes ... args)
+{
+  switch (type) {
+    CLIFALL_T_B(CODE)
+    default:
+      abort();
+  }
+}
+#undef COMMA
+#undef CODE
+
+//callbybasetype - return with exclude
+//deep dark black c++ magic :-D
+#define CODE(TYPE, BASE) case (BASE) : return F<TYPE>()(args...); break;
+#define COMMA ,
+template<template<typename> class F, typename R, int EX, typename ... ArgTypes> R callByBaseTypeExcludingR(BaseType type, ArgTypes ... args)
 {
   switch (type) {
     CLIFALL_T_B(CODE)
@@ -276,6 +325,14 @@ H5::DataType toH5DataType(BaseType type);
 H5::DataType toH5NativeDataType(BaseType type);
 
 BaseType toBaseType(hid_t type);
+
+double BaseType_max(BaseType type);
+
+//for int types!
+template<typename T> double BaseType_max()
+{
+  return double(std::numeric_limits<T>::max())+1.0;
+}
 
 //H5::DataType BaseType_to_PredType(BaseType type);
 }

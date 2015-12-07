@@ -38,8 +38,8 @@ public:
     void writeImage(const std::vector<int> &idx, cv::Mat *img);
     void appendImage(cv::Mat *img);
     
-    void readImage(const std::vector<int> &idx, cv::Mat *img, int flags = 0, double min = std::numeric_limits<float>::quiet_NaN(), double max = std::numeric_limits<float>::quiet_NaN());
-    void readChannel(const std::vector<int> &idx, cv::Mat *channel, int flags = 0);
+    void readImage(const Idx& idx, cv::Mat *img, int flags = 0, double min = std::numeric_limits<float>::quiet_NaN(), double max = std::numeric_limits<float>::quiet_NaN());
+    void readChannel(const Idx& idx, cv::Mat *channel, int flags = 0);
     
     void setDims(int dims);
     
@@ -78,10 +78,10 @@ public:
     
     //FIXME delete cache contents on desctructor
     
-    void *cache_get(const std::vector<int> idx, int flags, int extra_flags, float scale);
-    void cache_set(const std::vector<int> idx, int flags, int extra_flags, float scale, void *data);
-    bool mat_cache_get(cv::Mat *m, const std::vector<int> idx, int flags, int extra_flags, float scale);
-    void mat_cache_set(cv::Mat *m, const std::vector<int> idx, int flags, int extra_flags, float scale);
+    void *cache_get(const Idx &idx, int flags, int extra_flags, float scale);
+    void cache_set(const Idx &idx, int flags, int extra_flags, float scale, void *data);
+    bool mat_cache_get(clif::Mat *m, const Idx &idx, int flags, int extra_flags, float scale);
+    void mat_cache_set(clif::Mat *m, const Idx &idx, int flags, int extra_flags, float scale);
 
     template<template<typename> class F, typename R, typename ... ArgTypes> R call(ArgTypes ... args)
     {

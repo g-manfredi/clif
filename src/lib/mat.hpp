@@ -23,6 +23,10 @@ public:
   Idx(std::initializer_list<int> l);
   Idx(const H5::DataSpace &space);
   
+  //convert to/from std::vector<int>
+  Idx(const std::vector<int> &v) : std::vector<int>(v) {};
+  operator std::vector<int>() { return *static_cast<std::vector<int>*>(this); };
+  
   off_t total() const;
   
   static Idx zeroButOne(int size, int pos, int idx);
@@ -118,7 +122,7 @@ void write(Mat &m, H5::DataSet &data);
 
 //reads into m number dims_order.size() dimensional subset
 //dim order specifies mapping from m dims to dataset dims
-void read_full_subdims(H5::DataSet &data, Mat &m, std::vector<int> dim_order, Idx offset);
+void read_full_subdims(H5::DataSet &data, Mat &m, const Idx& dim_order, const Idx& offset);
 
 cv::Mat cvMat(const Mat &m);
 

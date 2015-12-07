@@ -198,7 +198,7 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
 {
   int w, h;
   double step;
-  std::vector<int> idx(_store->dims(), 0);
+  Idx idx(_store->dims());
   
   if (unit == Unit::PIXELS)
     step = disparity;
@@ -234,7 +234,7 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
     cv::setNumThreads(0);
 #pragma omp parallel for schedule(dynamic)
   for(int i=0;i<h;i++) {
-    std::vector<int> idx_l(_store->dims(), 0);
+    Idx idx_l(_store->dims());
     cv::Mat img;
     idx_l[3] = i;
     _store->readImage(idx_l, &img, flags | UNDISTORT);
