@@ -30,14 +30,14 @@ public:
 };
   
 namespace {
-  template<typename T> off_t calc_offset(Idx &extent, int pos)
+  template<typename T> off_t calc_offset(Idx &step, int pos)
   {
     return 0;
   }
   
-  template<typename T, typename ... Idxs> off_t calc_offset(Idx &extent, int pos, int idx, Idxs ... rest)
+  template<typename T, typename ... Idxs> off_t calc_offset(Idx &step, int pos, int idx, Idxs ... rest)
   {
-    return idx + extent[pos]*calc_offset<T>(extent, pos+1, rest...);
+    return idx*step[pos] + calc_offset<T>(step, pos+1, rest...);
   }
 }
 
@@ -63,8 +63,11 @@ public:
   void create(BaseType type, Idx size);
   void release();
   
+  void reshape(const Idx &newsize);
+  
   int read(const char *path);
   int write(const char *path);
+  Mat bind(int dim, int pos);
   
   void* data();
   
@@ -83,7 +86,8 @@ public:
   
 protected:
   BaseType _type = BaseType::INVALID;
-  std::shared_ptr<void> _data;
+  void *_data = NULL;
+  std::shared_ptr<void> _mem;
   Idx _step; //not yet used!
   
 private:
@@ -101,7 +105,7 @@ public:
   //FIXME/DOCUMENT: this should only be used after make-unique etc...
   template<typename ... Idxs> T& operator()(Idxs ... idxs)
   {   
-    return ((T*)_data.get())[calc_offset<T>(_step, 0, idxs...)];
+    return ((char*)_data)[calc_offset<T>(_step, 0, idxs...)];
   }
 };
 
@@ -142,7 +146,7 @@ template<int DIM, typename T> vigra::MultiArrayView<DIM,T> vigraMAV(Mat *m)
 
 template<typename T, typename ... Idxs> T& Mat::operator()(Idxs ... idxs)
 {
-  return ((T*)_data.get())[calc_offset<T>(*(Idx*)this, 0, idxs...)];
+  return ((char*)_data)[calc_offset<T>(_step, 0, idxs...)];
 } 
 
 template<template<typename> class F, typename ... ArgTypes> void Mat::call(ArgTypes ... args)

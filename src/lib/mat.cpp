@@ -9,6 +9,8 @@
 //FIXME move functions in extra header...
 #include "hdf5.hpp"
 
+//FIXME opencv step calculation is definately not working!
+
 namespace clif {
   
 typedef unsigned int uint;
@@ -135,7 +137,7 @@ BaseType const & Mat::type() const
 
 void* Mat::data()
 {
-  return _data.get();
+  return _data;
 }
 
 Mat::Mat(BaseType type, Idx size)
@@ -157,7 +159,8 @@ Mat::Mat(cv::Mat &m)
       _step[i] = m.step[m.dims-i-2]/baseType_size(_type);
   }
   
-  _data = std::shared_ptr<void>(m.data, cvMat_deleter(m));
+  _data = m.data;
+  _mem = std::shared_ptr<void>(_data, cvMat_deleter(m));
 }
 
 Mat::Mat(cv::Mat *m)
@@ -179,7 +182,8 @@ void Mat::create(BaseType type, Idx size)
   _step = size;
   _type = type;
   
-  _data = std::shared_ptr<void>(BaseType_new(type, count), BaseType_deleter(count, type));
+  _data = BaseType_new(type, count);
+  _mem = std::shared_ptr<void>(_data, BaseType_deleter(count, type));
 }
 
 
@@ -238,6 +242,19 @@ int Mat::read(const char *path)
 void Mat::release()
 {
   _data.reset();
+}
+
+void Mat::resape(const Idx &newsize)
+{
+  //FIXME add more checks (for stride/step)
+  
+  if (size.total != newsize.total())
+    abort();
+  if (size != step)
+    abort();
+  
+  static_cast<Idx&>(*this) = newsize;
+  _step = newsize;
 }
 
 template<typename T> class _vdata_write_dispatcher{
@@ -532,6 +549,28 @@ cv::Mat cvMat(Mat &m)
   delete[] step;
   
   return tmp;
+}
+
+Mat Mat::bind(int dim, int pos)
+{
+  Mat b_mat = *this;
+  
+  b_mat.resize(size()-1);
+  b_mat._step.resize(b_mat.size());
+  
+  for(int i=0;i<dim;i++) {
+    b_mat[i] = operator[](i);
+    b_mat._step[i] = _step[i];
+  }
+  //if dim is not last idx!
+  if (dim < b_mat.size()) {
+    b_mat[dim] = operator[](i+1);
+    b_mat._step[dim] = _step[dim]*_step[dim+1];
+  }
+  for(int i=dims+1;i<b_mat.size();i++) {
+    b_mat[i] = operator[](i+1);
+    b_mat._step[i] = _step[i+1];
+  }
 }
 
 const std::vector<int> & Mat::step() const
