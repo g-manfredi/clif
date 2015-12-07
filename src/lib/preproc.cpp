@@ -2,6 +2,8 @@
 
 #include "mat.hpp"
 #include "datastore.hpp"
+#include "dataset.hpp"
+#include <opencv2/imgproc/imgproc.hpp>
 
 namespace clif {
   
@@ -86,8 +88,22 @@ void proc_image(Datastore *store, Mat &in, Mat &out, int flags, double min, doub
     cvMat(curr_in).convertTo(cvMat(curr_out), CV_8U, BaseType_max<uint8_t>()/BaseType_max(curr_in.type()));
   }
   
-  if (flags & Improc::UNDISTORT) {
-    printf("FIXME handle undistortion!\n");
+  if (_handle_preproc(Improc::UNDISTORT, curr_in, curr_out, out, flags)) {
+    curr_out.create(curr_in.type(), curr_in);
+    
+     Intrinsics *i = &store->getDataset()->intrinsics;
+    //FIXME get undist map (should be) generic!
+    if (i->model == DistModel::INVALID) {} // do nothing
+    else if (i->model == DistModel::CV8) {
+      cv::Mat *chap = i->getUndistMap(0, curr_in[0], curr_in[1]);
+      //cv::undistort(*ch,newm, i->cv_cam, i->cv_dist);
+      //cv::setNumThreads(0);
+      for(int c=0;c<curr_in[2];c++)
+        remap(cvMat(curr_in.bind(2,c)), cvMat(curr_out.bind(2,c)), *chap, cv::noArray(), cv::INTER_LINEAR);
+      
+    }
+    else
+      printf("distortion model not supported: %s\n", enum_to_string(i->model));
   }
   
   out = curr_out;
