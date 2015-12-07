@@ -4,6 +4,8 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+#include "preproc.hpp"
+
 namespace clif {
 
 using namespace std;
@@ -210,7 +212,7 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
   cv::Mat tmp;
   idx[3] = 0;
   //FIXME scale
-  _store->readImage(idx, &tmp, flags | UNDISTORT);
+  _store->readImage(idx, &tmp, flags | Improc::UNDISTORT);
   w = tmp.size[2];
   h = _store->clif::Datastore::imgCount();
   

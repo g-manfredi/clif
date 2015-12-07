@@ -149,8 +149,11 @@ Mat::Mat(cv::Mat &m)
   
   resize(m.dims);
   
-  for(int i=0;i<m.dims;i++)
+  for(int i=0;i<m.dims;i++) {
     operator[](i) = m.size[m.dims-i-1];
+    //FIXME steo
+    _step = 
+  }
   
   _data = std::shared_ptr<void>(m.data, cvMat_deleter(m));
 }
@@ -171,6 +174,7 @@ void Mat::create(BaseType type, Idx size)
   off_t count = size.total();
   
   static_cast<Idx&>(*this) = size;
+  _step = size;
   _type = type;
   
   _data = std::shared_ptr<void>(BaseType_new(type, count), BaseType_deleter(count, type));
@@ -412,6 +416,7 @@ void read(H5::DataSet &data, Mat &m)
 }
 
 //FIXME dim_order must be sorted atm!
+//FIXME ignore vlen reads!
 void read_full_subdims(H5::DataSet &data, Mat &m, std::vector<int> dim_order, Idx offset)
 {
   int dims = offset.size();
@@ -454,16 +459,79 @@ void read_full_subdims(H5::DataSet &data, Mat &m, std::vector<int> dim_order, Id
   delete[] offset_h;
   delete[] count_h;
 }
+/*
+void write_full_subdims(H5::DataSet &data, Mat &m, std::vector<int> dim_order, Idx offset)
+{
+  int dims = offset.size();
+  H5::DataSpace space = data.getSpace();
+  Idx data_size(space);
+  Idx extend_size(space);
+  Idx size(dim_order.size());
+  hsize_t *count_h = new hsize_t[dims];
+  hsize_t *offset_h = new hsize_t[dims];
+  hsize_t *size_h = new hsize_t[dim_order.size()];
+  
+  assert(size.size() == dim_order.size());
+  
+  //FIXME assert offset == space dims #
+  
+  BaseType type = toBaseType(H5Dget_type(data.getId()));
+  
+  for(int i=0;i<dims;i++) {
+    offset_h[dims-i-1] = offset[i];
+    count_h[dims-i-1] = 1;
+    extend_size[i] = offset[i]+1;
+  }
+  
+  bool extend_required = false;
+  for(int i=0;i<dim_order.size();i++) {
+    if (dim_order[i] > dims)
+      abort();
+    if (i>0 && dim_order[i-1] >= dim_order[i])
+      abort();
+    
+    extend_size[dim_order[i]] = m[i] + offset[dim_order[i]];
+    size_h[dim_order.size()-i-1] = m[i];
+    count_h[dims-dim_order[i]-1] = m[i];
+    if extend_size[i] >= 
+  }
+  
+  for(int i=0;i<dims;i++) {
+    
+  }
+  
+  space.selectHyperslab(H5S_SELECT_SET, count_h, offset_h);
+  H5::DataSpace memspace(size.size(), size_h);
+  
+  data.read(m.data(), toH5DataType(type), memspace, space);
+  
+  
+  delete[] offset_h;
+  delete[] count_h;
+}*/
   
 //FIXME implement non-dense matrix!
+//FIXME avoid new/delete!
 cv::Mat cvMat(Mat &m)
 {
+  cv::Mat tmp;
   int *idx = new int[m.size()];
+  int *step = new int[m.size()-1];
   
-  for(int i=0;i<m.size();i++)
+  for(int i=0;i<m.size();i++) {
     idx[i] = m[m.size()-i-1];
+    if (i)
+      step[m.size()-i-1] = m.step()[i];
+    else if (m.step()[0] != 1)
+      abort();
+  }
   
-  return cv::Mat(m.size(), idx, BaseType2CvDepth(m.type()), m.data());
+  tmp = cv::Mat(m.size(), idx, BaseType2CvDepth(m.type()), m.data(), step);
+  
+  delete[] idx;
+  delete[] step;
+  
+  return tmp;
 }
   
 } //namespace clif

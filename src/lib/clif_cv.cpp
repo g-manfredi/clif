@@ -1,6 +1,7 @@
 #include "clif_cv.hpp"
 
 #include "dataset.hpp"
+#include "preproc.hpp"
 
 #include <sstream>
 #include <string>
@@ -160,7 +161,7 @@ typedef unsigned int uint;
   
   static inline int proc_ch_count(int channels, int flags)
   {
-    if (flags & CVT_GRAY)
+    if (flags & Improc::CVT_GRAY)
       return 1;
     return channels;
   }

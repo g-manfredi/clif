@@ -13,6 +13,7 @@
 #include "clif_qt.hpp"
 
 #include "subset3d.hpp"
+#include "preproc.hpp"
 
 namespace clif {
 
@@ -41,7 +42,7 @@ clifEpiView::clifEpiView(Dataset *dataset, QWidget* parent)
     //FIXME implement via subset3d - we don't actually know what subset3d reads!
     Datastore *store = dataset->getStore(dataset->getSubGroup("calibration/extrinsics")/"data");
     std::vector<int> idx(store->dims(),0);
-    readQImage(store, idx, *_center_img, DEMOSAIC);
+    readQImage(store, idx, *_center_img, Improc::DEMOSAIC);
     _line = _center_img->size().height()/2;
     _centerview->setImage(*_center_img);
     _line_item = _centerview->scene.addLine(0, _line, _center_img->size().width(),_line);

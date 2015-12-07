@@ -2,6 +2,7 @@
 
 #include "dataset.hpp"
 #include "subset3d.hpp"
+#include "preproc.hpp"
 
 #include "opencv2/highgui/highgui.hpp"
 
@@ -59,7 +60,7 @@ namespace clif {
   void readQImage(Datastore *store, const std::vector<int> idx, QImage &img, int flags, double min, double max)
   {
     cv::Mat img_3d, img_2d;
-    store->readImage(idx, &img_3d, flags | CVT_8U, min, max);
+    store->readImage(idx, &img_3d, flags | Improc::CVT_8U, min, max);
     clifMat2cv(&img_3d, &img_2d);
     
     //FIXME zero copy memory handling?
@@ -69,7 +70,7 @@ namespace clif {
   void readEPI(clif::Subset3d *set, QImage &img, int line, double disp, int flags)
   {
     cv::Mat img_3d, img_2d;
-    set->readEPI(&img_3d, line, disp, Unit::PIXELS, flags | CVT_8U);
+    set->readEPI(&img_3d, line, disp, Unit::PIXELS, flags | Improc::CVT_8U);
     clifMat2cv(&img_3d, &img_2d);
     
     //FIXME zero copy memory handling?

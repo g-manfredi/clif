@@ -82,9 +82,9 @@ public:
 protected:
   BaseType _type = BaseType::INVALID;
   std::shared_ptr<void> _data;
+  Idx _step; //not yet used!
   
 private:
-  Idx _step; //not yet used!
 };
 
 template<typename T> class Mat_ : public Mat {
@@ -99,7 +99,7 @@ public:
   //FIXME/DOCUMENT: this should only be used after make-unique etc...
   template<typename ... Idxs> T& operator()(Idxs ... idxs)
   {   
-    return ((T*)_data.get())[calc_offset<T>(*(Idx*)this, 0, idxs...)];
+    return ((T*)_data.get())[calc_offset<T>(_step, 0, idxs...)];
   }
 };
 

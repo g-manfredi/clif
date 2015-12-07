@@ -3,6 +3,7 @@
 #include "calib.hpp"
 #include "clif_cv.hpp"
 #include "enumtypes.hpp"
+#include "preproc.hpp"
 
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -74,7 +75,7 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
       vector<Point2f> corners;
       std::vector<int> idx(4, 0);
       idx[3] = j;
-      imgs->readImage(idx, &img, CVT_8U | CVT_GRAY | DEMOSAIC);
+      imgs->readImage(idx, &img, Improc::CVT_8U | Improc::CVT_GRAY | Improc::DEMOSAIC);
       
       cv::Mat ch = clifMat_channel(img, 0);
       
@@ -156,7 +157,7 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
           //grayscale rough detection
           //FIXME move this up - mmapped reallocation not possible...
           cv::Mat img;
-          imgs->readImage(idx, &img, CVT_8U | CVT_GRAY | DEMOSAIC);
+          imgs->readImage(idx, &img, Improc::CVT_8U | Improc::CVT_GRAY | Improc::DEMOSAIC);
           cv::Mat gray = clifMat_channel(img, 0);
           Marker::detect(gray, corners_rough);
           
@@ -206,7 +207,7 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
         //grayscale rough detection
         //FIXME move this up - mmapped reallocation not possible...
         cv::Mat img;
-        imgs->readImage(idx, &img, CVT_8U | CVT_GRAY | DEMOSAIC);
+        imgs->readImage(idx, &img, Improc::CVT_8U | Improc::CVT_GRAY | Improc::DEMOSAIC);
         cv::Mat gray = clifMat_channel(img, 0);
         Marker::detect(gray, corners_rough);
         

@@ -18,6 +18,7 @@
 
 #include "dataset.hpp"
 #include "subset3d.hpp"
+#include "preproc.hpp"
 
 namespace clif {
 
@@ -44,9 +45,9 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   
   _sel = new QComboBox(this);
   _sel->addItem("raw", QVariant(0));
-  _sel->addItem("demosaic", QVariant(DEMOSAIC));
-  _sel->addItem("gray", QVariant(CVT_GRAY));
-  _sel->addItem("undistort", QVariant(UNDISTORT));
+  _sel->addItem("demosaic", QVariant(Improc::DEMOSAIC));
+  _sel->addItem("gray", QVariant(Improc::CVT_GRAY));
+  _sel->addItem("undistort", QVariant(Improc::UNDISTORT));
   _sel->setCurrentIndex(0);
   hbox->addWidget(_sel);
   

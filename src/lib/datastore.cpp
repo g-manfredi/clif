@@ -5,6 +5,7 @@
 #include "clif_cv.hpp"
 #include "hdf5.hpp"
 #include "mat.hpp"
+#include "preproc.hpp"
 
 #define CACHE_CONT_MAT_CHANNEL 1
 #define CACHE_CONT_MAT_IMG 2
@@ -454,7 +455,7 @@ void * Datastore::cache_get(const std::vector<int> idx, int flags, int extra_fla
     mul *= _extent[i];
   }
   
-  uint64_t key = (idx_sum * PROCESS_FLAGS_MAX) | flags | (extra_flags << 16);
+  uint64_t key = (idx_sum * Improc::MAX) | flags | (extra_flags << 16);
   auto it_find = image_cache.find(key);
   
   if (it_find == image_cache.end())
@@ -472,7 +473,7 @@ void Datastore::cache_set(const std::vector<int> idx, int flags, int extra_flags
     mul *= _extent[i];
   }
   
-  uint64_t key = (idx_sum * PROCESS_FLAGS_MAX) | flags | (extra_flags << 16);
+  uint64_t key = (idx_sum * Improc::MAX) | flags | (extra_flags << 16);
 #pragma omp critical(datastore_cache)
   image_cache[key] = data;
 }
