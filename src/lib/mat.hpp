@@ -68,6 +68,8 @@ public:
   
   void* data();
   
+  const std::vector<int> & step() const;
+  
   BaseType const & type() const;
   
   template<typename T, typename ... Idxs>

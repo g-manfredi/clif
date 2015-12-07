@@ -148,11 +148,13 @@ Mat::Mat(cv::Mat &m)
   _type = CvDepth2BaseType(m.depth());
   
   resize(m.dims);
+  _step.resize(m.dims);
   
   for(int i=0;i<m.dims;i++) {
     operator[](i) = m.size[m.dims-i-1];
-    //FIXME steo
-    _step = 
+
+    if (i < m.dims-i)
+      _step[i] = m.step[m.dims-i-2]/baseType_size(_type);
   }
   
   _data = std::shared_ptr<void>(m.data, cvMat_deleter(m));
@@ -509,21 +511,19 @@ void write_full_subdims(H5::DataSet &data, Mat &m, std::vector<int> dim_order, I
   delete[] offset_h;
   delete[] count_h;
 }*/
-  
-//FIXME implement non-dense matrix!
+
 //FIXME avoid new/delete!
+//FIXME implement re-conversion if clif::Mat was created from cv::Mat
 cv::Mat cvMat(Mat &m)
 {
   cv::Mat tmp;
   int *idx = new int[m.size()];
-  int *step = new int[m.size()-1];
+  size_t *step = new size_t[m.size()-1];
   
   for(int i=0;i<m.size();i++) {
     idx[i] = m[m.size()-i-1];
     if (i)
-      step[m.size()-i-1] = m.step()[i];
-    else if (m.step()[0] != 1)
-      abort();
+      step[m.size()-i-1] = m.step()[i-1]*baseType_size(m.type());
   }
   
   tmp = cv::Mat(m.size(), idx, BaseType2CvDepth(m.type()), m.data(), step);
@@ -532,6 +532,11 @@ cv::Mat cvMat(Mat &m)
   delete[] step;
   
   return tmp;
+}
+
+const std::vector<int> & Mat::step() const
+{
+  return _step;
 }
   
 } //namespace clif
