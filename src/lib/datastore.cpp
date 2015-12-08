@@ -828,6 +828,7 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double min, d
   bool disable_cache = false;
   cpath cache_file;
   bool use_disk_cache = false;
+  int proc_flag_mask = ~0;
   
   if (!isnan(min) || !isnan(max))
     disable_cache = true;
@@ -853,6 +854,8 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double min, d
   
   if ((flags & DEMOSAIC) && _org == DataOrg::BAYER_2x2)
     demosaic = true;
+  else
+    proc_flag_mask &= ~DEMOSAIC;
   
   assert((flags & FORCE_REUSE) == 0);
   
@@ -894,7 +897,7 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double min, d
   clif::read_full_subdims(_data, m_read, subspace, idx);
   
   clif::Mat processed;
-  proc_image(this, m_read, processed, flags, min, max, -1);
+  proc_image(this, m_read, processed, flags & proc_flag_mask, min, max, -1);
   
   mat_cache_set(&processed,idx,flags,CACHE_CONT_MAT_IMG,scale);
   if (use_disk_cache) {
@@ -902,7 +905,10 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double min, d
     processed.write(cache_file.string().c_str());
   }
   
-  *img = cvMat(processed);
+  if (flags & NO_MEM_CACHE)
+    *img = cvMat(processed).clone();
+  else
+    *img = cvMat(processed);
 }
 
 void Datastore::setDims(int dims)
