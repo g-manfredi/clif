@@ -123,8 +123,18 @@ template<typename T> void warp_1d_linear(cv::Mat *in, cv::Mat *out, int line_in,
   f1 = (offset - (double)off_i)*1024;
   f2 = 1024 - f1;
   
-  for(int i=clamp<int>(off_i, 1, out->size().width-1);i<clamp<int>(out->size().width+off_i, 1, out->size().width);i++)
+  int start = 0;
+  int stop = out->size().width;
+  
+  if (off_i > 0)
+    start = off_i;
+  if (stop - off_i + 1 > out->size().width)
+    stop = out->size().width + off_i - 1;
+  
+  for(int i=start;i<stop;i++)
     out_ptr[i] = (f1*(int)in_ptr[i-off_i] + f2*(int)in_ptr[i-off_i+1])/1024;
+  for(int i=stop;i<out->size().width;i++)
+    out_ptr[i] = 0;
 }
 
 template<typename T> class warp_1d_linear_dispatcher {
@@ -159,14 +169,21 @@ template<typename T> void warp_1d_nearest(cv::Mat *in, cv::Mat *out, int line_in
   T *in_ptr = (T*)in->ptr<T>(line_in);
   T *out_ptr = (T*)out->ptr<T>(line_out);
   
-  int start = clamp<int>(offset, 0, out->size().width);
-  int size = clamp<int>(out->size().width+offset, 0, out->size().width) - start;
+  int start = 0;
+  int stop = out->size().width;
+  
+  if (offset > 0)
+    start = offset;
+  if (stop - offset > out->size().width)
+    stop = out->size().width + offset;
+  
+  int size = stop - start;
   
   if (start)
     memset(out_ptr, 0, start*sizeof(T));
   memcpy(out_ptr+start, in_ptr+start-offset, size*sizeof(T));
-  if (out->size().width-size-start)
-    memset(out_ptr+(start+size)*sizeof(T), 0, (out->size().width-size-start)*sizeof(T));
+  if (stop < out->size().width)
+    memset(out_ptr+stop, 0, (out->size().width-stop)*sizeof(T));
 }
 
 template<typename T> class warp_1d_nearest_dispatcher {
