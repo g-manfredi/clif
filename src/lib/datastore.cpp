@@ -476,8 +476,6 @@ void Datastore::cache_set(const Idx& idx, int flags, int extra_flags, float scal
   
   uint64_t key = (idx_sum * Improc::MAX) | flags | (extra_flags << 16);
   
-  printf("set cache %llu\n", key);
-  
 #pragma omp critical(datastore_cache)
   image_cache[key] = data;
 }
