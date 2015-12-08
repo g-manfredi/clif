@@ -21,6 +21,7 @@ std::vector<std::string> Datasets(H5::H5File &f);
 
 class Dataset;
 
+//FIXME manage dataset list!
 
 CLIF_EXPORT class ClifFile
 {
@@ -32,7 +33,6 @@ public:
   
   void open(const std::string &filename, unsigned int flags = H5F_ACC_RDONLY);
   void create(const std::string &filename);
-  //void close();
   
   Dataset* openDataset(int idx);
   Dataset* openDataset(const std::string name = std::string());
@@ -46,7 +46,7 @@ public:
   void flush();
   void close();
   
-  const std::vector<std::string> & datasetList() const {return datasets;};
+  const std::vector<std::string> & datasetList() const { return datasets; };
   
   H5::H5File f;
 private:

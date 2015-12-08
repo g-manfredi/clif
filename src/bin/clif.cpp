@@ -19,6 +19,8 @@
 #include "clif_cv.hpp"
 #include "calib.hpp"
 
+#include <H5Library.h>
+
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
@@ -216,29 +218,18 @@ int main(const int argc, const char *argv[])
     //FIXME multiple dataset handling!
     if (f_out.datasetCount()) {
       printf("INFO: appending to HDF5 DataSet %s\n", f_out.datasetList()[0].c_str());
-      /*if (link_output && input_clifs.size()) {
-        printf("FIXME: check if linking into existing dataset works\n");
-        set = new Dataset();
-      }
-      else
-        */
       set = f_out.openDataset(0);
     }
     else {
       printf("INFO: creating new HDF5 DataSet %s\n", output_set_name.c_str());
-      
-      if (link_output && input_clifs.size()) {
-        set = new Dataset();
-      }
-      else
-        set = f_out.createDataset(output_set_name);
+      set = f_out.createDataset(output_set_name);
     }
-    //if (!set->file().valid())
-      //abort();
     
     if (!inplace)
     for(uint i=0;i<input_clifs.size();i++) {
-      ClifFile f_in(input_clifs[i], H5F_ACC_RDONLY);
+      ClifFile f_in(input_clifs[i], H5F_ACC_RDWR);
+      ///FIXME for linking!
+      //ClifFile f_in(input_clifs[i], H5F_ACC_RDONLY);
       
       //FIXME input name handling/selection
       if (f_in.datasetCount() != 1)
@@ -247,6 +238,7 @@ int main(const int argc, const char *argv[])
       //FIXME implement dataset handling for datasets without datastore!
       //TODO check: is ^ already working?
       Dataset *in_set = f_in.openDataset(0);
+      printf("open input refs; %d\n", H5Fget_obj_count(f_in.f.getId(), H5F_OBJ_ALL));
       if (include)
         for(int i=0;i<in_set->Attributes::count();i++) {
           bool match_found = false;
@@ -279,6 +271,15 @@ int main(const int argc, const char *argv[])
         else {
           printf("create dataset by linking!\n");
           set->link(f_out, in_set);
+          
+          delete set;
+          f_out.close();
+
+          delete in_set;
+          in_set = NULL;
+          f_in.close();
+          f_out.open(clif_append[0], H5F_ACC_RDWR);
+          set = f_out.openDataset();
         }
       }
       
@@ -302,8 +303,9 @@ int main(const int argc, const char *argv[])
         delete set;
         //FIXME dataset idx!
         set = f_out.openDataset(0);
+        
+        delete in_set;
       }
-      delete in_set;
     }
     
     for(uint i=0;i<input_inis.size();i++) {

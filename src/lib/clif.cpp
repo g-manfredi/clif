@@ -158,7 +158,10 @@ void ClifFile::open(const std::string &filename, unsigned int flags)
 void ClifFile::close()
 {
   flush();
+
   f.close();
+  
+  datasets.resize(0);
 }
 
 void ClifFile::flush()

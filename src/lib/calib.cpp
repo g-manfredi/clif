@@ -366,6 +366,8 @@ bool opencv_calibrate(Dataset *set, int flags, cpath map, cpath calib)
     
     Point2i proxy_size(proxy_m[1],proxy_m[2]);
     
+    std::vector<double> rms(proxy_m[3]);
+    
     for(int color=0;color<proxy_m[3];color++) {
       DistCorrLines dist_lines = DistCorrLines(0, 0, 0, cam_config.w, cam_config.h, 100.0, cam_config, conf, proxy_size);
       dist_lines.proxy_backwards.resize(proxy_m[4]);
@@ -382,7 +384,7 @@ bool opencv_calibrate(Dataset *set, int flags, cpath map, cpath calib)
           }
       }
       
-      dist_lines.proxy_fit_lines_global();
+      rms[color] = dist_lines.proxy_fit_lines_global();
       char buf[64];
       sprintf(buf, "center%02d", color);
       dist_lines.Draw(buf);
@@ -399,7 +401,8 @@ bool opencv_calibrate(Dataset *set, int flags, cpath map, cpath calib)
     Datastore *line_store = set->addStore(calib_root/"lines");
     line_store->write(proxy_m);
     
-    set->setAttribute(calib_root/"type", "ucalib");
+    set->setAttribute(calib_root/"type", "UCALIB");
+    set->setAttribute(calib_root/"rms", rms);
     
     return true;
   }

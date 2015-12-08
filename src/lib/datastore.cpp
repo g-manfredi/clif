@@ -1126,6 +1126,8 @@ Datastore::~Datastore()
 {
   flush();
   
+  _data.close();
+  
   for(auto i=image_cache.begin();i!=image_cache.end();++i) {
     if ((i->first >> 16) & (CACHE_CONT_MAT_CHANNEL | CACHE_CONT_MAT_IMG))
       delete (cv::Mat*)i->second;

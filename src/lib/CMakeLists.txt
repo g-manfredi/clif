@@ -13,7 +13,7 @@ set(DataOrg      "INVALID,PLANAR,INTERLEAVED,BAYER_2x2")
 set(DataOrder    "INVALID,SINGLE,RGGB,BGGR,GBRG,GRBG,RGB")
 set(ExtrType     "INVALID,LINE")
 set(CalibPattern "INVALID,CHECKERBOARD,HDMARKER")
-set(DistModel    "INVALID,CV8,LINES")
+set(DistModel    "INVALID,CV8,UCALIB")
 
 createEnumStrings(DataType)
 createEnumStrings(DataOrg)
