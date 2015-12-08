@@ -335,7 +335,7 @@ int main(const int argc, const char *argv[])
           cv::Mat img = imread(cliarg_nth_str(stores, sum), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
           if (img.channels() == 3)
             cvtColor(img, img, COLOR_BGR2RGB);
-          store->appendImage(&img);
+          store->append(clif::Mat3d(img));
         }
       }
     }

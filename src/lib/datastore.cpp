@@ -196,7 +196,48 @@ void Datastore::write(cv::Mat &m)
   _mat = Mat(m);
 }
 
-void Datastore::write(clif::Mat &m)
+void Datastore::write(const Mat &m, const Idx &pos)
+{
+  assert(!_readonly && !_memonly);
+  
+  write_full_subdims(_data, m, pos);
+  
+  H5::DataSpace space = _data.getSpace();
+  
+  _extent.resize(space.getSimpleExtentNdims());
+  _basesize.resize(space.getSimpleExtentNdims());
+  
+  hsize_t *dims = new hsize_t[_extent.size()];
+  hsize_t *maxdims = new hsize_t[_extent.size()];
+  
+  space.getSimpleExtentDims(dims, maxdims);
+  
+  for(int i=0;i<_extent.size();i++) {
+    _extent[i] = dims[_extent.size()-i-1];
+    if (maxdims[_extent.size()-i-1] == H5S_UNLIMITED)
+      _basesize[i] = 0;
+    else
+      _basesize[i] = maxdims[_extent.size()-i-1];
+  }
+  
+  delete[] dims;
+  delete[] maxdims;
+}
+
+void Datastore::append(const Mat &m)
+{
+  init_write(m.size()+1, m, m.type());
+  
+  Idx pos(_extent.size());
+  
+  assert(m.size() < _extent.size());
+  
+  pos[m.size()] = _extent[m.size()];
+  
+  write(m, pos);
+}
+
+void Datastore::write(const clif::Mat &m)
 {
   assert(!_readonly);
   
@@ -213,7 +254,7 @@ void Datastore::write(clif::Mat &m)
   _mat = m;
 }
 
-void Datastore::write(clif::Mat *m)
+void Datastore::write(const clif::Mat * const m)
 {
   write(*m);
 }
@@ -390,16 +431,15 @@ void Datastore::create_types(BaseType type)
 }
 
 //init store for image storage
-void Datastore::create_dims_imgs(int w, int h, int chs)
+void Datastore::create_dims_imgs(const Idx& size)
 {
   assert(_extent.size());
   
-  _extent[0] = w;
-  _extent[1] = h;
-  _extent[2] = chs;
+  for(int i=0;i<size.size();i++)
+    _extent[i] = size[i];
   
-  for(int i=0;i<_extent.size()-3;i++)
-    _extent[i+3] = 0;
+  for(int i=size.size();i<_extent.size();i++)
+    _extent[i] = 0;
   
   _basesize = _extent;
 }
@@ -587,13 +627,7 @@ hsize_t *new_h5_dim_vec_from_extent(std::vector<int> extent)
 
 void Datastore::writeChannel(const std::vector<int> &idx, cv::Mat *channel)
 {
-  if (_type <= BaseType::INVALID) {
-    setDims(idx.size());
-    create_types(CvDepth2BaseType(channel->depth()));
-    create_dims_imgs(channel->size().width, channel->size().height, 1);
-    create_store();
-  }
-  
+  init_write(idx.size(), Idx{channel->size().width,channel->size().height,1}, CvDepth2BaseType(channel->depth()));
   
   hsize_t *dims = NULL;
   H5::DataSpace space = _data.getSpace();
@@ -917,19 +951,19 @@ void Datastore::setDims(int dims)
   _basesize = _extent;
 }
 
-void Datastore::init_write(const std::vector<int> &idx, cv::Mat *img)
+void Datastore::init_write(int dims, const Idx &img_size, BaseType type)
 {
   if (_type <= BaseType::INVALID) {
-    setDims(idx.size());
-    create_types(CvDepth2BaseType(img->depth()));
-    create_dims_imgs(img->size().width, img->size().height, img->channels());
+    setDims(dims);
+    create_types(type); //CvDepth2BaseType(img->depth())
+    create_dims_imgs(img_size); //img->size().width, img->size().height, img->channels()
     create_store();
   }
 }
 
 void Datastore::writeImage(const std::vector<int> &idx, cv::Mat *img)
 {
-  init_write(idx, img);
+  init_write(idx.size(), Idx{img->size().width,img->size().height,img->channels()}, CvDepth2BaseType(img->depth()));
   
   assert(idx[0] == 0);
   assert(idx[1] == 0);
@@ -964,8 +998,6 @@ void Datastore::appendImage(cv::Mat *img)
   }
   
   std::vector<int> idx(_extent.size(), 0);  
-  
-  init_write(idx, img);
   
   //default to append at idx 3 (next image)
   idx[3] = _extent[3];

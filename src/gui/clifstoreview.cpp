@@ -148,7 +148,7 @@ void clifStoreView::load_img()
     
     clif::Mat m;
     
-    _store->read_full_subdims(m, sub, pos);
+    _store->read_full_subdims(m, pos, sub);
     *_qimg = clifMatToQImage(cvMat(m));
   }
   else {

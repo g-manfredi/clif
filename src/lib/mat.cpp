@@ -485,62 +485,86 @@ void read_full_subdims(H5::DataSet &data, Mat &m, const Idx& dim_order, const Id
   space.selectHyperslab(H5S_SELECT_SET, count_h, offset_h);
   H5::DataSpace memspace(size.size(), size_h);
   
-  data.read(m.data(), toH5DataType(type), memspace, space);
+  data.read(m.data(), toH5NativeDataType(type), memspace, space);
   }
 
   delete[] offset_h;
   delete[] count_h;
 }
-/*
-void write_full_subdims(H5::DataSet &data, Mat &m, std::vector<int> dim_order, Idx offset)
+
+void write_full_subdims(H5::DataSet &data, const Mat &m, const Idx& offset, const Idx& dim_order)
 {
   int dims = offset.size();
-  H5::DataSpace space = data.getSpace();
-  Idx data_size(space);
-  Idx extend_size(space);
-  Idx size(dim_order.size());
+  
+  Idx order = dim_order;
+  if (!order.size()) {
+    order.resize(m.size());
+    for(int i=0;i<order.size();i++)
+      order[i] = i;
+  }
+  
   hsize_t *count_h = new hsize_t[dims];
   hsize_t *offset_h = new hsize_t[dims];
-  hsize_t *size_h = new hsize_t[dim_order.size()];
+  hsize_t *size_h = new hsize_t[order.size()];
+  hsize_t *extend = new hsize_t[dims];
   
-  assert(size.size() == dim_order.size());
+#pragma omp critical(hdf5)
+  {
+  H5::DataSpace space = data.getSpace();
+  Idx data_size(space);
   
-  //FIXME assert offset == space dims #
+  //check wether hdf5 datasets needs to be enlarged
+  bool extend_dataset = false;
+  for(int i=0,h_i=dims-1;i<dims;i++,h_i--) {
+    extend[h_i] = offset[i] + 1;
+    if (extend[h_i] <= data_size[i])
+      extend[h_i] = data_size[i];
+    else
+      extend_dataset = true;
+  }
+  for(int i=0;i<order.size();i++) {
+    int idx = order[i];
+    int h_idx = dims-idx-1;
+    
+    extend[h_idx] = offset[idx] + m[i];
+    if (extend[h_idx] <= data_size[idx])
+      extend[h_idx] = data_size[idx];
+    else
+      extend_dataset = true;
+  }
+  
+  if (extend_dataset) {
+    data.extend(extend);
+    space = data.getSpace();
+  }
   
   BaseType type = toBaseType(H5Dget_type(data.getId()));
   
-  for(int i=0;i<dims;i++) {
-    offset_h[dims-i-1] = offset[i];
-    count_h[dims-i-1] = 1;
-    extend_size[i] = offset[i]+1;
+  for(int i=0,h_i=dims-1;i<dims;i++,h_i--) {
+    offset_h[h_i] = offset[i];
+    count_h[h_i] = 1;
   }
   
-  bool extend_required = false;
-  for(int i=0;i<dim_order.size();i++) {
-    if (dim_order[i] > dims)
-      abort();
-    if (i>0 && dim_order[i-1] >= dim_order[i])
+  for(int i=0;i<order.size();i++) {
+    int h_i = order.size()-i-1;
+    if (order[i] > dims)
       abort();
     
-    extend_size[dim_order[i]] = m[i] + offset[dim_order[i]];
-    size_h[dim_order.size()-i-1] = m[i];
-    count_h[dims-dim_order[i]-1] = m[i];
-    if extend_size[i] >= 
-  }
-  
-  for(int i=0;i<dims;i++) {
-    
+    size_h[h_i] = m[i];
+    count_h[dims-order[i]-1] = m[i];
   }
   
   space.selectHyperslab(H5S_SELECT_SET, count_h, offset_h);
-  H5::DataSpace memspace(size.size(), size_h);
+  H5::DataSpace memspace(order.size(), size_h);
   
-  data.read(m.data(), toH5DataType(type), memspace, space);
-  
-  
+  data.write(m.data(), toH5NativeDataType(type), memspace, space);
+  }
+
   delete[] offset_h;
   delete[] count_h;
-}*/
+  delete[] size_h;
+  delete[] extend;
+}
 
 //FIXME avoid new/delete!
 //FIXME implement re-conversion if clif::Mat was created from cv::Mat
@@ -588,6 +612,22 @@ Mat Mat::bind(int dim, int pos)
   b_mat._data = (char*)_data + _step[dim]*pos;
   
   return b_mat;
+}
+
+Mat Mat3d(const cv::Mat &img)
+{
+  Mat m(CvDepth2BaseType(img.depth()), Idx{img.size().width,img.size().height, img.channels()});
+  
+  if (img.dims != 2)
+    abort();
+  
+  std::vector<cv::Mat> channels;
+  cv::split(img, channels);
+
+  for(int i=0;i<channels.size();i++)
+    channels[i].copyTo(cvMat(m.bind(2, i)));
+  
+  return m;
 }
 
 const std::vector<int> & Mat::step() const

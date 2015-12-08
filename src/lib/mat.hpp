@@ -117,12 +117,15 @@ hvl_t *Mat_H5vlenbuf(Mat &m);
 void   Mat_H5AttrWrite(Mat &m, H5::H5File &f, const boost::filesystem::path &path);
 void   Mat_H5AttrRead(Mat &m, H5::Attribute &a);
 
+Mat Mat3d(const cv::Mat &img);
+
 void read(H5::DataSet &data, Mat &m);
 void write(Mat &m, H5::DataSet &data);
 
 //reads into m number dims_order.size() dimensional subset
 //dim order specifies mapping from m dims to dataset dims
-void read_full_subdims(H5::DataSet &data, Mat &m, const Idx& dim_order, const Idx& offset);
+void read_full_subdims(H5::DataSet &data, Mat &m, const Idx& offset, const Idx& dim_order);
+void write_full_subdims(H5::DataSet &data, const Mat &m, const Idx& offset, const Idx& dim_order = Idx());
 
 cv::Mat cvMat(const Mat &m);
 

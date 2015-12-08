@@ -49,8 +49,10 @@ public:
     void read_full_subdims(Mat &m, std::vector<int> dim_order, Idx offset);
     //write m into store
     void write(cv::Mat &m);
-    void write(clif::Mat &m);
-    void write(clif::Mat *m);
+    void write(const clif::Mat &m);
+    void write(const clif::Mat * const m);
+    void write(const Mat &m, const Idx &pos);
+    void append(const Mat &m);
     
     int imgMemSize();
     
@@ -99,9 +101,9 @@ public:
     ~Datastore();
     
     //initialization
-    void init_write(const std::vector<int> &idx, cv::Mat *img);
+    void init_write(int dims, const Idx &img_size, BaseType type);
     void create_types(BaseType type = BaseType::INVALID);
-    void create_dims_imgs(int w, int h, int chs);
+    void create_dims_imgs(const Idx& size);
     void create_store();
     
     BaseType _type = BaseType::INVALID;
