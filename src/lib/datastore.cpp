@@ -475,6 +475,9 @@ void Datastore::cache_set(const Idx& idx, int flags, int extra_flags, float scal
   }
   
   uint64_t key = (idx_sum * Improc::MAX) | flags | (extra_flags << 16);
+  
+  printf("set cache %llu\n", key);
+  
 #pragma omp critical(datastore_cache)
   image_cache[key] = data;
 }
@@ -630,7 +633,7 @@ void Datastore::writeChannel(const std::vector<int> &idx, cv::Mat *channel)
 }
 
 bool Datastore::mat_cache_get(clif::Mat *m, const Idx& idx, int flags, int extra_flags, float scale)
-{
+{  
   if (flags & NO_MEM_CACHE)
     return false;
   
@@ -656,7 +659,7 @@ void Datastore::mat_cache_set(clif::Mat *m, const Idx& idx, int flags, int extra
 
   Mat *cache_mat = new Mat();
   *cache_mat = *m;
-  
+
   cache_set(idx,flags,extra_flags,scale,cache_mat);
 }
 
@@ -826,7 +829,7 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double min, d
   cpath cache_file;
   bool use_disk_cache = false;
   
-  if (!isnan(min) && !isnan(max))
+  if (!isnan(min) || !isnan(max))
     disable_cache = true;
   
   if (flags & CVT_GRAY)
@@ -839,7 +842,8 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double min, d
   }
     
   clif::Mat tmp;
-    
+  
+  //WARNING we MUST not change flags after this point!    
   if (mat_cache_get(&tmp,idx,flags,CACHE_CONT_MAT_IMG,scale)) {
     *img = cvMat(tmp);
     return;

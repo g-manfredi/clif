@@ -53,6 +53,9 @@ void proc_image(Datastore *store, Mat &in, Mat &out, int flags, double min, doub
   Mat curr_in;
   Mat curr_out = in;
   
+  flags &= ~NO_MEM_CACHE;
+  flags &= ~NO_DISK_CACHE;
+  
   bool sub = false;
   bool scale = false;
   double scale_val;
@@ -102,8 +105,13 @@ void proc_image(Datastore *store, Mat &in, Mat &out, int flags, double min, doub
   if (_handle_preproc(Improc::CVT_8U, curr_in, curr_out, out, flags)) {
     curr_out.create(BaseType::UINT8, curr_in);
     
-    cvMat(curr_in).convertTo(cvMat(curr_out), CV_8U, BaseType_max<uint8_t>()/scale_val);
-    printf("scale %f\n", BaseType_max<uint8_t>()/scale_val);
+    if (sub) {
+      cv::Mat subbed = cvMat(curr_in) - min;
+      subbed.convertTo(cvMat(curr_out), CV_8U, BaseType_max<uint8_t>()/scale_val);
+    }
+    else
+      cvMat(curr_in).convertTo(cvMat(curr_out), CV_8U, BaseType_max<uint8_t>()/scale_val);
+    
     sub = false;
     scale = false;
   }
@@ -120,7 +128,8 @@ void proc_image(Datastore *store, Mat &in, Mat &out, int flags, double min, doub
     
     curr_out.create(curr_in.type(), curr_in);
     
-    cvMat(curr_out) = (cvMat(curr_in)-sub) * BaseType_max(curr_in.type())/scale_val;
+    cv::Mat tmp = (cvMat(curr_in)-min) * BaseType_max(curr_in.type())/scale_val;
+    tmp.copyTo(cvMat(curr_out));
   }
   
   if (_handle_preproc(Improc::UNDISTORT, curr_in, curr_out, out, flags)) {

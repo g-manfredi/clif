@@ -149,10 +149,7 @@ void clifStoreView::load_img()
     clif::Mat m;
     
     _store->read_full_subdims(m, sub, pos);
-    cv::Mat m_cv = cvMat(m);
-    //FIXME hardcoded conversion from 16bit - move this somewhere decent in the processing chain...
-    m_cv.convertTo(m_cv, CV_8U, 1/256.0);
-    *_qimg = clifMatToQImage(m_cv).copy();
+    *_qimg = clifMatToQImage(cvMat(m));
   }
   else {
     std::vector<int> n_idx(_store->dims(),0);
