@@ -18,6 +18,7 @@
   
 #ifdef CLIF_WITH_UCALIB
   #include <ucalib/corr_lines.hpp>
+  #include <ucalib/gencam.hpp>
 #endif
   
 #include "mat.hpp"
@@ -367,6 +368,8 @@ bool opencv_calibrate(Dataset *set, int flags, cpath map, cpath calib)
     Point2i proxy_size(proxy_m[1],proxy_m[2]);
     
     std::vector<double> rms(proxy_m[3]);
+    std::vector<double> proj_rms(proxy_m[3]);
+    Mat_<float> proj(Idx{2, proxy_m[3]});
     
     for(int color=0;color<proxy_m[3];color++) {
       DistCorrLines dist_lines = DistCorrLines(0, 0, 0, cam_config.w, cam_config.h, 100.0, cam_config, conf, proxy_size);
@@ -389,6 +392,11 @@ bool opencv_calibrate(Dataset *set, int flags, cpath map, cpath calib)
       sprintf(buf, "center%02d", color);
       dist_lines.Draw(buf);
       
+      GenCam gcam = GenCam(dist_lines.linefits, cv::Point2i(im_size[0],im_size[1]), cv::Point2i(proxy_m[1],proxy_m[2]));
+      proj(0, color) = gcam.f.x;
+      proj(1, color) = gcam.f.y;
+      proj_rms[color] = gcam.rms;
+      
       for(int j=0;j<proxy_size.y;j++)
         for(int i=0;i<proxy_size.x;i++) {
           corr_line_m(0, i, j, color) = dist_lines.linefits[j*proxy_size.y+i][0];
@@ -403,6 +411,8 @@ bool opencv_calibrate(Dataset *set, int flags, cpath map, cpath calib)
     
     set->setAttribute(calib_root/"type", "UCALIB");
     set->setAttribute(calib_root/"rms", rms);
+    set->setAttribute(calib_root/"projection_rms", proj_rms);
+    set->setAttribute(calib_root/"projection", proj);
     
     return true;
   }
