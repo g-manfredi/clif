@@ -4,6 +4,7 @@
 #include "attribute.hpp"
 #include "datastore.hpp"
 #include "clif.hpp"
+#include "tree_derived.hpp"
 
 namespace clif {
   
@@ -65,6 +66,8 @@ class Dataset : public Attributes {
     Datastore *addStore(const boost::filesystem::path &path, int dims = 4);
     void addStore(Datastore *store);
     
+    Tree_Derived *tree_derive(const Tree_Derived &reference);
+    
     bool memoryFile();
     
     //FIXME fix or remove this method
@@ -104,6 +107,7 @@ private:
     bool _memory_file = false;
     
     void datastores_append_group(Dataset *set, std::unordered_map<std::string,Datastore*> &stores, H5::Group &g, cpath basename, cpath group_path);
+    std::unordered_multimap<std::string,Tree_Derived*> _derive_cache;
 };
   
 }
