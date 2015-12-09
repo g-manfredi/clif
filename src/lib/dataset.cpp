@@ -245,6 +245,35 @@ Datastore *Dataset::store(const boost::filesystem::path &path)
     return it_find->second;
 }
 
+bool Dataset::readStore(const boost::filesystem::path &path, Mat &m)
+{
+  Datastore *s = store(path);
+  
+  if (!s)
+    return false;
+  
+  s->read(m);
+  
+  return true;
+}
+
+Mat Dataset::readStore(const boost::filesystem::path &path)
+{
+  Mat m;
+  
+  Datastore *s = store(path);
+  
+  if (!s)
+    throw(std::runtime_error("invalid store"));
+    
+  s->read(m);
+    for(int i=0;i<16;i++)
+      printf("%f ", ((float*)m.data())[i]);
+    printf("\n");
+  
+  return m;
+}
+
 Datastore *Dataset::addStore(const boost::filesystem::path &path, int dims)
 {
   Datastore *store = new Datastore;
@@ -282,6 +311,28 @@ StringTree<Attribute*,Datastore*> Dataset::getTree()
   }
   
   return tree;
+}
+
+Tree_Derived *Dataset::tree_derive(const Tree_Derived & ref)
+{
+  auto it = _derive_cache.find(ref.path().generic_string());
+  
+  while (it != _derive_cache.end()) {
+    if (*it->second == ref)
+      return it->second;
+    ++it;
+  }
+    
+  Tree_Derived *newtree = ref.clone();
+  
+  if (!newtree->load(this)) {
+    delete newtree;
+    return NULL;
+  }
+  
+  _derive_cache.insert(std::make_pair(newtree->path().generic_string(),newtree));
+  
+  return newtree;
 }
 
 /*

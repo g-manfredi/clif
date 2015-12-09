@@ -399,15 +399,15 @@ bool opencv_calibrate(Dataset *set, int flags, cpath map, cpath calib)
       
       for(int j=0;j<proxy_size.y;j++)
         for(int i=0;i<proxy_size.x;i++) {
-          corr_line_m(0, i, j, color) = dist_lines.linefits[j*proxy_size.y+i][0];
-          corr_line_m(1, i, j, color) = dist_lines.linefits[j*proxy_size.y+i][1];
-          corr_line_m(2, i, j, color) = dist_lines.linefits[j*proxy_size.y+i][2];
-          corr_line_m(3, i, j, color) = dist_lines.linefits[j*proxy_size.y+i][3];
+          corr_line_m(0, i, j, color) = dist_lines.linefits[j*proxy_size.x+i][0];
+          corr_line_m(1, i, j, color) = dist_lines.linefits[j*proxy_size.x+i][1];
+          corr_line_m(2, i, j, color) = dist_lines.linefits[j*proxy_size.x+i][2];
+          corr_line_m(3, i, j, color) = dist_lines.linefits[j*proxy_size.x+i][3];
         }
     }
     
     Datastore *line_store = set->addStore(calib_root/"lines");
-    line_store->write(proxy_m);
+    line_store->write(corr_line_m);
     
     set->setAttribute(calib_root/"type", "UCALIB");
     set->setAttribute(calib_root/"rms", rms);

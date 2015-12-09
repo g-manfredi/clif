@@ -76,7 +76,7 @@ static cpath _cache_filename(Datastore *store, int idx, int flags, float scale)
   
   name = "clif/001/cached_imgs";
   std::hash<std::string> hasher;
-  std::string dset_path = store->getDataset()->path().generic_string();
+  std::string dset_path = store->dataset()->path().generic_string();
   longkey_stream << hasher(dset_path) << "_" << hasher(store->path().generic_string()) << "_" << hasher(shortkey);
   longkey = longkey_stream.str();
   name /= longkey + ".bin";
@@ -724,7 +724,7 @@ void apply_flags_channel(Datastore *store, cv::Mat *in, cv::Mat *out, int flags,
   }
   
   if (flags & UNDISTORT) {
-    Intrinsics *i = &store->getDataset()->intrinsics;
+    Intrinsics *i = &store->dataset()->intrinsics;
     //FIXMe getundistmap (should be) generic!
     if (i->model == DistModel::INVALID) {} // do nothing
     else if (i->model == DistModel::CV8) {
@@ -842,28 +842,20 @@ int order2cv_conf_flag(DataOrder order)
 }
 
 //this is always a 3d mat!
-void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double min, double max)
+void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double min, double max, double depth)
 {
   float scale = -1.0;
-  int imgsize[3], output_size[3];
-  imgsize[2] = _basesize[0];
-  imgsize[1] = _basesize[1];
-  //FIXME may be changed by flags!
-  imgsize[0] = _basesize[2];
-  output_size[2] = imgsize[2];
-  output_size[1] = imgsize[1];
-  output_size[0] = imgsize[0];
-  int depth = BaseType2CvDepth(_type);
-  int output_depth = depth;
-  int channel_flags = flags;
+  
   bool demosaic = false;
   bool disable_cache = false;
   cpath cache_file;
   bool use_disk_cache = false;
-  int proc_flag_mask = ~0;
   
   if (!isnan(min) || !isnan(max))
     disable_cache = true;
+  
+  //FIXME
+  disable_cache = true;
   
   if (flags & CVT_GRAY)
     flags |= DEMOSAIC;
@@ -873,6 +865,11 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double min, d
     flags |= NO_MEM_CACHE;
     flags |= NO_DISK_CACHE;
   }
+
+  if ((flags & DEMOSAIC) && _org == DataOrg::BAYER_2x2)
+    demosaic = true;
+  else
+    flags &= ~DEMOSAIC;
     
   clif::Mat tmp;
   
@@ -883,11 +880,6 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double min, d
   }
   
   printf("read idx %d", idx[3]);
-  
-  if ((flags & DEMOSAIC) && _org == DataOrg::BAYER_2x2)
-    demosaic = true;
-  else
-    proc_flag_mask &= ~DEMOSAIC;
   
   assert((flags & FORCE_REUSE) == 0);
   
@@ -929,7 +921,7 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double min, d
   clif::read_full_subdims(_data, m_read, subspace, idx);
   
   clif::Mat processed;
-  proc_image(this, m_read, processed, flags & proc_flag_mask, min, max, -1);
+  proc_image(this, m_read, processed, flags, min, max, -1, depth);
   
   mat_cache_set(&processed,idx,flags,CACHE_CONT_MAT_IMG,scale);
   if (use_disk_cache) {

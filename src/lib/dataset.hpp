@@ -62,11 +62,14 @@ class Dataset : public Attributes {
     void flush();
     
     Datastore *store(const boost::filesystem::path &path);
+    bool readStore(const boost::filesystem::path &path, Mat &m);
+    Mat readStore(const boost::filesystem::path &path);
     Datastore *getStore(const boost::filesystem::path &path, int create_dims = 4);
     Datastore *addStore(const boost::filesystem::path &path, int dims = 4);
     void addStore(Datastore *store);
     
-    Tree_Derived *tree_derive(const Tree_Derived &reference);
+    //FIXME somehow avoid construction?
+    Tree_Derived *tree_derive(const Tree_Derived & ref);
     
     bool memoryFile();
     

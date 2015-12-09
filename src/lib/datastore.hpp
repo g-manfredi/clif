@@ -38,7 +38,7 @@ public:
     void writeImage(const std::vector<int> &idx, cv::Mat *img);
     void appendImage(cv::Mat *img);
     
-    void readImage(const Idx& idx, cv::Mat *img, int flags = 0, double min = std::numeric_limits<float>::quiet_NaN(), double max = std::numeric_limits<float>::quiet_NaN());
+    void readImage(const Idx& idx, cv::Mat *img, int flags = 0, double min = std::numeric_limits<float>::quiet_NaN(), double max = std::numeric_limits<float>::quiet_NaN(), double depth = std::numeric_limits<float>::quiet_NaN());
     void readChannel(const Idx& idx, cv::Mat *channel, int flags = 0);
     
     void setDims(int dims);
@@ -73,7 +73,7 @@ public:
     friend std::ostream& operator<<(std::ostream& out, const Datastore& a);
     
     const H5::DataSet & H5DataSet() const { return _data; };
-    Dataset *getDataset() { return _dataset; };
+    Dataset *dataset() { return _dataset; };
     const BaseType & type() const { return _type; };
     const DataOrg & org() const { return _org; };
     const DataOrder & order() const { return _order; };

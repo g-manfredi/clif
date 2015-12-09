@@ -5,6 +5,8 @@
 #include "dataset.hpp"
 #include <opencv2/imgproc/imgproc.hpp>
 
+#include "cam.hpp"
+
 namespace clif {
   
 //process from channel(s) to image - input should always be 3d?
@@ -47,7 +49,7 @@ static bool _handle_preproc(int flag, Mat &curr_in, Mat &curr_out, Mat &out, int
   return false;
 }
 
-void proc_image(Datastore *store, Mat &in, Mat &out, int flags, double min, double max, int scaledown)
+void proc_image(Datastore *store, Mat &in, Mat &out, int flags, double min, double max, int scaledown, double depth)
 {
   int flags_remain;
   Mat curr_in;
@@ -133,21 +135,28 @@ void proc_image(Datastore *store, Mat &in, Mat &out, int flags, double min, doub
   }
   
   if (_handle_preproc(Improc::UNDISTORT, curr_in, curr_out, out, flags)) {
-    curr_out.create(curr_in.type(), curr_in);
+    //FIXME path logic? which undist to use?
+    DepthDist *undist = dynamic_cast<DepthDist*>(store->dataset()->tree_derive(DepthDist(store->dataset()->getSubGroup("calibration/intrinsics"), depth)));
     
-     Intrinsics *i = &store->getDataset()->intrinsics;
-    //FIXME get undist map (should be) generic!
-    if (i->model == DistModel::INVALID) {} // do nothing
-    else if (i->model == DistModel::CV8) {
-      cv::Mat *chap = i->getUndistMap(0, curr_in[0], curr_in[1]);
-      //cv::undistort(*ch,newm, i->cv_cam, i->cv_dist);
-      //cv::setNumThreads(0);
-      for(int c=0;c<curr_in[2];c++)
-        remap(cvMat(curr_in.bind(2,c)), cvMat(curr_out.bind(2,c)), *chap, cv::noArray(), cv::INTER_LINEAR);
+    if (undist)
+      undist->undistort(curr_in, curr_out);
+    else {
+      curr_out.create(curr_in.type(), curr_in);
       
+      Intrinsics *i = &store->dataset()->intrinsics;
+      //FIXME get undist map (should be) generic!
+      if (i->model == DistModel::INVALID) {} // do nothing
+      else if (i->model == DistModel::CV8) {
+        cv::Mat *chap = i->getUndistMap(0, curr_in[0], curr_in[1]);
+        //cv::undistort(*ch,newm, i->cv_cam, i->cv_dist);
+        //cv::setNumThreads(0);
+        for(int c=0;c<curr_in[2];c++)
+          remap(cvMat(curr_in.bind(2,c)), cvMat(curr_out.bind(2,c)), *chap, cv::noArray(), cv::INTER_LINEAR);
+        
+      }
+      else
+        printf("distortion model not supported: %s\n", enum_to_string(i->model));
     }
-    else
-      printf("distortion model not supported: %s\n", enum_to_string(i->model));
   }
   
   out = curr_out;
