@@ -71,7 +71,7 @@ public:
   
   int read(const char *path);
   int write(const char *path);
-  Mat bind(int dim, int pos);
+  Mat bind(int dim, int pos) const;
   
   void* data() const;
   
@@ -101,6 +101,7 @@ template<typename T> class Mat_ : public Mat {
 public:  
   Mat_();
   Mat_(Idx size);
+  Mat_(const Mat &m);
   Mat_(BaseType type, Idx size);
   
   void create(Idx size);
@@ -155,6 +156,12 @@ template<typename T, typename ... Idxs> T& Mat::operator()(Idxs ... idxs)
 {
   return *(T*)(((char*)_data)+calc_offset<T>(_step, 0, idxs...));
 } 
+
+
+template<typename T> Mat_<T>::Mat_(const Mat &m)
+: Mat(m)
+{
+}
 
 template<template<typename> class F, typename ... ArgTypes> void Mat::call(ArgTypes ... args)
 {

@@ -171,7 +171,7 @@ Mat::Mat(cv::Mat *m)
 }
 
 void Mat::create(BaseType type, Idx newsize)
-{
+{ 
   if (type == _type && newsize.total() == total())
   {
     static_cast<Idx&>(*this) = newsize;
@@ -418,7 +418,7 @@ void Mat_H5AttrRead(Mat &m, H5::Attribute &a)
 
 void h5_dataset_read(H5::H5File f, const cpath &path, Mat &m)
 {
-  H5::DataSet data = f.openDataSet(path.string().c_str());
+  H5::DataSet data = f.openDataSet(path.generic_string().c_str());
   read(data, m);
 }
 
@@ -588,7 +588,7 @@ cv::Mat cvMat(const Mat &m)
   return tmp;
 }
 
-Mat Mat::bind(int dim, int pos)
+Mat Mat::bind(int dim, int pos) const
 {
   Mat b_mat = *this;
   
