@@ -78,8 +78,12 @@ void proc_image(Datastore *store, Mat &in, Mat &out, int flags, double min, doub
   //FIXME hdr may need 4!
   assert(in.size() == 3);
   
-  if (flags & Improc::DEMOSAIC) {
-    printf("FIXME handle demosaicing!\n");
+  if (_handle_preproc(Improc::DEMOSAIC, curr_in, curr_out, out, flags)) {
+    cv::Mat cv_out;
+    
+    cv::cvtColor(cvMat(curr_in.bind(2,0)), cv_out, order2cv_conf_flag(store->order()));
+    
+    curr_out = Mat3d(cv_out);
   }
   
   if (flags == 0)

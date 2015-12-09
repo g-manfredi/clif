@@ -340,8 +340,12 @@ template<typename T> double BaseType_max()
   return double(std::numeric_limits<T>::max())+1.0;
 }
 
+int order2cv_conf_flag(DataOrder order);
+
 //H5::DataType BaseType_to_PredType(BaseType type);
 }
+
+
 
 #define ClifEnumString(Type,Var) Type ## Str[ static_cast<int>(Var) ]
 

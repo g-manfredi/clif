@@ -825,22 +825,6 @@ void Datastore::readChannel(const Idx &idx, cv::Mat *channel, int flags)
   mat_cache_set(channel,idx,flags,CACHE_CONT_MAT_CHANNEL,scale);*/
 }
 
-int order2cv_conf_flag(DataOrder order)
-{
-  switch (order) {
-    case DataOrder::RGGB :
-      return CV_BayerRG2BGR;
-    case DataOrder::BGGR :
-      return CV_BayerBG2BGR;
-    case DataOrder::GBRG :
-      return CV_BayerGB2BGR;
-    case DataOrder::GRBG :
-      return CV_BayerGR2BGR;
-    default :
-      abort();
-  }
-}
-
 //this is always a 3d mat!
 void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double min, double max, double depth)
 {
