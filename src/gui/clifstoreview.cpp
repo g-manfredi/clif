@@ -140,6 +140,9 @@ void clifStoreView::load_img()
   _curr_flags = _sel->itemData(_sel->currentIndex()).value<int>();
   _curr_idx = _show_idx;
   
+  //FIXME make this option!
+  _curr_flags |= HQ;
+  
   if (_try_out_new_reader->checkState() == Qt::Checked) {
     Idx pos(_store->dims());
     Idx sub = {0, 3}; //x and imgs -> an epi :-)

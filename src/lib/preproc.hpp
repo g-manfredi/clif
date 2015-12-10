@@ -15,10 +15,11 @@ enum Improc {
   CVT_GRAY = 8,
   EXP_STACK = 16,
   UNDISTORT = 32,
-  NO_DISK_CACHE = 64,
-  NO_MEM_CACHE = 128,
-  FORCE_REUSE = 256,
-  MAX = 128
+  HQ = 64,
+  NO_DISK_CACHE = 128,
+  NO_MEM_CACHE = 256,
+  FORCE_REUSE = 512,
+  MAX = 1024
 };
 
 //if input != output then max defaults to input max type

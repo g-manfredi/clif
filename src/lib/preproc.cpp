@@ -74,6 +74,12 @@ void proc_image(Datastore *store, Mat &in, Mat &out, int flags, double min, doub
   else
     scale_val = BaseType_max(in.type())-min;
     
+  int cv_interpolation = cv::INTER_LINEAR;
+  
+  if (flags & HQ) {
+    cv_interpolation = cv::INTER_LANCZOS4;
+    flags &= ~HQ;
+  }
   
   //FIXME hdr may need 4!
   assert(in.size() == 3);
@@ -154,8 +160,9 @@ void proc_image(Datastore *store, Mat &in, Mat &out, int flags, double min, doub
         cv::Mat *chap = i->getUndistMap(0, curr_in[0], curr_in[1]);
         //cv::undistort(*ch,newm, i->cv_cam, i->cv_dist);
         //cv::setNumThreads(0);
+          
         for(int c=0;c<curr_in[2];c++)
-          remap(cvMat(curr_in.bind(2,c)), cvMat(curr_out.bind(2,c)), *chap, cv::noArray(), cv::INTER_LINEAR);
+          remap(cvMat(curr_in.bind(2,c)), cvMat(curr_out.bind(2,c)), *chap, cv::noArray(), cv_interpolation);
         
       }
       else
