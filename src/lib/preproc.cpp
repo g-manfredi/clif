@@ -149,7 +149,7 @@ void proc_image(Datastore *store, Mat &in, Mat &out, int flags, double min, doub
     DepthDist *undist = dynamic_cast<DepthDist*>(store->dataset()->tree_derive(DepthDist(store->dataset()->getSubGroup("calibration/intrinsics"), depth)));
     
     if (undist)
-      undist->undistort(curr_in, curr_out);
+      undist->undistort(curr_in, curr_out, cv_interpolation);
     else {
       curr_out.create(curr_in.type(), curr_in);
       

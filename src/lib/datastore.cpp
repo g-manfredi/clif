@@ -1067,8 +1067,8 @@ void Datastore::flush()
       cpath fullpath = _dataset->path() / _path;
       
       if (h5_obj_exists(_dataset->f(), fullpath)) {
-        printf("TODO overwrite (store %s exists)!\n", fullpath.c_str());
-        abort();
+        _dataset->f().unlink(fullpath.generic_string().c_str());
+        printf("overwriting existing store %s !\n", fullpath.c_str());
       }
       
       h5_create_path_groups(_dataset->f(), fullpath.parent_path());

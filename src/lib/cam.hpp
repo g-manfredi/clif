@@ -14,11 +14,11 @@ public:
   virtual bool load(Dataset *set);
   virtual bool operator==(const Tree_Derived & rhs) const;
   
-  void undistort(const clif::Mat & src, clif::Mat & dst);
+  void undistort(const clif::Mat & src, clif::Mat & dst, int interp = -1);
 
 private:
   double _depth = -1.0;
-  cv::Mat _map;
+  std::vector<cv::Mat> _maps;
   DistModel _type;
 };
 

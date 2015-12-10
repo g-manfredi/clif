@@ -370,6 +370,7 @@ bool opencv_calibrate(Dataset *set, int flags, cpath map, cpath calib)
     std::vector<double> rms(proxy_m[3]);
     std::vector<double> proj_rms(proxy_m[3]);
     Mat_<float> proj(Idx{2, proxy_m[3]});
+    Mat_<float> extrinsics_m(Idx{6, proxy_m[3], proxy_m[4]});
     
     for(int color=0;color<proxy_m[3];color++) {
       DistCorrLines dist_lines = DistCorrLines(0, 0, 0, cam_config.w, cam_config.h, 100.0, cam_config, conf, proxy_size);
@@ -404,6 +405,10 @@ bool opencv_calibrate(Dataset *set, int flags, cpath map, cpath calib)
           corr_line_m(2, i, j, color) = dist_lines.linefits[j*proxy_size.x+i][2];
           corr_line_m(3, i, j, color) = dist_lines.linefits[j*proxy_size.x+i][3];
         }
+        
+      for(int img_n=0;img_n<proxy_m[4];img_n++)
+        for(int i=0;i<6;i++)
+          extrinsics_m(i, color, img_n) = dist_lines.extrinsics[6*img_n+i];
     }
     
     Datastore *line_store = set->addStore(calib_root/"lines");
@@ -413,6 +418,7 @@ bool opencv_calibrate(Dataset *set, int flags, cpath map, cpath calib)
     set->setAttribute(calib_root/"rms", rms);
     set->setAttribute(calib_root/"projection_rms", proj_rms);
     set->setAttribute(calib_root/"projection", proj);
+    set->setAttribute(calib_root/"extrinsics", extrinsics_m);
     
     return true;
   }
