@@ -32,6 +32,7 @@ bool DepthDist::load(Dataset *set)
     
     printf("try undist!\n");
     
+    std::vector<cv::Point3f> ref_points;
     
     for(int color=0;color<corr_line_m[3];color++) {
       std::vector<cv::Vec4d> linefits(corr_line_m[1]*corr_line_m[2]);
@@ -58,10 +59,13 @@ bool DepthDist::load(Dataset *set)
       
       double d = _depth;
       if (isnan(d))
-        //d = std::numeric_limits<double>::max();
-        d = 1000;
+        d = 1000000000000.0;
       printf("calc undist map for depth %f\n", d);
-      _maps[color] = cam.get_undist_map_for_depth(d);
+      
+      if (color == 0)
+        _maps[color] = cam.get_undist_map_for_depth(d, NULL, &ref_points);
+      else
+        _maps[color] = cam.get_undist_map_for_depth(d, &ref_points);
     }
     
     return true;
