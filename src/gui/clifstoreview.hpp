@@ -47,6 +47,7 @@ private:
   QDoubleSpinBox *_sp_min = NULL;
   QDoubleSpinBox *_sp_max = NULL;
   
+  QSlider *_depth_slider = NULL;
 };
   
 }

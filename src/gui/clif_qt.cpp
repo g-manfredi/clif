@@ -59,10 +59,10 @@ namespace clif {
     return QImage();
 }
   
-  void readQImage(Datastore *store, const std::vector<int> idx, QImage &img, int flags, double min, double max)
+  void readQImage(Datastore *store, const std::vector<int> idx, QImage &img, int flags, double depth, double min, double max)
   {
     cv::Mat img_3d, img_2d;
-    store->readImage(idx, &img_3d, flags | Improc::CVT_8U, std::numeric_limits<double>::quiet_NaN(), min, max);
+    store->readImage(idx, &img_3d, flags | Improc::CVT_8U, depth, min, max);
     clifMat2cv(&img_3d, &img_2d);
     
     //FIXME zero copy memory handling?

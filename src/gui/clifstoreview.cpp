@@ -89,6 +89,17 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   
   connect(_slider, SIGNAL(valueChanged(int)), this, SLOT(queue_sel_img(int)));
   connect(_sel, SIGNAL(currentIndexChanged(int)), this, SLOT(queue_load_img()));
+  
+  ///////////////////// DEPTH SLIDER /////////////////////
+  _depth_slider = new QSlider(Qt::Horizontal, this);
+  _vbox->addWidget(_depth_slider);
+  
+  _depth_slider->setTickInterval(50);
+  _depth_slider->setTickPosition(QSlider::TicksBelow);
+  _depth_slider->setMinimum(50);
+  _depth_slider->setMaximum(2000);
+  _depth_slider->setValue(2000);
+  connect(_depth_slider, SIGNAL(valueChanged(int)), this, SLOT(queue_load_img()));
 }
 
 clifStoreView::~clifStoreView()
@@ -141,7 +152,7 @@ void clifStoreView::load_img()
   _curr_idx = _show_idx;
   
   //FIXME make this option!
-  _curr_flags |= HQ;
+  _curr_flags |= NO_MEM_CACHE;
   
   if (_try_out_new_reader->checkState() == Qt::Checked) {
     Idx pos(_store->dims());
@@ -158,10 +169,15 @@ void clifStoreView::load_img()
     std::vector<int> n_idx(_store->dims(),0);
     n_idx[3] = _curr_idx;
     
+    double d = std::numeric_limits<float>::quiet_NaN();
+    
+    if (_depth_slider)
+      d = _depth_slider->value();
+    
     if (_range_ck->checkState() == Qt::Checked)
-      readQImage(_store, n_idx, *_qimg, _curr_flags, _sp_min->value(), _sp_max->value());
+      readQImage(_store, n_idx, *_qimg, _curr_flags, d, _sp_min->value(), _sp_max->value());
     else
-      readQImage(_store, n_idx, *_qimg, _curr_flags);
+      readQImage(_store, n_idx, *_qimg, _curr_flags, d);
   }
   
   _view->setImage(*_qimg);
