@@ -214,13 +214,18 @@ template<typename T> void warp_1d_nearest(Mat in, Mat out, int offset)
 void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int flags, Interpolation interp, float scale)
 {
   int w, h;
-  double step;
+  double step, depth;
   Idx idx(_store->dims());
   
-  if (unit == Unit::PIXELS)
+  if (unit == Unit::PIXELS) {
     step = disparity;
-  else
+    depth = disparity2depth(disparity);
+  }
+  else {
     step = depth2disparity(disparity, scale); //f[0]*step_length/disparity*scale;
+    depth = disparity;
+  }
+  
   
   int i_step = step;
   if (abs(i_step - step) < 1.0/512.0)
@@ -229,7 +234,7 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
   cv::Mat tmp;
   idx[3] = 0;
   //FIXME scale
-  _store->readImage(idx, &tmp, flags | Improc::UNDISTORT);
+  _store->readImage(idx, &tmp, flags | Improc::UNDISTORT, depth);
   w = tmp.size[2];
   h = _store->clif::Datastore::imgCount();
   
@@ -254,7 +259,7 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
     Idx idx_l(_store->dims());
     cv::Mat img;
     idx_l[3] = i;
-    _store->readImage(idx_l, &img, flags | UNDISTORT);
+    _store->readImage(idx_l, &img, flags | UNDISTORT, depth);
     
     for(int c=0;c<_store->imgChannels();c++) {    
       cv::Mat channel = clifMat_channel(img, c);

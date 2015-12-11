@@ -64,17 +64,17 @@ static bool _get_cache_path(cpath &cache_path)
 }
 
 //FIXME add file timestamp!
-static cpath _cache_filename(Datastore *store, int idx, int flags, float scale)
+static cpath _cache_filename(Datastore *store, int idx, int flags, float scale, float depth)
 {
   cpath name;
   std::ostringstream longkey_stream;
   std::ostringstream shortkey_stream;
   std::string shortkey, longkey;
   
-  shortkey_stream << "_" << idx << "_" << flags << " " << scale;
+  shortkey_stream << "_" << idx << "_" << flags << " " << scale << depth;
   shortkey = shortkey_stream.str();
   
-  name = "clif/001/cached_imgs";
+  name = "clif/002/cached_imgs";
   std::hash<std::string> hasher;
   std::string dset_path = store->dataset()->path().generic_string();
   longkey_stream << hasher(dset_path) << "_" << hasher(store->path().generic_string()) << "_" << hasher(shortkey);
@@ -487,7 +487,7 @@ void Datastore::create_dims_imgs(const Idx& size)
 
 //FIXME scale!
 //WARNING idx will change if size changes!
-void * Datastore::cache_get(const Idx& idx, int flags, int extra_flags, float scale)
+void * Datastore::cache_get(const Idx& idx, int flags, int extra_flags, float scale, float depth)
 {
   uint64_t idx_sum = 0;
   uint64_t mul = 1;
@@ -496,7 +496,13 @@ void * Datastore::cache_get(const Idx& idx, int flags, int extra_flags, float sc
     mul *= _extent[i];
   }
   
+  uint32_t depth_bits = *reinterpret_cast<uint32_t*>(&depth);
+  uint32_t scale_bits = *reinterpret_cast<uint32_t*>(&scale);
+  
   uint64_t key = (idx_sum * Improc::MAX) | flags | (extra_flags << 16);
+  key ^= depth_bits;
+  key ^= uint64_t(scale_bits) << 32;
+  
   auto it_find = image_cache.find(key);
   
   if (it_find == image_cache.end())
@@ -505,7 +511,7 @@ void * Datastore::cache_get(const Idx& idx, int flags, int extra_flags, float sc
     return it_find->second;
 }
 
-void Datastore::cache_set(const Idx& idx, int flags, int extra_flags, float scale, void *data)
+void Datastore::cache_set(const Idx& idx, int flags, int extra_flags, float scale, float depth, void *data)
 {  
   uint64_t idx_sum = 0;
   uint64_t mul = 1;
@@ -514,7 +520,12 @@ void Datastore::cache_set(const Idx& idx, int flags, int extra_flags, float scal
     mul *= _extent[i];
   }
   
+  uint32_t depth_bits = *reinterpret_cast<uint32_t*>(&depth);
+  uint32_t scale_bits = *reinterpret_cast<uint32_t*>(&scale);
+  
   uint64_t key = (idx_sum * Improc::MAX) | flags | (extra_flags << 16);
+  key ^= depth_bits;
+  key ^= uint64_t(scale_bits) << 32;
   
 #pragma omp critical(datastore_cache)
   image_cache[key] = data;
@@ -664,12 +675,12 @@ void Datastore::writeChannel(const std::vector<int> &idx, cv::Mat *channel)
   _data.write(channel->data, toH5DataType(_type), imgspace, space);
 }
 
-bool Datastore::mat_cache_get(clif::Mat *m, const Idx& idx, int flags, int extra_flags, float scale)
+bool Datastore::mat_cache_get(clif::Mat *m, const Idx& idx, int flags, int extra_flags, float scale, float depth)
 {  
   if (flags & NO_MEM_CACHE)
     return false;
   
-  clif::Mat *cached = (clif::Mat*)cache_get(idx,flags,extra_flags,scale);
+  clif::Mat *cached = (clif::Mat*)cache_get(idx,flags,extra_flags,scale,depth);
   
   if (!cached)
     return false;
@@ -684,7 +695,7 @@ bool Datastore::mat_cache_get(clif::Mat *m, const Idx& idx, int flags, int extra
   return true;
 }
 
-void Datastore::mat_cache_set(clif::Mat *m, const Idx& idx, int flags, int extra_flags, float scale)
+void Datastore::mat_cache_set(clif::Mat *m, const Idx& idx, int flags, int extra_flags, float scale, float depth)
 {
   if (flags & NO_MEM_CACHE)
     return;
@@ -692,7 +703,7 @@ void Datastore::mat_cache_set(clif::Mat *m, const Idx& idx, int flags, int extra
   Mat *cache_mat = new Mat();
   *cache_mat = *m;
 
-  cache_set(idx,flags,extra_flags,scale,cache_mat);
+  cache_set(idx,flags,extra_flags,scale,depth,cache_mat);
 }
 
 
@@ -826,7 +837,7 @@ void Datastore::readChannel(const Idx &idx, cv::Mat *channel, int flags)
 }
 
 //this is always a 3d mat!
-void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double min, double max, double depth)
+void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth, double min, double max)
 {
   float scale = -1.0;
   
@@ -837,9 +848,6 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double min, d
   
   if (!isnan(min) || !isnan(max))
     disable_cache = true;
-  
-  //FIXME
-  disable_cache = true;
   
   if (flags & CVT_GRAY)
     flags |= DEMOSAIC;
@@ -858,7 +866,7 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double min, d
   clif::Mat tmp;
   
   //WARNING we MUST not change flags after this point!    
-  if (mat_cache_get(&tmp,idx,flags,CACHE_CONT_MAT_IMG,scale)) {
+  if (mat_cache_get(&tmp,idx,flags,CACHE_CONT_MAT_IMG,scale,depth)) {
     *img = cvMat(tmp);
     return;
   }
@@ -869,7 +877,7 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double min, d
   
   if (((flags & NO_DISK_CACHE) == 0) && _get_cache_path(cache_file)) {
     use_disk_cache = true;
-    cache_file /= _cache_filename(this, idx[3], flags, scale);
+    cache_file /= _cache_filename(this, idx[3], flags, scale, depth);
     
     Idx _fixme_storage_size(3);
     BaseType _fixme_storage_type = type();
@@ -892,7 +900,7 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double min, d
       //backing memory location might have changed due to mmap
       //FIXME
       *img = cvMat(tmp);
-      mat_cache_set(&tmp,idx,flags,CACHE_CONT_MAT_IMG,scale);
+      mat_cache_set(&tmp,idx,flags,CACHE_CONT_MAT_IMG,scale,depth);
       return;
     }
   }
@@ -907,7 +915,7 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double min, d
   clif::Mat processed;
   proc_image(this, m_read, processed, flags, min, max, -1, depth);
   
-  mat_cache_set(&processed,idx,flags,CACHE_CONT_MAT_IMG,scale);
+  mat_cache_set(&processed,idx,flags,CACHE_CONT_MAT_IMG,scale,depth);
   if (use_disk_cache) {
     create_directories(cache_file.parent_path());
     processed.write(cache_file.string().c_str());
