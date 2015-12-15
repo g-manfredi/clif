@@ -6,8 +6,73 @@
 
 #include "core.hpp"
 
+
+namespace clif {
+    
+  class Read_Options {
+  public:
+    Read_Options(const Idx &idx_,
+                 int flags_ = 0,
+                    double depth_ = std::numeric_limits<double>::quiet_NaN(),
+                    double min_ = std::numeric_limits<double>::quiet_NaN(),
+                    double max_ = std::numeric_limits<double>::quiet_NaN(),
+                    int scale_ = 0,
+                    int extra_flags_ = 0
+                   )
+    : flags(flags_), depth(depth_), min(min_), max(max_), scale(scale_), extra_flags(extra_flags_)
+    {
+      idx = idx_;
+      
+    }
+    
+    inline bool operator== (const Read_Options &other) const
+    {      
+      bool res = ((idx == other.idx) && 
+             (flags == other.flags) &&
+             (min == other.min || (isnan(min) && isnan(other.min))) &&
+             (max == other.max || (isnan(max) && isnan(other.max))) &&
+             (depth == other.depth) &&
+             (scale == other.scale) &&
+             (extra_flags == other.extra_flags));
+      
+      return res;
+    }
+    
+    Idx idx;
+    int flags;
+    double min, max;
+    double depth;
+    int scale;
+    int extra_flags;
+  };
+
+}
+
+namespace std
+{
+    template<>
+    struct hash<clif::Read_Options>
+    { 
+        std::size_t operator()(clif::Read_Options const& opts) const
+        {
+          std::size_t h = std::hash<int>()(opts.flags);
+          h ^= std::hash<double>()(opts.min) << 1;
+          h ^= std::hash<double>()(opts.max) << 2;
+          h ^= std::hash<double>()(opts.depth) << 3;
+          h ^= std::hash<int>()(opts.scale) << 4;
+          h ^= std::hash<int>()(opts.extra_flags) << 5;
+          h ^= std::hash<int>()(opts.idx.size()) << 6;
+          for(int i=0;i<opts.idx.size();i++)
+            h ^= std::hash<int>()(opts.idx[i]) << 7+i;
+          
+          return h;
+        }
+    };
+}
+
 namespace clif {
 class Dataset;
+class DepthDist;
 
 //representation of a "raw" clif datset - mostly the images
 class Datastore {
@@ -78,12 +143,14 @@ public:
     const DataOrg & org() const { return _org; };
     const DataOrder & order() const { return _order; };
     
+    DepthDist* undist(double depth);
+    
     //FIXME delete cache contents on desctructor
     
-    void *cache_get(const Idx &idx, int flags, int extra_flags, float scale, float depth);
-    void cache_set(const Idx &idx, int flags, int extra_flags, float scale, float depth, void *data);
-    bool mat_cache_get(clif::Mat *m, const Idx &idx, int flags, int extra_flags, float scale, float depth);
-    void mat_cache_set(clif::Mat *m, const Idx &idx, int flags, int extra_flags, float scale, float depth);
+    void *cache_get(const Read_Options &opts);
+    void cache_set(const Read_Options &opts, void *data);
+    bool mat_cache_get(clif::Mat *m, const Read_Options &opts);
+    void mat_cache_set(const Read_Options &opts, clif::Mat *m);
 
     template<template<typename> class F, typename R, typename ... ArgTypes> R call(ArgTypes ... args)
     {
@@ -114,13 +181,19 @@ public:
     cpath _path;
     
 private:
-  std::unordered_map<uint64_t,void*> image_cache;
+  std::unordered_map<Read_Options,void*> image_cache;
   
   Dataset *_dataset = NULL;
   bool _readonly = false; //linked dataset - convert to not-linked data to make read/write (no doing this implicitly may save a copy)
   bool _memonly = false; //dataset may be in memory and linked or not linked - TODO check all possible cases and uses
   cpath _link_file;
   cpath _link_path;
+  
+  bool _undist_loaded = false;
+  //FIXME which undist for depth dependend...
+  //the implemented tree-derive model is not very good (need to search subGroup each time!)
+  //use softlink!?
+  DepthDist *_undist = NULL;
   
   clif::Mat _mat;
   

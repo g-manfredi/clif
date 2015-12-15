@@ -1,14 +1,15 @@
 #ifndef _CLIF_PREPROC_H
 #define _CLIF_PREPROC_H
 
-#include <limits>
-
 #include "mat.hpp"
+
+#include <limits>
+#include <functional>
 
 namespace clif {
   
 class Datastore;
-  
+
 enum Improc {
   DEMOSAIC = 1, 
   CVT_8U = 2,

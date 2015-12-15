@@ -34,12 +34,12 @@ public:
 };
   
 namespace {
-  template<typename T> off_t calc_offset(Idx &step, int pos)
+  template<typename T> off_t calc_offset(const Idx &step, int pos)
   {
     return 0;
   }
   
-  template<typename T, typename ... Idxs> off_t calc_offset(Idx &step, int pos, int idx, Idxs ... rest)
+  template<typename T, typename ... Idxs> off_t calc_offset(const Idx &step, int pos, int idx, Idxs ... rest)
   {
     return idx*step[pos] + calc_offset<T>(step, pos+1, rest...);
   }
@@ -80,7 +80,7 @@ public:
   BaseType const & type() const;
   
   template<typename T, typename ... Idxs>
-    T& operator()(Idxs ... idxs);
+    T& operator()(Idxs ... idxs) const;
   
   template<template<typename> class F, typename ... ArgTypes>
     void call(ArgTypes ... args);
@@ -108,7 +108,7 @@ public:
   void create(BaseType type, Idx size);
   
   //FIXME/DOCUMENT: this should only be used after make-unique etc...
-  template<typename ... Idxs> T& operator()(Idxs ... idxs)
+  template<typename ... Idxs> T& operator()(Idxs ... idxs) const
   {
     return *(T*)(((char*)_data)+calc_offset<T>(_step, 0, idxs...));
   }
@@ -152,7 +152,7 @@ template<int DIM, typename T> vigra::MultiArrayView<DIM,T> vigraMAV(Mat *m)
   return vigraMAV<DIM,T>(*m);
 }
 
-template<typename T, typename ... Idxs> T& Mat::operator()(Idxs ... idxs)
+template<typename T, typename ... Idxs> T& Mat::operator()(Idxs ... idxs) const
 {
   return *(T*)(((char*)_data)+calc_offset<T>(_step, 0, idxs...));
 } 

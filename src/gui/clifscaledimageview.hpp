@@ -20,6 +20,7 @@ public:
     
 signals:
     void imgClicked(QPointF *p);
+    void dragged(QPointF *p);
  
 protected:
     void resizeEvent(QResizeEvent * event);

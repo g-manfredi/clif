@@ -34,6 +34,7 @@ clifEpiView::clifEpiView(Dataset *dataset, QWidget* parent)
     connect(btnFind, SIGNAL(clicked()), this, SLOT(findClicked()));*/
     connect(_slider, SIGNAL(valueChanged(int)), this, SLOT(dispChanged(int)));
     connect(_centerview, SIGNAL(imgClicked(QPointF*)), this, SLOT(lineChanged(QPointF*)));
+    connect(_centerview, SIGNAL(dragged(QPointF*)), this, SLOT(lineChanged(QPointF*)));
 
     setLayout(createLayout());
     

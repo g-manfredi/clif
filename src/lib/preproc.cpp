@@ -146,7 +146,7 @@ void proc_image(Datastore *store, Mat &in, Mat &out, int flags, double min, doub
   
   if (_handle_preproc(Improc::UNDISTORT, curr_in, curr_out, out, flags)) {
     //FIXME path logic? which undist to use?
-    DepthDist *undist = dynamic_cast<DepthDist*>(store->dataset()->tree_derive(DepthDist(store->dataset()->getSubGroup("calibration/intrinsics"), depth)));
+    DepthDist *undist = store->undist(depth);
     
     if (undist)
       undist->undistort(curr_in, curr_out, cv_interpolation);

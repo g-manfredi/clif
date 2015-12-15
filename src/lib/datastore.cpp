@@ -6,6 +6,7 @@
 #include "hdf5.hpp"
 #include "mat.hpp"
 #include "preproc.hpp"
+#include "cam.hpp"
 
 #define CACHE_CONT_MAT_CHANNEL 1
 #define CACHE_CONT_MAT_IMG 2
@@ -76,7 +77,7 @@ static cpath _cache_filename(Datastore *store, int idx, int flags, float scale, 
   
   name = "clif/002/cached_imgs";
   std::hash<std::string> hasher;
-  std::string dset_path = store->dataset()->path().generic_string();
+  std::string dset_path = store->dataset()->path().generic_string() + "|" + store->dataset()->file().path().generic_string();
   longkey_stream << hasher(dset_path) << "_" << hasher(store->path().generic_string()) << "_" << hasher(shortkey);
   longkey = longkey_stream.str();
   name /= longkey + ".bin";
@@ -487,48 +488,23 @@ void Datastore::create_dims_imgs(const Idx& size)
 
 //FIXME scale!
 //WARNING idx will change if size changes!
-void * Datastore::cache_get(const Idx& idx, int flags, int extra_flags, float scale, float depth)
+void * Datastore::cache_get(const Read_Options &opts)
 {
-  uint64_t idx_sum = 0;
-  uint64_t mul = 1;
-  for(int i=2;i<idx.size();i++) {
-    idx_sum += idx[i]*mul;
-    mul *= _extent[i];
+  void *found = NULL;
+#pragma omp critical(datastore_cache)
+  {
+  auto it_find = image_cache.find(opts);
+  
+  if (it_find != image_cache.end())
+    found = it_find->second;
   }
-  
-  uint32_t depth_bits = *reinterpret_cast<uint32_t*>(&depth);
-  uint32_t scale_bits = *reinterpret_cast<uint32_t*>(&scale);
-  
-  uint64_t key = (idx_sum * Improc::MAX) | flags | (extra_flags << 16);
-  key ^= depth_bits;
-  key ^= uint64_t(scale_bits) << 32;
-  
-  auto it_find = image_cache.find(key);
-  
-  if (it_find == image_cache.end())
-    return NULL;
-  else
-    return it_find->second;
+  return found;
 }
 
-void Datastore::cache_set(const Idx& idx, int flags, int extra_flags, float scale, float depth, void *data)
+void Datastore::cache_set(const Read_Options &opts, void *data)
 {  
-  uint64_t idx_sum = 0;
-  uint64_t mul = 1;
-  for(int i=2;i<idx.size();i++) {
-    idx_sum += idx[i]*mul;
-    mul *= _extent[i];
-  }
-  
-  uint32_t depth_bits = *reinterpret_cast<uint32_t*>(&depth);
-  uint32_t scale_bits = *reinterpret_cast<uint32_t*>(&scale);
-  
-  uint64_t key = (idx_sum * Improc::MAX) | flags | (extra_flags << 16);
-  key ^= depth_bits;
-  key ^= uint64_t(scale_bits) << 32;
-  
 #pragma omp critical(datastore_cache)
-  image_cache[key] = data;
+  image_cache[opts] = data;
 }
 
 void Datastore::open(Dataset *dataset, cpath path_)
@@ -675,17 +651,17 @@ void Datastore::writeChannel(const std::vector<int> &idx, cv::Mat *channel)
   _data.write(channel->data, toH5DataType(_type), imgspace, space);
 }
 
-bool Datastore::mat_cache_get(clif::Mat *m, const Idx& idx, int flags, int extra_flags, float scale, float depth)
+bool Datastore::mat_cache_get(clif::Mat *m, const Read_Options &opts)
 {  
-  if (flags & NO_MEM_CACHE)
+  if (opts.flags & NO_MEM_CACHE)
     return false;
   
-  clif::Mat *cached = (clif::Mat*)cache_get(idx,flags,extra_flags,scale,depth);
+  clif::Mat *cached = (clif::Mat*)cache_get(opts);
   
   if (!cached)
     return false;
   
-  if (flags & FORCE_REUSE) {
+  if (opts.flags & FORCE_REUSE) {
     printf("FIXME implement cache copy again!\n");
     abort();
   }
@@ -695,15 +671,15 @@ bool Datastore::mat_cache_get(clif::Mat *m, const Idx& idx, int flags, int extra
   return true;
 }
 
-void Datastore::mat_cache_set(clif::Mat *m, const Idx& idx, int flags, int extra_flags, float scale, float depth)
+void Datastore::mat_cache_set(const Read_Options &opts, clif::Mat *m)
 {
-  if (flags & NO_MEM_CACHE)
+  if (opts.flags & NO_MEM_CACHE)
     return;
 
   Mat *cache_mat = new Mat();
   *cache_mat = *m;
 
-  cache_set(idx,flags,extra_flags,scale,depth,cache_mat);
+  cache_set(opts,cache_mat);
 }
 
 
@@ -836,10 +812,26 @@ void Datastore::readChannel(const Idx &idx, cv::Mat *channel, int flags)
   mat_cache_set(channel,idx,flags,CACHE_CONT_MAT_CHANNEL,scale);*/
 }
 
+DepthDist* Datastore::undist(double depth)
+{
+  if (!_undist_loaded) {
+    _undist_loaded = true;
+    try {
+      //FIXME variable path?!
+      _undist = dynamic_cast<DepthDist*>(dataset()->tree_derive(DepthDist(dataset()->getSubGroup("calibration/intrinsics"), depth)));
+    }
+    catch (...) {
+      return NULL;
+    }
+  }
+  
+  return _undist;
+}
+
 //this is always a 3d mat!
 void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth, double min, double max)
 {
-  float scale = -1.0;
+  int scale = 0;
   
   bool demosaic = false;
   bool disable_cache = false;
@@ -863,10 +855,18 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth,
   else
     flags &= ~DEMOSAIC;
     
+  if (isnan(depth))
+    depth = 0.0;
+  
+  if (!undist(depth) || undist(depth)->type() != DistModel::UCALIB)
+    depth = 0.0;
+  
+  Read_Options opts(idx, flags, depth, min, max, scale, CACHE_CONT_MAT_IMG);
+  
   clif::Mat tmp;
   
   //WARNING we MUST not change flags after this point!    
-  if (mat_cache_get(&tmp,idx,flags,CACHE_CONT_MAT_IMG,scale,depth)) {
+  if (mat_cache_get(&tmp, opts)) {
     *img = cvMat(tmp);
     return;
   }
@@ -900,7 +900,7 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth,
       //backing memory location might have changed due to mmap
       //FIXME
       *img = cvMat(tmp);
-      mat_cache_set(&tmp,idx,flags,CACHE_CONT_MAT_IMG,scale,depth);
+      mat_cache_set(opts, &tmp);
       return;
     }
   }
@@ -915,7 +915,7 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth,
   clif::Mat processed;
   proc_image(this, m_read, processed, flags, min, max, -1, depth);
   
-  mat_cache_set(&processed,idx,flags,CACHE_CONT_MAT_IMG,scale,depth);
+  mat_cache_set(opts, &processed);
   if (use_disk_cache) {
     create_directories(cache_file.parent_path());
     processed.write(cache_file.string().c_str());
@@ -1113,8 +1113,8 @@ Datastore::~Datastore()
   _data.close();
   
   for(auto i=image_cache.begin();i!=image_cache.end();++i) {
-    if ((i->first >> 16) & (CACHE_CONT_MAT_CHANNEL | CACHE_CONT_MAT_IMG))
-      delete (cv::Mat*)i->second;
+    if (i->first.extra_flags & (CACHE_CONT_MAT_CHANNEL | CACHE_CONT_MAT_IMG))
+      delete (clif::Mat*)i->second;
   }
 }
 

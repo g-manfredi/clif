@@ -76,7 +76,10 @@ public:
 
 void *BaseType_new(BaseType type, off_t count)
 {
+  printf("basetype new size %lu\n", count*baseType_size(type));
   void *ptr = malloc(count*baseType_size(type));
+  printf("alloc: %p\n", ptr);
+  assert(ptr);
   
   if (type > BaseTypeMaxAtomicType)
     callByBaseType<creation_dispatcher>(type, ptr, count);
@@ -174,6 +177,7 @@ void Mat::create(BaseType type, Idx newsize)
 { 
   if (type == _type && newsize.total() == total())
   {
+    printf("create with same size called\n");
     static_cast<Idx&>(*this) = newsize;
     return;
   }

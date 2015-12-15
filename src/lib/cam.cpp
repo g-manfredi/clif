@@ -1,8 +1,11 @@
 #include "cam.hpp"
 
 #include "dataset.hpp"
-#include "ucalib/gencam.hpp"
 
+#ifdef CLIF_WITH_UCALIB
+  #include "ucalib/gencam.hpp"
+#endif
+  
 #include <opencv2/imgproc/imgproc.hpp>
 
 namespace clif {
@@ -20,6 +23,13 @@ bool DepthDist::load(Dataset *set)
     int imgsize[2];
     
     set->getEnum(path()/"type", _type);
+    
+    if (_type != DistModel::UCALIB)
+      return true;
+    
+#ifndef CLIF_WITH_UCALIB
+    return true;
+#else
     
     Mat_<float> corr_line_m = set->readStore(path()/"lines");
     Mat_<float> extrinsics_m;
@@ -66,6 +76,7 @@ bool DepthDist::load(Dataset *set)
     }
     
     return true;
+#endif
   }
   catch (...) {
     return false;
@@ -78,6 +89,9 @@ void DepthDist::undistort(const clif::Mat & src, clif::Mat & dst, int interp)
   
   if (interp == -1)
     interp = cv::INTER_LINEAR;
+  
+  if (!_maps.size())
+    dst = src;
     
   if (_maps.size())
     for(int c=0;c<src[2];c++)

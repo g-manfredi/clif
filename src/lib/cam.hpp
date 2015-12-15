@@ -15,6 +15,8 @@ public:
   virtual bool operator==(const Tree_Derived & rhs) const;
   
   void undistort(const clif::Mat & src, clif::Mat & dst, int interp = -1);
+  
+  DistModel type() { return _type; };
 
 private:
   double _depth = -1.0;

@@ -152,7 +152,7 @@ void clifStoreView::load_img()
   _curr_idx = _show_idx;
   
   //FIXME make this option!
-  _curr_flags |= NO_MEM_CACHE;
+  //_curr_flags |= NO_MEM_CACHE;
   
   if (_try_out_new_reader->checkState() == Qt::Checked) {
     Idx pos(_store->dims());
