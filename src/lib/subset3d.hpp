@@ -34,6 +34,8 @@ public:
   int EPIWidth();
   int EPIHeight();
   
+  ExtrType type();
+  
   clif::Dataset *dataset() { return _data; }
   
   double f[2];
@@ -44,6 +46,7 @@ private:
   
   //TODO more generic model!
   double step_length;
+  ExtrType _type;
 };
 
 }

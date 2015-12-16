@@ -26,20 +26,23 @@ void Subset3d::create(Dataset *data, cpath extr_group)
   
   ExtrType type;
   
-  _data->getEnum((root/"type"), type);
+  _data->getEnum((root/"type"), _type);
   
-  assert(type == ExtrType::LINE);
-  
-  double line_step[3];
-  
-  _data->get(root/"/line_step", line_step, 3);
-  
-  //TODO for now we only support horizontal lines!
-  assert(line_step[0] != 0.0);
-  assert(line_step[1] == 0.0);
-  assert(line_step[2] == 0.0);
+  if (type == ExtrType::LINE) {
+    double line_step[3];
+    
+    _data->get(root/"/line_step", line_step, 3);
+    
+    //TODO for now we only support horizontal lines!
+    assert(line_step[0] != 0.0);
+    assert(line_step[1] == 0.0);
+    assert(line_step[2] == 0.0);
 
-  step_length = line_step[0];
+    step_length = line_step[0];
+  }
+  else {
+    _data->get(root/"/step_angle", step_length);
+  }
   
   //TODO which intrinsic to select!
   _data->get(_data->getSubGroup("calibration/intrinsics")/"/projection", f, 2);

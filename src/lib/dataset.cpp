@@ -141,7 +141,7 @@ ClifFile& Dataset::file()
 
 void Dataset::flush()
 {
-  _file.f.flush(H5F_SCOPE_LOCAL);
+  _file.flush();
 }
 
 Dataset::~Dataset()
@@ -158,8 +158,6 @@ Dataset::~Dataset()
   
   if (intent != H5F_ACC_RDONLY)
     Attributes::write(f(),_path);
-  
-  _file.flush();
 }
 
 //link second dataset into the place of current dataset

@@ -76,9 +76,7 @@ public:
 
 void *BaseType_new(BaseType type, off_t count)
 {
-  printf("basetype new size %lu\n", count*baseType_size(type));
   void *ptr = malloc(count*baseType_size(type));
-  printf("alloc: %p\n", ptr);
   assert(ptr);
   
   if (type > BaseTypeMaxAtomicType)
@@ -177,7 +175,6 @@ void Mat::create(BaseType type, Idx newsize)
 { 
   if (type == _type && newsize.total() == total())
   {
-    printf("create with same size called\n");
     static_cast<Idx&>(*this) = newsize;
     return;
   }
@@ -193,6 +190,47 @@ void Mat::create(BaseType type, Idx newsize)
   
   _data = BaseType_new(type, total());
   _mem = std::shared_ptr<void>(_data, BaseType_deleter(total(), type));
+}
+
+void Mat::copyTo(Mat &m)
+{
+  if (size() != m.size() || total() != m.total())
+    abort();
+  
+  int direct_dim;
+  
+  off_t full_size = baseType_size(_type);
+  
+  for(direct_dim=0;direct_dim<size();direct_dim++) {
+    if (m._step[direct_dim] != _step[direct_dim] || full_size*operator[](direct_dim) != _step[direct_dim])
+      break;
+    full_size = _step[direct_dim]*operator[](direct_dim);
+  }
+  
+  
+  if (direct_dim == size()) {
+    memcpy(m._data, _data, full_size);
+    return;
+  }
+    
+  int curr_dim;
+  Idx pos(size());
+  
+  while (true) {
+    memcpy(m.ptr(pos), ptr(pos), full_size);
+    //copy or whatever
+    curr_dim = direct_dim;
+    pos[curr_dim]++;
+    while(pos[curr_dim] == operator[](curr_dim)) {
+      pos[curr_dim] = 0;
+      curr_dim++;
+      
+      if (curr_dim == size())
+        return;
+      
+      pos[curr_dim]++;
+    }
+  }
 }
 
 
@@ -266,7 +304,10 @@ void Mat::reshape(const Idx &newsize)
     abort();
   
   static_cast<Idx&>(*this) = newsize;
-  _step = newsize;
+  
+  abort();
+  //FIXME calc step!
+  //_step = newsize;
 }
 
 template<typename T> class _vdata_write_dispatcher{
@@ -634,7 +675,7 @@ Mat Mat3d(const cv::Mat &img)
   return m;
 }
 
-const std::vector<int> & Mat::step() const
+const std::vector<off_t> & Mat::step() const
 {
   return _step;
 }

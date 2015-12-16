@@ -34,14 +34,24 @@ public:
 };
   
 namespace {
-  template<typename T> off_t calc_offset(const Idx &step, int pos)
+  template<typename T> off_t calc_offset(const std::vector<off_t> &step, int pos)
   {
     return 0;
   }
   
-  template<typename T, typename ... Idxs> off_t calc_offset(const Idx &step, int pos, int idx, Idxs ... rest)
+  template<typename T, typename ... Idxs> off_t calc_offset(const std::vector<off_t> &step, int pos, off_t idx, Idxs ... rest)
   {
     return idx*step[pos] + calc_offset<T>(step, pos+1, rest...);
+  }
+  
+  
+  //TODO dim switch for higher speed?
+  off_t calc_offset(const std::vector<off_t> &step, const Idx &pos)
+  {
+    off_t off = 0;
+    for(int i=0;i<pos.size();i++)
+      off += step[i]*pos[i];
+    return off;
   }
 }
 
@@ -73,14 +83,21 @@ public:
   int write(const char *path);
   Mat bind(int dim, int pos) const;
   
+  void copyTo(Mat &m);
+  
   void* data() const;
   
-  const std::vector<int> & step() const;
+  const std::vector<off_t> & step() const;
   
   BaseType const & type() const;
   
   template<typename T, typename ... Idxs>
     T& operator()(Idxs ... idxs) const;
+    
+  //overloading causes compile problems with boost?!?
+  //template<typename T>
+    //T& operator()(Idx pos) const;
+  void* ptr(Idx pos) const { return (void*)(((char*)_data)+calc_offset(_step, pos)); }
   
   template<template<typename> class F, typename ... ArgTypes>
     void call(ArgTypes ... args);
@@ -92,7 +109,7 @@ protected:
   BaseType _type = BaseType::INVALID;
   void *_data = NULL;
   std::shared_ptr<void> _mem;
-  Idx _step; //not yet used!
+  std::vector<off_t> _step;
   
 private:
 };
@@ -156,6 +173,11 @@ template<typename T, typename ... Idxs> T& Mat::operator()(Idxs ... idxs) const
 {
   return *(T*)(((char*)_data)+calc_offset<T>(_step, 0, idxs...));
 } 
+/*
+template<typename T> T& Mat::operator()(Idx pos) const
+{
+  return *(T*)(((char*)_data)+calc_offset(_step, pos));
+}*/
 
 
 template<typename T> Mat_<T>::Mat_(const Mat &m)

@@ -871,7 +871,7 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth,
     return;
   }
   
-  printf("read idx %d", idx[3]);
+  //printf("read idx %d", idx[3]);
   
   assert((flags & FORCE_REUSE) == 0);
   
@@ -896,7 +896,7 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth,
     tmp.create(_fixme_storage_type, _fixme_storage_size);
     
     if (!tmp.read(cache_file.string().c_str())) {
-      printf("...cached\n");
+      //printf("...cached\n");
       //backing memory location might have changed due to mmap
       //FIXME
       *img = cvMat(tmp);
@@ -904,7 +904,7 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth,
       return;
     }
   }
-  printf("\n");
+  //printf("\n");
   
   //FIXME implement flexible datastore layouts (hdr, etc...)
   Idx subspace = {0,1,2};
