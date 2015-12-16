@@ -711,17 +711,17 @@ void apply_flags_channel(Datastore *store, cv::Mat *in, cv::Mat *out, int flags,
   }
   
   if (flags & UNDISTORT) {
-    Intrinsics *i = &store->dataset()->intrinsics;
+    //Intrinsics *i = &store->dataset()->intrinsics;
     //FIXMe getundistmap (should be) generic!
-    if (i->model == DistModel::INVALID) {} // do nothing
-    else if (i->model == DistModel::CV8) {
+    //if (i->model == DistModel::INVALID) {} // do nothing
+    /*else if (i->model == DistModel::CV8) {
       cv::Mat *chap = i->getUndistMap(0, in->size[1], in->size[0]);
       //cv::undistort(*ch,newm, i->cv_cam, i->cv_dist);
       //cv::setNumThreads(0);
       remap(*curr, *out, *chap, cv::noArray(), cv::INTER_LINEAR);
-    }
-    else
-      printf("distortion model not supported: %s\n", enum_to_string(i->model));
+    }*/
+    //else
+      //printf("distortion model not supported: %s\n", enum_to_string(i->model));
   }
   else if (curr->data != out->data)
     curr->copyTo(*out);

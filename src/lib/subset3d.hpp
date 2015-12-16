@@ -39,13 +39,14 @@ public:
   clif::Dataset *dataset() { return _data; }
   
   double f[2];
+  double step_length;
+  double world_to_camera[6];
 private:
   clif::Dataset *_data = NULL;
   clif::Datastore *_store = NULL;
   std::vector<std::pair<int,int>> indizes;
   
   //TODO more generic model!
-  double step_length;
   ExtrType _type;
 };
 

@@ -151,7 +151,7 @@ void proc_image(Datastore *store, Mat &in, Mat &out, int flags, double min, doub
     if (undist)
       undist->undistort(curr_in, curr_out, cv_interpolation);
     else {
-      curr_out.create(curr_in.type(), curr_in);
+      /*curr_out.create(curr_in.type(), curr_in);
       
       Intrinsics *i = &store->dataset()->intrinsics;
       //FIXME get undist map (should be) generic!
@@ -165,8 +165,8 @@ void proc_image(Datastore *store, Mat &in, Mat &out, int flags, double min, doub
           remap(cvMat(curr_in.bind(2,c)), cvMat(curr_out.bind(2,c)), *chap, cv::noArray(), cv_interpolation);
         
       }
-      else
-        printf("distortion model not supported: %s\n", enum_to_string(i->model));
+      else*/
+        printf("distortion model not supported\n");
     }
   }
   

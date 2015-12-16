@@ -9,7 +9,7 @@
 namespace clif {
   
 class Datastore;
-
+/*
 class Intrinsics {
   public:
     Intrinsics() {};
@@ -24,7 +24,7 @@ class Intrinsics {
 
   private:
     cv::Mat _undist_map;
-};
+};*/
 
 /** Class representing a single light field dataset.
  * This class inherits from Attributes for Metadata handling and from Datastore for actual image/light field IO.
@@ -83,7 +83,7 @@ class Dataset : public Attributes {
      * which is also the group that is loaded on opening the dataset. The specified
      * intrinsics group will be used for automatic processing like undistortion.
      */
-    void load_intrinsics(std::string intrset = std::string());
+    //void load_intrinsics(std::string intrset = std::string());
     
     /** return the actual full path of the dataset root in the HDF5 file
      */
@@ -94,7 +94,7 @@ class Dataset : public Attributes {
 
     //TODO if attributes get changed automatically refresh intrinsics on getIntrinsics?
     //TODO hide and create accessor
-    Intrinsics intrinsics;
+    //Intrinsics intrinsics;
 private:
     /** The internal HDF5 reference
      */

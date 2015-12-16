@@ -24,11 +24,11 @@ void Subset3d::create(Dataset *data, cpath extr_group)
   cpath root = _data->getSubGroup("calibration/extrinsics", extr_group);
   _store = _data->getStore(root/"data");
   
-  ExtrType type;
-  
   _data->getEnum((root/"type"), _type);
   
-  if (type == ExtrType::LINE) {
+  _data->get(root/"world_to_camera", world_to_camera, 6);
+    
+  if (_type == ExtrType::LINE) {
     double line_step[3];
     
     _data->get(root/"/line_step", line_step, 3);
@@ -40,12 +40,22 @@ void Subset3d::create(Dataset *data, cpath extr_group)
 
     step_length = line_step[0];
   }
-  else {
-    _data->get(root/"/step_angle", step_length);
+  else if (_type == ExtrType::CIRCLE)
+  {
+    _data->get(root/"step_angle", step_length);
+  }
+  else
+  {
+    printf("unsupported extrinsics type: %s\n", enum_to_string(_type));
   }
   
-  //TODO which intrinsic to select!
+  //TODO which extrinsics to select!
   _data->get(_data->getSubGroup("calibration/intrinsics")/"/projection", f, 2);
+}
+
+ExtrType Subset3d::type()
+{
+  return _type;
 }
 
 typedef Vec<ushort, 3> Vec3us;

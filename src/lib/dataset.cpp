@@ -7,7 +7,7 @@
 namespace clif {
 
 typedef unsigned int uint;
-
+/*
 void Intrinsics::load(Attributes *attrs, boost::filesystem::path path)
 {
   
@@ -62,7 +62,7 @@ cv::Mat* Intrinsics::getUndistMap(double depth, int w, int h)
   cv::initUndistortRectifyMap(cv_cam, cv_dist, cv::noArray(), cv::noArray(), cv::Size(w, h), CV_32FC2, _undist_map, tmp);
   
   return &_undist_map;
-}
+}*/
 
 
 void Dataset::datastores_append_group(Dataset *set, std::unordered_map<std::string,Datastore*> &stores, H5::Group &g, cpath basename, cpath group_path)
@@ -106,9 +106,6 @@ void Dataset::open(ClifFile &f, const cpath &name)
   if (h5_obj_exists(_file.f, _path.c_str())) {
     //static_cast<Attributes&>(*this) = Attributes(f, _path);
     Attributes::open(_file.f, _path);
-    
-    //FIXME specificy which one!?
-    load_intrinsics();
   }
   
   if (!Dataset::valid()) {
@@ -169,7 +166,6 @@ void Dataset::link(const Dataset *other)
   
   _path = other->_path;
   
-  intrinsics = other->intrinsics;
   calib_images = NULL;
   
   //iterate stores...
@@ -212,7 +208,7 @@ bool Dataset::valid()
 {
   return true;
 }
-
+/*
 void Dataset::load_intrinsics(std::string intrset)
 {
   try {
@@ -221,7 +217,7 @@ void Dataset::load_intrinsics(std::string intrset)
   catch (std::runtime_error e) {
     
   }
-}
+}*/
 
 Datastore *Dataset::getStore(const boost::filesystem::path &path, int create_dims)
 {
