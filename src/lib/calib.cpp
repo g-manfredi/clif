@@ -148,6 +148,12 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
               masks[1][2] = true;
               masks[2][3] = true;
               break;
+            case DataOrder::GBRG : 
+              masks[0][2] = true; 
+              masks[1][0] = true;
+              masks[1][3] = true;
+              masks[2][1] = true;
+              break;
             default :
               abort();
           }

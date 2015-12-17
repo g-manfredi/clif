@@ -23,9 +23,10 @@ bool DepthDist::load(Dataset *set)
     int imgsize[2];
     
     set->getEnum(path()/"type", _type);
-    
+        
     if (_type != DistModel::UCALIB)
       return true;
+    
     
 #ifndef CLIF_WITH_UCALIB
     return true;
@@ -65,9 +66,8 @@ bool DepthDist::load(Dataset *set)
       
       
       double d = _depth;
-      if (isnan(d))
+      if (isnan(d) || d < 0.1)
         d = 1000000000000.0;
-      printf("calc undist map channel %d depth %fmm\n", color, d);
       
       if (color == 0)
         _maps[color] = cam.get_undist_map_for_depth(d, NULL, &ref_points);
@@ -78,7 +78,7 @@ bool DepthDist::load(Dataset *set)
     return true;
 #endif
   }
-  catch (...) {
+  catch (std::invalid_argument) {
     return false;
   }
 }

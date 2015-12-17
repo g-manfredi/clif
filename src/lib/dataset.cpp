@@ -320,6 +320,7 @@ Tree_Derived *Dataset::tree_derive(const Tree_Derived & ref)
   Tree_Derived *newtree = ref.clone();
   
   if (!newtree->load(this)) {
+    printf("tree derive failed!\n");
     delete newtree;
     return NULL;
   }

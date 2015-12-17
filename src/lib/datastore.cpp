@@ -72,10 +72,10 @@ static cpath _cache_filename(Datastore *store, int idx, int flags, float scale, 
   std::ostringstream shortkey_stream;
   std::string shortkey, longkey;
   
-  shortkey_stream << "_" << idx << "_" << flags << " " << scale << depth;
+  shortkey_stream << "_" << idx << "_" << flags << " " << scale << depth << store->dataset()->file().mtime();
   shortkey = shortkey_stream.str();
   
-  name = "clif/002/cached_imgs";
+  name = "clif/003/cached_imgs";
   std::hash<std::string> hasher;
   std::string dset_path = store->dataset()->path().generic_string() + "|" + store->dataset()->file().path().generic_string();
   longkey_stream << hasher(dset_path) << "_" << hasher(store->path().generic_string()) << "_" << hasher(shortkey);
@@ -812,20 +812,29 @@ void Datastore::readChannel(const Idx &idx, cv::Mat *channel, int flags)
   mat_cache_set(channel,idx,flags,CACHE_CONT_MAT_CHANNEL,scale);*/
 }
 
+//FIXME delete elements after some time
 DepthDist* Datastore::undist(double depth)
 {
-  if (!_undist_loaded) {
-    _undist_loaded = true;
+  DepthDist *undist = NULL;
+  
+  if (!_undists.count(depth)) {
+    cpath intrinsics;
     try {
       //FIXME variable path?!
-      _undist = dynamic_cast<DepthDist*>(dataset()->tree_derive(DepthDist(dataset()->getSubGroup("calibration/intrinsics"), depth)));
+      intrinsics = dataset()->getSubGroup("calibration/intrinsics");
     }
-    catch (...) {
+    catch (std::invalid_argument) {
       return NULL;
     }
+    DepthDist *undist = dynamic_cast<DepthDist*>(dataset()->tree_derive(DepthDist(intrinsics, depth)));
+    
+    if (undist)
+      _undists[depth] = undist;
+    
+    return undist;
   }
-  
-  return _undist;
+  else
+    return _undists[depth];
 }
 
 //this is always a 3d mat!
@@ -858,7 +867,11 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth,
   if (isnan(depth))
     depth = 0.0;
   
-  if (!undist(depth) || undist(depth)->type() != DistModel::UCALIB)
+  if (flags & UNDISTORT) {
+    if (!undist(depth) || undist(depth)->type() != DistModel::UCALIB)
+      depth = 0.0;
+  }
+  else
     depth = 0.0;
   
   Read_Options opts(idx, flags, depth, min, max, scale, CACHE_CONT_MAT_IMG);

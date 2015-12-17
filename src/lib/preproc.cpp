@@ -167,6 +167,7 @@ void proc_image(Datastore *store, Mat &in, Mat &out, int flags, double min, doub
       }
       else*/
         printf("distortion model not supported\n");
+      abort();
     }
   }
   

@@ -46,6 +46,9 @@ public:
   void flush();
   void close();
   
+  time_t mtime();
+  
+  
   const std::vector<std::string> & datasetList() const { return datasets; };
   
   H5::H5File f;

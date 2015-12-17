@@ -193,7 +193,7 @@ private:
   //FIXME which undist for depth dependend...
   //the implemented tree-derive model is not very good (need to search subGroup each time!)
   //use softlink!?
-  DepthDist *_undist = NULL;
+  std::unordered_map<double,DepthDist*> _undists;
   
   clif::Mat _mat;
   

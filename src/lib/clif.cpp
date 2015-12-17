@@ -1,5 +1,7 @@
 #include "clif.hpp"
 
+#include "cliini.h"
+
 #include <string>
 #include <assert.h>
 
@@ -11,8 +13,9 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-
-#include "cliini.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+       
 
 namespace clif {
 
@@ -231,6 +234,14 @@ Dataset* ClifFile::createDataset(const std::string name)
   set->create(*this, name);
   datasets.push_back(name);
   return set;
+}
+
+time_t ClifFile::mtime()
+{
+  struct stat st;
+  stat(_path.string().c_str(), &st);
+  
+  return st.st_mtim.tv_sec;
 }
 
 clif::Dataset* ClifFile::openDataset(int idx)
