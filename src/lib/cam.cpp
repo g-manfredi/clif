@@ -39,29 +39,54 @@ bool DepthDist::load(Dataset *set)
 
     set->get(path()/"source/source/img_size", imgsize, 2);
     
-    _maps.resize(corr_line_m[3]);
+    //_maps.resize(corr_line_m[3]);
+    
+    int cam_count = 1;
+    int channels = corr_line_m[3];
+    
+    if (corr_line_m.size() == 5)
+      cam_count = corr_line_m[4];
+    
+    if (cam_count == 1)
+      _maps.create(Idx{imgsize[0], imgsize[1], channels, cam_count});
         
     std::vector<cv::Point3f> ref_points;
     
-    for(int color=0;color<corr_line_m[3];color++) {
+    Idx map_pos(4);
+    
+    for(;map_pos<corr_line_m;map_pos.step(2,corr_line_m)) {
       std::vector<cv::Vec4d> linefits(corr_line_m[1]*corr_line_m[2]);
       
+      Idx lines_pos(_maps.size()+1);
+      for(int i=1;i<lines_pos.size();i++)
+        lines_pos[i] = map_pos[i-1];
+        
       for(int j=0;j<corr_line_m[2];j++)
-        for(int i=0;i<corr_line_m[1];i++) {
-          linefits[j*corr_line_m[1]+i][0] = corr_line_m(0, i, j, color);
-          linefits[j*corr_line_m[1]+i][1] = corr_line_m(1, i, j, color);
-          linefits[j*corr_line_m[1]+i][2] = corr_line_m(2, i, j, color);
-          linefits[j*corr_line_m[1]+i][3] = corr_line_m(3, i, j, color);
+        for(int i=0;i<corr_line_m[1];i++)
+          for (int e=0;e<4;e++) {
+          lines_pos[0] = e;
+          linefits[j*corr_line_m[1]+i][e] = corr_line_m(lines_pos);
         }
         
       GenCam cam(linefits, cv::Point2i(imgsize[0],imgsize[1]), cv::Point2i(corr_line_m[1],corr_line_m[2]));
       
-      cam.extrinsics.resize(6*extrinsics_m[2]);
       
+      Idx extr_size(extrinsics_m.size());
+      extr_size[0] = 6;
+      for(int i=1;i<extr_size.size();i++)
+        extr_size[i] = extrinsics_m[i];
       
-      for(int img_n=0;img_n<extrinsics_m[2];img_n++)
-        for(int i=0;i<6;i++)
-          cam.extrinsics[6*img_n+i] = extrinsics_m(i, color, img_n);
+      int extr_views_dim = extrinsics_m.size()-1;
+      
+      cam.extrinsics.resize(6*extrinsics_m[extr_views_dim]);
+      
+      Idx extr_pos(extr_size.size());
+      for(int i=1;i<extr_pos.size();i++)
+        extr_pos[i] = map_pos[i+2];
+      for(int img_n=0;img_n<extrinsics_m[extr_views_dim];img_n++)
+        for(int i=0;i<6;i++) {
+          cam.extrinsics[6*img_n+i] = extrinsics_m(i, color, cam, img_n);
+        }
         
       
       
@@ -69,10 +94,7 @@ bool DepthDist::load(Dataset *set)
       if (isnan(d) || d < 0.1)
         d = 1000000000000.0;
       
-      if (color == 0)
-        _maps[color] = cam.get_undist_map_for_depth(d, NULL, &ref_points);
-      else
-        _maps[color] = cam.get_undist_map_for_depth(d, &ref_points);
+      cam.get_undist_map_for_depth(cvMat(_maps.bind(3, map_pos[3]).bind(2, map_pos[2])), d, &ref_points);
     }
     
     return true;

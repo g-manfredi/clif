@@ -201,6 +201,8 @@ void Datastore::write(const Mat &m, const Idx &pos)
 {
   assert(!_readonly && !_memonly);
   
+  init_write(pos.size(), m, m.type());
+  
   write_full_subdims(_data, m, pos);
   
   H5::DataSpace space = _data.getSpace();
@@ -948,10 +950,12 @@ void Datastore::setDims(int dims)
   _basesize = _extent;
 }
 
-void Datastore::init_write(int dims, const Idx &img_size, BaseType type)
+void Datastore::init_write(int ndims, const Idx &img_size, BaseType type)
 {
   if (_type <= BaseType::INVALID) {
-    setDims(dims);
+    if (!ndims)
+      ndims = img_size.size()+1;
+    setDims(ndims);
     create_types(type); //CvDepth2BaseType(img->depth())
     create_dims_imgs(img_size); //img->size().width, img->size().height, img->channels()
     create_store();

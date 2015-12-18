@@ -71,6 +71,14 @@ cliini_opt opts[] = {
     's'
   },
   {
+    "store-dims",
+    2, //argcount
+    CLIINI_ARGCOUNT_ANY, //argcount
+    CLIINI_STRING,
+    0,
+    0
+  },
+  {
     "include",
     1, //argcount
     CLIINI_ARGCOUNT_ANY, //argcount
@@ -154,6 +162,7 @@ int main(const int argc, const char *argv[])
   cliini_arg *include = cliargs_get(args, "include");
   cliini_arg *exclude = cliargs_get(args, "exclude");
   cliini_arg *stores = cliargs_get(args, "store");
+  cliini_arg *dim_stores = cliargs_get(args, "store-dims");
   
   if (!args || cliargs_get(args, "help\n") || (!input && !calib_imgs && !stores) || !output) {
     printf("TODO: print help!");
@@ -202,7 +211,7 @@ int main(const int argc, const char *argv[])
   if (output_clif && input_clifs.size() && !clif_append[0].compare(input_clifs[0]))
     inplace = true;
   
-  if (!output_clif && stores)
+  if (!output_clif && (stores || dim_stores))
     errorexit("can only add datastores to clif output!");
   
   if (output_clif) {
@@ -332,12 +341,47 @@ int main(const int argc, const char *argv[])
         }
         printf("add store %s\n", store_path);
         Datastore *store = set->addStore(store_path, dim);
-        for(int j=2;j<cliarg_inst_arg_count(stores, i);j++,sum++) {
+        for(int j=sum;j<cliarg_inst_arg_count(stores, i);j++,sum++) {
           printf("%s\n", cliarg_nth_str(stores, sum));
           cv::Mat img = imread(cliarg_nth_str(stores, sum), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
           if (img.channels() == 3)
             cvtColor(img, img, COLOR_BGR2RGB);
           store->append(clif::Mat3d(img));
+        }
+      }
+    }
+    
+    if (dim_stores) {
+      int sum = 0;
+      for(uint i=0;i<cliarg_inst_count(dim_stores);i++) {
+        int count = cliarg_inst_arg_count(dim_stores, i);
+        char *store_path = cliarg_nth_str(dim_stores, sum);
+        int dim = atoi(cliarg_nth_str(dim_stores, sum+1));
+        sum += 2;
+        printf("dim store %d!\n", dim);
+        if (dim < 3) {
+          printf("ERROR: datastore %s needs at least 4 dimensions, but dimension was %d (%s)\n", store_path, dim, cliarg_nth_str(dim_stores, sum));
+          exit(EXIT_FAILURE);
+        }
+        Idx size(dim);
+        Idx pos(dim);
+        for(int n=0;n<dim;n++,sum++)
+          size[n] = atoi(cliarg_nth_str(dim_stores, sum));
+        printf("add store %s\n", store_path);
+        Datastore *store = set->addStore(store_path, dim);
+        for(int j=sum;j<cliarg_inst_arg_count(dim_stores, i);j++,sum++) {
+          printf("%s\n", cliarg_nth_str(dim_stores, sum));
+          cv::Mat img = imread(cliarg_nth_str(dim_stores, sum), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+          if (img.channels() == 3)
+            cvtColor(img, img, COLOR_BGR2RGB);
+          store->write(clif::Mat3d(img), pos);
+          int currdim = 3;
+          pos[currdim]++;
+          while(size[currdim] > 0 && pos[currdim] >= size[currdim] && currdim < dim-1) {
+            pos[currdim] = 0;
+            currdim++;
+            pos[currdim]++;
+          }
         }
       }
     }

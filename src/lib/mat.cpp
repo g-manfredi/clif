@@ -21,6 +21,23 @@ Idx::Idx(std::initializer_list<int> l) : std::vector<int>(l) {};
 
 Idx::Idx(int size) : std::vector<int>(size) {};
 
+Idx& Idx::operator+=(const Idx& rhs)
+{                          
+  for(int i=0;i<size();i++)
+    operator[](i) += rhs[i];
+  return *this;
+}
+
+void Idx::step(int dim, const Idx& max)
+{
+  operator[](dim)++;
+  
+  while(max[dim] > 0 && operator[](dim) >= max[dim] && dim < max.size()-1) {
+    operator[](dim) = 0;
+    dim++;
+    operator[](dim)++;
+  }
+}
 
 Idx::Idx(const H5::DataSpace &space)
 {

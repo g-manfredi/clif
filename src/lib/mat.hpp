@@ -29,9 +29,29 @@ public:
   
   off_t total() const;
   
+  Idx& operator+=(const Idx& rhs);
+  void step(int dim, const Idx& max);
+  
   static Idx zeroButOne(int size, int pos, int idx);
   template<typename T> static Idx invert(int size, const T * const dims);
 };
+
+inline bool operator< (const Idx& lhs, const Idx& rhs)
+{
+  if (lhs.size() != rhs.size())
+    return (lhs.size() < rhs.size());
+  
+  int curr = lhs.size()-1;
+  while (lhs[curr] < rhs[curr]) {
+    if (curr == 0)
+      return true;
+    curr--;
+  }
+  return false;
+}
+inline bool operator> (const Idx& lhs, const Idx& rhs){return rhs < lhs;}
+inline bool operator<=(const Idx& lhs, const Idx& rhs){return !(lhs > rhs);}
+inline bool operator>=(const Idx& lhs, const Idx& rhs){return !(lhs < rhs);}
   
 namespace {
   template<typename T> off_t calc_offset(const std::vector<off_t> &step, int pos)
@@ -92,11 +112,12 @@ public:
   BaseType const & type() const;
   
   template<typename T, typename ... Idxs>
-    T& operator()(Idxs ... idxs) const;
+    T& operator()(int first, Idxs ... idxs) const;
     
   //overloading causes compile problems with boost?!?
-  //template<typename T>
-    //T& operator()(Idx pos) const;
+  template<typename T>
+    T& operator()(Idx pos) const;
+    
   void* ptr(Idx pos) const { return (void*)(((char*)_data)+calc_offset(_step, pos)); }
   
   template<template<typename> class F, typename ... ArgTypes>
@@ -125,9 +146,13 @@ public:
   void create(BaseType type, Idx size);
   
   //FIXME/DOCUMENT: this should only be used after make-unique etc...
-  template<typename ... Idxs> T& operator()(Idxs ... idxs) const
+  template<typename ... Idxs> T& operator()(int first, Idxs ... idxs) const
   {
-    return *(T*)(((char*)_data)+calc_offset<T>(_step, 0, idxs...));
+    return Mat::operator()<T>(first, idxs...);
+  }
+  T& operator()(Idx pos) const
+  {
+    return Mat::operator()<T>(pos);
   }
 };
 
@@ -169,15 +194,15 @@ template<int DIM, typename T> vigra::MultiArrayView<DIM,T> vigraMAV(Mat *m)
   return vigraMAV<DIM,T>(*m);
 }
 
-template<typename T, typename ... Idxs> T& Mat::operator()(Idxs ... idxs) const
+template<typename T, typename ... Idxs> T& Mat::operator()(int first, Idxs ... idxs) const
 {
-  return *(T*)(((char*)_data)+calc_offset<T>(_step, 0, idxs...));
+  return *(T*)(((char*)_data)+calc_offset<T>(_step, 0, first, idxs...));
 } 
-/*
+
 template<typename T> T& Mat::operator()(Idx pos) const
 {
   return *(T*)(((char*)_data)+calc_offset(_step, pos));
-}*/
+}
 
 
 template<typename T> Mat_<T>::Mat_(const Mat &m)

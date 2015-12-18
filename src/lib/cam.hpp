@@ -20,7 +20,7 @@ public:
 
 private:
   double _depth = -1.0;
-  std::vector<cv::Mat> _maps;
+  Mat_<cv::Point2f> _maps;
   DistModel _type;
 };
 
