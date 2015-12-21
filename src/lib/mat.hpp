@@ -36,6 +36,33 @@ public:
   std::string name; //for direct construction
   int val; //for direct construction
 };
+
+
+class DimSpec
+{
+  int _dim = -1;
+  std::string _name;
+  int _offset = 0;
+public:
+  
+  DimSpec() {};
+  DimSpec(int dim) : _dim(dim) {};
+  DimSpec(const std::string& name) : _name(name) {};
+  DimSpec(const char* name) : _name(std::string(name)) {};
+  
+  bool valid() const
+  {
+    if (_dim != -1 || _name.size())
+      return true;
+    else
+      return false;
+  }
+  
+  int get(const Idx *ref) const;
+  DimSpec operator+(const int& rhs) const;
+  DimSpec operator-(const int& rhs) const;
+
+};
   
 class Idx : public std::vector<int>
 {
@@ -67,12 +94,12 @@ public:
   
   void name(int i, const std::string& name);
   const std::string& name(int i);
-  int dim(const std::string &name);
+  int dim(const std::string &name) const;
   
-  IdxRange r(int i, int end = INT_MIN);
-  IdxRange r(const std::string &str, const std::string &end = std::string());
+  IdxRange r(const DimSpec &start, const DimSpec &end);
+  /*IdxRange r(const std::string &str, const std::string &end = std::string());
   IdxRange r(int i, const std::string &end);
-  IdxRange r(const std::string &str, int end);
+  IdxRange r(const std::string &str, int end);*/
   
   static Idx zeroButOne(int size, int pos, int idx);
   template<typename T> static Idx invert(int size, const T * const dims);
@@ -91,7 +118,7 @@ class Idx_Iter_Single_Dim : public std::iterator<std::input_iterator_tag, Idx>
   int _dim;
   Idx _pos;
 public:
-  Idx_Iter_Single_Dim(const Idx &pos, int dim) : _pos(pos), _dim(dim) {};
+  Idx_Iter_Single_Dim(const Idx &pos, const DimSpec& dim) : _pos(pos), _dim(dim.get(&pos)) {};
   Idx_Iter_Single_Dim(const Idx_Iter_Single_Dim& other) : _pos(other._pos), _dim(other._dim) {}
   Idx_Iter_Single_Dim& operator++() {++_pos[_dim]; return *this;}
   Idx_Iter_Single_Dim operator++(int) { Idx_Iter_Single_Dim tmp(*this); operator++(); return tmp; }
@@ -106,23 +133,21 @@ class Idx_It_Dim
   Idx _size;
   int _dim;
 public:
-  Idx_It_Dim(const Idx &size, int dim)
-  : _size(size), _dim(dim)
+  Idx_It_Dim(const Idx &size, const DimSpec& dim)
+  : _size(size), _dim(dim.get(&size))
   {
+    printf("iter dim: %d\n", _dim);
     _start = _size;
     for(int i=0;i<_start.size();i++)
       _start[i] = 0;
   };
-  //FIXME shouldn't size be const!
-  Idx_It_Dim(Idx &size, const std::string &name) : Idx_It_Dim(size, size.dim(name)) {};
   
-  Idx_It_Dim(const Idx &start, const Idx &size, int dim)
-  : _size(size), _dim(dim)
+  Idx_It_Dim(const Idx &start, const Idx &size, const DimSpec& dim)
+  : _size(size), _dim(dim.get(&size))
   {
     _start = start;
-    _start[dim] = 0;
+    _start[_dim] = 0;
   };
-  Idx_It_Dim(const Idx &start, Idx &size, const std::string &name) : Idx_It_Dim(start, size, size.dim(name)) {};
   
   Idx_Iter_Single_Dim begin() { return Idx_Iter_Single_Dim(_start, _dim); };
   Idx_Iter_Single_Dim end() { return Idx_Iter_Single_Dim(_size, _dim); };

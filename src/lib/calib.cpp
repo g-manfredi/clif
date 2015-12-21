@@ -378,9 +378,11 @@ static void _calib_cam(Mat_<float> &proxy_m, Idx proxy_cam_idx, Idx res_idx, Mat
       }
   }
   
-  Idx cam_pos({proxy_cam_idx.r(proxy_cam_idx.dim("y")+1,proxy_cam_idx.dim("views")-1)});
+  //Idx cam_pos({proxy_cam_idx.r(proxy_cam_idx.dim("y")+1,proxy_cam_idx.dim("views")-1)});
   
-  std::cout << cam_pos << std::endl;
+  Idx cam_pos({proxy_cam_idx.r(DimSpec("y")+1, DimSpec("views")-1)});
+  
+  std::cout << "cam pos:" << cam_pos << std::endl;
         
   rms(cam_pos) = dist_lines.proxy_fit_lines_global();
         

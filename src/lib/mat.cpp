@@ -45,9 +45,38 @@ Idx::Idx(std::initializer_list<IdxRange> l)
     }
 }
 
-int Idx::dim(const std::string &name)
+int DimSpec::get(const Idx *ref) const
 {
-  return _name_map[name];
+  if (_dim == -1) {
+    printf("get name %s: +%d\n", _name.c_str(), _offset);
+    return ref->dim(_name)+_offset;
+  }
+  else
+    return _dim+_offset;
+}
+
+DimSpec DimSpec::operator+(const int& rhs) const
+{
+  printf("offset of %s: %d+%d\n", _name.c_str(), _offset, rhs);
+  DimSpec tmp(*this);
+  tmp._offset += rhs;
+  return tmp;
+}
+
+DimSpec DimSpec::operator-(const int& rhs) const
+{
+  printf("offset of %s: %d+%d\n", _name.c_str(), _offset, rhs);
+  DimSpec tmp(*this);
+  tmp._offset -= rhs;
+  return tmp;
+}
+
+int Idx::dim(const std::string &name) const
+{
+  if (_name_map.count(name))
+    return _name_map.find(name)->second;
+  else
+    throw std::runtime_error("invalid matrix dimension: " + name);
 }
 
 static Idx _empty();
@@ -121,11 +150,6 @@ const std::vector<std::string>& Idx::names() const
   return _names;
 }
 
-IdxRange Idx::r(int i, int end)
-{
-  return IdxRange(this, i, end);
-}
-
 IdxRange::IdxRange(Idx *src_, int start_, int end_)
 {
   start = start_;
@@ -148,28 +172,24 @@ IdxRange::IdxRange(int val_, const std::string& name_)
   name = name_;
   val = val_;
 }
-      
-IdxRange Idx::r(const std::string &str, const std::string &end)
-{
-  if (!end.size())
-    return r(_name_map[str]);
-  else
-    return r(_name_map[str],_name_map[end]);
-}
-
-IdxRange Idx::r(int i, const std::string &end)
-{
-  return r(i,_name_map[end]);
-}
-
-IdxRange Idx::r(const std::string &str, int end)
-{
-  return r(_name_map[str],end);
-}
 
 IdxRange IR(int i, const std::string& name)
 {
   return IdxRange(i, name);
+}
+     
+IdxRange Idx::r(const DimSpec &start, const DimSpec &end)
+{
+  int ds, de;
+  
+  ds = start.get(this);
+  
+  if (!end.valid())
+    de = INT_MIN;
+  else
+    de = end.get(this);
+  
+  return IdxRange(this, ds, de);
 }
 
 Idx::Idx(const H5::DataSpace &space)
