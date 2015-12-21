@@ -122,10 +122,10 @@ void Idx::name(int i, const std::string& name)
   _name_map[name] = i;
 }
 
-const std::string& Idx::name(int i)
+const std::string& Idx::name(int i) const
 {
   if (_names.size() <= i)
-    _names.resize(i+1);
+    return "";
   
   return _names[i];
 }
@@ -227,7 +227,7 @@ Idx Idx::zeroButOne(int size, int pos, int i)
 }
 
 
-std::ostream& operator<<(std::ostream& out, Idx& idx)
+std::ostream& operator<<(std::ostream& out, const Idx& idx)
 {
   for(int i=0;i<idx.size();i++)
     out << idx.name(i) << ":" << idx[i] << " ";

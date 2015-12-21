@@ -356,14 +356,7 @@ static void _calib_cam(Mat_<float> &proxy_m, Idx proxy_cam_idx, Idx res_idx, Mat
   
   DistCorrLines dist_lines = DistCorrLines(0, 0, 0, cam_config.w, cam_config.h, 100.0, cam_config, conf, proxy_size);
   dist_lines.proxy_backwards.resize(img_count);
-        
-  Idx res_p1(res_idx.size()+1);
-  for(int i=1;i<res_p1.size();i++)
-    res_p1[i] = res_idx[i-1];
-  Idx res_p3(res_idx.size()+3);
-  for(int i=3;i<res_p1.size();i++)
-    res_p1[i] = res_idx[i-3];
-        
+
   for(auto pos : Idx_It_Dim(proxy_cam_idx, proxy_m, "views")) {
     int pos_int = pos["views"];
     dist_lines.proxy_backwards[pos_int].resize(proxy_size.y*proxy_size.x);
@@ -395,19 +388,9 @@ static void _calib_cam(Mat_<float> &proxy_m, Idx proxy_cam_idx, Idx res_idx, Mat
   proj_rms(cam_pos) = gcam.rms;
   
   for(int j=0;j<proxy_size.y;j++)
-    for(int i=0;i<proxy_size.x;i++) {
-      res_p3[1] = i;
-      res_p3[2] = j;
-      
-      res_p3[0] = 0;
-      corr_line_m(res_p3) = dist_lines.linefits[j*proxy_size.x+i][0];
-      res_p3[0] = 1;
-      corr_line_m(res_p3) = dist_lines.linefits[j*proxy_size.x+i][1];
-      res_p3[0] = 2;
-      corr_line_m(res_p3) = dist_lines.linefits[j*proxy_size.x+i][2];
-      res_p3[0] = 3;
-      corr_line_m(res_p3) = dist_lines.linefits[j*proxy_size.x+i][3];
-    }
+    for(int i=0;i<proxy_size.x;i++)
+      for(int l=0;l<4;l++)
+        corr_line_m({l, i, j, proxy_m.r("channels","cams")}) = dist_lines.linefits[j*proxy_size.x+i][l];
     
   Idx extr_idx(res_idx.size()+2);
   for(int i=0;i<res_idx.size();i++)

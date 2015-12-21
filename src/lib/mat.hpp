@@ -85,7 +85,7 @@ public:
   const std::vector<std::string>& names() const;
   
   void name(int i, const std::string& name);
-  const std::string& name(int i);
+  const std::string& name(int i) const;
   int dim(const std::string &name) const;
   
   IdxRange r(const DimSpec &start, const DimSpec &end);
@@ -96,7 +96,7 @@ public:
   static Idx zeroButOne(int size, int pos, int idx);
   template<typename T> static Idx invert(int size, const T * const dims);
   
-  friend std::ostream& operator<<(std::ostream& out, Idx& idx);
+  friend std::ostream& operator<<(std::ostream& out, const Idx& idx);
 
 private:
   std::unordered_map<std::string,int> _name_map;
