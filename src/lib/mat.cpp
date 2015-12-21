@@ -47,17 +47,14 @@ Idx::Idx(std::initializer_list<IdxRange> l)
 
 int DimSpec::get(const Idx *ref) const
 {
-  if (_dim == INT_MIN) {
-    printf("get name %s: +%d\n", _name.c_str(), _offset);
+  if (_dim == INT_MIN)
     return ref->dim(_name)+_offset;
-  }
   else
     return _dim+_offset;
 }
 
 DimSpec DimSpec::operator+(const int& rhs) const
 {
-  printf("offset of %s: %d+%d\n", _name.c_str(), _offset, rhs);
   DimSpec tmp(*this);
   tmp._offset += rhs;
   return tmp;
@@ -65,7 +62,6 @@ DimSpec DimSpec::operator+(const int& rhs) const
 
 DimSpec DimSpec::operator-(const int& rhs) const
 {
-  printf("offset of %s: %d+%d\n", _name.c_str(), _offset, rhs);
   DimSpec tmp(*this);
   tmp._offset -= rhs;
   return tmp;

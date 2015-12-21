@@ -373,7 +373,7 @@ static void _calib_cam(Mat_<float> &proxy_m, Idx proxy_cam_idx, Idx res_idx, Mat
   
   //Idx cam_pos({proxy_cam_idx.r(proxy_cam_idx.dim("y")+1,proxy_cam_idx.dim("views")-1)});
   
-  Idx cam_pos({proxy_cam_idx.r(DimSpec("y")+1, DimSpec("views")-1)});
+  Idx cam_pos({proxy_cam_idx.r("channels", "cams")});
   
   std::cout << "cam pos:" << cam_pos << std::endl;
   std::cout << "proj size:" << proj << std::endl;
@@ -391,17 +391,11 @@ static void _calib_cam(Mat_<float> &proxy_m, Idx proxy_cam_idx, Idx res_idx, Mat
     for(int i=0;i<proxy_size.x;i++)
       for(int l=0;l<4;l++)
         corr_line_m({l, i, j, proxy_m.r("channels","cams")}) = dist_lines.linefits[j*proxy_size.x+i][l];
-    
-  Idx extr_idx(res_idx.size()+2);
-  for(int i=0;i<res_idx.size();i++)
-    extr_idx[i+1] = res_idx[i];
   
   for(int img=0;img<img_count;img++) {
-    extr_idx[extr_idx.size()-1] = img;
     for(int i=0;i<6;i++) {
-      extr_idx[0] = i;
-      extrinsics_m(extr_idx) = dist_lines.extrinsics[6*img+i];
-      printf("set %d: %f\n", extrinsics_m(extr_idx));
+      extrinsics_m(i, proxy_cam_idx.r("channels", "views")) = dist_lines.extrinsics[6*img+i];
+      printf("set %d: %f\n", extrinsics_m(i, proxy_cam_idx.r("channels", "views")));
     }
   }
 }
