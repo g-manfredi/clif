@@ -305,10 +305,9 @@ public:
   void create(Idx size);
   void create(BaseType type, Idx size);
   
-  //FIXME/DOCUMENT: this should only be used after make-unique etc...
-  template<typename ... Idxs> T& operator()(int first, Idxs ... idxs) const
+  template<typename ... Idxs> T& operator()(Idxs ... idxs) const
   {
-    return Mat::operator()<T>(first, idxs...);
+    return Mat::operator()<T>(idxs...);
   }
   T& operator()(Idx pos) const
   {
