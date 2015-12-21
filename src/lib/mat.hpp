@@ -16,14 +16,6 @@
 
 namespace clif {
   
-#define IDX_DIM_ITER(IT,SIZE,DIM) \
-  IT = SIZE; \
-  for(int _i=0;_i<IT.size();_i++) \
-    IT[_i] = 0; \
-  std::cout << IT << std::endl; \
-  std::cout << SIZE << std::endl; \
-  for(;IT[DIM]<SIZE[DIM];IT[DIM]++)
-
 class Idx;
   
 class IdxRange {
@@ -40,7 +32,7 @@ public:
 
 class DimSpec
 {
-  int _dim = -1;
+  int _dim = INT_MIN;
   std::string _name;
   int _offset = 0;
 public:
@@ -52,7 +44,7 @@ public:
   
   bool valid() const
   {
-    if (_dim != -1 || _name.size())
+    if (_dim != INT_MIN || _name.size())
       return true;
     else
       return false;
@@ -127,6 +119,20 @@ public:
   Idx& operator*() {return _pos; }
 };
 
+class Idx_Iter_Multi_Dim : public std::iterator<std::input_iterator_tag, Idx>
+{
+  int _dim;
+  Idx _pos;
+  Idx _size;
+public:
+  Idx_Iter_Multi_Dim(const Idx &pos, const Idx &size, const DimSpec& dim) : _pos(pos), _size(size), _dim(dim.get(&size)) {};
+  Idx_Iter_Multi_Dim(const Idx_Iter_Multi_Dim& other) : _pos(other._pos), _size(other._size), _dim(other._dim) {}
+  Idx_Iter_Multi_Dim& operator++() {_pos.step(_dim, _size); return *this;}
+  Idx_Iter_Multi_Dim operator++(int) { Idx_Iter_Multi_Dim tmp(*this); operator++(); return tmp; }
+  bool operator!=(const Idx_Iter_Multi_Dim& rhs) { return _pos.back() < rhs._pos.back(); }
+  Idx& operator*() {return _pos; }
+};
+
 class Idx_It_Dim
 {
   Idx _start;
@@ -151,6 +157,26 @@ public:
   
   Idx_Iter_Single_Dim begin() { return Idx_Iter_Single_Dim(_start, _dim); };
   Idx_Iter_Single_Dim end() { return Idx_Iter_Single_Dim(_size, _dim); };
+};
+
+class Idx_It_Dims
+{
+  Idx _start;
+  Idx _size;
+  int _mindim;
+public:
+  Idx_It_Dims(const Idx &size, const DimSpec& mindim, const DimSpec& maxdim)
+  : _size(size), _mindim(mindim.get(&size))
+  {
+    _start = _size;
+    for(int i=maxdim.get(&size)+1;i<_size.size();i++)
+      _size[i] = 1;
+    for(int i=0;i<_start.size();i++)
+      _start[i] = 0;
+  };
+  
+  Idx_Iter_Multi_Dim begin() { return Idx_Iter_Multi_Dim(_start, _size, _mindim); };
+  Idx_Iter_Multi_Dim end() { return Idx_Iter_Multi_Dim(_size, _size, _mindim); };
 };
 
 inline bool operator< (const Idx& lhs, const Idx& rhs)

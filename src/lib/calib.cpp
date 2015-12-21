@@ -383,6 +383,7 @@ static void _calib_cam(Mat_<float> &proxy_m, Idx proxy_cam_idx, Idx res_idx, Mat
   Idx cam_pos({proxy_cam_idx.r(DimSpec("y")+1, DimSpec("views")-1)});
   
   std::cout << "cam pos:" << cam_pos << std::endl;
+  std::cout << "proj size:" << proj << std::endl;
         
   rms(cam_pos) = dist_lines.proxy_fit_lines_global();
         
@@ -520,8 +521,8 @@ static void _calib_cam(Mat_<float> &proxy_m, Idx proxy_cam_idx, Idx res_idx, Mat
       int views_dim = proxy_m.size()-1;
       
       Idx corr_size {IR(4, "line"), proxy_m.r("x", "cams")};
-      printf("cams_size:\n");
       Idx cams_size {proxy_m.r("channels","cams")};
+      std::cout << "cams_size: " << cams_size << "\n";
       
       corr_line_m.create(corr_size);
       
@@ -541,13 +542,8 @@ static void _calib_cam(Mat_<float> &proxy_m, Idx proxy_cam_idx, Idx res_idx, Mat
       //TODO first place to need view dimension - rework to make views optional?
       Mat_<float> extrinsics_m({IR(6, "extrinsics"), proxy_m.r("channels","views")});
       
-      /*Idx stop {proxy_m.r(0,-2), 1};
-      std::cout << "stop: " << stop << std::endl;
-      Idx pos(proxy_m.size());
-      std::cout << "pos: " << pos << std::endl;*/
-      
-      for(auto pos : Idx_It_Dim(proxy_m, "cams")) {
-        std::cout << "process cam:" << pos["cams"] << std::endl;
+      for(auto pos : Idx_It_Dims(proxy_m, "channels","cams")) {
+        std::cout << "process cam:" << pos << std::endl;
         Idx res_idx(cams_size.size());
         for(int i=0;i<res_idx.size();i++)
           res_idx[i] = pos[i+3];

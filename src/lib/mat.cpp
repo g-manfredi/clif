@@ -47,7 +47,7 @@ Idx::Idx(std::initializer_list<IdxRange> l)
 
 int DimSpec::get(const Idx *ref) const
 {
-  if (_dim == -1) {
+  if (_dim == INT_MIN) {
     printf("get name %s: +%d\n", _name.c_str(), _offset);
     return ref->dim(_name)+_offset;
   }
