@@ -29,9 +29,10 @@ Idx::Idx(std::initializer_list<IdxRange> l)
   
   int idx = 0;
   for(auto it : l)
-    if (it.name.size()) {
-      operator[](idx) = it.val; 
-      name(idx, it.name);
+    if (!it.src) {
+      operator[](idx) = it.val;
+      if (it.name.size())
+        name(idx, it.name);
       idx++;
     }
     else {

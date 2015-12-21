@@ -15,6 +15,14 @@
 #include <unordered_map>
 
 namespace clif {
+  
+#define IDX_DIM_ITER(IT,SIZE,DIM) \
+  IT = SIZE; \
+  for(int _i=0;_i<IT.size();_i++) \
+    IT[_i] = 0; \
+  std::cout << IT << std::endl; \
+  std::cout << SIZE << std::endl; \
+  for(;IT[DIM]<SIZE[DIM];IT[DIM]++)
 
 class Idx;
   
@@ -24,7 +32,7 @@ public:
   IdxRange(int val_, const std::string& name = std::string());
   
   int start, end;
-  Idx *src;
+  Idx *src = NULL;
   std::string name; //for direct construction
   int val; //for direct construction
 };
@@ -41,6 +49,9 @@ public:
   //convert to/from std::vector<int>
   Idx(const std::vector<int> &v) : std::vector<int>(v) {};
   operator std::vector<int>() { return *static_cast<std::vector<int>*>(this); };
+  const int& operator[](int idx) const { return std::vector<int>::operator[](idx); };
+  int& operator[](int idx) { return std::vector<int>::operator[](idx); };
+  int& operator[](const std::string &name) { return operator[](dim(name)); };
   
   //convert to IdxRange
   operator IdxRange() { return r(0, -1); };
@@ -75,6 +86,47 @@ private:
 
 IdxRange IR(int i, const std::string& name);
 
+class Idx_Iter_Single_Dim : public std::iterator<std::input_iterator_tag, Idx>
+{
+  int _dim;
+  Idx _pos;
+public:
+  Idx_Iter_Single_Dim(const Idx &pos, int dim) : _pos(pos), _dim(dim) {};
+  Idx_Iter_Single_Dim(const Idx_Iter_Single_Dim& other) : _pos(other._pos), _dim(other._dim) {}
+  Idx_Iter_Single_Dim& operator++() {++_pos[_dim]; return *this;}
+  Idx_Iter_Single_Dim operator++(int) { Idx_Iter_Single_Dim tmp(*this); operator++(); return tmp; }
+  bool operator==(const Idx_Iter_Single_Dim& rhs) {return _pos[_dim] == rhs._pos[_dim];}
+  bool operator!=(const Idx_Iter_Single_Dim& rhs) {return _pos[_dim] != rhs._pos[_dim];}
+  Idx& operator*() {return _pos; }
+};
+
+class Idx_It_Dim
+{
+  Idx _start;
+  Idx _size;
+  int _dim;
+public:
+  Idx_It_Dim(const Idx &size, int dim)
+  : _size(size), _dim(dim)
+  {
+    _start = _size;
+    for(int i=0;i<_start.size();i++)
+      _start[i] = 0;
+  };
+  //FIXME shouldn't size be const!
+  Idx_It_Dim(Idx &size, const std::string &name) : Idx_It_Dim(size, size.dim(name)) {};
+  
+  Idx_It_Dim(const Idx &start, const Idx &size, int dim)
+  : _size(size), _dim(dim)
+  {
+    _start = start;
+    _start[dim] = 0;
+  };
+  Idx_It_Dim(const Idx &start, Idx &size, const std::string &name) : Idx_It_Dim(start, size, size.dim(name)) {};
+  
+  Idx_Iter_Single_Dim begin() { return Idx_Iter_Single_Dim(_start, _dim); };
+  Idx_Iter_Single_Dim end() { return Idx_Iter_Single_Dim(_size, _dim); };
+};
 
 inline bool operator< (const Idx& lhs, const Idx& rhs)
 {
