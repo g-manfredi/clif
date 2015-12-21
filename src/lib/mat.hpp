@@ -228,6 +228,14 @@ template<typename T> Idx Idx::invert(int size, const T * const dims)
   
   return idx;
 }
+
+template<bool...> struct bool_pack;
+template<bool... bs> 
+using all_true = std::is_same<bool_pack<bs..., true>, bool_pack<true, bs...>>;
+
+template<class R, class... Ts>
+using are_all_convertible = all_true<std::is_convertible<Ts, R>::value...>;
+
   
 class Mat : public Idx {
 public:
@@ -254,8 +262,17 @@ public:
   
   BaseType const & type() const;
   
-  template<typename T, typename ... Idxs>
-    T& operator()(int first, Idxs ... idxs) const;
+  template<typename T, typename ... Idxs, typename = typename std::enable_if<are_all_convertible<int, Idxs...>::value>::type>
+    T& operator()(int first, Idxs ... idxs) const
+  {
+    return *(T*)(((char*)_data)+calc_offset<T>(_step, 0, first, idxs...));
+  }
+    
+  template<typename T, typename ... Idxs, typename = typename std::enable_if<are_all_convertible<IdxRange, Idxs...>::value>::type>
+    T& operator()(IdxRange first, Idxs ... idxs) const
+  {
+    return operator()<T>(Idx({first, idxs...}));
+  }
     
   //overloading causes compile problems with boost?!?
   template<typename T>
@@ -337,10 +354,18 @@ template<int DIM, typename T> vigra::MultiArrayView<DIM,T> vigraMAV(Mat *m)
   return vigraMAV<DIM,T>(*m);
 }
 
+//  template<typename T, typename ... Idxs> typename fst<T,typename enable_if<is_convertible<Args, int>::value>::type...>::type
+  //  T& operator()(int first, Idxs ... idxs) const;
+/*
 template<typename T, typename ... Idxs> T& Mat::operator()(int first, Idxs ... idxs) const
 {
   return *(T*)(((char*)_data)+calc_offset<T>(_step, 0, first, idxs...));
-} 
+}*/
+/*
+template<typename T, typename ... Idxs> T& Mat::operator()(IdxRange first, Idxs ... idxs) const
+{
+  return operator()<T>(Idx({first, idxs...}));
+}*/
 
 template<typename T> T& Mat::operator()(Idx pos) const
 {

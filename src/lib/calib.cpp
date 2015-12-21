@@ -383,8 +383,8 @@ static void _calib_cam(Mat_<float> &proxy_m, Idx proxy_cam_idx, Idx res_idx, Mat
   GenCam gcam = GenCam(dist_lines.linefits, cv::Point2i(im_size[0],im_size[1]), cv::Point2i(proxy_m[1],proxy_m[2]));
   
   
-  proj({0, cam_pos}) = gcam.f.x;
-  proj({1, cam_pos}) = gcam.f.y;
+  proj(0, cam_pos) = gcam.f.x;
+  proj(1, cam_pos) = gcam.f.y;
   proj_rms(cam_pos) = gcam.rms;
   
   for(int j=0;j<proxy_size.y;j++)
@@ -434,7 +434,7 @@ static void _calib_cam(Mat_<float> &proxy_m, Idx proxy_cam_idx, Idx res_idx, Mat
     proxy_store->read(proxy_m);
     
     if (proxy_m.size() == 5) {
-      corr_line_m.create(Idx({4, proxy_m[1],proxy_m[2], proxy_m[3]}));
+      corr_line_m.create({4, proxy_m[1],proxy_m[2], proxy_m[3]});
       
       Point2i proxy_size(proxy_m[1],proxy_m[2]);
       
