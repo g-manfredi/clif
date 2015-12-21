@@ -122,10 +122,12 @@ void Idx::name(int i, const std::string& name)
   _name_map[name] = i;
 }
 
+static const std::string _empty_str = "";
+
 const std::string& Idx::name(int i) const
 {
   if (_names.size() <= i)
-    return "";
+    return _empty_str;
   
   return _names[i];
 }
