@@ -32,7 +32,7 @@ bool DepthDist::load(Dataset *set)
     return true;
 #else
     
-    Mat_<float> corr_line_m = set->readStore(path()/"lines");
+    /*Mat_<float> corr_line_m = set->readStore(path()/"lines");
     Mat_<float> extrinsics_m;
     
     set->get(path()/"extrinsics", extrinsics_m);
@@ -95,7 +95,7 @@ bool DepthDist::load(Dataset *set)
         d = 1000000000000.0;
       
       cam.get_undist_map_for_depth(cvMat(_maps.bind(3, map_pos[3]).bind(2, map_pos[2])), d, &ref_points);
-    }
+    }*/
     
     return true;
 #endif

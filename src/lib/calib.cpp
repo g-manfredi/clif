@@ -509,17 +509,17 @@ static void _calib_cam(Mat_<float> &proxy_m, Idx start, const Idx& stop, int dim
     }
     else { //proxy large than 5
       //last dim is views from same camera!
+      
+      //FIXME hardcoded for now
+      proxy_m.names({"point","x","y","channels","cams","views"});
+      
       printf("start ucalib calibration!\n");
       
       int views_dim = proxy_m.size()-1;
       
-      Idx corr_size = proxy_m.size()-1; //images merge into one correction
-      for(int i=0;i<views_dim;i++)
-        corr_size[i] = proxy_m[i];
-      
-      Idx cams_size = proxy_m.size()-4; //1 2d point, 2 proxy w/h, 1 images
-      for(int i=3;i<views_dim;i++)
-        cams_size[i-3] = proxy_m[i];
+      Idx corr_size {IR(4, "line"), proxy_m.r("x", "cams")};
+      printf("cams_size:\n");
+      Idx cams_size {proxy_m.r("channels","cams")};
       
       corr_line_m.create(corr_size);
       
@@ -528,24 +528,23 @@ static void _calib_cam(Mat_<float> &proxy_m, Idx start, const Idx& stop, int dim
       Mat_<double> rms_m(cams_size);
       Mat_<double> proj_rms_m(cams_size);
       
-      Idx proj_m_size(cams_size.size()+1);
-      proj_m_size[0] = 2;
-      for(int i=0;i<cams_size.size();i++)
-        proj_m_size[i+1] = cams_size[i];
-      Mat_<float> proj_m(proj_m_size);
+      Mat_<float> proj_m({IR(2, "projection"), cams_size});
       
       Idx extrinsics_m_size(cams_size.size()+2);
       extrinsics_m_size[0] = 6;
       for(int i=0;i<cams_size.size();i++)
         extrinsics_m_size[i+1] = cams_size[i];
       extrinsics_m_size[extrinsics_m_size.size()-1] = proxy_m[views_dim];
-      Mat_<float> extrinsics_m(extrinsics_m_size);
+      
+      //TODO first place to need view dimension - rework to make views optional?
+      Mat_<float> extrinsics_m({IR(6, "extrinsics"), proxy_m.r("channels","views")});
       
       Idx pos(proxy_m.size());
-      Idx stop = proxy_m;
-      stop[views_dim] = 1;
+      Idx stop {proxy_m.r(0,-2), 1};
+      std::cout << "stop: " << stop << std::endl;
       
-      for(;pos<stop;pos.step(3, stop)) {
+      for(Idx pos(proxy_m.size());pos<stop;pos.step(proxy_m.dim("channels"), stop)) {
+        std::cout << "process: " << pos << std::endl;
         Idx res_idx(cams_size.size());
         for(int i=0;i<res_idx.size();i++)
           res_idx[i] = pos[i+3];

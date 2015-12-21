@@ -19,10 +19,42 @@ Idx::Idx() : std::vector<int>() {};
 
 Idx::Idx(std::initializer_list<int> l) : std::vector<int>(l) {};
 
+Idx::Idx(std::initializer_list<IdxRange> l)
+{
+  int sum = 0;
+  for(auto it : l)
+    sum += it.end-it.start+1;
+  
+  resize(sum);
+  
+  int idx = 0;
+  for(auto it : l)
+    if (it.name.size()) {
+      operator[](idx) = it.val; 
+      name(idx, it.name);
+      idx++;
+    }
+    else {
+      for(int i=it.start;i<=it.end;i++) {
+        operator[](idx) = it.src->operator[](i);
+        if (it.src->name(i).size())
+          name(idx, it.name);
+        idx++;
+      }
+    }
+}
+
+int Idx::dim(const std::string &name)
+{
+  return _name_map[name];
+}
+
+static Idx _empty();
+
 Idx::Idx(int size) : std::vector<int>(size) {};
 
 Idx& Idx::operator+=(const Idx& rhs)
-{                          
+{
   for(int i=0;i<size();i++)
     operator[](i) += rhs[i];
   return *this;
@@ -37,6 +69,106 @@ void Idx::step(int dim, const Idx& max)
     dim++;
     operator[](dim)++;
   }
+}
+
+void Idx::step(const std::string& name, const Idx& max)
+{
+  int idim = dim(name);
+  
+  operator[](idim)++;
+  
+  while(max[idim] > 0 && operator[](idim) >= max[idim] && idim < max.size()-1) {
+    operator[](idim) = 0;
+    idim++;
+    operator[](idim)++;
+  }
+}
+
+void Idx::name(int i, const std::string& name)
+{
+  if (_names.size() <= i)
+    _names.resize(i+1);
+  _names[i] = name;
+  _name_map[name] = i;
+}
+
+const std::string& Idx::name(int i)
+{
+  if (_names.size() <= i)
+    _names.resize(i+1);
+  
+  return _names[i];
+}
+
+//FIXME inefficient
+void Idx::names(std::initializer_list<std::string> l)
+{
+  _names.resize(l.size());
+  for(int i=0;i<l.size();i++)
+    name(i, l.begin()[i]);
+}
+
+void Idx::names(const std::vector<std::string> &l)
+{
+  _names.resize(l.size());
+  for(int i=0;i<l.size();i++)
+    name(i, l[i]);
+}
+
+const std::vector<std::string>& Idx::names() const
+{
+  return _names;
+}
+
+IdxRange Idx::r(int i, int end)
+{
+  return IdxRange(this, i, end);
+}
+
+IdxRange::IdxRange(Idx *src_, int start_, int end_)
+{
+  start = start_;
+  end = end_;
+  if (end == INT_MIN)
+    end = start;
+  
+  if (src_->size()) {
+    src = src_;
+    if (end < 0)
+      end = src->size()+end;
+  }
+  val = 0;
+}
+
+IdxRange::IdxRange(int val_, const std::string& name_)
+{
+  start = 0;
+  end = 0;
+  name = name_;
+  val = val_;
+}
+      
+IdxRange Idx::r(const std::string &str, const std::string &end)
+{
+  if (!end.size())
+    return r(_name_map[str]);
+  else
+    return r(_name_map[str],_name_map[end]);
+}
+
+IdxRange Idx::r(int i, const std::string &end)
+{
+  return r(i,_name_map[end]);
+}
+
+IdxRange Idx::r(const std::string &str, int end)
+{
+  return r(_name_map[str],end);
+}
+
+IdxRange IR(int i, const std::string& name)
+{
+  return IdxRange(i, name);
 }
 
 Idx::Idx(const H5::DataSpace &space)
@@ -71,6 +203,14 @@ Idx Idx::zeroButOne(int size, int pos, int i)
   idx[pos] = i;
   
   return idx;
+}
+
+
+std::ostream& operator<<(std::ostream& out, Idx& idx)
+{
+  for(int i=0;i<idx.size();i++)
+    out << idx.name(i) << ":" << idx[i] << " ";
+  return out;
 }
 
 template<typename T> class destruction_dispatcher {

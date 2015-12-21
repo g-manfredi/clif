@@ -12,29 +12,69 @@
 #include <hdf5.h>
 #include <boost/filesystem.hpp>
 #include <H5File.h>
+#include <unordered_map>
 
 namespace clif {
+
+class Idx;
+  
+class IdxRange {
+public: 
+  IdxRange(Idx *src_, int start_, int end_ = INT_MIN);
+  IdxRange(int val_, const std::string& name = std::string());
+  
+  int start, end;
+  Idx *src;
+  std::string name; //for direct construction
+  int val; //for direct construction
+};
   
 class Idx : public std::vector<int>
 {
-public:
+public:  
   Idx();
   Idx(int size);
   Idx(std::initializer_list<int> l);
+  Idx(std::initializer_list<IdxRange> l);
   Idx(const H5::DataSpace &space);
   
   //convert to/from std::vector<int>
   Idx(const std::vector<int> &v) : std::vector<int>(v) {};
   operator std::vector<int>() { return *static_cast<std::vector<int>*>(this); };
   
+  //convert to IdxRange
+  operator IdxRange() { return r(0, -1); };
+  
   off_t total() const;
   
   Idx& operator+=(const Idx& rhs);
   void step(int dim, const Idx& max);
+  void step(const std::string &name, const Idx& max);
+  void names(std::initializer_list<std::string> l);
+  void names(const std::vector<std::string> &l);
+  const std::vector<std::string>& names() const;
+  
+  void name(int i, const std::string& name);
+  const std::string& name(int i);
+  int dim(const std::string &name);
+  
+  IdxRange r(int i, int end = INT_MIN);
+  IdxRange r(const std::string &str, const std::string &end = std::string());
+  IdxRange r(int i, const std::string &end);
+  IdxRange r(const std::string &str, int end);
   
   static Idx zeroButOne(int size, int pos, int idx);
   template<typename T> static Idx invert(int size, const T * const dims);
+  
+  friend std::ostream& operator<<(std::ostream& out, Idx& idx);
+
+private:
+  std::unordered_map<std::string,int> _name_map;
+  std::vector<std::string> _names;
 };
+
+IdxRange IR(int i, const std::string& name);
+
 
 inline bool operator< (const Idx& lhs, const Idx& rhs)
 {
