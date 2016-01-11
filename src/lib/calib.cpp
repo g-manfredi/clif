@@ -389,13 +389,15 @@ static void _calib_cam(Mat_<float> &proxy_m, Idx proxy_cam_idx, Idx res_idx, Mat
   
   for(int j=0;j<proxy_size.y;j++)
     for(int i=0;i<proxy_size.x;i++)
-      for(int l=0;l<4;l++)
-        corr_line_m({l, i, j, proxy_m.r("channels","cams")}) = dist_lines.linefits[j*proxy_size.x+i][l];
+      for(int l=0;l<4;l++) {
+        corr_line_m({l, i, j, proxy_cam_idx.r("channels","cams")}) = dist_lines.linefits[j*proxy_size.x+i][l];
+        //printf("%d %d %d %d %d = %f\n", l, i, j, proxy_cam_idx["channels"], proxy_cam_idx["cams"], dist_lines.linefits[j*proxy_size.x+i][l]);
+      }
   
   for(int img=0;img<img_count;img++) {
     for(int i=0;i<6;i++) {
-      extrinsics_m(i, proxy_cam_idx.r("channels", "views")) = dist_lines.extrinsics[6*img+i];
-      printf("set %d: %f\n", extrinsics_m(i, proxy_cam_idx.r("channels", "views")));
+      extrinsics_m(i, proxy_cam_idx.r("channels", "cams"), img) = dist_lines.extrinsics[6*img+i];
+      std::cout << "set " << Idx({i, proxy_cam_idx.r("channels", "cams"), img}) << std::endl;
     }
   }
 }
@@ -502,6 +504,7 @@ static void _calib_cam(Mat_<float> &proxy_m, Idx proxy_cam_idx, Idx res_idx, Mat
       std::cout << "cams_size: " << cams_size << "\n";
       
       corr_line_m.create(corr_size);
+      std::cout << "corr_line_m: " << corr_line_m << "\n";
       
       Point2i proxy_size(proxy_m[1],proxy_m[2]);
       

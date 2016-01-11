@@ -330,6 +330,7 @@ void read_full_subdims(H5::DataSet &data, Mat &m, const Idx& offset, const Idx& 
 void write_full_subdims(H5::DataSet &data, const Mat &m, const Idx& offset, const Idx& dim_order = Idx());
 
 cv::Mat cvMat(const Mat &m);
+cv::Mat cvImg(const Mat &m);
 
 //FIXME implement stride
 template<int DIM, typename T> vigra::MultiArrayView<DIM,T> vigraMAV(Mat &m)

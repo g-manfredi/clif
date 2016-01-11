@@ -14,7 +14,7 @@ public:
   virtual bool load(Dataset *set);
   virtual bool operator==(const Tree_Derived & rhs) const;
   
-  void undistort(const clif::Mat & src, clif::Mat & dst, int interp = -1);
+  void undistort(const Mat & src, Mat & dst, const Idx & pos = Idx(), int interp = -1);
   
   DistModel type() { return _type; };
 

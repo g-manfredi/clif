@@ -25,7 +25,7 @@ enum Improc {
 
 //if input != output then max defaults to input max type
 //flt/dbl output is scaled then to 0..1
-void proc_image(Datastore *store, Mat &in, Mat &out, int flags, double min = std::numeric_limits<double>::quiet_NaN(), double max = std::numeric_limits<double>::quiet_NaN(), int scaledown = 0, double depth = std::numeric_limits<double>::quiet_NaN());
+void proc_image(Datastore *store, Mat &in, Mat &out, int flags, const Idx & pos = Idx(), double min = std::numeric_limits<double>::quiet_NaN(), double max = std::numeric_limits<double>::quiet_NaN(), int scaledown = 0, double depth = std::numeric_limits<double>::quiet_NaN());
 
 } //namespace clif
 

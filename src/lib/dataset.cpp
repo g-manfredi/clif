@@ -261,6 +261,8 @@ Mat Dataset::readStore(const boost::filesystem::path &path)
     throw(std::runtime_error("invalid store"));
     
   s->read(m);
+  
+  printf("store %s: \n", path.generic_string().c_str());
     for(int i=0;i<16;i++)
       printf("%f ", ((float*)m.data())[i]);
     printf("\n");

@@ -169,10 +169,20 @@ void clifStoreView::load_img()
     std::vector<int> n_idx(_store->dims(),0);
     n_idx[3] = _curr_idx;
     
+    //FIXME hack to access additional dimensions
+    for(int i = 3;i<n_idx.size()-1;i++) {
+        n_idx[i+1] += n_idx[i] / _store->extent()[i];
+        n_idx[i] = n_idx[i] % _store->extent()[i];
+      }
+    
     double d = std::numeric_limits<float>::quiet_NaN();
     
-    if (_depth_slider)
+    if (_depth_slider) {
       d = _depth_slider->value();
+      _curr_flags |= NO_MEM_CACHE;
+    }
+    else
+      _curr_flags &= ~NO_MEM_CACHE;
     
     if (_range_ck->checkState() == Qt::Checked)
       readQImage(_store, n_idx, *_qimg, _curr_flags, d, _sp_min->value(), _sp_max->value());

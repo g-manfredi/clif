@@ -928,7 +928,7 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth,
   clif::read_full_subdims(_data, m_read, subspace, idx);
   
   clif::Mat processed;
-  proc_image(this, m_read, processed, flags, min, max, -1, depth);
+  proc_image(this, m_read, processed, flags, idx, min, max, -1, depth);
   
   mat_cache_set(opts, &processed);
   if (use_disk_cache) {

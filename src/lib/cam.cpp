@@ -31,61 +31,61 @@ bool DepthDist::load(Dataset *set)
 #ifndef CLIF_WITH_UCALIB
     return true;
 #else
+      
+    //FIXME cams might be missing!
+    Mat_<float> corr_line_m = set->readStore(path()/"lines");
+    corr_line_m.names({"line","x","y","channels","cams"});
     
-    /*Mat_<float> corr_line_m = set->readStore(path()/"lines");
     Mat_<float> extrinsics_m;
     
     set->get(path()/"extrinsics", extrinsics_m);
-
+    extrinsics_m.names({"data","channels","cams","views"});
     set->get(path()/"source/source/img_size", imgsize, 2);
     
-    //_maps.resize(corr_line_m[3]);
+    _maps.create({IR(imgsize[0], "x"),IR(imgsize[1], "y"), extrinsics_m.r("channels","cams")});
     
-    int cam_count = 1;
-    int channels = corr_line_m[3];
+    std::cout << "maps:" << _maps << std::endl;
     
-    if (corr_line_m.size() == 5)
-      cam_count = corr_line_m[4];
+    int cam_count = corr_line_m.dim("cams");
+    if (cam_count == -1)
+      cam_count = 1;
     
-    if (cam_count == 1)
-      _maps.create(Idx{imgsize[0], imgsize[1], channels, cam_count});
+    int channels = corr_line_m["channels"];
         
     std::vector<cv::Point3f> ref_points;
-    
-    Idx map_pos(4);
-    
-    for(;map_pos<corr_line_m;map_pos.step(2,corr_line_m)) {
-      std::vector<cv::Vec4d> linefits(corr_line_m[1]*corr_line_m[2]);
+
+    for(auto map_pos : Idx_It_Dims(corr_line_m, "channels","cams")) {
       
-      Idx lines_pos(_maps.size()+1);
-      for(int i=1;i<lines_pos.size();i++)
-        lines_pos[i] = map_pos[i-1];
+      std::cout << "generate map for " << map_pos << std::endl;
+      
+      std::vector<cv::Vec4d> linefits(corr_line_m["x"]*corr_line_m["y"]);
+      
+      Idx lines_pos({IR(4, "line"), map_pos.r("x","views")});
         
-      for(int j=0;j<corr_line_m[2];j++)
-        for(int i=0;i<corr_line_m[1];i++)
+      for(int j=0;j<corr_line_m["y"];j++)
+        for(int i=0;i<corr_line_m["x"];i++)
           for (int e=0;e<4;e++) {
-          lines_pos[0] = e;
-          linefits[j*corr_line_m[1]+i][e] = corr_line_m(lines_pos);
+            lines_pos[0] = e;
+            lines_pos["x"] = i;
+            lines_pos["y"] = j;
+            linefits[j*corr_line_m["x"]+i][e] = corr_line_m(lines_pos);
         }
         
+      printf("create gencam\n");
       GenCam cam(linefits, cv::Point2i(imgsize[0],imgsize[1]), cv::Point2i(corr_line_m[1],corr_line_m[2]));
       
       
-      Idx extr_size(extrinsics_m.size());
-      extr_size[0] = 6;
-      for(int i=1;i<extr_size.size();i++)
-        extr_size[i] = extrinsics_m[i];
+      Idx extr_size(extrinsics_m);
       
-      int extr_views_dim = extrinsics_m.size()-1;
+      cam.extrinsics.resize(6*extrinsics_m["views"]);
       
-      cam.extrinsics.resize(6*extrinsics_m[extr_views_dim]);
-      
-      Idx extr_pos(extr_size.size());
-      for(int i=1;i<extr_pos.size();i++)
-        extr_pos[i] = map_pos[i+2];
-      for(int img_n=0;img_n<extrinsics_m[extr_views_dim];img_n++)
+      for(auto extr_pos : Idx_It_Dim(extrinsics_m, "views"))
         for(int i=0;i<6;i++) {
-          cam.extrinsics[6*img_n+i] = extrinsics_m(i, color, cam, img_n);
+          extr_pos["data"] = i;
+          extr_pos["channels"] = map_pos["channels"];
+          extr_pos["cams"] = map_pos["cams"];
+          cam.extrinsics[6*extr_pos["views"]+i] = extrinsics_m(extr_pos);
+          std::cout << "extr:" << extr_pos << ": " << extrinsics_m(extr_pos) << std::endl;
         }
         
       
@@ -94,8 +94,14 @@ bool DepthDist::load(Dataset *set)
       if (isnan(d) || d < 0.1)
         d = 1000000000000.0;
       
-      cam.get_undist_map_for_depth(cvMat(_maps.bind(3, map_pos[3]).bind(2, map_pos[2])), d, &ref_points);
-    }*/
+      printf("depth: %f\n", d);
+      
+      cv::Mat map = cvMat(_maps.bind(3, map_pos["cams"]).bind(2, map_pos["channels"]));
+      if (ref_points.size())
+        cam.get_undist_map_for_depth(map, d, &ref_points);
+      else
+        cam.get_undist_map_for_depth(map, d, NULL, &ref_points);
+    }
     
     return true;
 #endif
@@ -105,7 +111,7 @@ bool DepthDist::load(Dataset *set)
   }
 }
 
-void DepthDist::undistort(const clif::Mat & src, clif::Mat & dst, int interp)
+void DepthDist::undistort(const clif::Mat & src, clif::Mat & dst, const Idx & pos, int interp)
 {
   dst.create(src.type(), src);
   
@@ -115,9 +121,33 @@ void DepthDist::undistort(const clif::Mat & src, clif::Mat & dst, int interp)
   if (!_maps.size())
     dst = src;
     
-  if (_maps.size())
-    for(int c=0;c<src[2];c++)
-      remap(cvMat(src.bind(2, c)), cvMat(dst.bind(2, c)), _maps[c], cv::noArray(), interp);
+  Mat map_pos(_maps);
+  
+  Idx pos_named = pos;
+  
+  //FIXME
+  if (pos_named.size() == 5)
+    pos_named.names({"x","y","channels","cams","views"});
+  else if (pos_named.size() == 4)
+    pos_named.names({"x","y","channels","views"});
+  else
+    abort();
+  
+  Mat maps_cam;
+  
+  if (pos_named.dim("cams") != -1)
+    maps_cam = _maps.bind(3, pos_named["cams"]);
+  else
+    maps_cam = _maps;
+  
+  if (_maps.size()) {
+    for(int c=0;c<src[2];c++) {
+      
+      pos_named["channels"] = c;
+  
+      remap(cvMat(src.bind(2, c)), cvMat(dst.bind(2, c)), cvMat(maps_cam.bind(2, c)), cv::noArray(), interp);
+    }
+  }
   else
     dst = src;
 }

@@ -49,7 +49,7 @@ static bool _handle_preproc(int flag, Mat &curr_in, Mat &curr_out, Mat &out, int
   return false;
 }
 
-void proc_image(Datastore *store, Mat &in, Mat &out, int flags, double min, double max, int scaledown, double depth)
+void proc_image(Datastore *store, Mat &in, Mat &out, int flags, const Idx & pos, double min, double max, int scaledown, double depth)
 {
   int flags_remain;
   Mat curr_in;
@@ -149,7 +149,7 @@ void proc_image(Datastore *store, Mat &in, Mat &out, int flags, double min, doub
     DepthDist *undist = store->undist(depth);
     
     if (undist)
-      undist->undistort(curr_in, curr_out, cv_interpolation);
+      undist->undistort(curr_in, curr_out, pos, cv_interpolation);
     else {
       /*curr_out.create(curr_in.type(), curr_in);
       
