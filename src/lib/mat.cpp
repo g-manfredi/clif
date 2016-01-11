@@ -39,7 +39,7 @@ Idx::Idx(std::initializer_list<IdxRange> l)
       for(int i=it.start;i<=it.end;i++) {
         operator[](idx) = it.src->operator[](i);
         if (it.src->name(i).size())
-          name(idx, it.name);
+          name(idx, it.src->name(i));
         idx++;
       }
     }
@@ -72,7 +72,7 @@ int Idx::dim(const std::string &name) const
   if (_name_map.count(name))
     return _name_map.find(name)->second;
   else
-    throw std::runtime_error("invalid matrix dimension: " + name);
+    return -1;
 }
 
 static Idx _empty();
@@ -349,6 +349,7 @@ Mat::Mat(cv::Mat *m)
 
 void Mat::create(BaseType type, Idx newsize)
 { 
+  //FIXME check labels!
   if (type == _type && newsize.total() == total())
   {
     static_cast<Idx&>(*this) = newsize;
@@ -808,6 +809,32 @@ cv::Mat cvMat(const Mat &m)
   
   return tmp;
 }
+
+static cv::Mat mat_2d_from_3d(const cv::Mat *m, int ch)
+{
+  //step is already in bytes!
+  return cv::Mat(m->size[1], m->size[2], m->depth(), m->data + ch*m->step[0]);
+}
+
+cv::Mat cvImg(const Mat &m)
+{
+  cv::Mat in = cvMat(m);
+  
+  assert(m.size() == 3);
+  
+  std::vector<cv::Mat> channels(in.size[0]);
+
+  for(int i=0;i<in.size[0];i++)
+    //FIXME need clone else merge will memcpy overlaying memory areas. why?
+    channels[i] = mat_2d_from_3d(&in, i);
+
+  cv::Mat out;
+  out.create(in.size[1], in.size[2], in.type());
+  cv::merge(channels, out);
+  
+  return out;
+}
+
 
 Mat Mat::bind(int dim, int pos) const
 {
