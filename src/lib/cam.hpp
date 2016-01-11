@@ -22,6 +22,8 @@ private:
   double _depth = -1.0;
   Mat_<cv::Point2f> _maps;
   DistModel _type;
+  
+  Mat_<cv::Point2f> _ref_point_proj;
 };
 
 }

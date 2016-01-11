@@ -20,11 +20,11 @@ class Idx;
   
 class IdxRange {
 public: 
-  IdxRange(Idx *src_, int start_, int end_ = INT_MIN);
+  IdxRange(const Idx *src_, int start_, int end_ = INT_MIN);
   IdxRange(int val_, const std::string& name = std::string());
   
   int start, end;
-  Idx *src = NULL;
+  const Idx *src = NULL;
   std::string name; //for direct construction
   int val; //for direct construction
 };
@@ -68,9 +68,12 @@ public:
   //convert to/from std::vector<int>
   Idx(const std::vector<int> &v) : std::vector<int>(v) {};
   operator std::vector<int>() { return *static_cast<std::vector<int>*>(this); };
-  const int& operator[](int idx) const { return std::vector<int>::operator[](idx); };
   int& operator[](int idx) { return std::vector<int>::operator[](idx); };
+  const int& operator[](int idx) const { return std::vector<int>::operator[](idx); };
   int& operator[](const std::string &name) { return operator[](dim(name)); };
+  const int& operator[](const std::string &name) const { return operator[](dim(name)); };
+  /*int& operator[](const char *name) { return operator[](dim(name)); };
+  const int& operator[](const char *name) const { return operator[](dim(name)); };*/
   
   //convert to IdxRange
   operator IdxRange() { return r(0, -1); };
@@ -88,7 +91,7 @@ public:
   const std::string& name(int i) const;
   int dim(const std::string &name) const;
   
-  IdxRange r(const DimSpec &start, const DimSpec &end);
+  IdxRange r(const DimSpec &start, const DimSpec &end) const;
   /*IdxRange r(const std::string &str, const std::string &end = std::string());
   IdxRange r(int i, const std::string &end);
   IdxRange r(const std::string &str, int end);*/

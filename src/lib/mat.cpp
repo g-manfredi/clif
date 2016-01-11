@@ -148,7 +148,7 @@ const std::vector<std::string>& Idx::names() const
   return _names;
 }
 
-IdxRange::IdxRange(Idx *src_, int start_, int end_)
+IdxRange::IdxRange(const Idx *src_, int start_, int end_)
 {
   start = start_;
   end = end_;
@@ -176,7 +176,7 @@ IdxRange IR(int i, const std::string& name)
   return IdxRange(i, name);
 }
      
-IdxRange Idx::r(const DimSpec &start, const DimSpec &end)
+IdxRange Idx::r(const DimSpec &start, const DimSpec &end) const
 {
   int ds, de;
   

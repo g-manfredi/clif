@@ -646,6 +646,8 @@ bool generate_proxy_loess(Dataset *set, int proxy_w, int proxy_h , cpath map, cp
       
       DistCorrLines dist_lines = DistCorrLines(0, 0, 0, cam_config.w, cam_config.h, 100.0, cam_config, conf, Point2i(proxy_w,proxy_h));
       dist_lines.add(ipoints_ar, wpoints_ar, 20.0);
+      
+      std::cout << "fit " << map_pos << std::endl;
       dist_lines.proxy_backwards_poly_generate();
       
       Idx proxy_pos(wpoints_m.size()+3);
