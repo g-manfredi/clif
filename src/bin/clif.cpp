@@ -412,7 +412,7 @@ int main(const int argc, const char *argv[])
       set->writeAttributes();
     }
     if (cliargs_get(args, "gen-proxy-loess")) {
-      generate_proxy_loess(set, 33, 25);
+      generate_proxy_loess(set, 65, 49);
       set->writeAttributes();
     }
     if (cliargs_get(args, "opencv-calibrate")) {
