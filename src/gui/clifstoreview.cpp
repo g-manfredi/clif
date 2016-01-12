@@ -1,7 +1,9 @@
 #include "clifstoreview.hpp"
+#include "clifstoreview.moc"
 
 #include <QtGui/QtGui>
 
+#include <QObject>
 #include <QApplication>
 #include <QSplitter>
 #include <QTimer>
@@ -36,7 +38,12 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   
   _view = new clifScaledImageView(this);
   _vbox->addWidget(_view);
+
   
+  ///////////////// INDICES ////////////////////////
+
+  _dims = store->dims();
+  //values * _val = new values(_dims);
   ///////////////////// SLIDER /////////////////////
   hbox = new QHBoxLayout(this);
   w = new QWidget(this);
@@ -50,14 +57,50 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   _sel->addItem("undistort", QVariant(Improc::UNDISTORT));
   _sel->setCurrentIndex(0);
   hbox->addWidget(_sel);
+
+  QComboBox * _sel1;
+  _sel1 = new QComboBox(this);
+  QList<QString> *_list;
+  /*_list = new QList<QString>();
+  for (int i=0;i<store->dims();i++) {
+      _list->append("dimension "+QString::number(i));
+  }*/
+  QList<QString> * _custom_list;
+  _custom_list = new QList<QString>();
+  _custom_list->append("x");
+  _custom_list->append("y");
+  _custom_list->append("z");
+  _custom_list->append("color");
+  _custom_list->append("brightness");
+  _custom_list->append("gradient");
+  _custom_list->append("further dimensions");
+  int custom_dims = _custom_list->size();
+  _list = new QList<QString>(*_custom_list);
+   
+  QStringList *list;
+  list = new QStringList(*_list);
+  _sel1->addItems(*list);
+  hbox->addWidget(_sel1);
+  _sel1->setCurrentIndex(2);
   
   _slider = new QSlider(Qt::Horizontal, this);
+  //_slider = new QSlider_adv(Qt::Horizontal);
   _slider->setTickInterval(1);
+  //_slider->set_dim(2);
   _slider->setTickPosition(QSlider::TicksBelow);
   _slider->setMaximum(_store->imgCount()-1);
   hbox->addWidget(_slider);
+/*  
+  connect(_sel1, SIGNAL(currentIndexChanged(int)), _slider, SLOT(setDimSlot(int)));
+  connect(_sel1, SIGNAL(currentIndexChanged(int)), _val, SLOT(triggerValue(int)));
+  connect(_val, SIGNAL(returnValue(int)), _slider, SLOT(setValue(int)));
+*/
+  //connect(_slider, changed_dim(int), _val, SLOT(set_current(int)));
+  //connect(_val, changed_dim(int), _slider, SLOT(set_current(int)));
+  
   
   ///////////////////// RANGE /////////////////////
+  
   hbox = new QHBoxLayout(this);
   w = new QWidget(this);
   _vbox ->addWidget(w);
@@ -90,16 +133,76 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   connect(_slider, SIGNAL(valueChanged(int)), this, SLOT(queue_sel_img(int)));
   connect(_sel, SIGNAL(currentIndexChanged(int)), this, SLOT(queue_load_img()));
   
-  ///////////////////// DEPTH SLIDER /////////////////////
-  _depth_slider = new QSlider(Qt::Horizontal, this);
-  _vbox->addWidget(_depth_slider);
+  //////////////////// DIMENSIONS /////////////////
+  /***************** 1 ***************************/
+  w = new QWidget(this);
+  _vbox->addWidget(w);
+  hbox = new QHBoxLayout(this);
+  w->setLayout(hbox);
+
+  QComboBox * _sel2;
+  _sel2 = new QComboBox(this);
+  _sel2->addItems(*list);
+  hbox->addWidget(_sel2);
+  _sel2->setCurrentIndex(0);
+
+  /***************** 2 ***************************/
+  QComboBox * _sel3;
+  _sel3 = new QComboBox(this);
+  _sel3->addItems(*list);
+  hbox->addWidget(_sel3);
+  _sel3->setCurrentIndex(1);
   
-  _depth_slider->setTickInterval(50);
-  _depth_slider->setTickPosition(QSlider::TicksBelow);
-  _depth_slider->setMinimum(50);
-  _depth_slider->setMaximum(2000);
-  _depth_slider->setValue(2000);
-  connect(_depth_slider, SIGNAL(valueChanged(int)), this, SLOT(queue_load_img()));
+  /////////////////// EXTENDED MODE //////////////////////
+  
+  
+  w = new QWidget(this);
+  _vbox->addWidget(w);
+  hbox = new QHBoxLayout(this);
+  w->setLayout(hbox);
+  QCheckBox *checkbox_ext = new QCheckBox("&Extended mode", this);
+  hbox->addWidget(checkbox_ext);
+
+  list_ext * list_ext_obj;
+  list_ext_obj = new list_ext(*_list, _sel1->currentIndex(), _sel2->currentIndex(), _sel3->currentIndex());
+  
+  connect(_sel1, SIGNAL(currentIndexChanged(int)), list_ext_obj, SLOT(change1(int)));
+  connect(_sel2, SIGNAL(currentIndexChanged(int)), list_ext_obj, SLOT(change2(int)));
+  connect(_sel3, SIGNAL(currentIndexChanged(int)), list_ext_obj, SLOT(change3(int)));
+ 
+  connect(list_ext_obj, SIGNAL(update_1(int)), _sel1, SLOT(setCurrentIndex(int)));
+  connect(list_ext_obj, SIGNAL(update_2(int)), _sel2, SLOT(setCurrentIndex(int)));
+  connect(list_ext_obj, SIGNAL(update_3(int)), _sel3, SLOT(setCurrentIndex(int)));
+  
+  
+  
+  //for (int i=0;i<store->dims()-3;i++) { 
+    for (int i=0;i<custom_dims-3;i++) { 
+    w = new QWidget(this);
+    _vbox->addWidget(w);
+    hbox = new QHBoxLayout(this);
+    w->setLayout(hbox);
+    w->setVisible(false);
+    connect(checkbox_ext, SIGNAL(clicked(bool)), w, SLOT(setVisible(bool)));
+
+    editable_ComboBox * _sel_ext = new editable_ComboBox();
+    _sel_ext->addItems(list_ext_obj->getList());
+    hbox->addWidget(_sel_ext);
+    _sel_ext->setCurrentIndex(i);
+    //_sel_ext->setEnabled(false); 
+    _sel_ext->setID(i);
+
+    connect(list_ext_obj, SIGNAL(list_changed(QStringList)), _sel_ext, SLOT(clear()));
+    connect(list_ext_obj, SIGNAL(list_changed(QStringList)), _sel_ext, SLOT(addItems_slot(QStringList)));
+
+    //_slider = new QSlider_adv(Qt::Horizontal, this);
+    _slider = new QSlider(Qt::Horizontal, this);
+    _slider->setTickInterval(1);
+    //_slider->set_dim(i);
+    _slider->setTickPosition(QSlider::TicksBelow);
+    _slider->setMaximum(_store->imgCount()-1);
+    hbox->addWidget(_slider);
+  }   
 }
 
 clifStoreView::~clifStoreView()
@@ -107,11 +210,19 @@ clifStoreView::~clifStoreView()
   delete _qimg;
 }
 
-void clifStoreView::queue_sel_img(int n)
+void clifStoreView::queue_sel_img(int val)
 {
-  _show_idx = n;
+  /*_show_idx = n;
+
+  queue_load_img();*/
+
+  //int dim = sender()->getData(...);
+
+  //_show_idx[dim] = val;
 
   queue_load_img();
+
+
 }
 
 void clifStoreView::rangeStateChanged(int s)
@@ -151,9 +262,6 @@ void clifStoreView::load_img()
   _curr_flags = _sel->itemData(_sel->currentIndex()).value<int>();
   _curr_idx = _show_idx;
   
-  //FIXME make this option!
-  _curr_flags |= NO_DISK_CACHE;
-  
   if (_try_out_new_reader->checkState() == Qt::Checked) {
     Idx pos(_store->dims());
     Idx sub = {0, 3}; //x and imgs -> an epi :-)
@@ -162,22 +270,17 @@ void clifStoreView::load_img()
     
     clif::Mat m;
     
-    _store->read_full_subdims(m, pos, sub);
+    _store->read_full_subdims(m, sub, pos);
     *_qimg = clifMatToQImage(cvMat(m));
   }
   else {
     std::vector<int> n_idx(_store->dims(),0);
     n_idx[3] = _curr_idx;
     
-    double d = std::numeric_limits<float>::quiet_NaN();
-    
-    if (_depth_slider)
-      d = _depth_slider->value();
-    
     if (_range_ck->checkState() == Qt::Checked)
-      readQImage(_store, n_idx, *_qimg, _curr_flags, d, _sp_min->value(), _sp_max->value());
+      readQImage(_store, n_idx, *_qimg, _curr_flags, _sp_min->value(), _sp_max->value());
     else
-      readQImage(_store, n_idx, *_qimg, _curr_flags, d);
+      readQImage(_store, n_idx, *_qimg, _curr_flags);
   }
   
   _view->setImage(*_qimg);
