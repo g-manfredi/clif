@@ -161,7 +161,7 @@ void DepthDist::undistort(const clif::Mat & src, clif::Mat & dst, const Idx & po
       
       for(int i=0;i<4;i++) {
         cv::Point2f ref = _ref_point_proj(i, pos_named["channels"], pos_named["cams"]);
-        circle(src_dup, ref*32, 20, 128+127*i/3, 10, 8, 5);
+        circle(src_dup, ref*32, 30, 128+127*i/3, 10, CV_AA, 5);
       }
       
       pos_named["channels"] = c;
