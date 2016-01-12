@@ -17,7 +17,7 @@ DepthDist::DepthDist(const cpath& path, double at_depth)
 }
 
 static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_pos, Mat_<float> &corr_line_m, Mat_<float> &extrinsics_m, int *imgsize, std::vector<cv::Point3f> &ref_points, Mat_<cv::Point2f> & _ref_point_proj)
-{    
+{
   std::cout << "generate map for " << map_pos << std::endl;
   
   std::vector<cv::Vec4d> linefits(corr_line_m["x"]*corr_line_m["y"]);
@@ -65,7 +65,7 @@ static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_po
     cam.get_undist_map_for_depth(map, d, NULL, &ref_points);
   
   for(int i=0;i<ref_points.size();i++)
-    _ref_point_proj(i, map_pos["channels"], map_pos["cams"]) = cam.world2distorted(_depth, cv::Point2f(ref_points[i].x,ref_points[i].y));
+    _ref_point_proj(i, map_pos["channels"], map_pos["cams"]) = cam.world2distorted(_depth, ref_points[i]);
 }
   
 bool DepthDist::load(Dataset *set)
