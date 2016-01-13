@@ -241,7 +241,7 @@ void DepthDist::undistort(const clif::Mat & src, clif::Mat & dst, const Idx & po
   if (pos_named.size() == 5)
     pos_named.names({"x","y","channels","cams","views"});
   else if (pos_named.size() == 4)
-    pos_named.names({"x","y","channels","views"});
+    pos_named.names({"x","y","channels","cams"});
   else
     abort();
   

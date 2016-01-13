@@ -376,7 +376,7 @@ static void _calib_cam(Mat_<float> &proxy_m, Idx proxy_cam_idx, Idx res_idx, Mat
   Idx cam_pos({proxy_cam_idx.r("channels", "cams")});
   
   std::cout << "cam pos:" << cam_pos << std::endl;
-  std::cout << "proj size:" << proj << std::endl;
+  //std::cout << "proj size:" << proj << std::endl;
         
   rms(cam_pos) = dist_lines.proxy_fit_lines_global();
         
@@ -397,7 +397,7 @@ static void _calib_cam(Mat_<float> &proxy_m, Idx proxy_cam_idx, Idx res_idx, Mat
   for(int img=0;img<img_count;img++) {
     for(int i=0;i<6;i++) {
       extrinsics_m(i, proxy_cam_idx.r("channels", "cams"), img) = dist_lines.extrinsics[6*img+i];
-      std::cout << "set " << Idx({i, proxy_cam_idx.r("channels", "cams"), img}) << std::endl;
+      //std::cout << "set " << Idx({i, proxy_cam_idx.r("channels", "cams"), img}) << std::endl;
     }
   }
 }
@@ -495,6 +495,9 @@ static void _calib_cam(Mat_<float> &proxy_m, Idx proxy_cam_idx, Idx res_idx, Mat
       //FIXME hardcoded for now
       proxy_m.names({"point","x","y","channels","cams","views"});
       
+      int step_count = 0;
+      cv::Matx31f avg_step(0,0,0);
+      
       printf("start ucalib calibration!\n");
       
       int views_dim = proxy_m.size()-1;
@@ -528,6 +531,19 @@ static void _calib_cam(Mat_<float> &proxy_m, Idx proxy_cam_idx, Idx res_idx, Mat
         for(int i=0;i<res_idx.size();i++)
           res_idx[i] = pos[i+3];
         _calib_cam(proxy_m, pos, res_idx, corr_line_m, proxy_size, rms_m, proj_rms_m, proj_m, extrinsics_m, cam_config,conf, im_size);
+        
+        cv::Matx31f step;
+        if (pos["cams"] > 0) {
+          for(int i=3;i<6;i++) {
+            step(i-3) = extrinsics_m({i, pos.r("channels","views")}) - extrinsics_m({i, pos["channels"], pos["cams"]-1, pos["views"]});
+            printf("%f = %f - %f\n", step(i-3), extrinsics_m({i, pos.r("channels","views")}), extrinsics_m({i, pos["channels"], pos["cams"]-1, pos["views"]}));
+          }
+          printf("step: %fx%fx%f\n", step(0), step(1), step(2));
+          avg_step += step;
+          step_count++;
+        }
+        
+        printf("\n");
       }
       
       Datastore *line_store = set->addStore(calib_root/"lines");
@@ -539,32 +555,10 @@ static void _calib_cam(Mat_<float> &proxy_m, Idx proxy_cam_idx, Idx res_idx, Mat
       set->setAttribute(calib_root/"projection", proj_m);
       set->setAttribute(calib_root/"extrinsics", extrinsics_m);
       
-      //store relative cam and target positions
-      /*int cam_dim = proxy_m.size()-2;
-      int cam_count = proxy_m[cam_dim];
-      Idx extr_pos(extrinsics_m.size());
-      for(int i=0;i<cam_count;i++) {
-        Point3f rot_v, move_v;
-        Point3f cam(0,0,0);
-        
-        extr_pos[cam_dim] = i;
-        
-        extr_pos[0] = 0;
-        rot_v.x = extrinsics_m(extr_pos);
-        extr_pos[0] = 1;
-        rot_v.y = extrinsics_m(extr_pos);
-        extr_pos[0] = 2;
-        rot_v.z = extrinsics_m(extr_pos);
-        extr_pos[0] = 3;
-        move_v.x = extrinsics_m(extr_pos);
-        extr_pos[0] = 4;
-        move_v.y = extrinsics_m(extr_pos);
-        extr_pos[0] = 5;
-        move_v.z = extrinsics_m(extr_pos);
-        
-        
-        cv::Mat rot = cv::Rodriguez(cv::Mat(Point3f()));
-      }*/
+      avg_step *= 1.0/step_count;
+      
+      printf("average step: %fx%fx%f\n", avg_step(0), avg_step(1), avg_step(2));
+      
       
       
       printf("finished ucalib calibration!\n");
