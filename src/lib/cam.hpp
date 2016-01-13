@@ -23,7 +23,10 @@ private:
   Mat_<cv::Point2f> _maps;
   DistModel _type;
   
-  Mat_<cv::Point2f> _ref_point_proj;
+
+  cv::Point2d _f;
+  cv::Point2d _m;
+  double _r;
 };
 
 }

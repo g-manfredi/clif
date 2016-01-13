@@ -17,7 +17,7 @@ DepthDist::DepthDist(const cpath& path, double at_depth)
   
 }
 
-static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_pos, Mat_<float> &corr_line_m, Mat_<float> &extrinsics_m, int *imgsize)
+static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_pos, Mat_<float> &corr_line_m, Mat_<float> &extrinsics_m, int *imgsize, bool calc_fit, cv::Point2d &_f, cv::Point2d &_m, double &_r)
 {
   std::cout << "generate map for " << map_pos << std::endl;
   
@@ -34,30 +34,27 @@ static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_po
         linefits[j*corr_line_m["x"]+i][e] = corr_line_m(lines_pos);
       }
       
-      printf("create gencam\n");
-    GenCam cam(linefits, cv::Point2i(imgsize[0],imgsize[1]), cv::Point2i(corr_line_m[1],corr_line_m[2]));
+  printf("create gencam\n");
   
+  GenCam cam;
   
-  /*Idx extr_size(extrinsics_m);
-  
-  cam.extrinsics.resize(6*extrinsics_m["views"]);
-  
-  for(auto extr_pos : Idx_It_Dim(extrinsics_m, "views"))
-    for(int i=0;i<6;i++) {
-      extr_pos["data"] = i;
-      extr_pos["channels"] = map_pos["channels"];
-      extr_pos["cams"] = map_pos["cams"];
-      cam.extrinsics[6*extr_pos["views"]+i] = extrinsics_m(extr_pos);
-      std::cout << "extr:" << extr_pos << ": " << extrinsics_m(extr_pos) << std::endl;
-    }*/
-    
-    
-    
   double d = _depth;
   if (isnan(d) || d < 0.1)
     d = 1000000000000.0;
   
   printf("depth: %f\n", d);
+  
+  if (calc_fit) {
+    cam = GenCam(linefits, cv::Point2i(imgsize[0],imgsize[1]), cv::Point2i(corr_line_m[1],corr_line_m[2]), d);
+    _f = cam.f;
+    _m = cam.move;
+    _r = cam.rot;
+  }
+  else
+    cam = GenCam(linefits, cv::Point2i(imgsize[0],imgsize[1]), cv::Point2i(corr_line_m[1],corr_line_m[2]), d, _f, _m, _r);
+    
+    
+  printf("%fx%f %fx%f %f\n", _f.x, _f.y, _m.x, _m.y, _r);
   
   cv::Mat map = cvMat(_maps.bind(3, map_pos["cams"]).bind(2, map_pos["channels"]));
   cam.get_undist_map_for_depth(map, d);
@@ -185,12 +182,12 @@ bool DepthDist::load(Dataset *set)
         
     std::vector<cv::Point3f> ref_points;
     
-    /*_genmap(_maps, _depth, Idx({IR(0,"line"),IR(0,"x"),IR(0,"y"),IR(corr_line_m["channels"]/2,"channels"),IR(corr_line_m["cams"]/2,"cams")}), corr_line_m, extrinsics_m, imgsize);*/
+    _genmap(_maps, _depth, Idx({IR(0,"line"),IR(0,"x"),IR(0,"y"),IR(corr_line_m["channels"]/2,"channels"),IR(corr_line_m["cams"]/2,"cams")}), corr_line_m, extrinsics_m, imgsize, true, _f, _m, _r);
     
     //_ref_points = ref_points;
     
     for(auto map_pos : Idx_It_Dims(corr_line_m, "channels","cams")) {
-      _genmap(_maps, _depth, map_pos, corr_line_m, extrinsics_m, imgsize);
+      _genmap(_maps, _depth, map_pos, corr_line_m, extrinsics_m, imgsize, false, _f, _m, _r);
     }
     
     return true;
