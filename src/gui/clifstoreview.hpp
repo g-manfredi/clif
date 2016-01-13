@@ -14,74 +14,59 @@ class QCheckBox;
 class QDoubleSpinBox;
 
 namespace clif {
-/*
-class values : public QObject {
- 
+
+class IndicesHandler : public QObject { 
+	
     Q_OBJECT
 
   public:
-    values(int size) {
-      _values = new std::vector<int>(size, 0);
-
+    IndicesHandler(int size) {
+      data.fill(0,size);
     }
+    QVector<int> * getData() {
+      return &data;
+    }
+    int getValue(int index) {
+      return data.at(index);
+    }
+
     
-    std::vector<int> * getValues() {
-      return _values;
+  public slots: 
+    void changeEntry(int value) {
+      data.insert(sender()->property("Dimension").toInt(), value);
     }
-    int * getValue(int index) {
-      return &(*_values)[index];
-    }
-  public slots:
-    void triggerValue(int index) {
-      returnValue(values->[index]);
-    }
-    void setCurrent(int index) {
-      current = index;
-    }
-
-    void set(int value) {
-      if (current != -2) {
-        setCurrentValue(current, value);
-      }
-      current = -2;
-
-    }
-    void setCurrentValue (int index, int value) {
-      (*_values)[index] = value;
-    }
-
-    signals:
-      void returnValue(int value);
   private:
-    std::vector<int> * _values;
-    int current = -2;
+    QVector<int> data;
+};    
 
-};
-*/
-class QSlider_adv : public QSlider {
+class Slider_dim : public QSlider {
 
     Q_OBJECT
+    Q_PROPERTY(int Dimension READ getDim WRITE setDim)
 
   public:
-    QSlider_adv(Qt::Orientation orientation, QWidget * parent = 0) {
-      QSlider(orientation, parent);
+    Slider_dim(Qt::Orientation orientation, QWidget *parent = NULL)
+    : QSlider(orientation, parent) { }
+    
+    
+    void setDim(int index) {
+      _dimension = index;
+
     }
-    void setDim(int value) {
-      dim = value;
+    int getDim() {
+      return _dimension;
     }
 
   public slots:
-    void setDimSlot(int value) {
-      dim = value;
+    void update(int index) {
+      setProperty("Dimension",index);
+      setValue(handler->getValue(index));
     } 
-    //void () {
-  
-  signals:
-    //void getDim(int dimension);
-    //slMoved(int pos);
  
   private:
-    int dim;
+    int _dimension;
+    QComboBox * box;
+    IndicesHandler * handler;
 
 };
 
@@ -102,7 +87,9 @@ class list_ext : public QObject {
     QStringList getList() {
       return list_final;
     }
-      
+    QList<int> getIndices() {
+      return indices;
+    }
   public slots:
     void load_list(QList<QString> l) {
       this->list = l;
@@ -194,6 +181,7 @@ class editable_ComboBox : public QComboBox {
     } 
   private:
     int ID;
+    list_ext * Database;
 };
 
 class clifScaledImageView;

@@ -35,21 +35,22 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   _store = store;
   _vbox = new QVBoxLayout(this);
   setLayout(_vbox);
-  
+
   _view = new clifScaledImageView(this);
   _vbox->addWidget(_view);
 
-  
   ///////////////// INDICES ////////////////////////
 
   _dims = store->dims();
+  IndicesHandler * indicesHandler = new IndicesHandler(_dims);
   //values * _val = new values(_dims);
   ///////////////////// SLIDER /////////////////////
+
   hbox = new QHBoxLayout(this);
   w = new QWidget(this);
   _vbox ->addWidget(w);
   w->setLayout(hbox);
-  
+
   _sel = new QComboBox(this);
   _sel->addItem("raw", QVariant(0));
   _sel->addItem("demosaic", QVariant(Improc::DEMOSAIC));
@@ -57,14 +58,17 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   _sel->addItem("undistort", QVariant(Improc::UNDISTORT));
   _sel->setCurrentIndex(0);
   hbox->addWidget(_sel);
-
+ 
   QComboBox * _sel1;
   _sel1 = new QComboBox(this);
   QList<QString> *_list;
-  /*_list = new QList<QString>();
+  _list = new QList<QString>();
+
   for (int i=0;i<store->dims();i++) {
       _list->append("dimension "+QString::number(i));
-  }*/
+  }
+
+  /*
   QList<QString> * _custom_list;
   _custom_list = new QList<QString>();
   _custom_list->append("x");
@@ -76,28 +80,24 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   _custom_list->append("further dimensions");
   int custom_dims = _custom_list->size();
   _list = new QList<QString>(*_custom_list);
-   
+  */
+
   QStringList *list;
   list = new QStringList(*_list);
   _sel1->addItems(*list);
   hbox->addWidget(_sel1);
   _sel1->setCurrentIndex(2);
   
-  _slider = new QSlider(Qt::Horizontal, this);
-  //_slider = new QSlider_adv(Qt::Horizontal);
+  //_slider = new Slider_dim(Qt::Horizontal, this);
+  _slider = new Slider_dim(Qt::Horizontal);
   _slider->setTickInterval(1);
-  //_slider->set_dim(2);
   _slider->setTickPosition(QSlider::TicksBelow);
   _slider->setMaximum(_store->imgCount()-1);
+  _slider->setProperty("Dimension",2);
+
+  connect(_slider, SIGNAL(valueChanged(int)), indicesHandler, SLOT(changeEntry(int)));
+  //connect(_sel1, SIGNAL(currentIndexChanged(int)), _slider, SLOT(update(int)));//TODO
   hbox->addWidget(_slider);
-/*  
-  connect(_sel1, SIGNAL(currentIndexChanged(int)), _slider, SLOT(setDimSlot(int)));
-  connect(_sel1, SIGNAL(currentIndexChanged(int)), _val, SLOT(triggerValue(int)));
-  connect(_val, SIGNAL(returnValue(int)), _slider, SLOT(setValue(int)));
-*/
-  //connect(_slider, changed_dim(int), _val, SLOT(set_current(int)));
-  //connect(_val, changed_dim(int), _slider, SLOT(set_current(int)));
-  
   
   ///////////////////// RANGE /////////////////////
   
@@ -116,12 +116,16 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   
   _sp_min = new QDoubleSpinBox(this);
   _sp_min->setRange(-1000000000,std::numeric_limits<double>::max());
+  _sp_min->setDecimals(10);
   _sp_min->setDisabled(true);
+  _sp_min->setMaximumWidth(250);//TODO
   connect(_sp_min, SIGNAL(valueChanged(double)), this, SLOT(queue_load_img()));
   hbox->addWidget(_sp_min);
   _sp_max = new QDoubleSpinBox(this);
   _sp_max->setRange(-1000000000,std::numeric_limits<double>::max());
   _sp_max->setDisabled(true);
+  _sp_max->setDecimals(10);
+  _sp_max->setMaximumWidth(250);//TODO
   connect(_sp_max, SIGNAL(valueChanged(double)), this, SLOT(queue_load_img()));
   hbox->addWidget(_sp_max);
   
@@ -135,6 +139,7 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   
   //////////////////// DIMENSIONS /////////////////
   /***************** 1 ***************************/
+
   w = new QWidget(this);
   _vbox->addWidget(w);
   hbox = new QHBoxLayout(this);
@@ -147,14 +152,15 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   _sel2->setCurrentIndex(0);
 
   /***************** 2 ***************************/
+
   QComboBox * _sel3;
   _sel3 = new QComboBox(this);
   _sel3->addItems(*list);
   hbox->addWidget(_sel3);
   _sel3->setCurrentIndex(1);
-  
+
   /////////////////// EXTENDED MODE //////////////////////
-  
+
   
   w = new QWidget(this);
   _vbox->addWidget(w);
@@ -176,8 +182,8 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   
   
   
-  //for (int i=0;i<store->dims()-3;i++) { 
-    for (int i=0;i<custom_dims-3;i++) { 
+    for (int i=0;i<store->dims()-3;i++) { 
+    //for (int i=0;i<custom_dims-3;i++) { 
     w = new QWidget(this);
     _vbox->addWidget(w);
     hbox = new QHBoxLayout(this);
@@ -190,19 +196,22 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
     hbox->addWidget(_sel_ext);
     _sel_ext->setCurrentIndex(i);
     //_sel_ext->setEnabled(false); 
-    _sel_ext->setID(i);
+    _sel_ext->setID(i); //TODO
 
     connect(list_ext_obj, SIGNAL(list_changed(QStringList)), _sel_ext, SLOT(clear()));
     connect(list_ext_obj, SIGNAL(list_changed(QStringList)), _sel_ext, SLOT(addItems_slot(QStringList)));
 
-    //_slider = new QSlider_adv(Qt::Horizontal, this);
-    _slider = new QSlider(Qt::Horizontal, this);
+    _slider = new Slider_dim(Qt::Horizontal, this);
     _slider->setTickInterval(1);
-    //_slider->set_dim(i);
     _slider->setTickPosition(QSlider::TicksBelow);
-    _slider->setMaximum(_store->imgCount()-1);
+    _slider->setMaximum(_store->imgCount()-1); //TODO
+    _slider->setProperty("Dimension",(list_ext_obj->getIndices())[i]);
+    connect(_slider, SIGNAL(valueChanged(int)), indicesHandler, SLOT(changeEntry(int)));
+    //connect(_sel1, SIGNAL(currentIndexChanged(int)), _slider, SLOT(update(int)));
     hbox->addWidget(_slider);
-  }   
+
+  }
+
 }
 
 clifStoreView::~clifStoreView()
