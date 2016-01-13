@@ -106,7 +106,7 @@ private:
   std::vector<std::string> _names;
 };
 
-IdxRange IR(int i, const std::string& name);
+IdxRange IR(int i, const std::string& name = std::string());
 
 class Idx_Iter_Single_Dim : public std::iterator<std::input_iterator_tag, Idx>
 {

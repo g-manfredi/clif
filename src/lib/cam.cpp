@@ -7,6 +7,7 @@
 #endif
   
 #include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/calib3d/calib3d.hpp>
 
 namespace clif {
 
@@ -16,7 +17,7 @@ DepthDist::DepthDist(const cpath& path, double at_depth)
   
 }
 
-static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_pos, Mat_<float> &corr_line_m, Mat_<float> &extrinsics_m, int *imgsize, std::vector<cv::Point3f> &ref_points, Mat_<cv::Point2f> & _ref_point_proj)
+static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_pos, Mat_<float> &corr_line_m, Mat_<float> &extrinsics_m, int *imgsize)
 {
   std::cout << "generate map for " << map_pos << std::endl;
   
@@ -37,7 +38,7 @@ static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_po
     GenCam cam(linefits, cv::Point2i(imgsize[0],imgsize[1]), cv::Point2i(corr_line_m[1],corr_line_m[2]));
   
   
-  Idx extr_size(extrinsics_m);
+  /*Idx extr_size(extrinsics_m);
   
   cam.extrinsics.resize(6*extrinsics_m["views"]);
   
@@ -48,7 +49,7 @@ static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_po
       extr_pos["cams"] = map_pos["cams"];
       cam.extrinsics[6*extr_pos["views"]+i] = extrinsics_m(extr_pos);
       std::cout << "extr:" << extr_pos << ": " << extrinsics_m(extr_pos) << std::endl;
-    }
+    }*/
     
     
     
@@ -59,13 +60,7 @@ static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_po
   printf("depth: %f\n", d);
   
   cv::Mat map = cvMat(_maps.bind(3, map_pos["cams"]).bind(2, map_pos["channels"]));
-  if (ref_points.size())
-    cam.get_undist_map_for_depth(map, d, &ref_points);
-  else
-    cam.get_undist_map_for_depth(map, d, NULL, &ref_points);
-  
-  for(int i=0;i<ref_points.size();i++)
-    _ref_point_proj(i, map_pos["channels"], map_pos["cams"]) = cam.world2distorted(_depth, ref_points[i]);
+  cam.get_undist_map_for_depth(map, d);
 }
   
 bool DepthDist::load(Dataset *set)
@@ -95,7 +90,90 @@ bool DepthDist::load(Dataset *set)
     set->get(path()/"source/source/img_size", imgsize, 2);
     
     _maps.create({IR(imgsize[0], "x"),IR(imgsize[1], "y"), extrinsics_m.r("channels","cams")});
-    _ref_point_proj.create({IR(4, "points"), extrinsics_m.r("channels","cams")});
+    
+    float extrinsics_main[6];
+    for(int i=0;i<6;i++)
+      extrinsics_main[i] = extrinsics_m(Idx({i,extrinsics_m["channels"]/2,extrinsics_m["cams"]/2,0}));
+    
+    
+    //center rotation and translation
+    cv::Matx31f c_r(extrinsics_main[0],extrinsics_main[1],extrinsics_main[2]);
+    cv::Matx31f c_t(extrinsics_main[3],extrinsics_main[4],extrinsics_main[5]);
+    cv::Matx33f c_r_m;
+    cv::Rodrigues(c_r, c_r_m);
+    
+    for(auto pos : Idx_It_Dims(extrinsics_m, "channels","cams")) {
+      //to move lines from local to ref view do:
+      //undo local translation
+      //undo local rotation (we are now in target coordinates)
+      //do ref rotation
+      //do ref translation
+      cv::Matx31f l_r(extrinsics_m({0,pos.r("channels","views")}),
+                      extrinsics_m({1,pos.r("channels","views")}),
+                      extrinsics_m({2,pos.r("channels","views")}));
+      cv::Matx31f l_t(extrinsics_m({3,pos.r("channels","views")}),
+                      extrinsics_m({4,pos.r("channels","views")}),
+                      extrinsics_m({5,pos.r("channels","views")}));
+      cv::Matx33f l_r_m, l_r_m_t;
+      cv::Rodrigues(l_r, l_r_m);
+      transpose(l_r_m, l_r_m_t);
+      
+      
+      if (pos["channels"] == extrinsics_m["channels"]/2
+        && pos["cams"] == extrinsics_m["cams"]/2)
+        printf("shoud stay the same!                                       !!!!!!!!!!!!!!!!!!!!!\n");
+      
+      std::cout << pos << std::endl;
+      
+      
+      cv::Matx33f rotm = c_r_m*l_r_m_t;
+
+      
+      for(auto pos_lines : Idx_It_Dims(corr_line_m, "x", "y")) {
+        cv::Matx31f offset(corr_line_m({0, pos_lines.r("x","y"), pos.r("channels","cams")}),
+                           corr_line_m({1, pos_lines.r("x","y"), pos.r("channels","cams")}),
+                           0.0);
+        cv::Matx31f dir(corr_line_m({2, pos_lines.r("x","y"), pos.r("channels","cams")}),
+                           corr_line_m({3, pos_lines.r("x","y"), pos.r("channels","cams")}),
+                           1.0);
+        
+        
+        if (pos_lines["x"] == 32 && pos_lines["y"] == 24) {
+          std::cout << "start: " << offset << "\n" << dir << std::endl;
+          
+          
+          std::cout << "rot1: " << l_r_m_t << std::endl;
+          std::cout << "rot2: " << c_r_m << std::endl;
+          std::cout << "rot1*rot2: " << c_r_m*l_r_m_t << std::endl;
+        }
+        
+        offset -= l_t;
+        offset = rotm * offset;
+        //offset = l_r_m_t * offset;
+        //offset = c_r_m * offset;
+        offset += c_t;
+        
+        //dir -= l_t;
+        dir = rotm*dir;
+        //dir = l_r_m_t * offset;
+        //dir = c_r_m * offset;
+        //dir += c_t;
+        
+        //normalize
+        dir *= 1.0/dir(2);
+        offset -= offset(2)*dir;
+        
+        if (pos_lines["x"] == 32 && pos_lines["y"] == 24)
+          std::cout << "res: " << offset << dir << std::endl;
+        
+        corr_line_m({0, pos_lines.r("x","y"), pos.r("channels","cams")}) = offset(0);
+        corr_line_m({1, pos_lines.r("x","y"), pos.r("channels","cams")}) = offset(1);
+        
+        corr_line_m({2, pos_lines.r("x","y"), pos.r("channels","cams")}) = dir(0);
+        corr_line_m({3, pos_lines.r("x","y"), pos.r("channels","cams")}) = dir(1);
+      }
+      
+    }
     
     std::cout << "maps:" << _maps << std::endl;
     
@@ -107,12 +185,12 @@ bool DepthDist::load(Dataset *set)
         
     std::vector<cv::Point3f> ref_points;
     
-    _genmap(_maps, _depth, Idx({IR(0,"line"),IR(0,"x"),IR(0,"y"),IR(corr_line_m["channels"]/2,"channels"),IR(corr_line_m["cams"]/2,"cams")}), corr_line_m, extrinsics_m, imgsize, ref_points, _ref_point_proj);
+    /*_genmap(_maps, _depth, Idx({IR(0,"line"),IR(0,"x"),IR(0,"y"),IR(corr_line_m["channels"]/2,"channels"),IR(corr_line_m["cams"]/2,"cams")}), corr_line_m, extrinsics_m, imgsize);*/
     
     //_ref_points = ref_points;
     
     for(auto map_pos : Idx_It_Dims(corr_line_m, "channels","cams")) {
-      _genmap(_maps, _depth, map_pos, corr_line_m, extrinsics_m, imgsize, ref_points, _ref_point_proj);
+      _genmap(_maps, _depth, map_pos, corr_line_m, extrinsics_m, imgsize);
     }
     
     return true;
@@ -158,11 +236,11 @@ void DepthDist::undistort(const clif::Mat & src, clif::Mat & dst, const Idx & po
       
       
       cv::Mat src_dup = cvMat(src.bind(2, c)).clone();
-      
+      /*
       for(int i=0;i<4;i++) {
         cv::Point2f ref = _ref_point_proj(i, pos_named["channels"], pos_named["cams"]);
         circle(src_dup, ref*32, 30, 128+127*i/3, 10, CV_AA, 5);
-      }
+      }*/
       
       pos_named["channels"] = c;
       remap(src_dup, cvMat(dst.bind(2, c)), cvMat(maps_cam.bind(2, c)), cv::noArray(), interp);
