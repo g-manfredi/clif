@@ -97,32 +97,35 @@ class list_ext : public QObject {
     void reload_list() {
       list = backup;
     }
-    void change1(int index) {
+    void change1(int index) {//TODO
       a = index;
       gather(a,b,c);
       if (a == b) { b = indices[0];}
-      if (a == c) { c = indices[1];}
+      if (a == c) { c = indices[0];}
+      if (b == c) { c = indices[1];}
       gather(a,b,c);
       emit list_changed(this->list_final);
       emit update_2(b);
       emit update_3(c);
     }
-    void change2(int index) {
+    void change2(int index) {//TODO
       b = index;
       gather(a,b,c);
       if (b == a) { a = indices[0];}
-      if (b == c) { c = indices[1];}
+      if (b == c) { c = indices[0];}
+      if (a == c) { c = indices[1];}
       gather(a,b,c);
       emit list_changed(this->list_final);
       emit update_1(a);
       emit update_3(c);
 
     }
-    void change3(int index) {
+    void change3(int index) {//TODO
       c = index;
       gather(a,b,c);
       if (c == a) { a = indices[0];}
-      if (c == b) { b = indices[1];}
+      if (c == b) { b = indices[0];}
+      if (a == b) { b = indices[1];}
       gather(a,b,c);
       emit list_changed(this->list_final);
       emit update_1(a);
