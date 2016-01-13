@@ -93,12 +93,22 @@ bool DepthDist::load(Dataset *set)
       extrinsics_main[i] = extrinsics_m(Idx({i,extrinsics_m["channels"]/2,extrinsics_m["cams"]/2,0}));
     
     
+    _genmap(_maps, _depth, Idx({IR(0,"line"),IR(0,"x"),IR(0,"y"),IR(corr_line_m["channels"]/2,"channels"),IR(corr_line_m["cams"]/2,"cams")}), corr_line_m, extrinsics_m, imgsize, true, _f, _m, _r);
+    
     //center rotation and translation
     cv::Matx31f c_r(extrinsics_main[0],extrinsics_main[1],extrinsics_main[2]);
     cv::Matx31f c_t(extrinsics_main[3],extrinsics_main[4],extrinsics_main[5]);
     cv::Matx33f c_r_m;
     cv::Rodrigues(c_r, c_r_m);
     
+    cv::Matx31f ref(0, 0, 0);
+    cv::Matx31f ref_c = ref + c_t;
+    cv::Matx21f res_c(ref_c(0)*_f.x/ref_c(2),ref_c(1)*_f.y/ref_c(2));
+    
+    cv::Matx21f avg_dir(0, 0);
+    
+
+    //FIXME skip center view!
     for(auto pos : Idx_It_Dims(extrinsics_m, "channels","cams")) {
       //to move lines from local to ref view do:
       //undo local translation
@@ -116,14 +126,29 @@ bool DepthDist::load(Dataset *set)
       transpose(l_r_m, l_r_m_t);
       
       
-      if (pos["channels"] == extrinsics_m["channels"]/2
+      /*if (pos["channels"] == extrinsics_m["channels"]/2
         && pos["cams"] == extrinsics_m["cams"]/2)
-        printf("shoud stay the same!                                       !!!!!!!!!!!!!!!!!!!!!\n");
+        printf("shoud stay the same!                                       !!!!!!!!!!!!!!!!!!!!!\n");*/
       
       std::cout << pos << std::endl;
       
       
       cv::Matx33f rotm = c_r_m*l_r_m_t;
+      
+      
+      //calculate after-projection rotation angle - to align array dir with view horizon
+      //move a point parallel to each cam/view project it, calc avg angle towards center view projected point
+      cv::Matx31f ref_l = ref + l_t;
+      cv::Matx21f res(ref_l(0)*_f.x/ref_l(2),ref_l(1)*_f.y/ref_l(2));
+      
+      std::cout << "ref: " << res - res_c << std::endl;
+      
+      normalize(res-res_c, res);
+      
+      if (pos["cams"] < extrinsics_m["cams"]/2)
+        avg_dir -= res;
+      else if (pos["cams"] > extrinsics_m["cams"]/2)
+        avg_dir += res;
 
       
       for(auto pos_lines : Idx_It_Dims(corr_line_m, "x", "y")) {
@@ -135,14 +160,14 @@ bool DepthDist::load(Dataset *set)
                            1.0);
         
         
-        if (pos_lines["x"] == 32 && pos_lines["y"] == 24) {
+        /*if (pos_lines["x"] == 32 && pos_lines["y"] == 24) {
           std::cout << "start: " << offset << "\n" << dir << std::endl;
           
           
           std::cout << "rot1: " << l_r_m_t << std::endl;
           std::cout << "rot2: " << c_r_m << std::endl;
           std::cout << "rot1*rot2: " << c_r_m*l_r_m_t << std::endl;
-        }
+        }*/
         
         offset -= l_t;
         offset = rotm * offset;
@@ -160,8 +185,8 @@ bool DepthDist::load(Dataset *set)
         dir *= 1.0/dir(2);
         offset -= offset(2)*dir;
         
-        if (pos_lines["x"] == 32 && pos_lines["y"] == 24)
-          std::cout << "res: " << offset << dir << std::endl;
+        /*if (pos_lines["x"] == 32 && pos_lines["y"] == 24)
+          std::cout << "res: " << offset << dir << std::endl;*/
         
         corr_line_m({0, pos_lines.r("x","y"), pos.r("channels","cams")}) = offset(0);
         corr_line_m({1, pos_lines.r("x","y"), pos.r("channels","cams")}) = offset(1);
@@ -172,6 +197,10 @@ bool DepthDist::load(Dataset *set)
       
     }
     
+    std::cout << "avg dir:" << avg_dir << "\n" << atan2(avg_dir(1),avg_dir(0))/M_PI*180 << "°" << std::endl;
+    
+    _r = atan2(avg_dir(1),avg_dir(0));
+    
     std::cout << "maps:" << _maps << std::endl;
     
     int cam_count = corr_line_m.dim("cams");
@@ -181,10 +210,6 @@ bool DepthDist::load(Dataset *set)
     int channels = corr_line_m["channels"];
         
     std::vector<cv::Point3f> ref_points;
-    
-    _genmap(_maps, _depth, Idx({IR(0,"line"),IR(0,"x"),IR(0,"y"),IR(corr_line_m["channels"]/2,"channels"),IR(corr_line_m["cams"]/2,"cams")}), corr_line_m, extrinsics_m, imgsize, true, _f, _m, _r);
-    
-    //_ref_points = ref_points;
     
     for(auto map_pos : Idx_It_Dims(corr_line_m, "channels","cams")) {
       _genmap(_maps, _depth, map_pos, corr_line_m, extrinsics_m, imgsize, false, _f, _m, _r);
