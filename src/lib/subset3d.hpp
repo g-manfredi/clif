@@ -40,7 +40,7 @@ public:
   
   double f[2];
   double step_length;
-  double world_to_camera[6];
+  //double world_to_camera[6];
 private:
   clif::Dataset *_data = NULL;
   clif::Datastore *_store = NULL;

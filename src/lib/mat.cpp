@@ -19,10 +19,68 @@ Idx::Idx() : std::vector<int>() {};
 
 Idx::Idx(std::initializer_list<int> l) : std::vector<int>(l) {};
 
+Idx::Idx(std::initializer_list<IdxRange> l)
+{
+  int sum = 0;
+  for(auto it : l)
+    sum += it.end-it.start+1;
+  
+  resize(sum);
+  
+  int idx = 0;
+  for(auto it : l)
+    if (!it.src) {
+      operator[](idx) = it.val;
+      if (it.name.size())
+        name(idx, it.name);
+      idx++;
+    }
+    else {
+      for(int i=it.start;i<=it.end;i++) {
+        operator[](idx) = it.src->operator[](i);
+        if (it.src->name(i).size())
+          name(idx, it.src->name(i));
+        idx++;
+      }
+    }
+}
+
+int DimSpec::get(const Idx *ref) const
+{
+  if (_dim == INT_MIN)
+    return ref->dim(_name)+_offset;
+  else
+    return _dim+_offset;
+}
+
+DimSpec DimSpec::operator+(const int& rhs) const
+{
+  DimSpec tmp(*this);
+  tmp._offset += rhs;
+  return tmp;
+}
+
+DimSpec DimSpec::operator-(const int& rhs) const
+{
+  DimSpec tmp(*this);
+  tmp._offset -= rhs;
+  return tmp;
+}
+
+int Idx::dim(const std::string &name) const
+{
+  if (_name_map.count(name))
+    return _name_map.find(name)->second;
+  else
+    return -1;
+}
+
+static Idx _empty();
+
 Idx::Idx(int size) : std::vector<int>(size) {};
 
 Idx& Idx::operator+=(const Idx& rhs)
-{                          
+{
   for(int i=0;i<size();i++)
     operator[](i) += rhs[i];
   return *this;
@@ -37,6 +95,99 @@ void Idx::step(int dim, const Idx& max)
     dim++;
     operator[](dim)++;
   }
+}
+
+void Idx::step(const std::string& name, const Idx& max)
+{
+  int idim = dim(name);
+  
+  operator[](idim)++;
+  
+  while(max[idim] > 0 && operator[](idim) >= max[idim] && idim < max.size()-1) {
+    operator[](idim) = 0;
+    idim++;
+    operator[](idim)++;
+  }
+}
+
+void Idx::name(int i, const std::string& name)
+{
+  if (_names.size() <= i)
+    _names.resize(i+1);
+  _names[i] = name;
+  _name_map[name] = i;
+}
+
+static const std::string _empty_str = "";
+
+const std::string& Idx::name(int i) const
+{
+  if (_names.size() <= i)
+    return _empty_str;
+  
+  return _names[i];
+}
+
+//FIXME inefficient
+void Idx::names(std::initializer_list<std::string> l)
+{
+  _names.resize(l.size());
+  for(int i=0;i<l.size();i++)
+    name(i, l.begin()[i]);
+}
+
+void Idx::names(const std::vector<std::string> &l)
+{
+  _names.resize(l.size());
+  for(int i=0;i<l.size();i++)
+    name(i, l[i]);
+}
+
+const std::vector<std::string>& Idx::names() const
+{
+  return _names;
+}
+
+IdxRange::IdxRange(const Idx *src_, int start_, int end_)
+{
+  start = start_;
+  end = end_;
+  if (end == INT_MIN)
+    end = start;
+  
+  if (src_->size()) {
+    src = src_;
+    if (end < 0)
+      end = src->size()+end;
+  }
+  val = 0;
+}
+
+IdxRange::IdxRange(int val_, const std::string& name_)
+{
+  start = 0;
+  end = 0;
+  name = name_;
+  val = val_;
+}
+
+IdxRange IR(int i, const std::string& name)
+{
+  return IdxRange(i, name);
+}
+     
+IdxRange Idx::r(const DimSpec &start, const DimSpec &end) const
+{
+  int ds, de;
+  
+  ds = start.get(this);
+  
+  if (!end.valid())
+    de = INT_MIN;
+  else
+    de = end.get(this);
+  
+  return IdxRange(this, ds, de);
 }
 
 Idx::Idx(const H5::DataSpace &space)
@@ -71,6 +222,14 @@ Idx Idx::zeroButOne(int size, int pos, int i)
   idx[pos] = i;
   
   return idx;
+}
+
+
+std::ostream& operator<<(std::ostream& out, const Idx& idx)
+{
+  for(int i=0;i<idx.size();i++)
+    out << idx.name(i) << ":" << idx[i] << " ";
+  return out;
 }
 
 template<typename T> class destruction_dispatcher {
@@ -190,6 +349,7 @@ Mat::Mat(cv::Mat *m)
 
 void Mat::create(BaseType type, Idx newsize)
 { 
+  //FIXME check labels!
   if (type == _type && newsize.total() == total())
   {
     static_cast<Idx&>(*this) = newsize;
@@ -649,6 +809,32 @@ cv::Mat cvMat(const Mat &m)
   
   return tmp;
 }
+
+static cv::Mat mat_2d_from_3d(const cv::Mat *m, int ch)
+{
+  //step is already in bytes!
+  return cv::Mat(m->size[1], m->size[2], m->depth(), m->data + ch*m->step[0]);
+}
+
+cv::Mat cvImg(const Mat &m)
+{
+  cv::Mat in = cvMat(m);
+  
+  assert(m.size() == 3);
+  
+  std::vector<cv::Mat> channels(in.size[0]);
+
+  for(int i=0;i<in.size[0];i++)
+    //FIXME need clone else merge will memcpy overlaying memory areas. why?
+    channels[i] = mat_2d_from_3d(&in, i);
+
+  cv::Mat out;
+  out.create(in.size[1], in.size[2], in.type());
+  cv::merge(channels, out);
+  
+  return out;
+}
+
 
 Mat Mat::bind(int dim, int pos) const
 {

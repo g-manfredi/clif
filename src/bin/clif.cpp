@@ -412,7 +412,7 @@ int main(const int argc, const char *argv[])
       set->writeAttributes();
     }
     if (cliargs_get(args, "gen-proxy-loess")) {
-      generate_proxy_loess(set, 33, 25);
+      generate_proxy_loess(set, 65, 49);
       set->writeAttributes();
     }
     if (cliargs_get(args, "opencv-calibrate")) {
@@ -459,6 +459,7 @@ int main(const int argc, const char *argv[])
         idx[3] = c;
         in_imgs->readImage(idx, &img);
         clifMat2cv(&img, &img);
+        cvtColor(img, img, COLOR_RGB2BGR);
         imwrite(buf, img);
       }
       delete in_set;

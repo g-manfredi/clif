@@ -43,7 +43,7 @@ clifEpiView::clifEpiView(Dataset *dataset, QWidget* parent)
     //FIXME implement via subset3d - we don't actually know what subset3d reads!
     Datastore *store = dataset->getStore(dataset->getSubGroup("calibration/extrinsics")/"data");
     std::vector<int> idx(store->dims(),0);
-    readQImage(store, idx, *_center_img, Improc::DEMOSAIC);
+    readQImage(store, idx, *_center_img, DEMOSAIC | UNDISTORT);
     _line = _center_img->size().height()/2;
     _centerview->setImage(*_center_img);
     _line_item = _centerview->scene.addLine(0, _line, _center_img->size().width(),_line);
@@ -136,6 +136,7 @@ void clifEpiView::refreshEPI()
     _epi_img = new QImage();
   readEPI(_3dslice, *_epi_img, _line, _disp);
   _epiview->setImage(*_epi_img);
+  
   qApp->processEvents();
   //_slider->blockSignals(false);
   
@@ -150,12 +151,19 @@ void clifEpiView::refreshEPISlot()
     _timer = NULL;
   }
   
+  Datastore *store = _3dslice->dataset()->getStore(_3dslice->dataset()->getSubGroup("calibration/extrinsics")/"data");
+  std::vector<int> idx(store->dims(),0);
+  readQImage(store, idx, *_center_img, DEMOSAIC | UNDISTORT, _3dslice->disparity2depth(_disp));
+  _centerview->setImage(*_center_img);
+  _line_item = _centerview->scene.addLine(0, _line, _center_img->size().width(),_line);
+  
   refreshEPI();
 }
 
 void clifEpiView::dispChanged(int value)
 {
-  _disp = value*0.01;
+  //_disp = value*0.01;
+  _disp = _3dslice->depth2disparity(value);
   
   if (!_timer) {
     _timer = new QTimer(this);
@@ -166,11 +174,11 @@ void clifEpiView::dispChanged(int value)
 }
 
 void clifEpiView::lineChanged(QPointF *p)
-{
+{  
   _line = p->y();
   _epiview->centerOn(p->x(), 0);
   _epiview->setDragMode(QGraphicsView::ScrollHandDrag);
-  _line_item->setLine(0, _line,  _center_img->size().width(),_line);
+  _line_item->setLine(0, _line, _center_img->size().width(),_line);
   refreshEPI();
 }
 

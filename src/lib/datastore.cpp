@@ -509,6 +509,15 @@ void Datastore::cache_set(const Read_Options &opts, void *data)
   image_cache[opts] = data;
 }
 
+//FIXME use destructor function/functor
+void Datastore::cache_flush()
+{
+  for(auto it : image_cache)
+    delete (Mat*)(it.second);
+  
+  image_cache.clear();
+}
+
 void Datastore::open(Dataset *dataset, cpath path_)
 {
   //only fills in internal data
@@ -828,7 +837,37 @@ DepthDist* Datastore::undist(double depth)
     catch (std::invalid_argument) {
       return NULL;
     }
-    DepthDist *undist = dynamic_cast<DepthDist*>(dataset()->tree_derive(DepthDist(intrinsics, depth)));
+//#pragma omp critical
+ //   {
+      //FIXME BAAAD hack!
+      if (dataset()->_derive_cache.size() > 10) {
+        double max = 0;
+        DepthDist *max_dd = NULL;
+        std::unordered_multimap<std::string,Tree_Derived*>::iterator max_it;
+        for(std::unordered_multimap<std::string,Tree_Derived*>::iterator it = dataset()->_derive_cache.begin();it != dataset()->_derive_cache.end(); ++it) {
+        //for(auto it : dataset()->_derive_cache) {
+          DepthDist *tmp = dynamic_cast<DepthDist*>(it->second);
+          if (tmp && tmp->depth() > max) {
+            max = tmp->depth();
+            max_dd = tmp;
+            max_it = it;
+          }
+          
+        }
+        
+        
+        if (max_dd) {
+          printf("\n\n\ndeletel depth %f !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11111\n\n\n", max_dd->depth());
+          dataset()->_derive_cache.erase(max_it);
+          _undists.erase(max_dd->depth());
+          //_undists[max_dd->depth()] = NULL;
+          delete max_dd;
+        }
+      }
+      
+      printf("\n\n\create depth %f !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11111\n\n\n", depth);
+      undist = dynamic_cast<DepthDist*>(dataset()->tree_derive(DepthDist(intrinsics, depth,extent()[0],extent()[1])));
+    //}
     
     if (undist)
       _undists[depth] = undist;
@@ -843,6 +882,8 @@ DepthDist* Datastore::undist(double depth)
 void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth, double min, double max)
 {
   int scale = 0;
+  
+  //std::cout << "\n\n READ          READ          READ          READ          READ          READ "  << idx << "\n";
   
   bool demosaic = false;
   bool disable_cache = false;
@@ -869,8 +910,14 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth,
   if (isnan(depth))
     depth = 0.0;
   
+  //FIXME this will create undist even if img is cached!
   if (flags & UNDISTORT) {
-    if (!undist(depth) || undist(depth)->type() != DistModel::UCALIB)
+    
+    //FIXME should be way faster!, use instrinsics from datastore path?, tree-derived for fixed object (datastore?
+    cpath intrinsics = dataset()->getSubGroup("calibration/intrinsics");
+    //FIXME the whole thing is ugly! (set dist type from store=?!?) - is also tree-derived...
+    TD_DistType *dtype = dynamic_cast<TD_DistType*>(dataset()->tree_derive(TD_DistType(intrinsics)));
+    if (dtype && dtype->type() != DistModel::UCALIB)
       depth = 0.0;
   }
   else
@@ -883,6 +930,7 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth,
   //WARNING we MUST not change flags after this point!    
   if (mat_cache_get(&tmp, opts)) {
     *img = cvMat(tmp);
+    //printf("CACHED!\n");
     return;
   }
   
@@ -928,7 +976,7 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth,
   clif::read_full_subdims(_data, m_read, subspace, idx);
   
   clif::Mat processed;
-  proc_image(this, m_read, processed, flags, min, max, -1, depth);
+  proc_image(this, m_read, processed, flags, idx, min, max, -1, depth);
   
   mat_cache_set(opts, &processed);
   if (use_disk_cache) {

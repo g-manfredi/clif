@@ -51,6 +51,7 @@ BaseType CvDepth2BaseType(int cv_type)
     case CV_8U : return clif::BaseType::UINT8;
     case CV_16U : return clif::BaseType::UINT16;
     case CV_32F : return clif::BaseType::FLOAT;
+    case CV_32FC2 : return clif::BaseType::CV_POINT2F;
     default :
       abort();
   }
@@ -62,6 +63,7 @@ int BaseType2CvDepth(BaseType t)
     case clif::BaseType::UINT8 : return CV_8U;
     case clif::BaseType::UINT16 : return CV_16U;
     case clif::BaseType::FLOAT : return CV_32F;
+    case clif::BaseType::CV_POINT2F : return CV_32FC2;
     default :
       abort();
   }

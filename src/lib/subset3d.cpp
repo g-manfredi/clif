@@ -26,7 +26,7 @@ void Subset3d::create(Dataset *data, cpath extr_group)
   
   _data->getEnum((root/"type"), _type);
   
-  _data->get(root/"world_to_camera", world_to_camera, 6);
+  //_data->get(root/"world_to_camera", world_to_camera, 6);
     
   if (_type == ExtrType::LINE) {
     double line_step[3];
@@ -238,8 +238,7 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
     step = depth2disparity(disparity, scale); //f[0]*step_length/disparity*scale;
     depth = disparity;
   }
-  
-  
+    
   int i_step = step;
   if (abs(i_step - step) < 1.0/512.0)
     interp = Interpolation::NEAREST;
@@ -247,7 +246,8 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
   cv::Mat tmp;
   idx[3] = 0;
   //FIXME scale
-  _store->readImage(idx, &tmp, flags | Improc::UNDISTORT, depth);
+  //printf("read ref subset3d\n");
+  _store->readImage(idx, &tmp, flags | UNDISTORT, depth);
   w = tmp.size[2];
   h = _store->clif::Datastore::imgCount();
   
@@ -259,7 +259,7 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
   epi->create(3, epi_size, tmp.type());
   
   //TODO fix linear interpolation to reset mat by itself
-  if (interp == Interpolation::LINEAR)
+  //if (interp == Interpolation::LINEAR)
     epi->setTo(0);
   
   int cv_t_count = cv::getNumThreads();
@@ -272,9 +272,18 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
     Idx idx_l(_store->dims());
     cv::Mat img;
     idx_l[3] = i;
+    //printf("read epi line subset3d\n");
     _store->readImage(idx_l, &img, flags | UNDISTORT, depth);
     
-    for(int c=0;c<_store->imgChannels();c++) {    
+/*#pragma omp critical 
+    if (i == 0)
+    {
+    cv::Mat col;
+    clifMat2cv(&img, &col);
+    imwrite("debug.tif", col);
+    }*/
+    
+    for(int c=0;c</*_store->imgChannels()*/3;c++) {
       cv::Mat channel = clifMat_channel(img, c);
       cv::Mat epi_ch = clifMat_channel(*epi, c);
 
@@ -284,19 +293,27 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
       //FIXME rounding?
       double d = step*(i-h/2);
       
-      if (abs(d) >= w)
-        continue;
+      //if (abs(d) >= w)
+        //continue;
       
-      switch (interp) {
+      channel.row(line).copyTo(epi_ch.row(i));
+      
+      /*switch (interp) {
         case Interpolation::LINEAR :
           callByBaseType<warp_1d_linear_dispatcher>(CvDepth2BaseType(epi_ch.depth()), &channel, &epi_ch, line, i, d);
           break;
         case Interpolation::NEAREST :
         default :
           callByBaseType<warp_1d_nearest_dispatcher>(CvDepth2BaseType(epi_ch.depth()),&channel, &epi_ch, line, i, d);
-      }
+      }*/
     }
   }
+  
+  
+    cv::Mat col;
+    clifMat2cv(epi, &col);
+    imwrite("epi.tif", col);
+  
 #pragma omp critical
   if (!cv_t_count)
     cv::setNumThreads(cv_t_count);

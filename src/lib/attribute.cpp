@@ -474,7 +474,7 @@ std::ostream& operator<<(std::ostream& out, const Attribute& a)
     printf("-> %s", a._link.c_str());
   }
   else if (a._m.total()) {
-    printf("FIXME: print N-D attr\n");
+    out << a._m;
   }
   else if (a.type == BaseType::STRING) {
     out << (char*)a.data;
@@ -512,7 +512,9 @@ std::string Attribute::toString()
     return std::string("->")  + _link;
   }
   else if (_m.total()) {
-    return "FIXME: print N-D attr\n";
+    std::ostringstream stream;
+    stream << _m;
+    return stream.str();
   }
   else {
     std::ostringstream stream;
