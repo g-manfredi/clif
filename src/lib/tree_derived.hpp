@@ -21,6 +21,8 @@ public:
   virtual bool operator==(const Tree_Derived & rhs) const = 0;
   
   virtual Tree_Derived* clone() const = 0;
+  
+  virtual ~Tree_Derived() {};
 
 protected:
   cpath _path;

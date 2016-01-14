@@ -246,7 +246,8 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
   cv::Mat tmp;
   idx[3] = 0;
   //FIXME scale
-  _store->readImage(idx, &tmp, flags | Improc::UNDISTORT, depth);
+  //printf("read ref subset3d\n");
+  _store->readImage(idx, &tmp, flags | UNDISTORT, depth);
   w = tmp.size[2];
   h = _store->clif::Datastore::imgCount();
   
@@ -266,20 +267,21 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
 #pragma omp critical
   if (!cv_t_count)
     cv::setNumThreads(0);
-//#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
   for(int i=0;i<h;i++) {
     Idx idx_l(_store->dims());
     cv::Mat img;
     idx_l[3] = i;
+    //printf("read epi line subset3d\n");
     _store->readImage(idx_l, &img, flags | UNDISTORT, depth);
     
-#pragma omp critical 
+/*#pragma omp critical 
     if (i == 0)
     {
     cv::Mat col;
     clifMat2cv(&img, &col);
     imwrite("debug.tif", col);
-    }
+    }*/
     
     for(int c=0;c</*_store->imgChannels()*/3;c++) {
       cv::Mat channel = clifMat_channel(img, c);

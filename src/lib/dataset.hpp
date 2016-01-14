@@ -95,6 +95,9 @@ class Dataset : public Attributes {
     //TODO if attributes get changed automatically refresh intrinsics on getIntrinsics?
     //TODO hide and create accessor
     //Intrinsics intrinsics;
+    
+    //FIXME should be private
+    std::unordered_multimap<std::string,Tree_Derived*> _derive_cache;
 private:
     /** The internal HDF5 reference
      */
@@ -110,7 +113,6 @@ private:
     bool _memory_file = false;
     
     void datastores_append_group(Dataset *set, std::unordered_map<std::string,Datastore*> &stores, H5::Group &g, cpath basename, cpath group_path);
-    std::unordered_multimap<std::string,Tree_Derived*> _derive_cache;
 };
   
 }

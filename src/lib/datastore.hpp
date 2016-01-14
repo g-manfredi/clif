@@ -149,6 +149,7 @@ public:
     
     void *cache_get(const Read_Options &opts);
     void cache_set(const Read_Options &opts, void *data);
+    void cache_flush();
     bool mat_cache_get(clif::Mat *m, const Read_Options &opts);
     void mat_cache_set(const Read_Options &opts, clif::Mat *m);
 

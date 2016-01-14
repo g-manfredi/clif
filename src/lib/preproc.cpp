@@ -146,28 +146,17 @@ void proc_image(Datastore *store, Mat &in, Mat &out, int flags, const Idx & pos,
   
   if (_handle_preproc(Improc::UNDISTORT, curr_in, curr_out, out, flags)) {
     //FIXME path logic? which undist to use?
-    DepthDist *undist = store->undist(depth);
+    DepthDist *undist;
+#pragma omp critical
+    {
+    undist = store->undist(depth);
     
     if (undist)
       undist->undistort(curr_in, curr_out, pos, cv_interpolation);
     else {
-      /*curr_out.create(curr_in.type(), curr_in);
-      
-      Intrinsics *i = &store->dataset()->intrinsics;
-      //FIXME get undist map (should be) generic!
-      if (i->model == DistModel::INVALID) {} // do nothing
-      else if (i->model == DistModel::CV8) {
-        cv::Mat *chap = i->getUndistMap(0, curr_in[0], curr_in[1]);
-        //cv::undistort(*ch,newm, i->cv_cam, i->cv_dist);
-        //cv::setNumThreads(0);
-          
-        for(int c=0;c<curr_in[2];c++)
-          remap(cvMat(curr_in.bind(2,c)), cvMat(curr_out.bind(2,c)), *chap, cv::noArray(), cv_interpolation);
-        
-      }
-      else*/
-        printf("distortion model not supported\n");
+      printf("distortion model not supported\n");
       abort();
+      }
     }
   }
   

@@ -11,13 +11,19 @@
 
 namespace clif {
 
-DepthDist::DepthDist(const cpath& path, double at_depth)
-  : Tree_Derived_Base<DepthDist>(path), _depth(at_depth)
+DepthDist::DepthDist(const cpath& path, double at_depth, int w, int h)
+  : Tree_Derived_Base<DepthDist>(path), _depth(at_depth), _w(w), _h(h)
 {
-  
+
 }
 
-static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_pos, Mat_<float> &corr_line_m, Mat_<float> &extrinsics_m, int *imgsize, bool calc_fit, cv::Point2d &_f, cv::Point2d &_m, double &_r)
+TD_DistType::TD_DistType(const cpath& path)
+  : Tree_Derived_Base<TD_DistType>(path)
+{
+
+}
+
+static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_pos, Mat_<float> &corr_line_m, Mat_<float> &extrinsics_m, int _w, int _h, bool calc_fit, cv::Point2d &_f, cv::Point2d &_m, double &_r)
 {
   std::cout << "generate map for " << map_pos << std::endl;
   
@@ -45,13 +51,13 @@ static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_po
   printf("depth: %f\n", d);
   
   if (calc_fit) {
-    cam = GenCam(linefits, cv::Point2i(imgsize[0],imgsize[1]), cv::Point2i(corr_line_m[1],corr_line_m[2]), d);
+    cam = GenCam(linefits, cv::Point2i(_w,_h), cv::Point2i(corr_line_m[1],corr_line_m[2]), d);
     _f = cam.f;
     _m = cam.move;
     _r = cam.rot;
   }
   else
-    cam = GenCam(linefits, cv::Point2i(imgsize[0],imgsize[1]), cv::Point2i(corr_line_m[1],corr_line_m[2]), d, _f, _m, _r);
+    cam = GenCam(linefits, cv::Point2i(_w,_h), cv::Point2i(corr_line_m[1],corr_line_m[2]), d, _f, _m, _r);
     
     
   printf("%fx%f %fx%f %f\n", _f.x, _f.y, _m.x, _m.y, _r);
@@ -60,14 +66,57 @@ static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_po
   cam.get_undist_map_for_depth(map, d);
 }
   
+
+bool TD_DistType::load(Dataset *set)
+{
+  try {
+    set->getEnum(path()/"type", _type);
+        
+    return true;
+  }
+  catch (std::invalid_argument) {
+    return false;
+  }
+}
+  
 bool DepthDist::load(Dataset *set)
 {
   try {
     Idx proxy_size;
-    int imgsize[2];
     
-    set->getEnum(path()/"type", _type);
-        
+    set->getEnum(_path/"type", _type);
+    
+    if (_type == DistModel::CV8) {
+      double f[2], c[2];
+      
+      f[0] = 0;
+      f[1] = 0;
+      c[0] = 0;
+      c[1] = 0;
+      cv::Mat cv_cam = cv::Mat::eye(3,3,CV_64F);
+      std::vector<double> cv_dist;
+  
+      set->get(_path / "projection", f, 2);
+      cv_cam.at<double>(0,0) = f[0];
+      cv_cam.at<double>(1,1) = f[1];
+    
+      Attribute *a = set->get(_path / "projection_center");
+      if (a) {
+        a->get(c, 2);
+        cv_cam.at<double>(0,2) = c[0];
+        cv_cam.at<double>(1,2) = c[1];
+      }
+    
+      set->get(_path / "opencv_distortion", cv_dist);
+
+      _map.create({IR(_w, "x"),IR(_h, "y")});
+  
+      cv::Mat tmp;
+      cv::initUndistortRectifyMap(cv_cam, cv_dist, cv::noArray(), cv::noArray(), cv::Size(_w,_h), CV_32FC2, cvMat(_map), tmp);
+  
+      return true;
+    }
+    
     if (_type != DistModel::UCALIB)
       return true;
     
@@ -84,16 +133,15 @@ bool DepthDist::load(Dataset *set)
     
     set->get(path()/"extrinsics", extrinsics_m);
     extrinsics_m.names({"data","channels","cams","views"});
-    set->get(path()/"source/source/img_size", imgsize, 2);
     
-    _maps.create({IR(imgsize[0], "x"),IR(imgsize[1], "y"), extrinsics_m.r("channels","cams")});
+    _maps.create({IR(_w, "x"),IR(_h, "y"), extrinsics_m.r("channels","cams")});
     
     float extrinsics_main[6];
     for(int i=0;i<6;i++)
       extrinsics_main[i] = extrinsics_m(Idx({i,extrinsics_m["channels"]/2,extrinsics_m["cams"]/2,0}));
     
     
-    _genmap(_maps, _depth, Idx({IR(0,"line"),IR(0,"x"),IR(0,"y"),IR(corr_line_m["channels"]/2,"channels"),IR(corr_line_m["cams"]/2,"cams")}), corr_line_m, extrinsics_m, imgsize, true, _f, _m, _r);
+    _genmap(_maps, _depth, Idx({IR(0,"line"),IR(0,"x"),IR(0,"y"),IR(corr_line_m["channels"]/2,"channels"),IR(corr_line_m["cams"]/2,"cams")}), corr_line_m, extrinsics_m, _w, _h, true, _f, _m, _r);
     
     //center rotation and translation
     cv::Matx31f c_r(extrinsics_main[0],extrinsics_main[1],extrinsics_main[2]);
@@ -212,7 +260,7 @@ bool DepthDist::load(Dataset *set)
     std::vector<cv::Point3f> ref_points;
     
     for(auto map_pos : Idx_It_Dims(corr_line_m, "channels","cams")) {
-      _genmap(_maps, _depth, map_pos, corr_line_m, extrinsics_m, imgsize, false, _f, _m, _r);
+      _genmap(_maps, _depth, map_pos, corr_line_m, extrinsics_m, _w, _h, false, _f, _m, _r);
     }
     
     return true;
@@ -230,29 +278,35 @@ void DepthDist::undistort(const clif::Mat & src, clif::Mat & dst, const Idx & po
   if (interp == -1)
     interp = cv::INTER_LINEAR;
   
-  if (!_maps.size())
-    dst = src;
+  if (_type == DistModel::CV8) {
+    for(int c=0;c<src[2];c++)
+      remap(cvMat(src.bind(2, c)), cvMat(dst.bind(2, c)), cvMat(_map), cv::noArray(), interp);
+  }
+  else if (_type == DistModel::UCALIB) {
+    if (!_maps.size()) {
+      dst = src;
+      return;
+    }
+      
+    Mat map_pos(_maps);
     
-  Mat map_pos(_maps);
+    Idx pos_named = pos;
+    
+    //FIXME
+    if (pos_named.size() == 5)
+      pos_named.names({"x","y","channels","cams","views"});
+    else if (pos_named.size() == 4)
+      pos_named.names({"x","y","channels","cams"});
+    else
+      abort();
+    
+    Mat maps_cam;
+    
+    if (pos_named.dim("cams") != -1)
+      maps_cam = _maps.bind(3, pos_named["cams"]);
+    else
+      maps_cam = _maps;
   
-  Idx pos_named = pos;
-  
-  //FIXME
-  if (pos_named.size() == 5)
-    pos_named.names({"x","y","channels","cams","views"});
-  else if (pos_named.size() == 4)
-    pos_named.names({"x","y","channels","cams"});
-  else
-    abort();
-  
-  Mat maps_cam;
-  
-  if (pos_named.dim("cams") != -1)
-    maps_cam = _maps.bind(3, pos_named["cams"]);
-  else
-    maps_cam = _maps;
-  
-  if (_maps.size()) {
     for(int c=0;c<src[2];c++) {
       
       
@@ -273,8 +327,6 @@ void DepthDist::undistort(const clif::Mat & src, clif::Mat & dst, const Idx & po
       //remap(cvMat(src.bind(2, c)), cvMat(dst.bind(2, c)), cvMat(maps_cam.bind(2, c)), cv::noArray(), interp);
     }
   }
-  else
-    dst = src;
 }
 
 bool DepthDist::operator==(const Tree_Derived & rhs) const
@@ -282,6 +334,16 @@ bool DepthDist::operator==(const Tree_Derived & rhs) const
   const DepthDist * other = dynamic_cast<const DepthDist*>(&rhs);
   
   if (other && ((other->_depth == _depth) || (isnan(other->_depth) && isnan(_depth))))
+    return true;
+  
+  return false; 
+}
+
+bool TD_DistType::operator==(const Tree_Derived & rhs) const
+{
+  const TD_DistType * other = dynamic_cast<const TD_DistType*>(&rhs);
+  
+  if (other)
     return true;
   
   return false; 
