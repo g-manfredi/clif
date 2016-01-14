@@ -142,7 +142,7 @@ void Dataset::flush()
 }
 
 Dataset::~Dataset()
-{  
+{
   //delete stores
   for (auto& it: _stores)
     delete it.second;

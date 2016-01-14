@@ -15,7 +15,6 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-       
 
 namespace clif {
 
@@ -251,6 +250,11 @@ clif::Dataset* ClifFile::openDataset(int idx)
 
 bool ClifFile::valid()
 {
+  //FIXME check hdf5 version?
+  //old (at least on ubunut 14.04 - 1.8.11-5ubuntu7) hdf5 versions don't init H5File id to H5I_INVALID_HID (== -1) but to zero...)
+  if (f.getId() <= 0)
+    return false;
+
   return f.getId() != H5I_INVALID_HID;
 }
 
