@@ -63,7 +63,7 @@ namespace std
           h ^= std::hash<int>()(opts.extra_flags) << 5;
           h ^= std::hash<int>()(opts.idx.size()) << 6;
           for(int i=0;i<opts.idx.size();i++)
-            h ^= std::hash<int>()(opts.idx[i]) << 7+i;
+            h ^= std::hash<int>()(opts.idx[i]) << (7+i);
           
           return h;
         }

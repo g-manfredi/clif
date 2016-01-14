@@ -23,6 +23,7 @@ TD_DistType::TD_DistType(const cpath& path)
 
 }
 
+#ifdef CLIF_WITH_UCALIB 
 static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_pos, Mat_<float> &corr_line_m, Mat_<float> &extrinsics_m, int _w, int _h, bool calc_fit, cv::Point2d &_f, cv::Point2d &_m, double &_r)
 {
   std::cout << "generate map for " << map_pos << std::endl;
@@ -65,6 +66,7 @@ static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_po
   cv::Mat map = cvMat(_maps.bind(3, map_pos["cams"]).bind(2, map_pos["channels"]));
   cam.get_undist_map_for_depth(map, d);
 }
+#endif
   
 
 bool TD_DistType::load(Dataset *set)
