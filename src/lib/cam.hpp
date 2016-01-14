@@ -1,8 +1,8 @@
 #ifndef _CLIF_CAM_H
 #define _CLIF_CAM_H
 
-#include "tree_derived.hpp"
 #include "mat.hpp"
+#include "tree_derived.hpp"
 
 namespace clif {
 
