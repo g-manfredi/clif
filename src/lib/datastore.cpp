@@ -823,6 +823,8 @@ void Datastore::readChannel(const Idx &idx, cv::Mat *channel, int flags)
   mat_cache_set(channel,idx,flags,CACHE_CONT_MAT_CHANNEL,scale);*/
 }
 
+//FIXME shared/cache-save tree-derive!
+//delete by timestamp!
 //FIXME delete elements after some time
 DepthDist* Datastore::undist(double depth)
 {
@@ -857,7 +859,6 @@ DepthDist* Datastore::undist(double depth)
         
         
         if (max_dd) {
-          printf("\n\n\ndeletel depth %f !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11111\n\n\n", max_dd->depth());
           dataset()->_derive_cache.erase(max_it);
           _undists.erase(max_dd->depth());
           //_undists[max_dd->depth()] = NULL;
@@ -865,7 +866,6 @@ DepthDist* Datastore::undist(double depth)
         }
       }
       
-      printf("\n\n\create depth %f !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11111\n\n\n", depth);
       undist = dynamic_cast<DepthDist*>(dataset()->tree_derive(DepthDist(intrinsics, depth,extent()[0],extent()[1])));
     //}
     

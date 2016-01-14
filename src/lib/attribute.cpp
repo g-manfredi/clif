@@ -273,10 +273,8 @@ cpath Attributes::getSubGroup(cpath parent, cpath child)
     throw std::runtime_error("getSubGroup: no child found for: "+parent.generic_string());
 
   //FIXME implement priorities!
-  for(auto c : candidates) {
-    printf("found: %s\n", c.c_str());
+  for(auto c : candidates)
     return c;
-  }
 }
 
 bool Attributes::deriveGroup(const cpath & in_parent, cpath in_child, const cpath & out_parent, cpath out_child, cpath &in_root, cpath &out_root)

@@ -42,6 +42,13 @@ public:
   virtual bool operator==(const Tree_Derived & rhs) const;
     
   DistModel type() { return _type; };
+  bool includesRectification()
+  {
+    if (_type == DistModel::UCALIB)
+      return true;
+    return false;
+    
+  };
 
 private:
   DistModel _type;
