@@ -814,3 +814,40 @@ CLIF_EXPORT char  *cliarg_nth_str(cliini_arg *arg, int n)
   RETNULLONFALSE(arg)
   return ((char**)arg->vals)[n];
 }
+
+//static int _max_help_len(cliini_optgroup *group)
+
+static void print_help_opt(cliini_opt *opt)
+{
+  RETNULLONFALSE(opt)
+  
+  if (opt->flag && !opt->longflag)
+    printf("-%c ", opt->flag);
+  if (opt->longflag && !opt->flag)
+    printf("--%s ", opt->longflag);
+  if (opt->flag && opt->longflag)
+    printf("--%s/-%c ", opt->longflag, opt->flag);
+  
+  if (opt->help_args)
+    printf("%s ", opt->help_args);
+  else {
+    
+  }
+  
+  if (opt->help)
+    printf("%s ", opt->help);
+  
+  printf("\n");
+}
+
+CLIF_EXPORT void cliini_help(cliini_optgroup *group)
+{
+  RETNULLONFALSE(group)
+  
+  for(int i=0;i<group->group_count;i++)
+    cliini_help(&group->groups[i]);
+  
+  for(int i=0;i<group->opt_count;i++)
+    print_help_opt(&group->opts[i]);
+    
+}

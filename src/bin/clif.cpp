@@ -44,7 +44,10 @@ cliini_opt opts[] = {
     CLIINI_ARGCOUNT_ANY, //argcount max
     CLIINI_STRING, //type
     0, //flags
-    'i'
+    'i',
+    NULL,
+    "files to import into clif dataset, supported types: clif files (*.clif), ini files (*.ini) and images (*.png, *.tiff, ...)",
+    "[file1] [file2] ..."
   },
   {
     "output",
@@ -52,7 +55,10 @@ cliini_opt opts[] = {
     CLIINI_ARGCOUNT_ANY, //argcount
     CLIINI_STRING, //type
     0, //flags
-    'o'
+    'o',
+    NULL,
+    "pass single output clif file",
+    "<file>"
   },
   {
     "types", //FIXME remove this
@@ -68,7 +74,10 @@ cliini_opt opts[] = {
     CLIINI_ARGCOUNT_ANY, //argcount
     CLIINI_STRING,
     0,
-    's'
+    's',
+    NULL,
+    "import images into [#dims]-dimensional store at [path]",
+    "[path] [#dims] <img file1> <img file 2> ..."
   },
   {
     "store-dims",
@@ -76,7 +85,10 @@ cliini_opt opts[] = {
     CLIINI_ARGCOUNT_ANY, //argcount
     CLIINI_STRING,
     0,
-    0
+    0,
+    NULL,
+    "import images into [#dims]-dimensional store at [path] with dimensions [dim0]x[dim1]x..., first dimensions must be (in that order): image widht, height, #channels. Images will be appended at dim3 and on overflow the index will be counted up (so you can fill a multi-dimensional matrix with images).",
+    "[path] [#dims] [dim0] [dim1] ... [dim#] <img file1> <img file 2> ..."
   },
   {
     "include",
@@ -165,7 +177,7 @@ int main(const int argc, const char *argv[])
   cliini_arg *dim_stores = cliargs_get(args, "store-dims");
   
   if (!args || cliargs_get(args, "help\n") || (!input && !calib_imgs && !stores) || !output) {
-    printf("TODO: print help!");
+    cliini_help(&group);
     return EXIT_FAILURE;
   }
   

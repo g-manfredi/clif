@@ -27,6 +27,8 @@ typedef struct {
   int flags; 
   char flag;
   char **enums;
+  char *help;
+  char *help_args;
 } cliini_opt;
 
 typedef struct _cliini_optgroup {
@@ -89,6 +91,8 @@ CLIF_EXPORT void cliarg_doubles(cliini_arg *arg, double *vals);
 CLIF_EXPORT void cliarg_inst_strs(cliini_arg *arg, char **vals);
 CLIF_EXPORT void cliarg_inst_ints(cliini_arg *arg, int *vals);
 CLIF_EXPORT void cliarg_inst_doubles(cliini_arg *arg, double *vals);
+
+CLIF_EXPORT void cliini_help(cliini_optgroup *group);
 
 #ifdef __cplusplus
 }
