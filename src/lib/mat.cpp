@@ -810,11 +810,17 @@ cv::Mat cvMat(const Mat &m)
   
   if (m.type() == BaseType::UINT32)
   {
+    cv::Mat tmp_float;
+    tmp_float.create(tmp.dims, tmp.size, CV_32F);
+    //make continuous
     tmp = tmp.clone();
-    printf("WARNING cvMat() encountered a 32 bit uint matrix - converting to signed int loosing one bit of precision\n");
+    printf("WARNING cvMat() encountered a 32 bit uint matrix - converting to float - this will be very slow!\n");
     //clone makes this mat continuous, so this works
+    float *float_ptr = tmp_float.ptr<float>(0);
+    uint32_t *int_ptr = tmp.ptr<uint32_t>(0);
     for(int i=0;i<tmp.total();i++)
-      tmp.at<uint32_t>(i);
+      float_ptr[i] = int_ptr[i];
+    tmp = tmp_float;
   }
   
   delete[] idx;

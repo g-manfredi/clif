@@ -74,8 +74,8 @@ void proc_image(Datastore *store, Mat &in, Mat &out, int flags, const Idx & pos,
   else {
     scale_val = BaseType_max(in.type())-min;
     if (in.type() == BaseType::UINT32) {
-      scale_val = 256*256-min;
-      printf("FIXME hardcoded scale val: %f\n", scale_val);
+      //UINT32 is converted to float by cvMat :-(
+      scale_val = BaseType_max(BaseType::FLOAT)-min;
     }
   }
     

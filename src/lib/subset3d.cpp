@@ -231,10 +231,6 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
   double step, depth;
   Idx idx(_store->dims());
   
-  //FIXME hack!
-  if (_store->type() == BaseType::UINT32)
-    flags |= CVT_8U;
-  
   if (unit == Unit::PIXELS) {
     step = disparity;
     depth = disparity2depth(disparity);

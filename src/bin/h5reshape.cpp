@@ -70,6 +70,10 @@ cliini_opt opts[] = {
     CLIINI_INT, //type
     0, //flags
     'c'
+  },
+  {
+    "convert-float",
+    0,
   }
 };
 
@@ -92,6 +96,7 @@ int main(const int argc, const char *argv[])
   cliini_arg *src = cliargs_get(args, "source");
   cliini_arg *dst = cliargs_get(args, "destination");
   cliini_arg *dims = cliargs_get(args, "dims");
+  cliini_arg *convert_float = cliargs_get(args, "convert-float");
   //cliini_arg *chunks = cliargs_get(args, "destination");
   
   if (!args || cliargs_get(args, "help\n") || !input || !output) {
@@ -118,18 +123,25 @@ int main(const int argc, const char *argv[])
   DataSet src_data = src_file.openDataSet(cliarg_str(src));
   
   DataSpace dataspace(cliarg_sum(dims), size);
+  
+  H5::DataType convert_type;
+  
+  convert_type = src_data.getDataType();
+  
+  if (convert_float)
+    convert_type = H5::PredType::IEEE_F32LE;
 
   h5_create_path_groups(dst_file, boost::filesystem::path(cliarg_str(dst)).parent_path());
   
   if (h5_obj_exists(dst_file, cliarg_str(dst)))
     dst_file.unlink(cliarg_str(dst));
   
-  DataSet dst_data = dst_file.createDataSet(cliarg_str(dst), src_data.getDataType(), dataspace);
+  DataSet dst_data = dst_file.createDataSet(cliarg_str(dst), convert_type, dataspace);
   
   void *buf = malloc(src_data.getInMemDataSize());
   
-  src_data.read(buf, src_data.getDataType());
-  dst_data.write(buf, src_data.getDataType());
+  src_data.read(buf, convert_type);
+  dst_data.write(buf, convert_type);
   
   return EXIT_SUCCESS;
 }
