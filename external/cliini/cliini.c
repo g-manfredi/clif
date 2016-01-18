@@ -815,6 +815,12 @@ CLIF_EXPORT char  *cliarg_nth_str(cliini_arg *arg, int n)
   return ((char**)arg->vals)[n];
 }
 
+CLIF_EXPORT int cliarg_nth_int(cliini_arg *arg, int n)
+{
+  RETNULLONFALSE(arg)
+  return ((int*)arg->vals)[n];
+}
+
 //static int _max_help_len(cliini_optgroup *group)
 
 static void print_help_opt(cliini_opt *opt)
