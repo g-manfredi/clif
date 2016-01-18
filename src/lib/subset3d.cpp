@@ -231,6 +231,12 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
   double step, depth;
   Idx idx(_store->dims());
   
+  //FIXME hack!
+  if (_store->type() == BaseType::UINT32)
+    flags |= CVT_8U;
+  
+  flags |= UNDISTORT;
+  
   if (unit == Unit::PIXELS) {
     step = disparity;
     depth = disparity2depth(disparity);
@@ -255,7 +261,7 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
   cv::Mat tmp;
   idx[3] = 0;
   //FIXME scale
-  _store->readImage(idx, &tmp, flags | UNDISTORT, depth);
+  _store->readImage(idx, &tmp, flags, depth);
   w = tmp.size[2];
   h = _store->clif::Datastore::imgCount();
   
@@ -267,7 +273,7 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
   epi->create(3, epi_size, tmp.type());
   
   //TODO fix linear interpolation to reset mat by itself
-  //if (interp == Interpolation::LINEAR)
+  if (interp == Interpolation::LINEAR)
     epi->setTo(0);
   
   int cv_t_count = cv::getNumThreads();
@@ -280,9 +286,9 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
     Idx idx_l(_store->dims());
     cv::Mat img;
     idx_l[3] = i;
-    _store->readImage(idx_l, &img, flags | UNDISTORT, depth);
+    _store->readImage(idx_l, &img, flags, depth);
     
-    for(int c=0;c<_store->imgChannels();c++) {
+    for(int c=0;c<_store->imgChannels(flags);c++) {
       cv::Mat channel = clifMat_channel(img, c);
       cv::Mat epi_ch = clifMat_channel(*epi, c);
 
