@@ -28,13 +28,14 @@ enum class BaseType : int {
   UINT8   = 1,
   UINT16  = 2,
   INT     = 3,
-  FLOAT   = 4,
-  DOUBLE  = 5,
-  CV_POINT2F = 6,
+  UINT32  = 4,
+  FLOAT   = 5,
+  DOUBLE  = 6,
+  CV_POINT2F = 7,
 //FIXME string is just a (free/malloc) pointer? how to handle delete/create?
-  STRING  = 7,
+  STRING  = 8,
 //now for complex types - flags in addition to regular type!
-  VECTOR  = 8
+  VECTOR  = 16
   };
 //WARNING: change BaseTypeAtomicMask in enumtypes.cpp if enum value changes
 extern BaseType BaseTypeMaxAtomicType;
@@ -64,6 +65,7 @@ CODE(char, BaseType::STRING) \
 CODE(uint8_t, BaseType::UINT8) \
 CODE(uint16_t, BaseType::UINT16) \
 CODE(int, BaseType::INT) \
+CODE(uint32_t, BaseType::UINT32) \
 CODE(float, BaseType::FLOAT) \
 CODE(double, BaseType::DOUBLE) \
 CODE(cv::Point2f, BaseType::CV_POINT2F)

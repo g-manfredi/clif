@@ -8,11 +8,14 @@ namespace clif {
 static BaseType BaseTypeAtomicMask = BaseType(int(BaseType::VECTOR)-1);
 BaseType BaseTypeMaxAtomicType = BaseType::STRING;
 
+//FIXME generate this list automatically!
+
 static std::type_index BaseTypeSimpleTypes[] = {
   std::type_index(typeid(InvalidBaseType)),
   std::type_index(typeid(uint8_t)),
   std::type_index(typeid(uint16_t)),
   std::type_index(typeid(int)),
+  std::type_index(typeid(uint32_t)),
   std::type_index(typeid(float)),
   std::type_index(typeid(double)),
   std::type_index(typeid(char))
@@ -23,6 +26,7 @@ static std::type_index BaseTypeVectorTypes[] = {
   std::type_index(typeid(std::vector<uint8_t>)),
   std::type_index(typeid(std::vector<uint16_t>)),
   std::type_index(typeid(std::vector<int>)),
+  std::type_index(typeid(std::vector<uint32_t>)),
   std::type_index(typeid(std::vector<float>)),
   std::type_index(typeid(std::vector<double>)),
   std::type_index(typeid(std::vector<char>))
@@ -154,6 +158,7 @@ H5::DataType toH5DataType(BaseType type)
     case BaseType::UINT8 : return H5::PredType::STD_U8LE;
     case BaseType::UINT16 : return H5::PredType::STD_U16LE;
     case BaseType::INT :    return H5::PredType::STD_I32LE;
+    case BaseType::UINT32 :    return H5::PredType::STD_U32LE;
     case BaseType::FLOAT : return H5::PredType::IEEE_F32LE;
     case BaseType::DOUBLE:  return H5::PredType::IEEE_F64LE;
     case BaseType::CV_POINT2F:  return _h5_point2f_disk_type();
@@ -176,6 +181,7 @@ H5::DataType toH5NativeDataType(BaseType type)
     case BaseType::UINT8 :  return H5::PredType::NATIVE_UINT8;
     case BaseType::UINT16 : return H5::PredType::NATIVE_UINT16;
     case BaseType::INT :    return H5::PredType::NATIVE_INT;
+    case BaseType::UINT32 :    return H5::PredType::NATIVE_UINT32;
     case BaseType::FLOAT :  return H5::PredType::NATIVE_FLOAT;
     case BaseType::DOUBLE:  return H5::PredType::NATIVE_DOUBLE;
     case BaseType::CV_POINT2F:  return _h5_cv_point2f_native_type();
@@ -218,8 +224,9 @@ BaseType toBaseType(hid_t type)
         case 3 :
         case 4 :
           if (H5Tget_sign(type) == H5T_SGN_NONE)
-            abort();
-          return BaseType::INT;
+            return BaseType::UINT32;
+          else
+            return BaseType::INT;
       }
     case H5T_FLOAT: 
       if (H5Tget_size(type) == 4)
