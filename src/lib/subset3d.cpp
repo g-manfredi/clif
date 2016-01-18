@@ -235,8 +235,6 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
   if (_store->type() == BaseType::UINT32)
     flags |= CVT_8U;
   
-  flags |= UNDISTORT;
-  
   if (unit == Unit::PIXELS) {
     step = disparity;
     depth = disparity2depth(disparity);

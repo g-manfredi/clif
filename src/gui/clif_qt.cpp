@@ -52,6 +52,7 @@ namespace clif {
       }
 
       default:
+          abort();
           std::cout << "::cvMatToQImage() - cv::Mat image type not handled in switch:" << inMat.type() << std::endl;
           break;
     }
