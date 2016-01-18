@@ -791,7 +791,7 @@ void write_full_subdims(H5::DataSet &data, const Mat &m, const Idx& offset, cons
 //FIXME avoid new/delete!
 //FIXME implement re-conversion if clif::Mat was created from cv::Mat
 cv::Mat cvMat(const Mat &m)
-{
+{  
   cv::Mat tmp;
   int *idx = new int[m.size()];
   size_t *step = new size_t[m.size()-1];
@@ -802,7 +802,20 @@ cv::Mat cvMat(const Mat &m)
       step[m.size()-i-1] = m.step()[i];
   }
   
-  tmp = cv::Mat(m.size(), idx, BaseType2CvDepth(m.type()), m.data(), step);
+  int type = CV_32S;
+  if (m.type() != BaseType::UINT32)
+    type = BaseType2CvDepth(m.type());
+  
+  tmp = cv::Mat(m.size(), idx, type, m.data(), step);
+  
+  if (m.type() == BaseType::UINT32)
+  {
+    tmp = tmp.clone();
+    printf("WARNING cvMat() encountered a 32 bit uint matrix - converting to signed int loosing one bit of precision\n");
+    //clone makes this mat continuous, so this works
+    for(int i=0;i<tmp.total();i++)
+      tmp.at<uint32_t>(i);
+  }
   
   delete[] idx;
   delete[] step;
