@@ -105,8 +105,11 @@ bool DepthDist::load(Dataset *set)
       Attribute *a = set->get(_path / "projection_center");
       if (a) {
         a->get(c, 2);
-        cv_cam.at<double>(0,2) = c[0];
-        cv_cam.at<double>(1,2) = c[1];
+        //FIXME causes very misaligned undistortion?
+        //cv_cam.at<double>(0,2) = c[0];
+        //cv_cam.at<double>(1,2) = c[1];
+        cv_cam.at<double>(0,2) = _w/2;
+        cv_cam.at<double>(1,2) = _h/2;
       }
     
       set->get(_path / "opencv_distortion", cv_dist);
