@@ -53,9 +53,9 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
   vector<vector<Point2f>> ipoints;
   vector<vector<Point2f>> wpoints;
   
-  int channels = imgs->imgChannels();
-  if (imgs->org() == DataOrg::BAYER_2x2)
-    channels = 3;
+  int readflags = Improc::CVT_8U | Improc::CVT_GRAY | Improc::DEMOSAIC;
+  
+  int channels = imgs->imgChannels(readflags);
   
   Idx map_size(imgs->dims() - 2);
   map_size[0] = channels;
@@ -82,7 +82,7 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
       std::vector<int> idx(imgs->dims());
       for(int i=3;i<idx.size();i++)
         idx[i] = pos[i-2];
-      imgs->readImage(idx, &img, Improc::CVT_8U | Improc::CVT_GRAY | Improc::DEMOSAIC);
+      imgs->readImage(idx, &img, readflags);
       
       cv::Mat ch = clifMat_channel(img, 0);
       
@@ -171,7 +171,7 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
           //grayscale rough detection
           //FIXME move this up - mmapped reallocation not possible...
           cv::Mat img;
-          imgs->readImage(idx, &img, Improc::CVT_8U | Improc::CVT_GRAY | Improc::DEMOSAIC);
+          imgs->readImage(idx, &img, readflags);
           cv::Mat gray = clifMat_channel(img, 0);
           Marker::detect(gray, corners_rough);
           
@@ -215,12 +215,12 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
             cv::merge(debug_imgs, 3, debug_img);
       }
       else {
-        cv::Mat debug_imgs[imgs->imgChannels()];
+        cv::Mat debug_imgs[imgs->imgChannels(readflags)];
         
         //grayscale rough detection
         //FIXME move this up - mmapped reallocation not possible...
         cv::Mat img;
-        imgs->readImage(idx, &img, Improc::CVT_8U | Improc::CVT_GRAY | Improc::DEMOSAIC);
+        imgs->readImage(idx, &img, readflags);
         cv::Mat gray = clifMat_channel(img, 0);
         Marker::detect(gray, corners_rough);
         
@@ -261,10 +261,10 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
         }
         
         if (debug_store) {
-          if (imgs->imgChannels() == 1)
+          if (imgs->imgChannels(readflags) == 1)
             debug_img = debug_imgs[0];
           else
-            cv::merge(debug_imgs, imgs->imgChannels(), debug_img);
+            cv::merge(debug_imgs, imgs->imgChannels(readflags), debug_img);
         }
       }
       

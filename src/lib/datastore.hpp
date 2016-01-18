@@ -126,7 +126,7 @@ public:
     const std::vector<int>& extent() const;
     void fullsize(std::vector<int> &size) const;
     
-    int imgChannels();
+    int imgChannels(int flags);
     int imgCount();
     
     void flush();

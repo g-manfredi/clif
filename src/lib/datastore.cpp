@@ -925,12 +925,12 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth,
   
   Read_Options opts(idx, flags, depth, min, max, scale, CACHE_CONT_MAT_IMG);
   
+  
   clif::Mat tmp;
   
   //WARNING we MUST not change flags after this point!    
   if (mat_cache_get(&tmp, opts)) {
     *img = cvMat(tmp);
-    //printf("CACHED!\n");
     return;
   }
   
@@ -983,7 +983,7 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth,
     create_directories(cache_file.parent_path());
     processed.write(cache_file.string().c_str());
   }
-  
+    
   if (flags & NO_MEM_CACHE)
     *img = cvMat(processed).clone();
   else
@@ -1100,10 +1100,12 @@ int Datastore::imgCount()
 }
 // 
 //when intepreting as image store
-int Datastore::imgChannels()
+int Datastore::imgChannels(int flags)
 {
-  //FIXME bayer pattern!
-  return _extent[2];
+  if (flags & DEMOSAIC && _org == DataOrg::BAYER_2x2)
+    return 3;
+  else
+    return _extent[2];
 }
 
 const std::vector<int>& Datastore::extent() const
