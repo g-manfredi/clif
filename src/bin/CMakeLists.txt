@@ -11,6 +11,7 @@ add_executable(clifinfo clifinfo.cpp)
 #add_executable(loadbench_vigra2 loadbench_vigra2.cpp)
 add_executable(clif_image_attribute clif_image_attribute.cpp)
 add_executable(resolve_test resolve_test.cpp)
+add_executable(h5reshape h5reshape.cpp)
 
 SET_TARGET_PROPERTIES(clif-bin PROPERTIES OUTPUT_NAME clif)
 
@@ -24,3 +25,6 @@ target_link_libraries(clif_image_attribute clif)
 target_link_libraries(resolve_test clif)
 #target_link_libraries(loadbench_vigra clif)
 #target_link_libraries(loadbench_vigra2 clif)
+
+
+target_link_libraries(h5reshape clif)
