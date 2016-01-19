@@ -19,6 +19,7 @@ public:
   void create(clif::Dataset *data, cpath extr_group = cpath());
   
   void readEPI(cv::Mat *epi, int line, double disparity, Unit unit = Unit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0);
+  void unshift_epi(cv::Mat *epi, cv::Mat *slice, int line, double disparity, Unit unit = Unit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0);
   
   double depth2disparity(double depth, double scale = 1.0)
   {

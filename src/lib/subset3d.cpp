@@ -318,6 +318,89 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
     cv::setNumThreads(cv_t_count);
 }
 
+
+void Subset3d::unshift_epi(cv::Mat *epi, cv::Mat *slice, int line, double disparity, Unit unit, int flags, Interpolation interp, float scale)
+{
+  int w, h, channels;
+  double step, depth;
+  Idx idx(_store->dims());
+  
+  if (unit == Unit::PIXELS) {
+    step = disparity;
+    depth = disparity2depth(disparity);
+  }
+  else {
+    step = depth2disparity(disparity, scale); //f[0]*step_length/disparity*scale;
+    depth = disparity;
+  }
+  
+  bool refocus = true;
+  
+  //FIXME use path from datastore?
+  cpath intrinsics = _data->getSubGroup("calibration/intrinsics");
+  TD_DistType *dtype = dynamic_cast<TD_DistType*>(_data->tree_derive(TD_DistType(intrinsics)));
+  if (dtype && dtype->includesRectification()) {
+    abort();
+    //we still need to undo disparity somehow...
+    refocus = false;
+  }
+    
+  int i_step = step;
+  if (abs(i_step - step) < 1.0/512.0)
+    interp = Interpolation::NEAREST;
+  
+  w = epi->size[2];
+  h = epi->size[1];
+  channels = epi->size[0];
+  
+  int epi_size[3];
+  epi_size[2] = w;
+  epi_size[1] = h;
+  epi_size[0] = channels;
+  
+  slice->create(3, epi_size, epi->type());
+  slice->setTo(0);
+  
+  int cv_t_count = cv::getNumThreads();
+  
+#pragma omp critical
+  if (!cv_t_count)
+    cv::setNumThreads(0);
+#pragma omp parallel for schedule(dynamic)
+  for(int i=0;i<h;i++) {
+    for(int c=0;c<_store->imgChannels(flags);c++) {
+      cv::Mat slice_ch = clifMat_channel(*slice, c);
+      cv::Mat epi_ch = clifMat_channel(*epi, c);
+            
+      //FIXME rounding?
+      double d = -step*(i-h/2);
+      
+      if (refocus && abs(d) >= w)
+        continue;
+      
+      if (!refocus)
+        epi_ch.row(line).copyTo(slice_ch.row(i));
+      else {
+        if (std::isnan(d) || abs(d) >= w)
+          continue;
+        
+        switch (interp) {
+          case Interpolation::LINEAR :
+            callByBaseType<warp_1d_linear_dispatcher>(CvDepth2BaseType(epi_ch.depth()), &epi_ch, &slice_ch, line, i, d);
+            break;
+          case Interpolation::NEAREST :
+          default :
+            callByBaseType<warp_1d_nearest_dispatcher>(CvDepth2BaseType(epi_ch.depth()),&epi_ch, &slice_ch, i, i, d);
+        }
+      }
+    }
+  }
+  
+#pragma omp critical
+  if (!cv_t_count)
+    cv::setNumThreads(cv_t_count);
+}
+
 int Subset3d::EPICount()
 {
   //FIXME use extrinsics group size! (for cross type...)  
