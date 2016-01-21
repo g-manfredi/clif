@@ -88,7 +88,10 @@ static std::unordered_map<std::type_index, BaseType> BaseTypeMap = {
   
 template<typename T> BaseType toBaseType()
 {
-  return BaseTypeMap[std::type_index(typeid(T))];
+  if (BaseTypeMap.count(std::type_index(typeid(T))))
+    return BaseTypeMap[std::type_index(typeid(T))];
+  else
+  return BaseType::INVALID;
 }
 
 //disable warnungs about bitwise enum combinations not being in enum
@@ -326,6 +329,69 @@ int BaseType2CvDepth(BaseType t);
 
 //FIXME strings!
 int baseType_size(BaseType type);
+template <typename T> int baseType_size()
+{
+  return sizeof(T);
+}
+
+template<typename T> class basetype_create_class_instances {
+public:
+  void operator()(void *ptr, off_t count)
+  {
+    for (int i=0;i<count;i++)
+      new(((T*)ptr)+i) T;
+    printf("dispatch create classes: %d\n", count);
+  }
+};
+
+template <typename T> void *BaseType_new(off_t count)
+{
+  void *ptr = malloc(count*baseType_size<T>());
+  assert(ptr);
+  
+  basetype_create_class_instances<T>()(ptr, count);
+  
+  return ptr;
+}
+
+template<typename T> class basetype_destruction_dispatcher {
+public:
+  void operator()(void *ptr, off_t count)
+  {
+    for (int i=0;i<count;i++)
+      ((T*)ptr)[i].~T();
+  }
+};
+
+struct BaseType_deleter
+{
+  BaseType_deleter(off_t count, BaseType type = BaseType::INVALID) : _count(count), _type(type) {};
+  
+  void operator()(void* ptr)
+  {
+    if (_type > BaseTypeMaxAtomicType)
+      callByBaseType<basetype_destruction_dispatcher>(_type, ptr, _count);
+    
+    free(ptr);
+  }
+  
+  off_t _count;
+  BaseType _type;
+};
+
+template <typename T> struct BaseType_deleter_template
+{
+  BaseType_deleter_template(off_t count) : _count(count) {};
+  
+  void operator()(void* ptr)
+  {
+    basetype_destruction_dispatcher<T>()(ptr, _count);
+    
+    free(ptr);
+  }
+  
+  off_t _count;
+};
 
 BaseType cliini_type_to_BaseType(int type);
 

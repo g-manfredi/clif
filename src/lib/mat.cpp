@@ -232,50 +232,16 @@ std::ostream& operator<<(std::ostream& out, const Idx& idx)
   return out;
 }
 
-template<typename T> class destruction_dispatcher {
-public:
-  void operator()(void *ptr, off_t count)
-  {
-    for (int i=0;i<count;i++)
-      ((T*)ptr)[i].~T();
-  }
-};
-
-template<typename T> class creation_dispatcher {
-public:
-  void operator()(void *ptr, off_t count)
-  {
-    for (int i=0;i<count;i++)
-      new(((T*)ptr)+i) T;
-  }
-};
-
 void *BaseType_new(BaseType type, off_t count)
 {
   void *ptr = malloc(count*baseType_size(type));
   assert(ptr);
   
   if (type > BaseTypeMaxAtomicType)
-    callByBaseType<creation_dispatcher>(type, ptr, count);
+    callByBaseType<basetype_create_class_instances>(type, ptr, count);
   
   return ptr;
 }
-
-struct BaseType_deleter
-{
-  BaseType_deleter(off_t count, BaseType type = BaseType::INVALID) : _count(count), _type(type) {};
-  
-  void operator()(void* ptr)
-  {
-    if (_type > BaseTypeMaxAtomicType)
-      callByBaseType<destruction_dispatcher>(_type, ptr, _count);
-    
-    free(ptr);
-  }
-  
-  off_t _count;
-  BaseType _type;
-};
 
 #ifdef CLIF_BUILD_QT
 struct QFile_deleter
@@ -347,8 +313,9 @@ Mat::Mat(cv::Mat *m)
 {
 }
 
+//WARNING keep Mat_<T>::create in sync!
 void Mat::create(BaseType type, Idx newsize)
-{ 
+{
   //FIXME check labels!
   if (type == _type && newsize.total() == total())
   {
@@ -369,6 +336,8 @@ void Mat::create(BaseType type, Idx newsize)
   _mem = std::shared_ptr<void>(_data, BaseType_deleter(total(), type));
 }
 
+//FIXME check for class type!
+//FIXME not working :-(
 void Mat::copyTo(Mat &m)
 {
   if (size() != m.size() || total() != m.total())
@@ -867,11 +836,11 @@ Mat Mat::bind(int dim, int pos) const
     b_mat._step[i] = _step[i];
   }
   //if dim is not last idx!
-  if (dim < b_mat.size()) {
+  /*if (dim < b_mat.size()) {
     b_mat[dim] = operator[](dim+1);
     b_mat._step[dim] = _step[dim]*_step[dim+1];
-  }
-  for(int i=dim+1;i<b_mat.size();i++) {
+  }*/
+  for(int i=dim;i<b_mat.size();i++) {
     b_mat[i] = operator[](i+1);
     b_mat._step[i] = _step[i+1];
   }

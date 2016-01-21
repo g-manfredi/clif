@@ -402,6 +402,36 @@ template <typename T> Mat_<T>::Mat_(Idx size)
   create(size);
 }
 
+//WARNING keep Mat::create in sync!
+template <typename T> void Mat_<T>::create(BaseType type, Idx newsize)
+{
+  if (!std::is_class<T>::value) {
+    Mat::create(type, newsize);
+    return;
+  }
+  
+  if (type != _type)
+    abort();
+  
+  //FIXME check labels!
+  if (type == _type && newsize.total() == total())
+  {
+    static_cast<Idx&>(*this) = newsize;
+    return;
+  }
+  
+  _type = type;
+  static_cast<Idx&>(*this) = newsize;
+  _step.resize(size());
+  
+  _step[0] = baseType_size<T>();
+  for(int i=1;i<size();i++)
+    _step[i] = _step[i-1]*newsize[i-1];
+  
+  _data = BaseType_new<T>(total());
+  _mem = std::shared_ptr<void>(_data, BaseType_deleter_template<T>(total()));
+}
+
 template <typename T> Mat_<T>::Mat_(BaseType type, Idx size)
 {
   _type = toBaseType<T>();
@@ -410,16 +440,9 @@ template <typename T> Mat_<T>::Mat_(BaseType type, Idx size)
 
 template <typename T> void Mat_<T>::create(Idx size)
 {
-  Mat::create(_type, size);
+  Mat_<T>::create(_type, size);
 }
 
-template <typename T> void Mat_<T>::create(BaseType type, Idx size)
-{
-  if (type != _type)
-    abort();
-  
-  Mat::create(_type, size);
-}
 
 void h5_dataset_read(H5::H5File f, const cpath &path, Mat &m);
 
