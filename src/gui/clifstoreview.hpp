@@ -13,6 +13,9 @@ class QComboBox;
 class QCheckBox;
 class QDoubleSpinBox;
 
+#include <QtCore/QCoreApplication>//Debug
+#include <QDebug>//Debug
+
 namespace clif {
 
 class IndicesHandler : public QObject { 
@@ -59,8 +62,12 @@ class Slider_dim : public QSlider {
 
   public slots:
     void update(int index) {
-      setProperty("Dimension",index);
-      setValue(handler->getValue(index));
+      if (index != -1) {
+        setProperty("Dimension",index);
+        setValue(0);
+        //qDebug() << index;//TODO
+      }
+      //setValue(handler->getValue(index));
     } 
  
   private:
@@ -87,6 +94,12 @@ class list_ext : public QObject {
     QStringList getList() {
       return list_final;
     }
+    int getIndexFromBackup(QString entry) {
+      return backup.indexOf(entry);
+    }
+    QString getEntryFromBackup(int index) {
+      return backup.at(index);
+    }
     QList<int> getIndices() {
       return indices;
     }
@@ -96,6 +109,11 @@ class list_ext : public QObject {
     }
     void reload_list() {
       list = backup;
+    }
+    void getIndex(QString entry) {
+      int index = getIndexFromBackup(entry);
+      emit setIndex(index);
+      //qDebug() << index; //TODO debug
     }
     void change1(int index) {//TODO
       a = index;
@@ -156,6 +174,7 @@ class list_ext : public QObject {
     void update_1(int a);
     void update_2(int b);
     void update_3(int c); 
+    void setIndex(int index);
 
   private:
     QList<QString> list;
@@ -204,14 +223,22 @@ private slots:
   void queue_sel_img(int n);
   void queue_load_img();
   void rangeStateChanged(int s);
+  void resetIdx() {
+    for (int i=0;i<_dims;i++) {
+      _show_idx[i] = 0;
+    }
+  }
   
 private:
   clifScaledImageView *_view = NULL;
   QImage *_qimg = NULL;
   Datastore *_store = NULL;
-  int _curr_idx = -1;
-  int _curr_flags = 0;
-  int _show_idx = 0;
+  int _curr_idx = -1; //current slider dimension
+  int _curr_flags = 0; 
+  int _dims;
+  //int _show_idx = 0;
+  int * _show_idx = NULL; //values to show
+  //std::vector<int> _show_idx(_dims,0);
   QTimer *_timer = NULL;
   QComboBox *_sel = NULL;
   bool _rendering = false;
@@ -219,7 +246,7 @@ private:
   QCheckBox *_try_out_new_reader = NULL;
   QDoubleSpinBox *_sp_min = NULL;
   QDoubleSpinBox *_sp_max = NULL;
-  int _dims;
+  
   
 };
   

@@ -42,6 +42,16 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   ///////////////// INDICES ////////////////////////
 
   _dims = store->dims();
+  //_show_idx = new std::vector( [_dims];
+  _show_idx = new int[_dims];
+  for (int i=0; i<_dims; i++) {
+    _show_idx[i]=0;
+  }
+  qDebug() <<"_show_idx";
+  for (int i=0; i<_dims; i++) {
+    qDebug() <<_show_idx[i];
+  }
+  
   IndicesHandler * indicesHandler = new IndicesHandler(_dims);
   //values * _val = new values(_dims);
   ///////////////////// SLIDER /////////////////////
@@ -82,6 +92,7 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   _list = new QList<QString>(*_custom_list);
   */
 
+  
   QStringList *list;
   list = new QStringList(*_list);
   _sel1->addItems(*list);
@@ -96,7 +107,7 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   _slider->setProperty("Dimension",2);
 
   connect(_slider, SIGNAL(valueChanged(int)), indicesHandler, SLOT(changeEntry(int)));
-  //connect(_sel1, SIGNAL(currentIndexChanged(int)), _slider, SLOT(update(int)));//TODO
+  connect(_sel1, SIGNAL(currentIndexChanged(int)), _slider, SLOT(update(int)));//TODO 
   hbox->addWidget(_slider);
   
   ///////////////////// RANGE /////////////////////
@@ -119,23 +130,23 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   _sp_min->setDecimals(10);
   _sp_min->setDisabled(true);
   _sp_min->setMaximumWidth(250);//TODO
-  connect(_sp_min, SIGNAL(valueChanged(double)), this, SLOT(queue_load_img()));
+  connect(_sp_min, SIGNAL(valueChanged(double)), this, SLOT(queue_load_img()));//TODO
   hbox->addWidget(_sp_min);
   _sp_max = new QDoubleSpinBox(this);
   _sp_max->setRange(-1000000000,std::numeric_limits<double>::max());
   _sp_max->setDisabled(true);
   _sp_max->setDecimals(10);
   _sp_max->setMaximumWidth(250);//TODO
-  connect(_sp_max, SIGNAL(valueChanged(double)), this, SLOT(queue_load_img()));
+  connect(_sp_max, SIGNAL(valueChanged(double)), this, SLOT(queue_load_img()));//TODO
   hbox->addWidget(_sp_max);
   
   _qimg = new QImage();
   
-  _show_idx = 0;
+  //_show_idx = 0;//TODO Why?
   load_img();
   
-  connect(_slider, SIGNAL(valueChanged(int)), this, SLOT(queue_sel_img(int)));
-  connect(_sel, SIGNAL(currentIndexChanged(int)), this, SLOT(queue_load_img()));
+  connect(_slider, SIGNAL(valueChanged(int)), this, SLOT(queue_sel_img(int)));//TODO
+  connect(_sel, SIGNAL(currentIndexChanged(int)), this, SLOT(queue_load_img()));//TODO: better reset to 0 as above
   
   //////////////////// DIMENSIONS /////////////////
   /***************** 1 ***************************/
@@ -179,6 +190,8 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   connect(list_ext_obj, SIGNAL(update_1(int)), _sel1, SLOT(setCurrentIndex(int)));
   connect(list_ext_obj, SIGNAL(update_2(int)), _sel2, SLOT(setCurrentIndex(int)));
   connect(list_ext_obj, SIGNAL(update_3(int)), _sel3, SLOT(setCurrentIndex(int)));
+
+  
   
   
   
@@ -200,6 +213,7 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
 
     connect(list_ext_obj, SIGNAL(list_changed(QStringList)), _sel_ext, SLOT(clear()));
     connect(list_ext_obj, SIGNAL(list_changed(QStringList)), _sel_ext, SLOT(addItems_slot(QStringList)));
+    connect(list_ext_obj, SIGNAL(list_changed(QStringList)), this, SLOT(resetIdx()));//TODO
 
     _slider = new Slider_dim(Qt::Horizontal, this);
     _slider->setTickInterval(1);
@@ -207,7 +221,10 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
     _slider->setMaximum(_store->imgCount()-1); //TODO
     _slider->setProperty("Dimension",(list_ext_obj->getIndices())[i]);
     connect(_slider, SIGNAL(valueChanged(int)), indicesHandler, SLOT(changeEntry(int)));
-    //connect(_sel1, SIGNAL(currentIndexChanged(int)), _slider, SLOT(update(int)));
+    connect(_sel_ext, SIGNAL(currentTextChanged(QString)), list_ext_obj, SLOT(getIndex(QString)));//TODO
+    connect(list_ext_obj, SIGNAL(setIndex(int)), _slider, SLOT(update(int)));//TODO
+    //connect(_slider, SIGNAL(valueChanged(double)), this, SLOT(queue_load_img()));
+    connect(_slider, SIGNAL(valueChanged(int)), this, SLOT(queue_sel_img(int)));
     hbox->addWidget(_slider);
 
   }
@@ -225,12 +242,18 @@ void clifStoreView::queue_sel_img(int val)
 
   queue_load_img();*/
 
-  //int dim = sender()->getData(...);
-
-  //_show_idx[dim] = val;
-
-  queue_load_img();
-
+  if (val >= 0 ) {
+    int dim = sender()->property("Dimension").toInt();
+    //qDebug() << dim;
+    _show_idx[dim] = val;
+    _curr_idx = dim;
+    //qDebug() << "_show_idx";
+    qDebug() <<"_show_idx";
+    for (int i=0; i<_dims; i++) {
+    qDebug() <<_show_idx[i];
+    }
+    queue_load_img();
+  }
 
 }
 
@@ -268,8 +291,9 @@ void clifStoreView::load_img()
   //if (_curr_idx == _show_idx && _curr_flags == _sel->itemData(_sel->currentIndex()).value<int>() && _range_ck->checkState() != Qt::Checked)
     //return;
   
-  _curr_flags = _sel->itemData(_sel->currentIndex()).value<int>();
-  _curr_idx = _show_idx;
+  _curr_flags = _sel->itemData(_sel->currentIndex()).value<int>();//TODO Change
+  //_curr_flags = sender()->Property("Dimension");
+  //_curr_idx = _show_idx[]; //TODO Change
   
   if (_try_out_new_reader->checkState() == Qt::Checked) {
     Idx pos(_store->dims());
@@ -284,12 +308,19 @@ void clifStoreView::load_img()
   }
   else {
     std::vector<int> n_idx(_store->dims(),0);
-    n_idx[3] = _curr_idx;
+    for (int i=0; i<_store->dims(); i++) {
+      n_idx[i] = _show_idx[i];
+    }
+    //n_idx[3] = _curr_idx;//TODO
     
     if (_range_ck->checkState() == Qt::Checked)
+      //readQImage(_store, n_idx, *_qimg, _curr_idx, _sp_min->value(), _sp_max->value());
       readQImage(_store, n_idx, *_qimg, _curr_flags, _sp_min->value(), _sp_max->value());
+      //readQImage(_store, _show_idx, *_qimg, _curr_idx, _sp_min->value(), _sp_max->value());
     else
+      //readQImage(_store, n_idx, *_qimg, _curr_idx);
       readQImage(_store, n_idx, *_qimg, _curr_flags);
+      //readQImage(_store, _show_idx, *_qimg, _curr_idx);
   }
   
   _view->setImage(*_qimg);
