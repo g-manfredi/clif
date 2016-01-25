@@ -232,7 +232,6 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
   Idx idx(_store->dims());
   
   
-  
   if (unit == Unit::PIXELS) {
     step = disparity;
     depth = disparity2depth(disparity);
@@ -241,8 +240,6 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
     step = depth2disparity(disparity, scale); //f[0]*step_length/disparity*scale;
     depth = disparity;
   }
-  
-  printf("readEPI depth %f\n", depth);
   
   flags |= UNDISTORT;
   

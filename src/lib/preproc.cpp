@@ -17,16 +17,12 @@ ProcData::ProcData(Datastore *store, int flags, double min, double max, double d
   if (_flags & CVT_GRAY)
   flags |= DEMOSAIC;
   
-  if (_flags & UNDISTORT) {
-    printf("add demosaic\n");
+  if (_flags & UNDISTORT) 
     _flags |= DEMOSAIC;
-  }
   
-  if ((_flags & DEMOSAIC) && _store->org() != DataOrg::BAYER_2x2) {
-    printf("rm demosaic\n");
+  if ((_flags & DEMOSAIC) && _store->org() != DataOrg::BAYER_2x2)
     _flags &= ~DEMOSAIC;
-  }
-  
+
   if (!isnan(_min) || !isnan(_max)) {
     _flags |= NO_MEM_CACHE;
     _flags |= NO_DISK_CACHE;
@@ -37,7 +33,7 @@ ProcData::ProcData(Datastore *store, int flags, double min, double max, double d
   _d = store->imgChannels(flags);
   
   //FIXME use path from datastore!
-  cpath _intrinsics = store->dataset()->getSubGroup("calibration/intrinsics");
+  _intrinsics = store->dataset()->getSubGroup("calibration/intrinsics");
 }
   
 //process from channel(s) to image - input should always be 3d?
@@ -215,9 +211,7 @@ void proc_image(Mat &in, Mat &out, const ProcData & proc, const Idx & pos)
   double max = proc.max();
   Datastore *store = proc.store();
   double depth = proc.depth();
-  
-  printf("proc image depth %f\n", depth);
-  
+    
   flags &= ~NO_MEM_CACHE;
   flags &= ~NO_DISK_CACHE;
   
@@ -253,17 +247,13 @@ void proc_image(Mat &in, Mat &out, const ProcData & proc, const Idx & pos)
   assert(in.size() == 3);
   
   if (_handle_preproc(Improc::DEMOSAIC, curr_in, curr_out, out, flags)) {
-    cv::Mat cv_out;
-    printf("proc demosaic\n");
-    
+    cv::Mat cv_out;    
     cv::cvtColor(cvMat(curr_in.bind(2,0)), cv_out, order2cv_conf_flag(store->order()));
     
     curr_out = Mat3d(cv_out);
   }
   else
-    
-    printf("proc no demosaic\n");
-  
+      
   if (flags == 0)
   {
     printf("FIXME implement copy!\n");
