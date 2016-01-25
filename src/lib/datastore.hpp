@@ -5,6 +5,7 @@
 #include "opencv2/core/core.hpp"
 
 #include "core.hpp"
+#include "preproc.hpp"
 
 
 namespace clif {
@@ -104,6 +105,7 @@ public:
     void appendImage(cv::Mat *img);
     
     void readImage(const Idx& idx, cv::Mat *img, int flags = 0, double depth = std::numeric_limits<float>::quiet_NaN(), double min = std::numeric_limits<float>::quiet_NaN(), double max = std::numeric_limits<float>::quiet_NaN());
+    void readImage(const ProcData &proc, const Idx& idx, cv::Mat *img);
     void readChannel(const Idx& idx, cv::Mat *channel, int flags = 0);
     
     void setDims(int dims);

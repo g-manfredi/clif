@@ -231,6 +231,8 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
   double step, depth;
   Idx idx(_store->dims());
   
+  
+  
   if (unit == Unit::PIXELS) {
     step = disparity;
     depth = disparity2depth(disparity);
@@ -239,6 +241,20 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
     step = depth2disparity(disparity, scale); //f[0]*step_length/disparity*scale;
     depth = disparity;
   }
+  
+  printf("readEPI depth %f\n", depth);
+  
+  flags |= UNDISTORT;
+  
+  
+  ProcData proc(_store,
+                flags, 
+                std::numeric_limits<double>::quiet_NaN(),
+                std::numeric_limits<double>::quiet_NaN(),
+                depth,
+                interp,
+                scale);
+
   
   bool refocus = true;
   
@@ -255,7 +271,8 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
   cv::Mat tmp;
   idx[3] = 0;
   //FIXME scale
-  _store->readImage(idx, &tmp, flags, depth);
+#pragma omp critical
+  _store->readImage(idx, &tmp, proc.flags(), depth);
   w = tmp.size[2];
   h = _store->clif::Datastore::imgCount();
   
@@ -275,14 +292,15 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
 #pragma omp critical
   if (!cv_t_count)
     cv::setNumThreads(0);
-#pragma omp parallel for schedule(dynamic)
+//#pragma omp parallel for schedule(dynamic)
   for(int i=0;i<h;i++) {
     Idx idx_l(_store->dims());
     cv::Mat img;
     idx_l[3] = i;
-    _store->readImage(idx_l, &img, flags, depth);
+#pragma omp critical
+    _store->readImage(idx_l, &img, proc.flags(), depth);
     
-    for(int c=0;c<_store->imgChannels(flags);c++) {
+    for(int c=0;c<_store->imgChannels(proc.flags());c++) {
       cv::Mat channel = clifMat_channel(img, c);
       cv::Mat epi_ch = clifMat_channel(*epi, c);
 

@@ -878,52 +878,32 @@ DepthDist* Datastore::undist(double depth)
     return _undists[depth];
 }
 
-//this is always a 3d mat!
-void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth, double min, double max)
-{
+void Datastore::readImage(const ProcData &proc, const Idx& idx, cv::Mat *img)
+{  
+  //FIXME
   int scale = 0;
   
-  //std::cout << "\n\n READ          READ          READ          READ          READ          READ "  << idx << "\n";
-  
-  bool demosaic = false;
-  bool disable_cache = false;
   cpath cache_file;
   bool use_disk_cache = false;
-  
-  if (!isnan(min) || !isnan(max))
-    disable_cache = true;
-  
-  if (flags & CVT_GRAY)
-    flags |= DEMOSAIC;
-  if (flags & UNDISTORT)
-    flags |= DEMOSAIC;
-  if (disable_cache) {
-    flags |= NO_MEM_CACHE;
-    flags |= NO_DISK_CACHE;
-  }
 
-  if ((flags & DEMOSAIC) && _org == DataOrg::BAYER_2x2)
-    demosaic = true;
-  else
-    flags &= ~DEMOSAIC;
-    
+  double depth = proc.depth();
+  
   if (isnan(depth))
     depth = 0.0;
   
   //FIXME this will create undist even if img is cached!
-  if (flags & UNDISTORT) {
+  if (proc.flags() & UNDISTORT) {
     
-    //FIXME should be way faster!, use instrinsics from datastore path?, tree-derived for fixed object (datastore?
-    cpath intrinsics = dataset()->getSubGroup("calibration/intrinsics");
     //FIXME the whole thing is ugly! (set dist type from store=?!?) - is also tree-derived...
-    TD_DistType *dtype = dynamic_cast<TD_DistType*>(dataset()->tree_derive(TD_DistType(intrinsics)));
+    TD_DistType *dtype = dynamic_cast<TD_DistType*>(dataset()->tree_derive(TD_DistType(proc.intrinsics())));
     if (dtype && dtype->type() != DistModel::UCALIB)
       depth = 0.0;
   }
   else
     depth = 0.0;
   
-  Read_Options opts(idx, flags, depth, min, max, scale, CACHE_CONT_MAT_IMG);
+  //FIXME maybe integrate ProcData directly?
+  Read_Options opts(idx, proc.flags(), proc.depth(), proc.min(), proc.max(), scale, CACHE_CONT_MAT_IMG);
   
   
   clif::Mat tmp;
@@ -936,11 +916,11 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth,
   
   //printf("read idx %d", idx[3]);
   
-  assert((flags & FORCE_REUSE) == 0);
+  assert((proc.flags() & FORCE_REUSE) == 0);
   
-  if (((flags & NO_DISK_CACHE) == 0) && _get_cache_path(cache_file)) {
+  if (((proc.flags() & NO_DISK_CACHE) == 0) && _get_cache_path(cache_file)) {
     use_disk_cache = true;
-    cache_file /= _cache_filename(this, idx[3], flags, scale, depth);
+    cache_file /= _cache_filename(this, idx[3], proc.flags(), scale, depth);
     
     Idx _fixme_storage_size(3);
     BaseType _fixme_storage_type = type();
@@ -948,11 +928,11 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth,
     for(int i=0;i<3;i++)
       _fixme_storage_size[i] = _basesize[i];
     
-    if (demosaic)
+    if (proc.flags() & DEMOSAIC)
       _fixme_storage_size[2] = 3;
-    if (flags & Improc::CVT_GRAY)
+    if (proc.flags() & Improc::CVT_GRAY)
       _fixme_storage_size[2] = 1;
-    if (flags & Improc::CVT_8U)
+    if (proc.flags() & Improc::CVT_8U)
       _fixme_storage_type = BaseType::UINT8;
       
     //FIXME only create, don't allocate - calc in read!
@@ -976,7 +956,7 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth,
   clif::read_full_subdims(_data, m_read, subspace, idx);
   
   clif::Mat processed;
-  proc_image(this, m_read, processed, flags, idx, min, max, -1, depth);
+  proc_image(m_read, processed, proc, idx);
   
   mat_cache_set(opts, &processed);
   if (use_disk_cache) {
@@ -984,10 +964,17 @@ void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth,
     processed.write(cache_file.string().c_str());
   }
     
-  if (flags & NO_MEM_CACHE)
+  if (proc.flags() & NO_MEM_CACHE)
     *img = cvMat(processed).clone();
   else
     *img = cvMat(processed);
+}
+
+//this is always a 3d mat!
+void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth, double min, double max)
+{
+  ProcData proc(this, flags, min, max, depth);
+  readImage(proc, idx, img);
 }
 
 void Datastore::setDims(int dims)
@@ -1102,6 +1089,10 @@ int Datastore::imgCount()
 //when intepreting as image store
 int Datastore::imgChannels(int flags)
 {
+  
+  if (flags & UNDISTORT)
+    flags |= DEMOSAIC;
+  
   if (flags & DEMOSAIC && _org == DataOrg::BAYER_2x2)
     return 3;
   else

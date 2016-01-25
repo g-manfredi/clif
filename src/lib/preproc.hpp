@@ -23,9 +23,44 @@ enum Improc {
   MAX = 1024
 };
 
+#define ACC_D(T,V,D) private: T _##V = D; public: const T & V() const { return _##V; }
+#define ACC_D_P(T,V,D) private: T _##V = D; public: T V() const { return _##V; }
+#define ACC(T,V) private: T _##V; public: const T & V() const { return _##V; }
+
+class Datastore;
+
+class ProcData
+{
+public:
+  ProcData() {};
+  ProcData(Datastore *store,
+           int flags,
+           double min = std::numeric_limits<double>::quiet_NaN(),
+           double max = std::numeric_limits<double>::quiet_NaN(),
+           double depth = std::numeric_limits<double>::quiet_NaN(),
+           Interpolation interp = Interpolation::LINEAR,
+           double scale = 1.0
+          );
+  ACC_D(int, flags, 0)
+  ACC_D(double, min, std::numeric_limits<double>::quiet_NaN())
+  ACC_D(double, max, std::numeric_limits<double>::quiet_NaN())
+  ACC_D(double, depth, std::numeric_limits<double>::quiet_NaN())
+  ACC_D(double, scale, 1.0)
+  ACC_D(int, w, 0)
+  ACC_D(int, h, 0)
+  ACC_D(int, d, 0)
+  ACC_D(Interpolation, interpolation, Interpolation::LINEAR)
+  ACC_D_P(Datastore*, store, NULL)
+  ACC(cpath, intrinsics)
+};
+
+#undef ACC
+
 //if input != output then max defaults to input max type
 //flt/dbl output is scaled then to 0..1
 void proc_image(Datastore *store, Mat &in, Mat &out, int flags, const Idx & pos = Idx(), double min = std::numeric_limits<double>::quiet_NaN(), double max = std::numeric_limits<double>::quiet_NaN(), int scaledown = 0, double depth = std::numeric_limits<double>::quiet_NaN());
+
+void proc_image(Mat &in, Mat &out, const ProcData & proc, const Idx & pos = Idx());
 
 } //namespace clif
 
