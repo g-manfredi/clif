@@ -2,8 +2,11 @@ cmake_minimum_required (VERSION 2.8.8)
 project(clif)
 
 set(CLIF_MINOR_VERSION 1)
-set(CLIF_PATCH_VERSION 0)
-set(CLIF_VERSION ${FOOBAR_MAJOR_VERSION}.${FOOBAR_MINOR_VERSION}.${FOOBAR_PATCH_VERSION})
+set(CLIF_MAJOR_VERSION 0)
+set(CLIF_VERSION ${CLIF_MAJOR_VERSION}.${CLIF_MINOR_VERSION})
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
+include(ClifCMakePackageConfigHelpers)
 
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
   # using Clang
@@ -63,6 +66,54 @@ if (UCALIB_FOUND)
   add_definitions(-DCLIF_WITH_UCALIB)
 endif()
 
+find_package(Eigen3)
+if (EIGEN3_FOUND)
+  list(APPEND CLIF_PRIVATE_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR})
+  
+  set(CLIF_WITH_EIGEN3 true)
+  add_definitions(-DCLIF_WITH_EIGEN3)
+  message(found eigen!)
+endif()
+
+##dependend packages for libigl...
+find_package(glfw3 QUIET)
+if ("${GLFW3_INCLUDE_DIR}" STREQUAL "")
+  #wrong path was used in some glfw versions
+  set(glfw3_DIR /usr/lib/cmake/glfw/)
+endif()
+
+find_package(glfw3 QUIET)
+if (NOT ("${GLFW3_INCLUDE_DIR}" STREQUAL ""))
+  list(APPEND CLIF_PRIVATE_LINK_LIBRARIES ${GLFW3_LIBRARY})
+  list(APPEND CLIF_PRIVATE_INCLUDE_DIRS ${GLFW3_INCLUDE_DIR})
+  list(APPEND CLIF_PRIVATE_LIBRARY_DIRS ${GLFW3_LIBRARY_DIR})
+  
+  set(CLIF_WITH_GLFW3 true)
+  add_definitions(-DCLIF_WITH_GLFW3)
+endif()
+
+find_package(GLEW)
+if (GLEW_FOUND)
+  list(APPEND CLIF_PRIVATE_LINK_LIBRARIES ${GLEW_LIBRARIES})
+  list(APPEND CLIF_PRIVATE_INCLUDE_DIRS ${GLEW_INCLUDE_DIRS})
+  
+  message("glew lib: ${GLEW_LIBRARIES}")
+  
+  set(CLIF_WITH_GLEW true)
+  add_definitions(-DCLIF_WITH_GLEW)
+endif()
+
+if (CLIF_WITH_EIGEN3)
+  set(CLIF_WITH_LIBIGL true)
+  add_definitions(-DCLIF_WITH_LIBIGL)
+endif()
+
+if (CLIF_WITH_LIBIGL AND CLIF_WITH_GLFW3 AND CLIF_WITH_GLEW)  
+  set(CLIF_WITH_LIBIGL_VIEWER true)
+  add_definitions(-DCLIF_WITH_LIBIGL_VIEWER)
+  #add_definitions(-DIGL_VIEWER_WITH_NANOGUI)
+endif()
+
 find_package(OpenCV REQUIRED)
 list(APPEND CLIF_LINK_LIBRARIES ${OpenCV_LIBRARIES})
 list(APPEND CLIF_INCLUDE_DIRS ${OpenCV_INCLUDE_DIRS})
@@ -104,11 +155,6 @@ else()
   set(CLIF_BUILD_QT_REASON "[Qt5Widgets not found]")
 endif()
 
-#WARNING no find_package after this line! (would use our included find... macros!)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
-include(ClifCMakePackageConfigHelpers)
-
-
 if (NOT DEFINED FNMATCH_USE_INTERNAL)
   find_path(FNMATCH_INCLUDE_DIR NAMES fnmatch.h)
   if (NOT FNMATCH_INCLUDE_DIR)
@@ -127,7 +173,7 @@ list(APPEND CLIF_BUILD_COMPILE_DIRS external/cliini src/lib src/bin src/gui src/
 configure_file(config.h.in config.h)
 list(APPEND CLIF_HEADERS config.h)
 list(APPEND CLIF_FULLPATH_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/config.h) 
-list(APPEND CLIF_BUILD_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR})
+list(APPEND CLIF_BUILD_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR} external/libigl/include)
 
 foreach(dir ${CLIF_BUILD_COMPILE_DIRS})
   include_directories(${CLIF_BUILD_INCLUDE_DIRS} ${CLIF_INCLUDE_DIRS} ${CLIF_PRIVATE_INCLUDE_DIRS})
@@ -168,6 +214,35 @@ else()
   message("    ucalib calibration -   no")
 endif()
 
+if(CLIF_WITH_LIBIGL)
+  message("    mesh (libigl)      -   yes")
+else()
+  message("    mesh (libigl)      -   no")
+endif()
+
+if(CLIF_WITH_EIGEN3)
+  message("      eigen3           -   yes")
+else()
+  message("      eigen3           -   no")
+endif()
+
+if(CLIF_WITH_LIBIGL_VIEWER)
+  message("    mesh viewer        -   yes")
+else()
+  message("    mesh viewer        -   no")
+endif()
+
+if(CLIF_WITH_GLFW3)
+  message("      glfw3            -   yes")
+else()
+  message("      glfw3            -   no")
+endif()
+
+if(CLIF_WITH_GLFW3)
+  message("      GLEW             -   yes")
+else()
+  message("      GLEW             -   no")
+endif()
 
 message("")
 

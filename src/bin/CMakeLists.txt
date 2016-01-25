@@ -12,6 +12,10 @@ add_executable(clifinfo clifinfo.cpp)
 add_executable(clif_image_attribute clif_image_attribute.cpp)
 add_executable(resolve_test resolve_test.cpp)
 add_executable(h5reshape h5reshape.cpp)
+add_executable(h5skip h5skip.cpp)
+add_executable(h5resize h5resize.cpp)
+add_executable(h5remove h5remove.cpp)
+add_executable(clifvis clifvis.cpp)
 
 SET_TARGET_PROPERTIES(clif-bin PROPERTIES OUTPUT_NAME clif)
 
@@ -28,3 +32,8 @@ target_link_libraries(resolve_test clif)
 
 
 target_link_libraries(h5reshape clif)
+target_link_libraries(h5resize clif)
+target_link_libraries(h5skip clif)
+target_link_libraries(h5remove clif)
+
+target_link_libraries(clifvis clif ${CLIF_PRIVATE_LINK_LIBRARIES})

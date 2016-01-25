@@ -33,7 +33,13 @@ list(APPEND LIBCLIF_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/enumtypes.hpp)
 set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} PARENT_SCOPE)
 include_directories(${CLIF_BUILD_INCLUDE_DIRS})
 
-add_library(clif ${CLIF_BUILD_TYPE} clif.cpp subset3d.cpp calib.cpp hdf5.cpp attribute.cpp helpers.cpp datastore.cpp dataset.cpp core.cpp clif_cv.cpp enumtypes.cpp mat.cpp preproc.cpp tree_derived.cpp cam.cpp ${CMAKE_CURRENT_BINARY_DIR}/types.cpp)
+set(SOURCES clif.cpp subset3d.cpp calib.cpp hdf5.cpp attribute.cpp helpers.cpp datastore.cpp dataset.cpp core.cpp clif_cv.cpp enumtypes.cpp mat.cpp preproc.cpp tree_derived.cpp cam.cpp ${CMAKE_CURRENT_BINARY_DIR}/types.cpp)
+
+if (CLIF_WITH_LIBIGL)
+  list(APPEND SOURCES mesh.cpp)
+endif()
+
+add_library(clif ${CLIF_BUILD_TYPE} ${SOURCES})
 
 target_link_libraries(clif PUBLIC ${CLIF_LINK_LIBRARIES})
 target_link_libraries(clif PRIVATE ${CLIF_PRIVATE_LINK_LIBRARIES})
