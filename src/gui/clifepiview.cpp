@@ -164,6 +164,7 @@ void clifEpiView::dispChanged(int value)
 {
   //_disp = value*0.01;
   _disp = _3dslice->depth2disparity(value);
+  _disp = int(_disp);
   
   if (!_timer) {
     _timer = new QTimer(this);
