@@ -240,7 +240,7 @@ time_t ClifFile::mtime()
   struct stat st;
   stat(_path.string().c_str(), &st);
   
-  return st.st_mtim.tv_sec;
+  return st.st_mtime;
 }
 
 clif::Dataset* ClifFile::openDataset(int idx)

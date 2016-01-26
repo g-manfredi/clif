@@ -136,12 +136,12 @@ void Idx::names(std::initializer_list<std::string> l)
     name(i, l.begin()[i]);
 }
 
-void Idx::names(const std::vector<std::string> &l)
+/*void Idx::names(const std::vector<std::string> &l)
 {
   _names.resize(l.size());
   for(int i=0;i<l.size();i++)
     name(i, l[i]);
-}
+}*/
 
 const std::vector<std::string>& Idx::names() const
 {
@@ -774,8 +774,17 @@ cv::Mat cvMat(const Mat &m)
   int type = CV_32S;
   if (m.type() != BaseType::UINT32)
     type = BaseType2CvDepth(m.type());
+
+  bool continuous = true;
+  for (int i=1;i<m.size();i++)
+    if (m.step()[i] != m.step()[i - 1] * m[i-1])
+      continuous = false;
   
-  tmp = cv::Mat(m.size(), idx, type, m.data(), step);
+  //FIXME opencv3 hack, else abort due to !
+  if (continuous)
+    tmp = cv::Mat(m.size(), idx, type, m.data());
+  else
+    tmp = cv::Mat(m.size(), idx, type, m.data(), step);
   
   if (m.type() == BaseType::UINT32)
   {

@@ -84,7 +84,7 @@ public:
   void step(int dim, const Idx& max);
   void step(const std::string &name, const Idx& max);
   void names(std::initializer_list<std::string> l);
-  void names(const std::vector<std::string> &l);
+  //void names(const std::vector<std::string> &l);
   const std::vector<std::string>& names() const;
   
   void name(int i, const std::string& name);
