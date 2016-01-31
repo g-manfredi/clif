@@ -233,12 +233,18 @@ private:
   clifScaledImageView *_view = NULL;
   QImage *_qimg = NULL;
   Datastore *_store = NULL;
-  int _curr_idx = -1; //current slider dimension
+  
   int _curr_flags = 0; 
+
+  /* this variable stores the current dimension, being updated by a slider*/
+  int _curr_idx = -1; 
+
+  /* number of dimenisions of the dataset */
   int _dims;
-  //int _show_idx = 0;
-  int * _show_idx = NULL; //values to show
-  //std::vector<int> _show_idx(_dims,0);
+
+  /*this vector stores the current values for all dimensions */
+  int * _show_idx = NULL; 
+
   QTimer *_timer = NULL;
   QComboBox *_sel = NULL;
   bool _rendering = false;

@@ -39,14 +39,15 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   _view = new clifScaledImageView(this);
   _vbox->addWidget(_view);
 
-  ///////////////// INDICES ////////////////////////
+  ///////////////// INITIALIZE ////////////////////////
 
   _dims = store->dims();
-  //_show_idx = new std::vector( [_dims];
-  _show_idx = new int[_dims];
+  _show_idx = new int[_dims]; 
   for (int i=0; i<_dims; i++) {
     _show_idx[i]=0;
   }
+
+  //TODO show for debug
   qDebug() <<"_show_idx";
   for (int i=0; i<_dims; i++) {
     qDebug() <<_show_idx[i];
@@ -98,7 +99,7 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   _sel1->addItems(*list);
   hbox->addWidget(_sel1);
   _sel1->setCurrentIndex(2);
-  
+
   //_slider = new Slider_dim(Qt::Horizontal, this);
   _slider = new Slider_dim(Qt::Horizontal);
   _slider->setTickInterval(1);
@@ -142,14 +143,14 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   
   _qimg = new QImage();
   
-  //_show_idx = 0;//TODO Why?
+  //_show_idx = 0;//TODO 
   load_img();
   
   connect(_slider, SIGNAL(valueChanged(int)), this, SLOT(queue_sel_img(int)));//TODO
-  connect(_sel, SIGNAL(currentIndexChanged(int)), this, SLOT(queue_load_img()));//TODO: better reset to 0 as above
+  connect(_sel, SIGNAL(currentIndexChanged(int)), this, SLOT(queue_load_img()));
   
-  //////////////////// DIMENSIONS /////////////////
-  /***************** 1 ***************************/
+  //////////////////// DIMENSIONS TO SHOW: /////////////////
+  /***************** 1 ************************************/
 
   w = new QWidget(this);
   _vbox->addWidget(w);
@@ -162,7 +163,7 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   hbox->addWidget(_sel2);
   _sel2->setCurrentIndex(0);
 
-  /***************** 2 ***************************/
+  /***************** 2 *************************************/
 
   QComboBox * _sel3;
   _sel3 = new QComboBox(this);
@@ -170,9 +171,9 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   hbox->addWidget(_sel3);
   _sel3->setCurrentIndex(1);
 
-  /////////////////// EXTENDED MODE //////////////////////
-
+  /////////////////// EXTENDED MODE: //////////////////////
   
+  /*****************CHECKBOX *****************************/
   w = new QWidget(this);
   _vbox->addWidget(w);
   hbox = new QHBoxLayout(this);
@@ -193,7 +194,7 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
 
   
   
-  
+  /****************SELECTIONS AND SLIDERS FOR OTHER DIMENSIONS (EXTENDED MODE)***/
   
     for (int i=0;i<store->dims()-3;i++) { 
     //for (int i=0;i<custom_dims-3;i++) { 
@@ -209,11 +210,11 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
     hbox->addWidget(_sel_ext);
     _sel_ext->setCurrentIndex(i);
     //_sel_ext->setEnabled(false); 
-    _sel_ext->setID(i); //TODO
+    _sel_ext->setID(i); 
 
     connect(list_ext_obj, SIGNAL(list_changed(QStringList)), _sel_ext, SLOT(clear()));
     connect(list_ext_obj, SIGNAL(list_changed(QStringList)), _sel_ext, SLOT(addItems_slot(QStringList)));
-    connect(list_ext_obj, SIGNAL(list_changed(QStringList)), this, SLOT(resetIdx()));//TODO
+    connect(list_ext_obj, SIGNAL(list_changed(QStringList)), this, SLOT(resetIdx()));
 
     _slider = new Slider_dim(Qt::Horizontal, this);
     _slider->setTickInterval(1);
@@ -222,8 +223,9 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
     _slider->setProperty("Dimension",(list_ext_obj->getIndices())[i]);
     connect(_slider, SIGNAL(valueChanged(int)), indicesHandler, SLOT(changeEntry(int)));
     connect(_sel_ext, SIGNAL(currentTextChanged(QString)), list_ext_obj, SLOT(getIndex(QString)));//TODO
+    connect(_sel_ext, SIGNAL(currentIndexChanged(int)), this, SLOT(queue_load_img()));//TODO !!
     connect(list_ext_obj, SIGNAL(setIndex(int)), _slider, SLOT(update(int)));//TODO
-    //connect(_slider, SIGNAL(valueChanged(double)), this, SLOT(queue_load_img()));
+    //connect(_slider, SIGNAL(valueChanged(double)), this, SLOT(queue_load_img()));//TODO
     connect(_slider, SIGNAL(valueChanged(int)), this, SLOT(queue_sel_img(int)));
     hbox->addWidget(_slider);
 
@@ -244,11 +246,12 @@ void clifStoreView::queue_sel_img(int val)
 
   if (val >= 0 ) {
     int dim = sender()->property("Dimension").toInt();
-    //qDebug() << dim;
     _show_idx[dim] = val;
     _curr_idx = dim;
-    //qDebug() << "_show_idx";
-    qDebug() <<"_show_idx";
+    //TODO show for debug
+    qDebug() <<"_curr_idx:";
+    qDebug() <<_curr_idx;
+    qDebug() <<"_show_idx:";
     for (int i=0; i<_dims; i++) {
     qDebug() <<_show_idx[i];
     }
