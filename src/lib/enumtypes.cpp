@@ -107,8 +107,6 @@ public:
   }
 };
 
-template<class FROM> struct _is_convertible_to_float : public std::is_convertible<FROM,float> {};
-
 double BaseType_max(BaseType type)
 {
   if (type == BaseType::FLOAT || type == BaseType::DOUBLE)

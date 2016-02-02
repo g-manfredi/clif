@@ -23,10 +23,10 @@ void Subset3d::create(Dataset *data, cpath extr_group, const ProcData & proc)
   _data = data;
   _proc = proc;
   
-  if (extr_group.size())
-    _root = data->resolve(extr_group);
-  else
+  if (extr_group.empty())
     _root = _data->getSubGroup("calibration/extrinsics", extr_group);
+  else
+    _root = data->resolve(extr_group);
   
   printf("estrinsics group: %s\n", _root.c_str());
   
