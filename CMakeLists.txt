@@ -104,8 +104,8 @@ if (GLEW_FOUND)
 endif()
 
 if (CLIF_WITH_EIGEN3)
-  set(CLIF_WITH_LIBIGL true)
-  add_definitions(-DCLIF_WITH_LIBIGL)
+  #set(CLIF_WITH_LIBIGL true)
+  #add_definitions(-DCLIF_WITH_LIBIGL)
 endif()
 
 if (CLIF_WITH_LIBIGL AND CLIF_WITH_GLFW3 AND CLIF_WITH_GLEW)  
