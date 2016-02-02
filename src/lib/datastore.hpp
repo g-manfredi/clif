@@ -104,8 +104,8 @@ public:
     void writeImage(const std::vector<int> &idx, cv::Mat *img);
     void appendImage(cv::Mat *img);
     
-    void readImage(const Idx& idx, cv::Mat *img, int flags = 0, double depth = std::numeric_limits<float>::quiet_NaN(), double min = std::numeric_limits<float>::quiet_NaN(), double max = std::numeric_limits<float>::quiet_NaN());
-    void readImage(const ProcData &proc, const Idx& idx, cv::Mat *img);
+    void readImage(const Idx& idx, cv::Mat *img, int flags, double depth = std::numeric_limits<float>::quiet_NaN(), double min = std::numeric_limits<float>::quiet_NaN(), double max = std::numeric_limits<float>::quiet_NaN());
+    void readImage(const Idx& idx, cv::Mat *img, const ProcData &proc = ProcData());
     void readChannel(const Idx& idx, cv::Mat *channel, int flags = 0);
     
     void setDims(int dims);
@@ -128,7 +128,6 @@ public:
     const std::vector<int>& extent() const;
     void fullsize(std::vector<int> &size) const;
     
-    int imgChannels(int flags);
     int imgCount();
     
     void flush();

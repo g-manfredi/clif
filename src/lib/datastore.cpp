@@ -878,24 +878,26 @@ DepthDist* Datastore::undist(double depth)
     return _undists[depth];
 }
 
-void Datastore::readImage(const ProcData &proc, const Idx& idx, cv::Mat *img)
+void Datastore::readImage(const Idx& idx, cv::Mat *img, const ProcData &proc)
 {  
-  //FIXME
-  int scale = 0;
-  
   cpath cache_file;
   bool use_disk_cache = false;
+  
+  ProcData act_proc = proc;
+  
+  if (act_proc.store() != this)
+    act_proc.set_store(this);
 
-  double depth = proc.depth();
+  double depth = act_proc.depth();
   
   if (isnan(depth))
     depth = 0.0;
   
   //FIXME this will create undist even if img is cached!
-  if (proc.flags() & UNDISTORT) {
+  if (act_proc.flags() & UNDISTORT) {
     
     //FIXME the whole thing is ugly! (set dist type from store=?!?) - is also tree-derived...
-    TD_DistType *dtype = dynamic_cast<TD_DistType*>(dataset()->tree_derive(TD_DistType(proc.intrinsics())));
+    TD_DistType *dtype = dynamic_cast<TD_DistType*>(dataset()->tree_derive(TD_DistType(act_proc.intrinsics())));
     if (dtype && dtype->type() != DistModel::UCALIB)
       depth = 0.0;
   }
@@ -903,7 +905,7 @@ void Datastore::readImage(const ProcData &proc, const Idx& idx, cv::Mat *img)
     depth = 0.0;
   
   //FIXME maybe integrate ProcData directly?
-  Read_Options opts(idx, proc.flags(), proc.depth(), proc.min(), proc.max(), scale, CACHE_CONT_MAT_IMG);
+  Read_Options opts(idx, act_proc.flags(), act_proc.depth(), act_proc.min(), act_proc.max(), act_proc.scale(), CACHE_CONT_MAT_IMG);
   
   
   clif::Mat tmp;
@@ -916,23 +918,21 @@ void Datastore::readImage(const ProcData &proc, const Idx& idx, cv::Mat *img)
   
   //printf("read idx %d", idx[3]);
   
-  assert((proc.flags() & FORCE_REUSE) == 0);
+  assert((act_proc.flags() & FORCE_REUSE) == 0);
   
-  if (((proc.flags() & NO_DISK_CACHE) == 0) && _get_cache_path(cache_file)) {
+  if (((act_proc.flags() & NO_DISK_CACHE) == 0) && _get_cache_path(cache_file)) {
     use_disk_cache = true;
-    cache_file /= _cache_filename(this, idx[3], proc.flags(), scale, depth);
+    cache_file /= _cache_filename(this, idx[3], act_proc.flags(), act_proc.scale(), depth);
     
     Idx _fixme_storage_size(3);
     BaseType _fixme_storage_type = type();
     
-    for(int i=0;i<3;i++)
-      _fixme_storage_size[i] = _basesize[i];
+    _fixme_storage_size[0] = act_proc.w();
+    _fixme_storage_size[1] = act_proc.h();
+    _fixme_storage_size[2] = act_proc.d();
     
-    if (proc.flags() & DEMOSAIC)
-      _fixme_storage_size[2] = 3;
-    if (proc.flags() & Improc::CVT_GRAY)
-      _fixme_storage_size[2] = 1;
-    if (proc.flags() & Improc::CVT_8U)
+    //FIXME
+    if (act_proc.flags() & Improc::CVT_8U)
       _fixme_storage_type = BaseType::UINT8;
       
     //FIXME only create, don't allocate - calc in read!
@@ -974,7 +974,7 @@ void Datastore::readImage(const ProcData &proc, const Idx& idx, cv::Mat *img)
 void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth, double min, double max)
 {
   ProcData proc(this, flags, min, max, depth);
-  readImage(proc, idx, img);
+  readImage(idx, img, proc);
 }
 
 void Datastore::setDims(int dims)
@@ -1084,19 +1084,6 @@ int Datastore::imgCount()
     count *= _extent[i];
   
   return count;
-}
-// 
-//when intepreting as image store
-int Datastore::imgChannels(int flags)
-{
-  
-  if (flags & UNDISTORT)
-    flags |= DEMOSAIC;
-  
-  if (flags & DEMOSAIC && _org == DataOrg::BAYER_2x2)
-    return 3;
-  else
-    return _extent[2];
 }
 
 const std::vector<int>& Datastore::extent() const

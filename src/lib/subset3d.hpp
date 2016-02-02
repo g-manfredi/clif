@@ -15,40 +15,52 @@ class Subset3d {
 public:
   Subset3d() {};
   //takes the line'nth line definition found in calibration.extrinsincs
-  Subset3d(clif::Dataset *data, cpath extr_group = cpath());
-  void create(clif::Dataset *data, cpath extr_group = cpath());
+  Subset3d(clif::Dataset *data, cpath extr_group = cpath(), const ProcData & proc = ProcData());
+  void create(clif::Dataset *data, cpath extr_group = cpath(), const ProcData & proc = ProcData());
   
-  void readEPI(cv::Mat *epi, int line, double disparity, Unit unit = Unit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0);
-  void unshift_epi(cv::Mat *epi, cv::Mat *slice, int line, double disparity, Unit unit = Unit::PIXELS, int flags = 0, Interpolation interp = Interpolation::LINEAR, float scale = 1.0);
+  void readEPI(cv::Mat *epi, int line, double disparity, Unit unit = Unit::PIXELS);
+  void unshift_epi(cv::Mat *epi, cv::Mat *slice, int line, double disparity, Unit unit = Unit::PIXELS);
   
-  double depth2disparity(double depth, double scale = 1.0)
+  inline double depth2disparity(double depth)
   {
-    return f[0]*step_length/depth/scale;
+    return f()*step_length/depth;
   }
   
-  double disparity2depth(double disparity, double scale = 1.0)
+  double disparity2depth(double disparity)
   {
-    return f[0]*step_length/disparity*scale;
+    return f()*step_length/disparity;
   }
   
   int EPICount();
   int EPIWidth();
   int EPIHeight();
+  int EPIDepth();
   
   ExtrType type();
   
   clif::Dataset *dataset() { return _data; }
   
-  double f[2];
+  inline double f(int dim = 0)
+  {
+    return _proc.scale(_f[dim]);
+  }
+  
+  double _f[2];
   double step_length;
+  
+  cpath extrinsics_group();
   //double world_to_camera[6];
 private:
   clif::Dataset *_data = NULL;
   clif::Datastore *_store = NULL;
   std::vector<std::pair<int,int>> indizes;
   
+  ProcData _proc;
+  
   //TODO more generic model!
   ExtrType _type;
+  
+  cpath _root; //extrinsics group
 };
 
 }

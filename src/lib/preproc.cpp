@@ -9,31 +9,77 @@
 
 namespace clif {
   
-ProcData::ProcData(Datastore *store, int flags, double min, double max, double depth, Interpolation interp, double scale)
-: _store(store), _flags(flags), _min(min), _max(max), _depth(depth), _interpolation(interp), _scale(scale)
-{
-  assert(_store);
-  
-  if (_flags & CVT_GRAY)
-  flags |= DEMOSAIC;
-  
-  if (_flags & UNDISTORT) 
-    _flags |= DEMOSAIC;
-  
-  if ((_flags & DEMOSAIC) && _store->org() != DataOrg::BAYER_2x2)
-    _flags &= ~DEMOSAIC;
+ProcData::ProcData(Datastore *store, int flags, double min, double max, double depth, Interpolation interp, float scale, int every)
+: _flags(flags), _min(min), _max(max), _depth(depth), _interpolation(interp), _scale(scale), _every(every)
+{  
+  if (store)
+    set_store(store);
+}
 
-  if (!isnan(_min) || !isnan(_max)) {
-    _flags |= NO_MEM_CACHE;
-    _flags |= NO_DISK_CACHE;
-  }
+void ProcData::set_store(Datastore *store)
+{
+  _store = store;
   
-  _w = store->extent()[0];
-  _h = store->extent()[1];
-  _d = store->imgChannels(flags);
+  _w = _store->extent()[0];
+  _h = _store->extent()[1];
+  _d = _store->extent()[2];
   
   //FIXME use path from datastore!
-  _intrinsics = store->dataset()->getSubGroup("calibration/intrinsics");
+  _intrinsics = _store->dataset()->getSubGroup("calibration/intrinsics");
+}
+
+Datastore* ProcData::store() const
+{
+  return _store;
+}
+
+void ProcData::set_flags(int flags)
+{
+  _flags = flags;
+}
+
+int ProcData::flags() const
+{
+  int flags = _flags;
+  
+  if (flags & CVT_GRAY)
+    flags |= DEMOSAIC;
+  
+  if (flags & UNDISTORT) 
+    flags |= DEMOSAIC;
+  
+  if (_store && (flags & DEMOSAIC) && _store->org() != DataOrg::BAYER_2x2)
+    flags &= ~DEMOSAIC;
+
+  if (!isnan(_min) || !isnan(_max)) {
+    flags |= NO_MEM_CACHE;
+    flags |= NO_DISK_CACHE;
+  }
+  
+  return flags;
+}
+
+int ProcData::w() const
+{
+  return scale(_w);
+}
+
+int ProcData::h() const
+{
+  return scale(_h);
+}
+
+int ProcData::d() const
+{
+  int channels = _d;
+  
+  if (flags() & DEMOSAIC)
+    channels = 3;
+  
+  if (flags() & CVT_GRAY)
+    channels = 1;
+    
+  return channels;
 }
   
 //process from channel(s) to image - input should always be 3d?
@@ -215,6 +261,10 @@ void proc_image(Mat &in, Mat &out, const ProcData & proc, const Idx & pos)
   flags &= ~NO_MEM_CACHE;
   flags &= ~NO_DISK_CACHE;
   
+  //add placeholder for image scaling
+  if (proc.scale() != 1.0)
+    flags |= Improc::_SCALE;
+  
   bool sub = false;
   bool scale = false;
   double scale_val;
@@ -261,7 +311,7 @@ void proc_image(Mat &in, Mat &out, const ProcData & proc, const Idx & pos)
   
   if (_handle_preproc(Improc::CVT_GRAY, curr_in, curr_out, out, flags)) {
     cv::Mat accumulate;
-    
+        
     //FIXME whats about images in double format?
     cvMat(curr_in.bind(2,0)).convertTo(accumulate, CV_32F);
     for(int c=1;c<curr_in[2];c++)
@@ -322,6 +372,20 @@ void proc_image(Mat &in, Mat &out, const ProcData & proc, const Idx & pos)
     }
   }
   
+  if (_handle_preproc(Improc::_SCALE, curr_in, curr_out, out, flags)) {
+    float sigma = 0.25/proc.scale();
+    int ks = int(sigma)*6+1;
+    cv::Mat tmp;
+    
+    //FIXME sync size with opencv resize sizing (also in other places!)
+    curr_out.create(curr_in.type(), {proc.scale(curr_in[0]), proc.scale(curr_in[1]), curr_in[2]});
+
+    for(int c=0;c<curr_in[2];c++) {
+      cv::GaussianBlur(cvMat(curr_in.bind(2,c)), tmp, cv::Size(ks,ks), sigma, sigma);
+      cv::resize (tmp, cvMat(curr_out.bind(2,c)), cv::Size(0,0), proc.scale(), proc.scale(), cv::INTER_NEAREST);
+    }
+  }
+   
   out = curr_out;
   
   if (flags) {
