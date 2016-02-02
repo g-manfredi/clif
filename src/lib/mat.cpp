@@ -49,6 +49,8 @@ int DimSpec::get(const Idx *ref) const
 {
   if (_dim == INT_MIN)
     return ref->dim(_name)+_offset;
+  else if (_dim < 0)
+    return ref->size() + _dim + _offset;
   else
     return _dim+_offset;
 }

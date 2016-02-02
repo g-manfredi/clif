@@ -180,18 +180,18 @@ void Datastore::read(clif::Mat &m, const ProcData &proc_)
   
   //FIXME for now
   assert(!_memonly);
-  assert(dims() == 4);
-
-  printf("%d %d %d %d\n", proc.w(), proc.h(), proc.d(), extent()[3]);
+  assert(dims() >= 4);
   
-  m.create(proc.type(), {proc.w(), proc.h(), proc.d(), extent()[3]});
+  m.create(proc.type(), {proc.w(), proc.h(), proc.d(), Idx(extent()).r(3,-1)});
   
-  for(auto pos : Idx_It_Dim(m, 3)) {
-    cv::Mat tmp = cvMat(m.bind(3,pos[3]));
+  //FIXME solve copy in readImage and preproc!
+  for(auto pos : Idx_It_Dims(m, 3, -1)) {
+    cv::Mat tmp;
     readImage(pos, &tmp, proc);
-    cv::Mat tmp2;
-    clifMat2cv(&tmp, &tmp2);
-    cv::imwrite("debug.tif", tmp2);
+    Mat bound = m;
+    for(int b=m.size()-1;b>=3;b--)
+      bound = bound.bind(b, pos[b]);
+    tmp.copyTo(cvMat(bound));
   }
 }
 

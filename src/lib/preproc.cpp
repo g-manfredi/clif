@@ -308,10 +308,13 @@ void proc_image(Mat &in, Mat &out, const ProcData & proc, const Idx & pos)
   assert(in.size() == 3);
   
   if (_handle_preproc(Improc::DEMOSAIC, curr_in, curr_out, out, flags)) {
+    curr_out.create(curr_in.type(), {curr_in.r(0,1),3});
     cv::Mat cv_out;    
     cv::cvtColor(cvMat(curr_in.bind(2,0)), cv_out, order2cv_conf_flag(store->order()));
     
-    curr_out = Mat3d(cv_out);
+    //FIXME copy!
+    //curr_out = Mat3d(cv_out);
+    cvMat(Mat3d(cv_out)).copyTo(cvMat(curr_out));
   }
   else
       
