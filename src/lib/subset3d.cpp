@@ -23,20 +23,26 @@ void Subset3d::create(Dataset *data, cpath extr_group, const ProcData & proc)
   _data = data;
   _proc = proc;
   
-  cpath root = _data->getSubGroup("calibration/extrinsics", extr_group);
-  _store = _data->getStore(root/"data");
+  if (extr_group.size())
+    _root = data->resolve(extr_group);
+  else
+    _root = _data->getSubGroup("calibration/extrinsics", extr_group);
+  
+  printf("estrinsics group: %s\n", _root.c_str());
+  
+  _store = _data->getStore(_root/"data");
   
   _proc.set_flags(_proc.flags() | UNDISTORT);
   _proc.set_store(_store);
   
-  _data->getEnum((root/"type"), _type);
+  _data->getEnum((_root/"type"), _type);
   
   //_data->get(root/"world_to_camera", world_to_camera, 6);
     
   if (_type == ExtrType::LINE) {
     double line_step[3];
     
-    _data->get(root/"/line_step", line_step, 3);
+    _data->get(_root/"/line_step", line_step, 3);
     
     //TODO for now we only support horizontal lines!
     assert(line_step[0] != 0.0);
@@ -47,7 +53,7 @@ void Subset3d::create(Dataset *data, cpath extr_group, const ProcData & proc)
   }
   else if (_type == ExtrType::CIRCLE)
   {
-    _data->get(root/"step_angle", step_length);
+    _data->get(_root/"step_angle", step_length);
   }
   else
   {
@@ -440,6 +446,11 @@ int Subset3d::EPIHeight()
 {
   //FIXME use extrinsics group size! (for cross type...)  
   return _store->clif::Datastore::imgCount();
+}
+
+cpath Subset3d::extrinsics_group()
+{
+  return _root;
 }
 
 }

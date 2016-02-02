@@ -47,6 +47,8 @@ public:
   
   double _f[2];
   double step_length;
+  
+  cpath extrinsics_group();
   //double world_to_camera[6];
 private:
   clif::Dataset *_data = NULL;
@@ -57,6 +59,8 @@ private:
   
   //TODO more generic model!
   ExtrType _type;
+  
+  cpath _root; //extrinsics group
 };
 
 }

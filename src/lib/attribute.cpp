@@ -95,11 +95,12 @@ path Attributes::resolve(path name)
     a = _search_attr(attrs, partial.generic_string());
     if (a) {
       if (a->link().size()) {
+        
         path rest(a->link());
         ++it;
         //everything matched - this is a link!
         if (it == name.end())
-          return name.c_str();
+          return a->link();
           
         for(;it!=name.end();++it)
           rest /= *it;
