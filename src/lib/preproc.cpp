@@ -25,7 +25,10 @@ void ProcData::set_store(Datastore *store)
   _d = _store->extent()[2];
   
   //FIXME use path from datastore!
-  _intrinsics = _store->dataset()->getSubGroup("calibration/intrinsics");
+  try {
+    _intrinsics = _store->dataset()->getSubGroup("calibration/intrinsics");
+  }
+  catch (std::runtime_error) {}
 }
 
 Datastore* ProcData::store() const
@@ -36,6 +39,14 @@ Datastore* ProcData::store() const
 void ProcData::set_flags(int flags)
 {
   _flags = flags;
+}
+
+BaseType ProcData::type()
+{
+  if (flags() & CVT_8U)
+    return BaseType::UINT8;
+  
+  return _store->type();
 }
 
 int ProcData::flags() const

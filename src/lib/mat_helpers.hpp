@@ -5,8 +5,7 @@
 
 namespace clif {
   
-
-void get_intensities(const Mat& m, Mat& intensities, int x, int y, float disp);
+void get_intensities(Mat& m, Mat& intensities, int x, int y, float disp);
 
 }
 

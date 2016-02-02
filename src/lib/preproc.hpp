@@ -63,6 +63,8 @@ public:
   int h() const;
   int d() const;
   
+  BaseType type();
+  
   inline int scale(int val) const
   {
     return cvRound(val*_scale);

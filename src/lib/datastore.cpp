@@ -12,6 +12,9 @@
 #define CACHE_CONT_MAT_IMG 2
 
 #include "opencv2/imgproc/imgproc.hpp"
+
+#include "opencv2/highgui/highgui.hpp"
+
 namespace clif {
 
 typedef unsigned int uint;
@@ -165,6 +168,30 @@ void Datastore::read(clif::Mat &m)
   else {
     assert(_dataset);
     h5_dataset_read(_dataset->f(), fullPath(), m);
+  }
+}
+
+//needs at least image dimensions
+void Datastore::read(clif::Mat &m, const ProcData &proc_)
+{
+  ProcData proc = proc_;
+  proc.set_flags(proc.flags() | NO_DISK_CACHE | NO_MEM_CACHE);
+  proc.set_store(this);
+  
+  //FIXME for now
+  assert(!_memonly);
+  assert(dims() == 4);
+
+  printf("%d %d %d %d\n", proc.w(), proc.h(), proc.d(), extent()[3]);
+  
+  m.create(proc.type(), {proc.w(), proc.h(), proc.d(), extent()[3]});
+  
+  for(auto pos : Idx_It_Dim(m, 3)) {
+    cv::Mat tmp = cvMat(m.bind(3,pos[3]));
+    readImage(pos, &tmp, proc);
+    cv::Mat tmp2;
+    clifMat2cv(&tmp, &tmp2);
+    cv::imwrite("debug.tif", tmp2);
   }
 }
 
