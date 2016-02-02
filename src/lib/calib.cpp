@@ -55,7 +55,10 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
   
   int readflags = Improc::CVT_8U | Improc::CVT_GRAY | Improc::DEMOSAIC;
   
-  int channels = imgs->imgChannels(readflags);
+  //FIXME integrate ProcData!
+  ProcData proc(imgs, readflags);
+  
+  int channels = proc.d();
   
   Idx map_size(imgs->dims() - 2);
   map_size[0] = channels;
@@ -215,7 +218,7 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
             cv::merge(debug_imgs, 3, debug_img);
       }
       else {
-        cv::Mat debug_imgs[imgs->imgChannels(readflags)];
+        cv::Mat debug_imgs[proc.d()];
         
         //grayscale rough detection
         //FIXME move this up - mmapped reallocation not possible...
@@ -261,10 +264,10 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
         }
         
         if (debug_store) {
-          if (imgs->imgChannels(readflags) == 1)
+          if (proc.d() == 1)
             debug_img = debug_imgs[0];
           else
-            cv::merge(debug_imgs, imgs->imgChannels(readflags), debug_img);
+            cv::merge(debug_imgs, proc.d(), debug_img);
         }
       }
       

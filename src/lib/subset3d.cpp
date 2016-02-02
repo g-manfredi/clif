@@ -13,17 +13,21 @@ using namespace std;
 using namespace clif;
 using namespace cv;
 
-Subset3d::Subset3d(Dataset *data, cpath extr_group)
+Subset3d::Subset3d(Dataset *data, cpath extr_group, const ProcData & proc)
 {
-  create(data, extr_group);
+  create(data, extr_group, proc);
 }
 
-void Subset3d::create(Dataset *data, cpath extr_group)
+void Subset3d::create(Dataset *data, cpath extr_group, const ProcData & proc)
 {
   _data = data;
+  _proc = proc;
   
   cpath root = _data->getSubGroup("calibration/extrinsics", extr_group);
   _store = _data->getStore(root/"data");
+  
+  _proc.set_flags(_proc.flags() | UNDISTORT);
+  _proc.set_store(_store);
   
   _data->getEnum((root/"type"), _type);
   
@@ -51,7 +55,7 @@ void Subset3d::create(Dataset *data, cpath extr_group)
   }
   
   //TODO which extrinsics to select!
-  _data->get(_data->getSubGroup("calibration/intrinsics")/"/projection", f, 2);
+  _data->get(_data->getSubGroup("calibration/intrinsics")/"/projection", _f, 2);
 }
 
 ExtrType Subset3d::type()
@@ -225,38 +229,30 @@ template<typename T> void warp_1d_nearest(Mat in, Mat out, int offset)
 }*/
 
 
-void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int flags, Interpolation interp, float scale)
+void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit)
 {
-  int w, h;
+  int w, h, channels;
   double step, depth;
   Idx idx(_store->dims());
   
+  Interpolation interp = _proc.interpolation();
   
   if (unit == Unit::PIXELS) {
     step = disparity;
     depth = disparity2depth(disparity);
   }
   else {
-    step = depth2disparity(disparity, scale); //f[0]*step_length/disparity*scale;
+    step = depth2disparity(disparity); //f[0]*step_length/disparity*scale;
     depth = disparity;
   }
   
-  flags |= UNDISTORT;
-  
-  
-  ProcData proc(_store,
-                flags, 
-                std::numeric_limits<double>::quiet_NaN(),
-                std::numeric_limits<double>::quiet_NaN(),
-                depth,
-                interp,
-                scale);
-
+  ProcData proc_curr = _proc;
+  proc_curr.set_depth(depth);
   
   bool refocus = true;
   
-  //FIXME use path from datastore?
-  cpath intrinsics = _data->getSubGroup("calibration/intrinsics");
+  //FIXME use info from procdata?
+  cpath intrinsics = proc_curr.intrinsics();
   TD_DistType *dtype = dynamic_cast<TD_DistType*>(_data->tree_derive(TD_DistType(intrinsics)));
   if (dtype && dtype->includesRectification())
     refocus = false;
@@ -269,15 +265,16 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
   idx[3] = 0;
   //FIXME scale
 #pragma omp critical
-  _store->readImage(idx, &tmp, proc.flags(), depth);
-  w = tmp.size[2];
-  h = _store->clif::Datastore::imgCount();
-  
+  _store->readImage(idx, &tmp, proc_curr);
+  w = proc_curr.w();
+  h = EPIHeight();
+  channels = proc_curr.d();
+    
   int epi_size[3];
   epi_size[2] = w;
   epi_size[1] = h;
-  epi_size[0] = clifMat_channels(tmp);
-  
+  epi_size[0] = channels;
+    
   epi->create(3, epi_size, tmp.type());
   
   //TODO fix linear interpolation to reset mat by itself
@@ -295,9 +292,9 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
     cv::Mat img;
     idx_l[3] = i;
 #pragma omp critical
-    _store->readImage(idx_l, &img, proc.flags(), depth);
+    _store->readImage(idx_l, &img, proc_curr);
     
-    for(int c=0;c<_store->imgChannels(proc.flags());c++) {
+    for(int c=0;c<channels;c++) {
       cv::Mat channel = clifMat_channel(img, c);
       cv::Mat epi_ch = clifMat_channel(*epi, c);
 
@@ -334,20 +331,25 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit, int 
 }
 
 
-void Subset3d::unshift_epi(cv::Mat *epi, cv::Mat *slice, int line, double disparity, Unit unit, int flags, Interpolation interp, float scale)
+void Subset3d::unshift_epi(cv::Mat *epi, cv::Mat *slice, int line, double disparity, Unit unit)
 {
   int w, h, channels;
   double step, depth;
   Idx idx(_store->dims());
+  
+  Interpolation interp = _proc.interpolation();
   
   if (unit == Unit::PIXELS) {
     step = disparity;
     depth = disparity2depth(disparity);
   }
   else {
-    step = depth2disparity(disparity, scale); //f[0]*step_length/disparity*scale;
+    step = depth2disparity(disparity); //f[0]*step_length/disparity*scale;
     depth = disparity;
   }
+  
+  ProcData proc_curr = _proc;
+  proc_curr.set_depth(depth);
   
   bool refocus = true;
   
@@ -364,9 +366,9 @@ void Subset3d::unshift_epi(cv::Mat *epi, cv::Mat *slice, int line, double dispar
   if (abs(i_step - step) < 1.0/512.0)
     interp = Interpolation::NEAREST;
   
-  w = epi->size[2];
-  h = epi->size[1];
-  channels = epi->size[0];
+  w = proc_curr.w();
+  h = EPIHeight();
+  channels = proc_curr.d();
   
   int epi_size[3];
   epi_size[2] = w;
@@ -381,9 +383,9 @@ void Subset3d::unshift_epi(cv::Mat *epi, cv::Mat *slice, int line, double dispar
 #pragma omp critical
   if (!cv_t_count)
     cv::setNumThreads(0);
-#pragma omp parallel for schedule(dynamic)
+//#pragma omp parallel for schedule(dynamic)
   for(int i=0;i<h;i++) {
-    for(int c=0;c<_store->imgChannels(flags);c++) {
+    for(int c=0;c<channels;c++) {
       cv::Mat slice_ch = clifMat_channel(*slice, c);
       cv::Mat epi_ch = clifMat_channel(*epi, c);
             
@@ -420,13 +422,18 @@ int Subset3d::EPICount()
 {
   //FIXME use extrinsics group size! (for cross type...)  
   //FIXME depends on rotation!
-  return _store->extent()[1];
+  return _proc.h();
+}
+
+int Subset3d::EPIDepth()
+{
+  return _proc.d();
 }
 
 int Subset3d::EPIWidth()
 {
   //FIXME depends on rotation!
-  return _store->extent()[0];
+  return _proc.w();
 }
 
 int Subset3d::EPIHeight()

@@ -6,6 +6,8 @@
 #include <limits>
 #include <functional>
 
+#include <opencv2/core/core.hpp>
+
 namespace clif {
   
 class Datastore;
@@ -20,12 +22,13 @@ enum Improc {
   NO_DISK_CACHE = 128,
   NO_MEM_CACHE = 256,
   FORCE_REUSE = 512,
-  MAX = 1024
+  MAX = 1024,
+  _SCALE = 2048
 };
 
-#define ACC_D(T,V,D) private: T _##V = D; public: const T & V() const { return _##V; }
-#define ACC_D_P(T,V,D) private: T _##V = D; public: T V() const { return _##V; }
-#define ACC(T,V) private: T _##V; public: const T & V() const { return _##V; }
+#define ACC_D(T,V,D) private: T _##V = D; public: const T & V() const { return _##V; } void set_ ## V(T val) { _##V = val; }
+#define ACC_D_P(T,V,D) private: T _##V = D; public: T V() const { return _##V; } void set_ ## V(T val) { _##V = val; }
+#define ACC(T,V) private: T _##V; public: const T & V() const { return _##V; } void set_ ## V(T val) { _##V = val; }
 
 class Datastore;
 
@@ -39,19 +42,38 @@ public:
            double max = std::numeric_limits<double>::quiet_NaN(),
            double depth = std::numeric_limits<double>::quiet_NaN(),
            Interpolation interp = Interpolation::LINEAR,
-           double scale = 1.0
+           double scale = 1.0,
+           int every = 1
           );
-  ACC_D(int, flags, 0)
+  ACC_D(int, every, 1)
   ACC_D(double, min, std::numeric_limits<double>::quiet_NaN())
   ACC_D(double, max, std::numeric_limits<double>::quiet_NaN())
   ACC_D(double, depth, std::numeric_limits<double>::quiet_NaN())
   ACC_D(double, scale, 1.0)
-  ACC_D(int, w, 0)
-  ACC_D(int, h, 0)
-  ACC_D(int, d, 0)
   ACC_D(Interpolation, interpolation, Interpolation::LINEAR)
-  ACC_D_P(Datastore*, store, NULL)
   ACC(cpath, intrinsics)
+  
+public:
+  Datastore* store() const;
+  void set_store(Datastore *store);
+  int flags() const;
+  void set_flags(int flags);
+  
+  int w() const;
+  int h() const;
+  int d() const;
+  
+  inline int scale(int val) const
+  {
+    return cvRound(val*_scale);
+  }
+  
+private:
+  Datastore *_store = NULL;
+  int _w = 0;
+  int _h = 0;
+  int _d = 0;
+  int _flags = 0;
 };
 
 #undef ACC
