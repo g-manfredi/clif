@@ -137,6 +137,10 @@ public:
     const cpath& path() const { return _path; };
     cpath fullPath() const;
     
+    //actual file path (might be from linked file!)
+    cpath io_path();
+    time_t mtime();
+    
     friend std::ostream& operator<<(std::ostream& out, const Datastore& a);
     
     const H5::DataSet & H5DataSet() const { return _data; };
