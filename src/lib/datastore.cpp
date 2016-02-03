@@ -912,8 +912,7 @@ void Datastore::readImage(const Idx& idx, cv::Mat *img, const ProcData &proc)
   
   ProcData act_proc = proc;
   
-  if (act_proc.store() != this)
-    act_proc.set_store(this);
+  act_proc.set_store(this);
 
   double depth = act_proc.depth();
   
@@ -983,7 +982,7 @@ void Datastore::readImage(const Idx& idx, cv::Mat *img, const ProcData &proc)
   clif::read_full_subdims(_data, m_read, subspace, idx);
   
   clif::Mat processed;
-  proc_image(m_read, processed, proc, idx);
+  proc_image(m_read, processed, act_proc, idx);
   
   mat_cache_set(opts, &processed);
   if (use_disk_cache) {
@@ -991,7 +990,7 @@ void Datastore::readImage(const Idx& idx, cv::Mat *img, const ProcData &proc)
     processed.write(cache_file.string().c_str());
   }
     
-  if (proc.flags() & NO_MEM_CACHE)
+  if (act_proc.flags() & NO_MEM_CACHE)
     *img = cvMat(processed).clone();
   else
     *img = cvMat(processed);
