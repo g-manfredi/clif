@@ -20,7 +20,7 @@ namespace clif {
 clifEpiView::clifEpiView(Dataset *dataset, QWidget* parent)
 : QDialog(parent)
 {
-    _3dslice = new Subset3d(dataset, cpath(), ProcData(NULL, Improc::CVT_8U));
+    _3dslice = new Subset3d(dataset, cpath(), ProcData(Improc::CVT_8U));
     _centerview = new clifScaledImageView(this);
     _epiview = new clifScaledImageView(this);
     _slider = new QSlider(this);

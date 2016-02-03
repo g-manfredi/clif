@@ -9,7 +9,7 @@
 
 namespace clif {
   
-ProcData::ProcData(Datastore *store, int flags, double min, double max, double depth, Interpolation interp, float scale, int every)
+ProcData::ProcData(int flags, Datastore *store, double min, double max, double depth, Interpolation interp, float scale, int every)
 : _flags(flags), _min(min), _max(max), _depth(depth), _interpolation(interp), _scale(scale), _every(every)
 {  
   if (store)

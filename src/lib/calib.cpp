@@ -56,7 +56,7 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
   int readflags = Improc::CVT_8U | Improc::CVT_GRAY | Improc::DEMOSAIC;
   
   //FIXME integrate ProcData!
-  ProcData proc(imgs, readflags);
+  ProcData proc(readflags, imgs);
   
   int channels = proc.d();
   

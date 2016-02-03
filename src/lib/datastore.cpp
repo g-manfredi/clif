@@ -1000,7 +1000,7 @@ void Datastore::readImage(const Idx& idx, cv::Mat *img, const ProcData &proc)
 //this is always a 3d mat!
 void Datastore::readImage(const Idx &idx, cv::Mat *img, int flags, double depth, double min, double max)
 {
-  ProcData proc(this, flags, min, max, depth);
+  ProcData proc(flags, this, min, max, depth);
   readImage(idx, img, proc);
 }
 
