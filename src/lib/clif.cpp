@@ -125,11 +125,10 @@ void ClifFile::open(const std::string &filename, unsigned int flags)
   _path = get_abs_path(filename);
   
   try {
-    printf("try openfile!\n");
     f.openFile(filename.c_str(), flags, H5::FileAccPropList(_file_acc_plist));
   }
   catch (H5::FileIException e) {
-    printf("catch openfile!\n");
+    printf("opening %s failed!\n", filename.c_str());
     assert(f.getId() == H5I_INVALID_HID);
     return;
   }
