@@ -61,6 +61,8 @@ void Attribute::setLink(const boost::filesystem::path &l)
 {  
   _link = l.generic_string();
   
+  assert(name != _link);
+  
   data = NULL;
   _m = Mat();
   dims = 0;
@@ -400,6 +402,11 @@ void Attributes::append(Attribute *attr)
 void Attributes::addLink(path name, path to)
 {
   Attribute a(resolve(name));
+  to = resolve(to);
+  
+  if (a.name == to)
+    return;
+  
   a.setLink(to.generic_string());
   
   append(a);
