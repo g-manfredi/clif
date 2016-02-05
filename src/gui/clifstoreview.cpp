@@ -72,12 +72,12 @@ clifStoreView::clifStoreView(Datastore *store, QWidget* parent)
   hbox->addWidget(_range_ck);
   
   _sp_min = new QDoubleSpinBox(this);
-  _sp_min->setRange(-1000000000,std::numeric_limits<double>::max());
+  _sp_min->setRange(-4.2949673e9,4.2949673e9);
   _sp_min->setDisabled(true);
   connect(_sp_min, SIGNAL(valueChanged(double)), this, SLOT(queue_load_img()));
   hbox->addWidget(_sp_min);
   _sp_max = new QDoubleSpinBox(this);
-  _sp_max->setRange(-1000000000,std::numeric_limits<double>::max());
+  _sp_max->setRange(-4.2949673e9,4.2949673e9);
   _sp_max->setDisabled(true);
   connect(_sp_max, SIGNAL(valueChanged(double)), this, SLOT(queue_load_img()));
   hbox->addWidget(_sp_max);
