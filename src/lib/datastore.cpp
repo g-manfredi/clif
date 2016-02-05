@@ -988,8 +988,6 @@ void Datastore::readImage(const Idx& idx, cv::Mat *img, const ProcData &proc)
       mat_cache_set(opts, &tmp);
       return;
     }
-    
-    printf("cache file not found %s\n", cache_file.string().c_str());
   }
   //printf("\n");
   
@@ -1157,7 +1155,6 @@ void Datastore::flush()
       _mat.release();
     }
     else {
-      printf("flush %s\n", _path.c_str());
       //write memory-only data into file (and convert datastore to regular)
       //FIXME _data should be empty/invalid h5dataset!
       
