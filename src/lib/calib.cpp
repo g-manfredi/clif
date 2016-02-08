@@ -53,7 +53,11 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
   vector<vector<Point2f>> ipoints;
   vector<vector<Point2f>> wpoints;
   
-  int readflags = Improc::CVT_8U | Improc::CVT_GRAY | Improc::DEMOSAIC;
+  //FIXME grayscale for opencv calib!
+  int readflags = CVT_8U | DEMOSAIC;
+  
+  if (pattern == CalibPattern::CHECKERBOARD)
+    readflags |= CVT_GRAY;
   
   //FIXME integrate ProcData!
   ProcData proc(readflags, imgs);
@@ -66,10 +70,7 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
     map_size[i] = imgs->extent()[i+2];
   
   Idx pos(map_size.size());
-  
-  //FIXME implement multi-channel calib for opencv checkerboard
-  if (pattern == CalibPattern::CHECKERBOARD)
-    channels = 1;
+
   
   Mat_<std::vector<Point2f>> wpoints_m(map_size);
   Mat_<std::vector<Point2f>> ipoints_m(map_size);
@@ -123,9 +124,18 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
     double unit_size; //marker size in mm
     double unit_size_res;
     int recursion_depth;
+    cv::Rect limit;
     
     s->get(img_root / "marker_size", unit_size);
     s->get(img_root / "hdmarker_recursion", recursion_depth);
+    
+    Attribute *bbox_a = s->get(img_root/"bbox");
+    if (bbox_a) {
+      int bbox_vals[4];
+      bbox_a->get(bbox_vals, 4);
+      limit = cv::Rect(bbox_vals[0],bbox_vals[1],bbox_vals[2],bbox_vals[3]);
+    }
+  
     
     //FIXME remove this!
     Marker::init();
@@ -192,7 +202,7 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
             
             unit_size_res = unit_size;
             mask_ptr = &masks[c][0];
-            hdmarker_detect_subpattern(bayer, corners_rough, corners, recursion_depth, &unit_size_res, debug_img_ptr, mask_ptr, 0);
+            hdmarker_detect_subpattern(bayer, corners_rough, corners, recursion_depth, &unit_size_res, debug_img_ptr, mask_ptr, 0, limit);
             
             printf("found %6lu corners for channel %d\n", corners.size(), c);
             

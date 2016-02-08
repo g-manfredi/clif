@@ -145,7 +145,6 @@ public:
   Idx_It_Dim(const Idx &size, const DimSpec& dim)
   : _size(size), _dim(dim.get(&size))
   {
-    printf("iter dim: %d\n", _dim);
     _start = _size;
     for(int i=0;i<_start.size();i++)
       _start[i] = 0;

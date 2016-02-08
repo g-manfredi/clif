@@ -18,6 +18,9 @@ ProcData::ProcData(int flags, Datastore *store, double min, double max, double d
 
 void ProcData::set_store(Datastore *store)
 {
+  if (_store == store)
+    return;
+    
   _store = store;
   
   _w = _store->extent()[0];

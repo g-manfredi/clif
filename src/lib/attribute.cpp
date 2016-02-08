@@ -61,6 +61,8 @@ void Attribute::setLink(const boost::filesystem::path &l)
 {  
   _link = l.generic_string();
   
+  assert(name != _link);
+  
   data = NULL;
   _m = Mat();
   dims = 0;
@@ -380,7 +382,9 @@ void Attributes::open(H5::H5File &f, const cpath &path)
 
 void Attributes::append(Attribute attr)
 {
-  attr.name = resolve(attr.name);
+  //do not resolve a link to itself
+  if (attr.link().empty() || resolve(attr.name) != attr.link())
+    attr.name = resolve(attr.name);
   
   Attribute *at = get(attr.name);
   if (!at) {
@@ -393,13 +397,17 @@ void Attributes::append(Attribute attr)
 
 void Attributes::append(Attribute *attr)
 {
-  attr->name = resolve(attr->name).generic_string();
   append(*attr);
 }
 
 void Attributes::addLink(path name, path to)
 {
   Attribute a(resolve(name));
+  to = resolve(to);
+
+  if (a.name == to)
+    return;
+  
   a.setLink(to.generic_string());
   
   append(a);

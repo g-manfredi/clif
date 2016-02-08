@@ -320,7 +320,6 @@ public:
   {
     for (int i=0;i<count;i++)
       new(((T*)ptr)+i) T;
-    printf("dispatch create classes: %d\n", count);
   }
 };
 

@@ -35,8 +35,7 @@ class Datastore;
 class ProcData
 {
 public:
-  ProcData() {};
-  ProcData(int flags,
+  ProcData(int flags = 0,
            Datastore *store = NULL,
            double min = std::numeric_limits<double>::quiet_NaN(),
            double max = std::numeric_limits<double>::quiet_NaN(),

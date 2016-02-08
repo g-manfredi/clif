@@ -13,7 +13,7 @@
 
 #include "opencv2/imgproc/imgproc.hpp"
 
-#include "opencv2/highgui/highgui.hpp"
+#include <sys/stat.h>
 
 namespace clif {
 
@@ -67,6 +67,26 @@ static bool _get_cache_path(cpath &cache_path)
   }
 }
 
+cpath Datastore::io_path()
+{
+  if (_link_file.empty())
+    return dataset()->file().path();
+  else
+    return _link_file;
+}
+
+time_t Datastore::mtime()
+{
+  cpath filepath = io_path();
+  
+  assert(!filepath.empty());
+  
+  struct stat st;
+  stat(filepath.string().c_str(), &st);
+  
+  return st.st_mtime;
+}
+
 //FIXME add file timestamp!
 static cpath _cache_filename(Datastore *store, int idx, int flags, float scale, float depth)
 {
@@ -75,12 +95,12 @@ static cpath _cache_filename(Datastore *store, int idx, int flags, float scale, 
   std::ostringstream shortkey_stream;
   std::string shortkey, longkey;
   
-  shortkey_stream << "_" << idx << "_" << flags << " " << scale << depth << store->dataset()->file().mtime();
+  shortkey_stream << "_" << idx << "_" << flags << " " << scale << depth << store->mtime();
   shortkey = shortkey_stream.str();
   
-  name = "clif/003/cached_imgs";
+  name = "clif/004/cached_imgs";
   std::hash<std::string> hasher;
-  std::string dset_path = store->dataset()->path().generic_string() + "|" + store->dataset()->file().path().generic_string();
+  std::string dset_path = store->dataset()->path().generic_string() + "|" + store->io_path().string();
   longkey_stream << hasher(dset_path) << "_" << hasher(store->path().generic_string()) << "_" << hasher(shortkey);
   longkey = longkey_stream.str();
   name /= longkey + ".bin";
@@ -912,8 +932,7 @@ void Datastore::readImage(const Idx& idx, cv::Mat *img, const ProcData &proc)
   
   ProcData act_proc = proc;
   
-  if (act_proc.store() != this)
-    act_proc.set_store(this);
+  act_proc.set_store(this);
 
   double depth = act_proc.depth();
   
@@ -952,15 +971,11 @@ void Datastore::readImage(const Idx& idx, cv::Mat *img, const ProcData &proc)
     cache_file /= _cache_filename(this, idx[3], act_proc.flags(), act_proc.scale(), depth);
     
     Idx _fixme_storage_size(3);
-    BaseType _fixme_storage_type = type();
+    BaseType _fixme_storage_type = act_proc.type();
     
     _fixme_storage_size[0] = act_proc.w();
     _fixme_storage_size[1] = act_proc.h();
     _fixme_storage_size[2] = act_proc.d();
-    
-    //FIXME
-    if (act_proc.flags() & Improc::CVT_8U)
-      _fixme_storage_type = BaseType::UINT8;
       
     //FIXME only create, don't allocate - calc in read!
     tmp.create(_fixme_storage_type, _fixme_storage_size);
@@ -983,7 +998,7 @@ void Datastore::readImage(const Idx& idx, cv::Mat *img, const ProcData &proc)
   clif::read_full_subdims(_data, m_read, subspace, idx);
   
   clif::Mat processed;
-  proc_image(m_read, processed, proc, idx);
+  proc_image(m_read, processed, act_proc, idx);
   
   mat_cache_set(opts, &processed);
   if (use_disk_cache) {
@@ -991,7 +1006,7 @@ void Datastore::readImage(const Idx& idx, cv::Mat *img, const ProcData &proc)
     processed.write(cache_file.string().c_str());
   }
     
-  if (proc.flags() & NO_MEM_CACHE)
+  if (act_proc.flags() & NO_MEM_CACHE)
     *img = cvMat(processed).clone();
   else
     *img = cvMat(processed);
@@ -1140,7 +1155,6 @@ void Datastore::flush()
       _mat.release();
     }
     else {
-      printf("flush %s\n", _path.c_str());
       //write memory-only data into file (and convert datastore to regular)
       //FIXME _data should be empty/invalid h5dataset!
       
