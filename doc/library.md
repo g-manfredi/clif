@@ -2,6 +2,9 @@
 
 [TOC]
 
+
+**WARNING, NOT UP TO DATE - INFOMRATION MAY BE OBSOLETE**
+
 The following will give a brief overview over the core classes used in the clif library and show usage with a few code snippets.
 
 ## Namespace and Headers {#headers} 

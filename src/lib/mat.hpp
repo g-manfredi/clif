@@ -269,9 +269,21 @@ public:
   {
     return *(T*)(((char*)_data)+calc_offset<T>(_step, 0, first, idxs...));
   }
+  
+  template<typename T, typename ... Idxs, typename = typename std::enable_if<are_all_convertible<int, Idxs...>::value>::type>
+    T& at(int first, Idxs ... idxs) const
+  {
+    return *(T*)(((char*)_data)+calc_offset<T>(_step, 0, first, idxs...));
+  }
     
   template<typename T, typename ... Idxs, typename = typename std::enable_if<are_all_convertible<IdxRange, Idxs...>::value>::type>
     T& operator()(IdxRange first, Idxs ... idxs) const
+  {
+    return operator()<T>(Idx({first, idxs...}));
+  }
+  
+  template<typename T, typename ... Idxs, typename = typename std::enable_if<are_all_convertible<IdxRange, Idxs...>::value>::type>
+    T& at(IdxRange first, Idxs ... idxs) const
   {
     return operator()<T>(Idx({first, idxs...}));
   }
@@ -279,6 +291,8 @@ public:
   //overloading causes compile problems with boost?!?
   template<typename T>
     T& operator()(Idx pos) const;
+  template<typename T>
+    T& at(Idx pos) const;
     
   void* ptr(Idx pos) const { return (void*)(((char*)_data)+calc_offset(_step, pos)); }
   
@@ -311,9 +325,17 @@ public:
   {
     return Mat::operator()<T>(idxs...);
   }
+  template<typename ... Idxs> T& at(Idxs ... idxs) const
+  {
+    return Mat::at<T>(idxs...);
+  }
   T& operator()(Idx pos) const
   {
     return Mat::operator()<T>(pos);
+  }
+  T& at(Idx pos) const
+  {
+    return Mat::at<T>(pos);
   }
 };
 
@@ -374,6 +396,10 @@ template<typename T> T& Mat::operator()(Idx pos) const
   return *(T*)(((char*)_data)+calc_offset(_step, pos));
 }
 
+template<typename T> T& Mat::at(Idx pos) const
+{
+  return *(T*)(((char*)_data)+calc_offset(_step, pos));
+}
 
 template<typename T> Mat_<T>::Mat_(const Mat &m)
 : Mat(m)
