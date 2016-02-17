@@ -94,7 +94,7 @@ calibration
 clif -i import.ini *.tif -o set.clif
 ~~~~~~~~~~~~~
 
-- add calibration images
+- add calibration images (clif -i [ini-file] [input clif] --store [hdf5 path] [dimensions] [images] -o [output clif])
 ~~~~~~~~~~~~~
 clif -i import.ini set.clif --store calibration/imgs/hdmarker/data 4 *.tif -o set2.clif
 ~~~~~~~~~~~~~
