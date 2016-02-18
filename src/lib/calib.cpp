@@ -715,7 +715,7 @@ static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, const Mat_
         ceres::CostFunction* cost_function =
         LineZ3GenericCenterLineError::Create(p.x, p.y);
         problem.AddResidualBlock(cost_function, NULL, 
-                                &extrinsics({0,ray.r("channels","views")}));
+                                &extrinsics({0,ray["views"]}));
       }
       //regular line error (in x/y world direction)
       else {
@@ -723,19 +723,19 @@ static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, const Mat_
         LineZ3DirPinholeError::Create(p.x, p.y);
         problem.AddResidualBlock(cost_function,
                                 NULL,
-                                &extrinsics({0,ray.r("channels","views")}),
+                                &extrinsics({0,ray["views"]}),
                                 //use only direction part!
                                 &lines({2,ray.r("x","cams")}));
       }
     }
     else {
-      ceres::CostFunction* cost_function = 
+      /*ceres::CostFunction* cost_function = 
       LineZ3DirPinholeExtraError::Create(p.x, p.y);
       problem.AddResidualBlock(cost_function,
                               NULL,
-                              &extrinsics({0,ray.r("channels","views")}),&extrinsics_rel({0,ray.r("channels","cams")}),
+                              &extrinsics({0,ray["views"]}),&extrinsics_rel({0,ray.r("channels","cams")}),
                               //use only direction part!
-                              &lines({2,ray.r("x","cams")}));
+                              &lines({2,ray.r("x","cams")}));*/
     }
   }
 }
@@ -756,7 +756,7 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   //options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
   
   lines.create({IR(4, "line"), proxy.r("x", "cams")});
-  extrinsics.create({IR(6, "extrinsics"), proxy.r("channels","views")});
+  extrinsics.create({IR(6, "extrinsics"), IR(proxy["views"], "views")});
   extrinsics_rel.create({IR(6, "extrinsics"), proxy.r("channels","cams")});
   
   //for threading!
@@ -769,10 +769,10 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   double m[2] = {0,0};
   double proj[2] = {1000,1000};
   
-  for(auto cam_pos : Idx_It_Dims(extrinsics, "channels", -1)) {
+  for(auto cam_pos : Idx_It_Dim(extrinsics, "views")) {
     for(int i=0;i<5;i++)
-      extrinsics({i, cam_pos.r("channels",-1)}) = 0;
-    extrinsics({5, cam_pos.r("channels",-1)}) = 1000;
+      extrinsics({i, cam_pos["views"]}) = 0;
+    extrinsics({5, cam_pos["views"]}) = 1000;
   }
 
   for(auto pos : Idx_It_Dims(extrinsics_rel, 0, -1))
@@ -786,7 +786,7 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   
   _zline_problem_add_pinhole_lines(problem, proxy, extrinsics, extrinsics_rel, lines);
   //_zline_problem_add_center_errors(problem, proxy_backwards, extrinsics, lines, proxy_size, z_step, 1, 1, 1);
-  _zline_problem_add_proj_error(problem, lines, img_size, proj, &r, m);
+  //_zline_problem_add_proj_error(problem, lines, img_size, proj, &r, m);
   
   printf("solving pinhole problem...\n");
   ceres::Solve(options, &problem, &summary);
