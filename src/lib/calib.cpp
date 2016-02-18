@@ -729,13 +729,13 @@ static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, const Mat_
       }
     }
     else {
-      /*ceres::CostFunction* cost_function = 
+      ceres::CostFunction* cost_function = 
       LineZ3DirPinholeExtraError::Create(p.x, p.y);
       problem.AddResidualBlock(cost_function,
                               NULL,
                               &extrinsics({0,ray["views"]}),&extrinsics_rel({0,ray.r("channels","cams")}),
                               //use only direction part!
-                              &lines({2,ray.r("x","cams")}));*/
+                              &lines({2,ray.r("x","cams")}));
     }
   }
 }
