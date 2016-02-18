@@ -98,9 +98,12 @@ int main(const int argc, const char *argv[])
   
   Dataset *set = f.openDataset(0);
 
-  Mat_<float> extrinsics_m;
-  set->get(set->getSubGroup("calibration/intrinsics")/"extrinsics", extrinsics_m);
-  extrinsics_m.names({"data","channels","cams","views"});
+  Mat_<double> extrinsics;
+  Mat_<double> extrinsics_rel;
+  set->get(set->getSubGroup("calibration/intrinsics")/"extrinsics", extrinsics);
+  set->get(set->getSubGroup("calibration/intrinsics")/"extrinsics_cams", extrinsics_rel);
+  extrinsics.names({"extrinsics","channels","cams","views"});
+  extrinsics_rel.names({"extrinsics","channels","cams","views"});
   
 #ifdef CLIF_WITH_LIBIGL
     
@@ -108,12 +111,12 @@ int main(const int argc, const char *argv[])
     
   int ref_view = 0;
   
-  for(int ch=0;ch<extrinsics_m["channels"];ch++)
-    for(int c=0;c<extrinsics_m["cams"];c++) {
+  for(int ch=0;ch<extrinsics["channels"];ch++)
+    for(int c=0;c<extrinsics["cams"];c++) {
       //cv::Vec3b col(0,0,0);
       //col[ch%3]=255;
-      Eigen::Vector3d trans(extrinsics_m(3,ch,c,ref_view),extrinsics_m(4,ch,c,ref_view),extrinsics_m(5,ch,c,ref_view));
-      Eigen::Vector3d rot(extrinsics_m(0,ch,c,ref_view),extrinsics_m(1,ch,c,ref_view),extrinsics_m(2,ch,c,ref_view));
+      Eigen::Vector3d trans(extrinsics(3,ch,c,ref_view),extrinsics(4,ch,c,ref_view),extrinsics(5,ch,c,ref_view));
+      Eigen::Vector3d rot(extrinsics(0,ch,c,ref_view),extrinsics(1,ch,c,ref_view),extrinsics(2,ch,c,ref_view));
       
       Mesh cam = mesh_cam().scale(20);
       cam.rotate(rot);
@@ -123,12 +126,12 @@ int main(const int argc, const char *argv[])
       //cam_writer.add(cam_left,col);
     }  
   
-  Eigen::Vector3d ref_trans(extrinsics_m(3,0,0,ref_view),extrinsics_m(4,0,0,ref_view),extrinsics_m(5,0,0,ref_view));
-  Eigen::Vector3d ref_rot(extrinsics_m(0,0,0,ref_view),extrinsics_m(1,0,0,ref_view),extrinsics_m(2,0,0,ref_view));
+  Eigen::Vector3d ref_trans(extrinsics(3,0,0,ref_view),extrinsics(4,0,0,ref_view),extrinsics(5,0,0,ref_view));
+  Eigen::Vector3d ref_rot(extrinsics(0,0,0,ref_view),extrinsics(1,0,0,ref_view),extrinsics(2,0,0,ref_view));
   
-  for(auto pos : Idx_It_Dim(extrinsics_m, "views")) {
-      Eigen::Vector3d trans(extrinsics_m(3,pos.r("channels","views")),extrinsics_m(4,pos.r("channels","views")),extrinsics_m(5,pos.r("channels","views")));
-      Eigen::Vector3d rot(extrinsics_m(0,pos.r("channels","views")),extrinsics_m(1,pos.r("channels","views")),extrinsics_m(2,pos.r("channels","views")));
+  for(auto pos : Idx_It_Dim(extrinsics, "views")) {
+      Eigen::Vector3d trans(extrinsics(3,pos.r("channels","views")),extrinsics(4,pos.r("channels","views")),extrinsics(5,pos.r("channels","views")));
+      Eigen::Vector3d rot(extrinsics(0,pos.r("channels","views")),extrinsics(1,pos.r("channels","views")),extrinsics(2,pos.r("channels","views")));
       
       Mesh plane = mesh_plane().scale(1000);
       plane.rotate(ref_rot);
