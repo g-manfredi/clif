@@ -23,8 +23,9 @@
   #include "ceres/ceres.h"
   #include "ceres/rotation.h"
   
-  const double proj_constr_weight = 1e-1;
-  const double center_constr_weight = 1e-1;
+  const double strong_proj_constr_weight = 0.1;
+  const double proj_constr_weight = 1e-4;
+  const double center_constr_weight = 1;
 #endif
   
 #ifdef CLIF_WITH_LIBIGL_VIEWER
@@ -660,8 +661,8 @@ struct RectProjDirError {
     T wy = l[1];
     T px = wx * p[0];    
     T py = wy * p[1];    
-    residuals[0] = (T(ix)-px)*T(w)*T(proj_constr_weight);
-    residuals[1] = (T(iy)-py)*T(w)*T(proj_constr_weight);
+    residuals[0] = (T(ix)-px)*T(w);
+    residuals[1] = (T(iy)-py)*T(w);
     
     return true;
   }
@@ -692,8 +693,8 @@ struct RectProjDirError4P {
     T wy = l[3];
     T px = wx * p[0];    
     T py = wy * p[1];    
-    residuals[0] = (T(ix)-px)*T(w)*T(proj_constr_weight);
-    residuals[1] = (T(iy)-py)*T(w)*T(proj_constr_weight);
+    residuals[0] = (T(ix)-px)*T(w);
+    residuals[1] = (T(iy)-py)*T(w);
     
     return true;
   }
@@ -816,7 +817,7 @@ struct LineZ3GenericCenterError {
 
 const double proj_center_size = 0.5;
 
-static void _zline_problem_add_proj_error(ceres::Problem &problem, Mat_<double> &lines, cv::Point2i img_size, Mat_<double> &proj)
+static void _zline_problem_add_proj_error(ceres::Problem &problem, Mat_<double> &lines, cv::Point2i img_size, Mat_<double> &proj, double proj_constraint)
 {
   double two_sigma_squared = 2.0*(img_size.x*img_size.x+img_size.y*img_size.y)*proj_center_size*proj_center_size;
   cv::Point2i proxy_size(lines["x"], lines["y"]);
@@ -830,6 +831,8 @@ static void _zline_problem_add_proj_error(ceres::Problem &problem, Mat_<double> 
     double w = exp(-((ip.x*ip.x+ip.y*ip.y)/two_sigma_squared));
     //w_sum += w;
     w = sqrt(w);
+    
+    w *= proj_constraint;
     
     
     ceres::CostFunction* cost_function =
@@ -842,7 +845,7 @@ static void _zline_problem_add_proj_error(ceres::Problem &problem, Mat_<double> 
   }
 }
 
-static void _zline_problem_add_proj_error_4P(ceres::Problem &problem, Mat_<double> &lines, cv::Point2i img_size, Mat_<double> &proj)
+static void _zline_problem_add_proj_error_4P(ceres::Problem &problem, Mat_<double> &lines, cv::Point2i img_size, Mat_<double> &proj, double proj_constraint)
 {
   double two_sigma_squared = 2.0*(img_size.x*img_size.x+img_size.y*img_size.y)*proj_center_size*proj_center_size;
   cv::Point2i proxy_size(lines["x"], lines["y"]);
@@ -856,6 +859,7 @@ static void _zline_problem_add_proj_error_4P(ceres::Problem &problem, Mat_<doubl
     double w = exp(-((ip.x*ip.x+ip.y*ip.y)/two_sigma_squared));
     //w_sum += w;
     w = sqrt(w);
+    w *= proj_constraint;
     
     
     ceres::CostFunction* cost_function =
@@ -917,8 +921,8 @@ static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, const Mat_
   }
 }
 
-static void _zline_problem_add_generic_lines(ceres::Problem &problem, const Mat_<float>& proxy, Mat_<double> &extrinsics, Mat_<double> &extrinsics_rel, Mat_<double> &lines)
-{   
+static void _zline_problem_add_generic_lines(ceres::Problem &problem, const Mat_<float>& proxy, Mat_<double> &extrinsics, Mat_<double> &extrinsics_rel, Mat_<double> &lines, bool reproj_error_calc_only = false)
+{
   cv::Point2i center(proxy["x"]/2, proxy["y"]/2);
   
   //channels == 0 && cams == 0
@@ -936,7 +940,7 @@ static void _zline_problem_add_generic_lines(ceres::Problem &problem, const Mat_
       continue;
     
     //keep center looking straight
-    if (ray["y"] == center.y && ray["x"] == center.x) {
+    if (ray["y"] == center.y && ray["x"] == center.x && !reproj_error_calc_only) {
       ceres::CostFunction* cost_function =
       LineZ3GenericCenterDirError::Create();
       problem.AddResidualBlock(cost_function, NULL, 
@@ -994,8 +998,9 @@ void update_cams_mesh(Mesh &cams, Mat_<double> extrinsics, Mat_<double> extrinsi
       cams.merge(cam);
       //cam_writer.add(cam_left,col);
       
-      printf("dist to origin cam: %f\n", trans.norm());
+      printf("%.3f ", trans.norm());
     }
+  printf("\n");
   
   for(auto pos : Idx_It_Dim(extrinsics, "views")) {
       Eigen::Vector3d trans(extrinsics(3,pos["views"]),extrinsics(4,pos["views"]),extrinsics(5,pos["views"]));
@@ -1007,7 +1012,6 @@ void update_cams_mesh(Mesh &cams, Mat_<double> extrinsics, Mat_<double> extrinsi
       plane.rotate(-rot);
       
       cams.merge(plane);
-      std::cout << "plane pos: " << trans << "\n";
   }
   
 }
@@ -1020,11 +1024,8 @@ Mesh mesh;
 
 //this is called in main thread!
 bool callback_pre_draw(igl::viewer::Viewer& viewer)
-{
-  printf("pre draw called!\n");
-  
+{ 
   if (extr_ptr) {
-    printf("update!\n");
     viewer.data.clear();
     update_cams_mesh(mesh, *extr_ptr, *extr_rel_ptr);
     viewer.data.set_mesh(mesh.V, mesh.F);
@@ -1126,12 +1127,20 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   ceres::Problem problem;
   
   _zline_problem_add_pinhole_lines(problem, proxy, extrinsics, extrinsics_rel, lines);
-  //_zline_problem_add_center_errors(problem, proxy_backwards, extrinsics, lines, proxy_size, z_step, 1, 1, 1);
-  _zline_problem_add_proj_error(problem, lines, img_size, proj);
+  _zline_problem_add_proj_error(problem, lines, img_size, proj, strong_proj_constr_weight);
   
-  printf("solving pinhole problem...\n");
+  printf("solving pinhole problem (strong projection)...\n");
   ceres::Solve(options, &problem, &summary);
   printf("\npinhole rms ~%fmm\n", 2.0*sqrt(summary.final_cost/problem.NumResiduals()));
+  
+  ceres::Problem problem2;
+  
+  _zline_problem_add_pinhole_lines(problem2, proxy, extrinsics, extrinsics_rel, lines);
+  _zline_problem_add_proj_error(problem2, lines, img_size, proj, proj_constr_weight);
+  
+  printf("solving pinhole problem (weak projection)...\n");
+  ceres::Solve(options, &problem2, &summary);
+  printf("\npinhole rms ~%fmm\n", 2.0*sqrt(summary.final_cost/problem2.NumResiduals()));
   
   printf("proj %fx%f, move %fx%f\n", proj[0], proj[1], m[0], m[1]);
   
@@ -1152,7 +1161,7 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   
   _zline_problem_add_generic_lines(problem_full, proxy, extrinsics, extrinsics_rel, lines);
   _zline_problem_add_center_errors(problem_full, lines);
-  _zline_problem_add_proj_error_4P(problem_full, lines, img_size, proj);
+  _zline_problem_add_proj_error_4P(problem_full, lines, img_size, proj, proj_constr_weight);
   
   printf("solving constrained generic problem...\n");
   ceres::Solve(options, &problem_full, &summary);
@@ -1160,6 +1169,15 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   
   printf("\nunconstrained rms ~%fmm\n", 2.0*sqrt(summary.final_cost/problem_full.NumResiduals()));
   
+  options.max_num_iterations = 0;
+  ceres::Problem problem_reproj;
+  _zline_problem_add_generic_lines(problem_reproj, proxy, extrinsics, extrinsics_rel, lines, true);
+  
+  ceres::Solve(options, &problem_reproj, &summary);
+  
+  printf("\nunconstrained rms ~%fmm\n", 2.0*sqrt(summary.final_cost/problem_reproj.NumResiduals()));
+  
+  glfwSetWindowShouldClose(viewer.window, 1); 
   viewer_thread.join();
 }
 
