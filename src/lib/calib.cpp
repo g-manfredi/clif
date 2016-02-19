@@ -22,6 +22,15 @@
   
   #include "ceres/ceres.h"
   #include "ceres/rotation.h"
+  
+  const double proj_constr_weight = 1e-1;
+  const double center_constr_weight = 1e-1;
+#endif
+  
+#ifdef CLIF_WITH_LIBIGL_VIEWER
+  #include "mesh.hpp"
+  #include <igl/viewer/Viewer.h>
+  #include <thread>
 #endif
   
 #include "mat.hpp"
@@ -605,8 +614,8 @@ struct RectProjDirError {
     T wy = l[1];
     T px = wx * p[0];    
     T py = wy * p[1];    
-    residuals[0] = (T(ix)-px)*T(w)*T(0.01);
-    residuals[1] = (T(iy)-py)*T(w)*T(0.01);
+    residuals[0] = (T(ix)-px)*T(w)*T(proj_constr_weight);
+    residuals[1] = (T(iy)-py)*T(w)*T(proj_constr_weight);
     
     return true;
   }
@@ -637,8 +646,8 @@ struct RectProjDirError4P {
     T wy = l[3];
     T px = wx * p[0];    
     T py = wy * p[1];    
-    residuals[0] = (T(ix)-px)*T(w)*T(0.01);
-    residuals[1] = (T(iy)-py)*T(w)*T(0.01);
+    residuals[0] = (T(ix)-px)*T(w)*T(proj_constr_weight);
+    residuals[1] = (T(iy)-py)*T(w)*T(proj_constr_weight);
     
     return true;
   }
@@ -737,9 +746,31 @@ struct LineZ3GenericExtraError {
   double x_,y_;
 };
 
-const double proj_center_size = 0.2;
+// try to (lightly) enforece pinhole model
+struct LineZ3GenericCenterError {
+  LineZ3GenericCenterError() {}
+      
+  template <typename T>
+  bool operator()(const T* const line,
+                  T* residuals) const {
+    residuals[0] = line[0]*T(center_constr_weight);
+    residuals[1] = line[1]*T(center_constr_weight);
+    
+    return true;
+  }
 
-static void _zline_problem_add_proj_error(ceres::Problem &problem, Mat_<double> &lines, cv::Point2i img_size, Mat_<double> &proj, Mat_<double> &r, Mat_<double> &m)
+  // Factory to hide the construction of the CostFunction object from
+  // the client code.
+  static ceres::CostFunction* Create() {
+    //should reduce this to 2 but ceres complains about the same pointer being added with four params
+    return (new ceres::AutoDiffCostFunction<LineZ3GenericCenterError, 2, 4>(
+                new LineZ3GenericCenterError()));
+  }
+};
+
+const double proj_center_size = 0.5;
+
+static void _zline_problem_add_proj_error(ceres::Problem &problem, Mat_<double> &lines, cv::Point2i img_size, Mat_<double> &proj)
 {
   double two_sigma_squared = 2.0*(img_size.x*img_size.x+img_size.y*img_size.y)*proj_center_size*proj_center_size;
   cv::Point2i proxy_size(lines["x"], lines["y"]);
@@ -765,7 +796,7 @@ static void _zline_problem_add_proj_error(ceres::Problem &problem, Mat_<double> 
   }
 }
 
-static void _zline_problem_add_proj_error_4P(ceres::Problem &problem, Mat_<double> &lines, cv::Point2i img_size, Mat_<double> &proj, Mat_<double> &r, Mat_<double> &m)
+static void _zline_problem_add_proj_error_4P(ceres::Problem &problem, Mat_<double> &lines, cv::Point2i img_size, Mat_<double> &proj)
 {
   double two_sigma_squared = 2.0*(img_size.x*img_size.x+img_size.y*img_size.y)*proj_center_size*proj_center_size;
   cv::Point2i proxy_size(lines["x"], lines["y"]);
@@ -843,33 +874,7 @@ static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, const Mat_
 }
 
 static void _zline_problem_add_generic_lines(ceres::Problem &problem, const Mat_<float>& proxy, Mat_<double> &extrinsics, Mat_<double> &extrinsics_rel, Mat_<double> &lines)
-{
-  /*ceres::CostFunction* cost_function;
-  
-  for(int i=0;i<proxy_backwards.size();i+=i_step)
-    for(int y=0;y<proxy_size.y;y+=y_step)
-      for(int x=0;x<proxy_size.x;x+=x_step) {
-        Point2f p = proxy_backwards[i][y*proxy_size.x+x];
-        
-        if (isnan(p.x) || isnan(p.y))
-          continue;
-        
-        //keep center looking straight
-        if (y==proxy_size.y/2 && x == proxy_size.x/2) {
-          cost_function = LineZ3GenericCenterLineError::Create(p.x, p.y);
-          problem.AddResidualBlock(cost_function,
-                                   NULL,
-                                   extrinsics+i*6);
-        }
-        else {
-          cost_function = LineZ3GenericError::Create(p.x, p.y);
-          problem.AddResidualBlock(cost_function,
-                                   NULL,
-                                   extrinsics+i*6,
-                                   lines + (y*proxy_size.x+x)*4);
-        }
-      }*/
-      
+{   
   cv::Point2i center(proxy["x"]/2, proxy["y"]/2);
   
   //channels == 0 && cams == 0
@@ -918,6 +923,94 @@ static void _zline_problem_add_generic_lines(ceres::Problem &problem, const Mat_
   }
 }
 
+static void _zline_problem_add_center_errors(ceres::Problem &problem, Mat_<double> &lines)
+{
+  for(auto pos : Idx_It_Dims(lines, "x", "cams")) {
+    ceres::CostFunction* cost_function = LineZ3GenericCenterError::Create();
+    problem.AddResidualBlock(cost_function, NULL,
+                            &lines({0,pos.r("x","cams")}));
+  }
+}
+
+#ifdef CLIF_WITH_LIBIGL_VIEWER
+void update_cams_mesh(Mesh &cams, Mat_<double> extrinsics, Mat_<double> extrinsics_rel)
+{
+  cams = mesh_cam().scale(20);
+  
+  for(auto pos : Idx_It_Dims(extrinsics_rel,"channels","cams")) {
+      //cv::Vec3b col(0,0,0);
+      //col[ch%3]=255;
+      Eigen::Vector3d trans(extrinsics_rel(3,pos.r("channels","cams")),extrinsics_rel(4,pos.r("channels","cams")),extrinsics_rel(5,pos.r("channels","cams")));
+      Eigen::Vector3d rot(extrinsics_rel(0,pos.r("channels","cams")),extrinsics_rel(1,pos.r("channels","cams")),extrinsics_rel(2,pos.r("channels","cams")));
+      
+      //FIXME must exactly invert those operations?
+      Mesh cam = mesh_cam().scale(20);
+      cam -= trans;
+      cam.rotate(-rot);
+      cams.merge(cam);
+      //cam_writer.add(cam_left,col);
+    }
+  
+  for(auto pos : Idx_It_Dim(extrinsics, "views")) {
+      Eigen::Vector3d trans(extrinsics(3,pos["views"]),extrinsics(4,pos["views"]),extrinsics(5,pos["views"]));
+      Eigen::Vector3d rot(extrinsics(0,pos["views"]),extrinsics(1,pos["views"]),extrinsics(2,pos["views"]));
+      
+      Mesh plane = mesh_plane().scale(1000);
+      
+      plane -= trans;
+      plane.rotate(-rot);
+      
+      cams.merge(plane);
+  }
+  
+}
+
+//globals for viewer
+igl::viewer::Viewer viewer;
+Mat_<double> *extr_ptr = NULL;
+Mat_<double> *extr_rel_ptr = NULL;
+Mesh mesh;
+
+//this is called in main thread!
+bool callback_pre_draw(igl::viewer::Viewer& viewer)
+{
+  printf("pre draw called!\n");
+  
+  if (extr_ptr) {
+    printf("update!\n");
+    viewer.data.clear();
+    update_cams_mesh(mesh, *extr_ptr, *extr_rel_ptr);
+    viewer.data.set_mesh(mesh.V, mesh.F);
+  }
+  
+  viewer.callback_pre_draw = NULL;
+  return false;
+}
+
+class ceres_iter_callback : public ceres::IterationCallback {
+ public:
+  explicit ceres_iter_callback() {};
+
+  ~ceres_iter_callback() {}
+
+  virtual ceres::CallbackReturnType operator()(const ceres::IterationSummary& summary) {
+    viewer.callback_pre_draw = callback_pre_draw;
+    glfwPostEmptyEvent();
+    return ceres::SOLVER_CONTINUE;
+  }
+};
+
+
+void run_viewer(Mesh *mesh)
+{
+  viewer.core.set_rotation_type(igl::viewer::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
+  viewer.data.set_mesh(mesh->V, mesh->F);
+  
+  viewer.launch();
+}
+
+#endif
+
 /*
  * optimize together:
  *  - per image camera movement (world rotation and translation)
@@ -943,6 +1036,11 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   options.num_threads = 8;
   options.num_linear_solver_threads = 8;
   
+  ceres_iter_callback callback;
+  
+  options.callbacks.push_back(&callback);
+  options.update_state_every_iteration = true;
+  
   Mat_<double> r({proxy.r("channels","cams")});
   Mat_<double> m({2, proxy.r("channels","cams")});
   Mat_<double> proj({2,proxy.r("channels","cams")});
@@ -966,12 +1064,23 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   for(auto line_pos : Idx_It_Dims(lines, 0, -1))
     lines(line_pos) = 0;
   
+  //mesh display
+#ifdef CLIF_WITH_LIBIGL_VIEWER 
+  extr_ptr = &extrinsics;
+  extr_rel_ptr = &extrinsics_rel;
+  
+  update_cams_mesh(mesh, extrinsics, extrinsics_rel);
+  
+  std::thread viewer_thread(run_viewer, &mesh);
+  
+#endif
+  
   ceres::Solver::Summary summary;
   ceres::Problem problem;
   
   _zline_problem_add_pinhole_lines(problem, proxy, extrinsics, extrinsics_rel, lines);
   //_zline_problem_add_center_errors(problem, proxy_backwards, extrinsics, lines, proxy_size, z_step, 1, 1, 1);
-  _zline_problem_add_proj_error(problem, lines, img_size, proj, r, m);
+  _zline_problem_add_proj_error(problem, lines, img_size, proj);
   
   printf("solving pinhole problem...\n");
   ceres::Solve(options, &problem, &summary);
@@ -988,21 +1097,23 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   ///////////////////////////////////////////////
   //full problem
   ///////////////////////////////////////////////
-  options.max_num_iterations = 500;
+  options.max_num_iterations = 5000;
   options.function_tolerance = 1e-12;
   options.parameter_tolerance = 1e-12;
   
   ceres::Problem problem_full;
   
   _zline_problem_add_generic_lines(problem_full, proxy, extrinsics, extrinsics_rel, lines);
-  //_zline_problem_add_center_errors(problem_full, proxy_backwards, extrinsics, lines, proxy_size, z_step, 1, 1, 1);
-  _zline_problem_add_proj_error_4P(problem_full, lines, img_size, proj, r, m);
+  _zline_problem_add_center_errors(problem_full, lines);
+  _zline_problem_add_proj_error_4P(problem_full, lines, img_size, proj);
   
   printf("solving constrained generic problem...\n");
   ceres::Solve(options, &problem_full, &summary);
   printf("solved\n");
   
   printf("\nunconstrained rms ~%fmm\n", 2.0*sqrt(summary.final_cost/problem_full.NumResiduals()));
+  
+  viewer_thread.join();
 }
 
 //FIXME repair!

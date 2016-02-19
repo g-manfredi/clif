@@ -44,6 +44,10 @@ Mesh& Mesh::scale(double s)
 void Mesh::rotate(const Eigen::Vector3d &r_v)
 {
   double len = r_v.norm();
+  
+  if (len == 0.0)
+    return;
+  
   Eigen::Matrix3d r(Eigen::AngleAxisd(len, r_v*(1.0/len)));
   
   for(int i=0;i<V.rows();i++)

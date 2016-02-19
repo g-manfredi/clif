@@ -108,8 +108,6 @@ int main(const int argc, const char *argv[])
 #ifdef CLIF_WITH_LIBIGL
     
   Mesh cams;
-    
-  int ref_view = 0;
   
   Mesh cam = mesh_cam().scale(20);
   cams.merge(cam);
@@ -128,9 +126,6 @@ int main(const int argc, const char *argv[])
       cams.merge(cam);
       //cam_writer.add(cam_left,col);
     }
-  
-  //Eigen::Vector3d ref_trans(extrinsics(3,0,0,ref_view),extrinsics(4,0,0,ref_view),extrinsics(5,0,0,ref_view));
-  //Eigen::Vector3d ref_rot(extrinsics(0,0,0,ref_view),extrinsics(1,0,0,ref_view),extrinsics(2,0,0,ref_view));
   
   for(auto pos : Idx_It_Dim(extrinsics, "views")) {
       Eigen::Vector3d trans(extrinsics(3,pos["views"]),extrinsics(4,pos["views"]),extrinsics(5,pos["views"]));
