@@ -552,6 +552,52 @@ struct LineZ3DirPinholeError {
   double x_,y_;
 };
 
+//center dir error (should be zero!)
+struct LineZ3CenterDirError {
+  LineZ3CenterDirError() {}
+      
+  template <typename T>
+  bool operator()(const T* const line,
+                  T* residuals) const {
+    //compare with projected pinhole camera ray
+    residuals[0] = line[0];
+    residuals[1] = line[1];
+    
+    return true;
+  }
+
+  // Factory to hide the construction of the CostFunction object from
+  // the client code.
+  static ceres::CostFunction* Create() {
+    return (new ceres::AutoDiffCostFunction<LineZ3CenterDirError, 2, 2>(
+                new LineZ3CenterDirError()));
+  }
+};
+
+//center dir and offset error (should be zero!)
+struct LineZ3GenericCenterDirError {
+  LineZ3GenericCenterDirError() {}
+      
+  template <typename T>
+  bool operator()(const T* const line,
+                  T* residuals) const {
+    //compare with projected pinhole camera ray
+    residuals[0] = line[0];
+    residuals[1] = line[1];
+    residuals[2] = line[2];
+    residuals[3] = line[3];
+    
+    return true;
+  }
+
+  // Factory to hide the construction of the CostFunction object from
+  // the client code.
+  static ceres::CostFunction* Create() {
+    return (new ceres::AutoDiffCostFunction<LineZ3GenericCenterDirError, 4, 4>(
+                new LineZ3GenericCenterDirError()));
+  }
+};
+
 // Pinhole line error
 struct LineZ3DirPinholeExtraError {
   LineZ3DirPinholeExtraError(double x, double y)
@@ -840,26 +886,24 @@ static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, const Mat_
     if (isnan(p.x) || isnan(p.y))
       continue;
     
+    //keep center looking straight (in local ref system)
+    if (ray["y"] == center.y && ray["x"] == center.x) {
+      ceres::CostFunction* cost_function =
+      LineZ3CenterDirError::Create();
+      problem.AddResidualBlock(cost_function, NULL, 
+                              &lines({2,ray.r("x","cams")}));
+    }
+    
     if (ref_cam) {
       //std::cout << "process: " << ray << p << "\n";
-      
-      //keep center looking straight
-      if (ray["y"] == center.y && ray["x"] == center.x) {
-        ceres::CostFunction* cost_function =
-        LineZ3GenericCenterLineError::Create(p.x, p.y);
-        problem.AddResidualBlock(cost_function, NULL, 
-                                &extrinsics({0,ray["views"]}));
-      }
       //regular line error (in x/y world direction)
-      else {
-        ceres::CostFunction* cost_function = 
-        LineZ3DirPinholeError::Create(p.x, p.y);
-        problem.AddResidualBlock(cost_function,
-                                NULL,
-                                &extrinsics({0,ray["views"]}),
-                                //use only direction part!
-                                &lines({2,ray.r("x","cams")}));
-      }
+      ceres::CostFunction* cost_function = 
+      LineZ3DirPinholeError::Create(p.x, p.y);
+      problem.AddResidualBlock(cost_function,
+                              NULL,
+                              &extrinsics({0,ray["views"]}),
+                              //use only direction part!
+                              &lines({2,ray.r("x","cams")}));
     }
     else {
       ceres::CostFunction* cost_function = 
@@ -891,25 +935,25 @@ static void _zline_problem_add_generic_lines(ceres::Problem &problem, const Mat_
     if (isnan(p.x) || isnan(p.y))
       continue;
     
+    //keep center looking straight
+    if (ray["y"] == center.y && ray["x"] == center.x) {
+      ceres::CostFunction* cost_function =
+      LineZ3GenericCenterDirError::Create();
+      problem.AddResidualBlock(cost_function, NULL, 
+                              &lines({0,ray.r("x","cams")}));
+    }
+  
     if (ref_cam) {
       //std::cout << "process: " << ray << p << "\n";
       
-      //keep center looking straight
-      if (ray["y"] == center.y && ray["x"] == center.x) {
-        ceres::CostFunction* cost_function =
-        LineZ3GenericCenterLineError::Create(p.x, p.y);
-        problem.AddResidualBlock(cost_function, NULL, 
-                                &extrinsics({0,ray["views"]}));
-      }
+
       //regular line error (in x/y world direction)
-      else {
-        ceres::CostFunction* cost_function = 
-        LineZ3GenericError::Create(p.x, p.y);
-        problem.AddResidualBlock(cost_function,
-                                NULL,
-                                &extrinsics({0,ray["views"]}),
-                                &lines({0,ray.r("x","cams")}));
-      }
+      ceres::CostFunction* cost_function = 
+      LineZ3GenericError::Create(p.x, p.y);
+      problem.AddResidualBlock(cost_function,
+                              NULL,
+                              &extrinsics({0,ray["views"]}),
+                              &lines({0,ray.r("x","cams")}));
     }
     else {
         ceres::CostFunction* cost_function = 
@@ -949,6 +993,8 @@ void update_cams_mesh(Mesh &cams, Mat_<double> extrinsics, Mat_<double> extrinsi
       cam.rotate(-rot);
       cams.merge(cam);
       //cam_writer.add(cam_left,col);
+      
+      printf("dist to origin cam: %f\n", trans.norm());
     }
   
   for(auto pos : Idx_It_Dim(extrinsics, "views")) {
@@ -961,6 +1007,7 @@ void update_cams_mesh(Mesh &cams, Mat_<double> extrinsics, Mat_<double> extrinsi
       plane.rotate(-rot);
       
       cams.merge(plane);
+      std::cout << "plane pos: " << trans << "\n";
   }
   
 }
@@ -1021,8 +1068,8 @@ void run_viewer(Mesh *mesh)
 double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point2i img_size, Mat_<double> &extrinsics, Mat_<double> &extrinsics_rel)
 {
   ceres::Solver::Options options;
-  options.max_num_iterations = 500;
-  options.function_tolerance = 1e-3;
+  options.max_num_iterations = 5000;
+  //options.function_tolerance = 1e-3;
   options.minimizer_progress_to_stdout = true;
   //options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
   
