@@ -557,20 +557,20 @@ struct LineZ3DirPinholeExtraError {
     w_p[0] = T(x_);
     w_p[1] = T(y_);
     w_p[2] = T(0);
-    ceres::AngleAxisRotatePoint(extr_rel, w_p, p1);
+    ceres::AngleAxisRotatePoint(extr, w_p, p1);
 
     // camera[3,4,5] are the translation.
-    p1[0] += extr_rel[3];
-    p1[1] += extr_rel[4];
-    p1[2] += extr_rel[5];
+    p1[0] += extr[3];
+    p1[1] += extr[4];
+    p1[2] += extr[5];
     
     
-    ceres::AngleAxisRotatePoint(extr, p1, p);
+    ceres::AngleAxisRotatePoint(extr_rel, p1, p);
 
     // camera[3,4,5] are the translation.
-    p[0] += extr[3];
-    p[1] += extr[4];
-    p[2] += extr[5];
+    p[0] += extr_rel[3];
+    p[1] += extr_rel[4];
+    p[2] += extr_rel[5];
     
     //compare with projected pinhole camera ray
     residuals[0] = p[0] - p[2]*line[0];
@@ -599,14 +599,14 @@ struct RectProjDirError {
 
       
   template<typename T> 
-  bool operator()(const T* const p, const T* const r, const T* const m, const T* const l,
+  bool operator()(const T* const p, const T* const l,
                   T* residuals) const {
     T wx = l[0]; //dir
     T wy = l[1];
-    T px = (cos(r[0])*wx - sin(r[0])*wy + m[0])*p[0];    
-    T py = (sin(r[0])*wx + cos(r[0])*wy + m[1])*p[1];    
-    residuals[0] = (T(ix)-px)*T(w)*T(1);
-    residuals[1] = (T(iy)-py)*T(w)*T(1);
+    T px = wx * p[0];    
+    T py = wy * p[1];    
+    residuals[0] = (T(ix)-px)*T(w)*T(0.01);
+    residuals[1] = (T(iy)-py)*T(w)*T(0.01);
     
     return true;
   }
@@ -614,23 +614,137 @@ struct RectProjDirError {
   // Factory to hide the construction of the CostFunction object from
   // the client code.
   static ceres::CostFunction* Create(cv::Point2d ip, double weight) {
-    return (new ceres::AutoDiffCostFunction<RectProjDirError, 2, 2, 1, 2, 2>(
+    return (new ceres::AutoDiffCostFunction<RectProjDirError, 2, 2, 2>(
                 new RectProjDirError(ip, weight)));
   }
 
   double ix,iy,w;
 };
 
-const double proj_center_size = 0.3;
+struct RectProjDirError4P {
+  RectProjDirError4P(cv::Point2d ip, double weight)
+      : w(weight)
+      {
+        ix = ip.x;
+        iy = ip.y;
+      }
 
-static void _zline_problem_add_proj_error(ceres::Problem &problem, Mat_<double> &lines, cv::Point2i img_size, double *proj, double *r, double *m)
+      
+  template<typename T> 
+  bool operator()(const T* const p, const T* const l,
+                  T* residuals) const {
+    T wx = l[2]; //dir
+    T wy = l[3];
+    T px = wx * p[0];    
+    T py = wy * p[1];    
+    residuals[0] = (T(ix)-px)*T(w)*T(0.01);
+    residuals[1] = (T(iy)-py)*T(w)*T(0.01);
+    
+    return true;
+  }
+
+  // Factory to hide the construction of the CostFunction object from
+  // the client code.
+  static ceres::CostFunction* Create(cv::Point2d ip, double weight) {
+    return (new ceres::AutoDiffCostFunction<RectProjDirError4P, 2, 2, 4>(
+                new RectProjDirError4P(ip, weight)));
+  }
+
+  double ix,iy,w;
+};
+
+
+// Generic line error
+struct LineZ3GenericError {
+  LineZ3GenericError(double x, double y)
+      : x_(x), y_(y) {}
+      
+  template <typename T>
+  bool operator()(const T* const extr, const T* const line,
+                  T* residuals) const {
+                    
+                    
+    T p[3], w_p[3];
+    w_p[0] = T(x_);
+    w_p[1] = T(y_);
+    w_p[2] = T(0);
+    ceres::AngleAxisRotatePoint(extr, w_p, p);
+
+    // camera[3,4,5] are the translation.
+    p[0] += extr[3];
+    p[1] += extr[4];
+    p[2] += extr[5];
+    
+    //compare with projected pinhole camera ray
+    residuals[0] = (p[0] - (line[0] + p[2]*line[2]));
+    residuals[1] = (p[1] - (line[1] + p[2]*line[3]));
+    
+    return true;
+  }
+
+  // Factory to hide the construction of the CostFunction object from
+  // the client code.
+  static ceres::CostFunction* Create(double x, double y) {
+    return (new ceres::AutoDiffCostFunction<LineZ3GenericError, 2, 6, 4>(
+                new LineZ3GenericError(x, y)));
+  }
+
+  double x_,y_;
+};
+
+// Generic line error
+struct LineZ3GenericExtraError {
+  LineZ3GenericExtraError(double x, double y)
+      : x_(x), y_(y) {}
+      
+  template <typename T>
+  bool operator()(const T* const extr, const T* const extr_rel, const T* const line,
+                  T* residuals) const {
+                    
+                    
+    T p[3], p1[3], w_p[3];
+    w_p[0] = T(x_);
+    w_p[1] = T(y_);
+    w_p[2] = T(0);
+    ceres::AngleAxisRotatePoint(extr, w_p, p1);
+
+    // camera[3,4,5] are the translation.
+    p1[0] += extr[3];
+    p1[1] += extr[4];
+    p1[2] += extr[5];
+    
+    ceres::AngleAxisRotatePoint(extr_rel, p1, p);
+
+    // camera[3,4,5] are the translation.
+    p[0] += extr_rel[3];
+    p[1] += extr_rel[4];
+    p[2] += extr_rel[5];
+    
+    //compare with projected pinhole camera ray
+    residuals[0] = (p[0] - (line[0] + p[2]*line[2]));
+    residuals[1] = (p[1] - (line[1] + p[2]*line[3]));
+    
+    return true;
+  }
+
+  // Factory to hide the construction of the CostFunction object from
+  // the client code.
+  static ceres::CostFunction* Create(double x, double y) {
+    return (new ceres::AutoDiffCostFunction<LineZ3GenericExtraError, 2, 6, 6, 4>(
+                new LineZ3GenericExtraError(x, y)));
+  }
+
+  double x_,y_;
+};
+
+const double proj_center_size = 0.2;
+
+static void _zline_problem_add_proj_error(ceres::Problem &problem, Mat_<double> &lines, cv::Point2i img_size, Mat_<double> &proj, Mat_<double> &r, Mat_<double> &m)
 {
   double two_sigma_squared = 2.0*(img_size.x*img_size.x+img_size.y*img_size.y)*proj_center_size*proj_center_size;
   cv::Point2i proxy_size(lines["x"], lines["y"]);
       
-  for(auto pos : Idx_It_Dims(lines, "x", "y")) {    
-    std::cout << "proc: " << pos << "\n";
-    
+  for(auto pos : Idx_It_Dims(lines, "x", "cams")) {        
     int x = pos["x"];
     int y = pos["y"];
     
@@ -645,48 +759,36 @@ static void _zline_problem_add_proj_error(ceres::Problem &problem, Mat_<double> 
         RectProjDirError::Create(ip, w);
         
     problem.AddResidualBlock(cost_function,
-                              NULL,
-                              proj, r, m, &lines({2,pos.r("x","cams")}));
-    
-    //keep center looking straight
-    /*if (ray["y"] == center.y && ray["x"] == center.x) {
-      ceres::CostFunction* cost_function =
-      LineZ3GenericCenterLineError::Create(p.x, p.y);
-      problem.AddResidualBlock(cost_function, NULL, 
-                                &extrinsics({0,ray.r("channels","views")}));
-    }
-    //regular line error (in x/y world direction)
-    else {
-      ceres::CostFunction* cost_function = 
-      LineZ3DirPinholeError::Create(p.x, p.y);
-      problem.AddResidualBlock(cost_function,
-                                NULL,
-                                &extrinsics({0,ray.r("channels","views")}),
-                                //use only direction part!
-                                &lines({2,ray.r("x","cams")}));
-    }*/
+                            NULL,
+                            &proj(0,pos.r("channels","cams")),
+                            &lines({2,pos.r("x","cams")}));
   }
-  
-  /*double two_sigma_squared = 2.0*(img_size.x*img_size.x+img_size.y*img_size.y)*proj_center_size*proj_center_size;
-  
-  for(int y=0;y<proxy_size.y;y++)
-    for(int x=0;x<proxy_size.x;x++) {
-      Vec4d line = lines[y*proxy_size.x+x];
+}
+
+static void _zline_problem_add_proj_error_4P(ceres::Problem &problem, Mat_<double> &lines, cv::Point2i img_size, Mat_<double> &proj, Mat_<double> &r, Mat_<double> &m)
+{
+  double two_sigma_squared = 2.0*(img_size.x*img_size.x+img_size.y*img_size.y)*proj_center_size*proj_center_size;
+  cv::Point2i proxy_size(lines["x"], lines["y"]);
       
-        Point2d ip = Point2d((x+0.5-proxy_size.x*0.5)*img_size.x/proxy_size.x,(y+0.5-proxy_size.y*0.5)*img_size.y/proxy_size.y);
+  for(auto pos : Idx_It_Dims(lines, "x", "cams")) {        
+    int x = pos["x"];
+    int y = pos["y"];
+    
+    Point2d ip = Point2d((x+0.5-proxy_size.x*0.5)*img_size.x/proxy_size.x,(y+0.5-proxy_size.y*0.5)*img_size.y/proxy_size.y);
+      
+    double w = exp(-((ip.x*ip.x+ip.y*ip.y)/two_sigma_squared));
+    //w_sum += w;
+    w = sqrt(w);
+    
+    
+    ceres::CostFunction* cost_function =
+        RectProjDirError4P::Create(ip, w);
         
-        double w = exp(-((ip.x*ip.x+ip.y*ip.y)/two_sigma_squared));
-        //w_sum += w;
-        w = sqrt(w);
-        
-        
-        ceres::CostFunction* cost_function =
-            RectProjDynError::Create(ip, w);
-            
-        problem.AddResidualBlock(cost_function,
-                                  NULL,
-                                  proj, r, m, &lines[4*(y*proxy_size.x+x)]);
-    }*/
+    problem.AddResidualBlock(cost_function,
+                            NULL,
+                            &proj(0,pos.r("channels","cams")),
+                            &lines({0,pos.r("x","cams")}));
+  }
 }
 
 static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, const Mat_<float>& proxy, Mat_<double> &extrinsics, Mat_<double> &extrinsics_rel, Mat_<double> &lines)
@@ -740,6 +842,82 @@ static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, const Mat_
   }
 }
 
+static void _zline_problem_add_generic_lines(ceres::Problem &problem, const Mat_<float>& proxy, Mat_<double> &extrinsics, Mat_<double> &extrinsics_rel, Mat_<double> &lines)
+{
+  /*ceres::CostFunction* cost_function;
+  
+  for(int i=0;i<proxy_backwards.size();i+=i_step)
+    for(int y=0;y<proxy_size.y;y+=y_step)
+      for(int x=0;x<proxy_size.x;x+=x_step) {
+        Point2f p = proxy_backwards[i][y*proxy_size.x+x];
+        
+        if (isnan(p.x) || isnan(p.y))
+          continue;
+        
+        //keep center looking straight
+        if (y==proxy_size.y/2 && x == proxy_size.x/2) {
+          cost_function = LineZ3GenericCenterLineError::Create(p.x, p.y);
+          problem.AddResidualBlock(cost_function,
+                                   NULL,
+                                   extrinsics+i*6);
+        }
+        else {
+          cost_function = LineZ3GenericError::Create(p.x, p.y);
+          problem.AddResidualBlock(cost_function,
+                                   NULL,
+                                   extrinsics+i*6,
+                                   lines + (y*proxy_size.x+x)*4);
+        }
+      }*/
+      
+  cv::Point2i center(proxy["x"]/2, proxy["y"]/2);
+  
+  //channels == 0 && cams == 0
+  for(auto ray : Idx_It_Dims(proxy, "x", "views")) {
+    bool ref_cam = true;
+    
+    for(int i=proxy.dim("channels");i<=proxy.dim("cams");i++)
+      if (ray[i])
+        ref_cam = false;
+      
+    cv::Point2f p(proxy({0,ray.r("x",-1)}),
+                  proxy({1,ray.r("x",-1)}));
+    
+    if (isnan(p.x) || isnan(p.y))
+      continue;
+    
+    if (ref_cam) {
+      //std::cout << "process: " << ray << p << "\n";
+      
+      //keep center looking straight
+      if (ray["y"] == center.y && ray["x"] == center.x) {
+        ceres::CostFunction* cost_function =
+        LineZ3GenericCenterLineError::Create(p.x, p.y);
+        problem.AddResidualBlock(cost_function, NULL, 
+                                &extrinsics({0,ray["views"]}));
+      }
+      //regular line error (in x/y world direction)
+      else {
+        ceres::CostFunction* cost_function = 
+        LineZ3GenericError::Create(p.x, p.y);
+        problem.AddResidualBlock(cost_function,
+                                NULL,
+                                &extrinsics({0,ray["views"]}),
+                                &lines({0,ray.r("x","cams")}));
+      }
+    }
+    else {
+        ceres::CostFunction* cost_function = 
+        LineZ3GenericExtraError::Create(p.x, p.y);
+        problem.AddResidualBlock(cost_function,
+                                NULL,
+                                &extrinsics({0,ray["views"]}),
+                                &extrinsics_rel({0,ray.r("channels","cams")}),
+                                &lines({0,ray.r("x","cams")}));
+    }
+  }
+}
+
 /*
  * optimize together:
  *  - per image camera movement (world rotation and translation)
@@ -750,7 +928,7 @@ static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, const Mat_
 double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point2i img_size, Mat_<double> &extrinsics, Mat_<double> &extrinsics_rel)
 {
   ceres::Solver::Options options;
-  options.max_num_iterations = 10000;
+  options.max_num_iterations = 500;
   options.function_tolerance = 1e-3;
   options.minimizer_progress_to_stdout = true;
   //options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
@@ -765,9 +943,16 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   options.num_threads = 8;
   options.num_linear_solver_threads = 8;
   
-  double r = 0;
-  double m[2] = {0,0};
-  double proj[2] = {1000,1000};
+  Mat_<double> r({proxy.r("channels","cams")});
+  Mat_<double> m({2, proxy.r("channels","cams")});
+  Mat_<double> proj({2,proxy.r("channels","cams")});
+  
+  for(auto pos : Idx_It_Dims(r, 0, -1))
+    r(pos) = 0;
+  for(auto pos : Idx_It_Dims(m, 0, -1))
+    m(pos) = 0;
+  for(auto pos : Idx_It_Dims(proj, 0, -1))
+    proj(pos) = 1000;
   
   for(auto cam_pos : Idx_It_Dim(extrinsics, "views")) {
     for(int i=0;i<5;i++)
@@ -786,7 +971,7 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   
   _zline_problem_add_pinhole_lines(problem, proxy, extrinsics, extrinsics_rel, lines);
   //_zline_problem_add_center_errors(problem, proxy_backwards, extrinsics, lines, proxy_size, z_step, 1, 1, 1);
-  //_zline_problem_add_proj_error(problem, lines, img_size, proj, &r, m);
+  _zline_problem_add_proj_error(problem, lines, img_size, proj, r, m);
   
   printf("solving pinhole problem...\n");
   ceres::Solve(options, &problem, &summary);
@@ -797,6 +982,27 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   std::cout << summary.FullReport() << "\n";
   
   printf("rms: %f\n",2.0*sqrt(summary.final_cost/problem.NumResiduals()));
+  
+  //return 2.0*sqrt(summary.final_cost/problem.NumResiduals());
+  
+  ///////////////////////////////////////////////
+  //full problem
+  ///////////////////////////////////////////////
+  options.max_num_iterations = 500;
+  options.function_tolerance = 1e-12;
+  options.parameter_tolerance = 1e-12;
+  
+  ceres::Problem problem_full;
+  
+  _zline_problem_add_generic_lines(problem_full, proxy, extrinsics, extrinsics_rel, lines);
+  //_zline_problem_add_center_errors(problem_full, proxy_backwards, extrinsics, lines, proxy_size, z_step, 1, 1, 1);
+  _zline_problem_add_proj_error_4P(problem_full, lines, img_size, proj, r, m);
+  
+  printf("solving constrained generic problem...\n");
+  ceres::Solve(options, &problem_full, &summary);
+  printf("solved\n");
+  
+  printf("\nunconstrained rms ~%fmm\n", 2.0*sqrt(summary.final_cost/problem_full.NumResiduals()));
 }
 
 //FIXME repair!
