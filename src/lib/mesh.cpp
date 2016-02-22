@@ -160,4 +160,32 @@ Mesh mesh_plane()
   return m;
 }
 
+Mesh mesh_line(const Eigen::Vector3d &p1, const Eigen::Vector3d &p2)
+{
+  Mesh m;
+  
+  Eigen::MatrixXd V(3, 3);
+  Eigen::MatrixXi F(1, 3);
+   
+  V(0,0) = p1(0);
+  V(0,1) = p1(1);
+  V(0,2) = p1(2);
+  
+  V(1,0) = p2(0);
+  V(1,1) = p2(1);
+  V(1,2) = p2(2);
+  
+  V(2,0) = p2(0);
+  V(2,1) = p2(1);
+  V(2,2) = p2(2);
+  
+  F(0,0) = 0;
+  F(0,1) = 1;
+  F(0,2) = 2;
+  
+  m.V = V;
+  m.F = F;
+  return m;
+}
+
 }

@@ -25,7 +25,7 @@
   
   const double strong_proj_constr_weight = 0.1;
   const double proj_constr_weight = 1e-4;
-  const double center_constr_weight = 1;
+  const double center_constr_weight = 0.1;
 #endif
   
 #ifdef CLIF_WITH_LIBIGL_VIEWER
@@ -981,7 +981,7 @@ static void _zline_problem_add_center_errors(ceres::Problem &problem, Mat_<doubl
 }
 
 #ifdef CLIF_WITH_LIBIGL_VIEWER
-void update_cams_mesh(Mesh &cams, Mat_<double> extrinsics, Mat_<double> extrinsics_rel)
+void update_cams_mesh(Mesh &cams, Mat_<double> extrinsics, Mat_<double> extrinsics_rel, Mat_<double> lines)
 {
   cams = mesh_cam().scale(20);
   
@@ -997,10 +997,33 @@ void update_cams_mesh(Mesh &cams, Mat_<double> extrinsics, Mat_<double> extrinsi
       cam.rotate(-rot);
       cams.merge(cam);
       //cam_writer.add(cam_left,col);
+      //printf("extr:\n");
+      //std::cout << -rot << "\n trans:\n" << -trans << std::endl;
+      //printf("%.3f ", trans.norm());
       
-      printf("%.3f ", trans.norm());
+      Mesh line_mesh;
+      
+      for(auto line_pos : Idx_It_Dims(lines,"x","y")) {
+        if (line_pos["x"] % 4 != 0)
+          continue;
+        if (line_pos["y"] % 4 != 0)
+          continue;
+        Eigen::Vector3d origin(lines({0,line_pos.r("x","y"),pos.r("channels","cams")}),lines({1,line_pos.r("x","y"),pos.r("channels","cams")}),0.0);
+        Eigen::Vector3d dir(lines({2,line_pos.r("x","y"),pos.r("channels","cams")}),lines({3,line_pos.r("x","y"),pos.r("channels","cams")}),-1.0);
+        
+      
+        Mesh line = mesh_line(origin,origin+dir*1000.0);
+        
+        line_mesh.merge(line);
+      }
+      
+      line_mesh -= trans;
+      line_mesh.rotate(-rot);
+      
+      cams.merge(line_mesh);
+      //viewer.data.add_edges(P1,P2,Eigen::RowVector3d(r,g,b);
     }
-  printf("\n");
+  //printf("\n");
   
   for(auto pos : Idx_It_Dim(extrinsics, "views")) {
       Eigen::Vector3d trans(extrinsics(3,pos["views"]),extrinsics(4,pos["views"]),extrinsics(5,pos["views"]));
@@ -1020,6 +1043,7 @@ void update_cams_mesh(Mesh &cams, Mat_<double> extrinsics, Mat_<double> extrinsi
 igl::viewer::Viewer viewer;
 Mat_<double> *extr_ptr = NULL;
 Mat_<double> *extr_rel_ptr = NULL;
+Mat_<double> *lines_ptr = NULL;
 Mesh mesh;
 
 //this is called in main thread!
@@ -1027,7 +1051,7 @@ bool callback_pre_draw(igl::viewer::Viewer& viewer)
 { 
   if (extr_ptr) {
     viewer.data.clear();
-    update_cams_mesh(mesh, *extr_ptr, *extr_rel_ptr);
+    update_cams_mesh(mesh, *extr_ptr, *extr_rel_ptr, *lines_ptr);
     viewer.data.set_mesh(mesh.V, mesh.F);
   }
   
@@ -1116,8 +1140,9 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
 #ifdef CLIF_WITH_LIBIGL_VIEWER 
   extr_ptr = &extrinsics;
   extr_rel_ptr = &extrinsics_rel;
+  lines_ptr = &lines;
   
-  update_cams_mesh(mesh, extrinsics, extrinsics_rel);
+  update_cams_mesh(mesh, extrinsics, extrinsics_rel, lines);
   
   std::thread viewer_thread(run_viewer, &mesh);
   
@@ -1131,6 +1156,7 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   
   printf("solving pinhole problem (strong projection)...\n");
   ceres::Solve(options, &problem, &summary);
+  std::cout << summary.FullReport() << "\n";
   printf("\npinhole rms ~%fmm\n", 2.0*sqrt(summary.final_cost/problem.NumResiduals()));
   
   ceres::Problem problem2;
@@ -1140,6 +1166,7 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   
   printf("solving pinhole problem (weak projection)...\n");
   ceres::Solve(options, &problem2, &summary);
+  std::cout << summary.FullReport() << "\n";
   printf("\npinhole rms ~%fmm\n", 2.0*sqrt(summary.final_cost/problem2.NumResiduals()));
   
   printf("proj %fx%f, move %fx%f\n", proj[0], proj[1], m[0], m[1]);
@@ -1165,8 +1192,7 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   
   printf("solving constrained generic problem...\n");
   ceres::Solve(options, &problem_full, &summary);
-  printf("solved\n");
-  
+  std::cout << summary.FullReport() << "\n";
   printf("\nunconstrained rms ~%fmm\n", 2.0*sqrt(summary.final_cost/problem_full.NumResiduals()));
   
   options.max_num_iterations = 0;
@@ -1230,6 +1256,7 @@ bool ucalib_calibrate(Dataset *set, cpath proxy, cpath calib)
     set->setAttribute(calib_root/"type", "UCALIB");
     set->setAttribute(calib_root/"extrinsics", extrinsics);
     set->setAttribute(calib_root/"extrinsics_cams", extrinsics_rel);
+    set->setAttribute(calib_root/"rms", rms);
 
     printf("finished ucalib calibration!\n");
     return true;

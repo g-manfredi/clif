@@ -21,6 +21,7 @@ public:
 
 Mesh mesh_cam();
 Mesh mesh_plane();
+Mesh mesh_line(const Eigen::Vector3d &p1, const Eigen::Vector3d &p2);
 
 }
 

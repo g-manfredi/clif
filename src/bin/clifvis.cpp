@@ -56,12 +56,12 @@ cliini_opt opts[] = {
     'o'
   },
   {
-    "types", //FIXME remove this
+    "cam",
     1, //argcount
-    1, //argcount
-    CLIINI_STRING, //type
+    2, //argcount
+    CLIINI_INT, //type
     0, //flags
-    't'
+    'c'
   }
 };
 
@@ -82,12 +82,94 @@ void errorexit(const char *msg)
   exit(EXIT_FAILURE);
 }
 
+#ifdef CLIF_WITH_LIBIGL
+void update_cams_mesh(Mesh &cams, Mat_<double> extrinsics, Mat_<double> extrinsics_rel, Mat_<double> lines)
+{
+  cams = mesh_cam().scale(20);
+  
+  for(auto pos : Idx_It_Dims(extrinsics_rel,"channels","cams")) {
+      //cv::Vec3b col(0,0,0);
+      //col[ch%3]=255;
+      Eigen::Vector3d trans(extrinsics_rel(3,pos.r("channels","cams")),extrinsics_rel(4,pos.r("channels","cams")),extrinsics_rel(5,pos.r("channels","cams")));
+      Eigen::Vector3d rot(extrinsics_rel(0,pos.r("channels","cams")),extrinsics_rel(1,pos.r("channels","cams")),extrinsics_rel(2,pos.r("channels","cams")));
+      
+      //FIXME must exactly invert those operations?
+      Mesh cam = mesh_cam().scale(20);
+      cam -= trans;
+      cam.rotate(-rot);
+      cams.merge(cam);
+      //cam_writer.add(cam_left,col);
+      //printf("extr:\n");
+      //std::cout << -rot << "\n trans:\n" << -trans << std::endl;
+      //printf("%.3f ", trans.norm());
+      
+      Mesh line_mesh;
+      
+      for(auto line_pos : Idx_It_Dims(lines,"x","y")) {
+        if (line_pos["x"] % 4 != 0)
+          continue;
+        if (line_pos["y"] % 4 != 0)
+          continue;
+        Eigen::Vector3d origin(lines({0,line_pos.r("x","y"),pos.r("channels","cams")}),lines({1,line_pos.r("x","y"),pos.r("channels","cams")}),0.0);
+        Eigen::Vector3d dir(lines({2,line_pos.r("x","y"),pos.r("channels","cams")}),lines({3,line_pos.r("x","y"),pos.r("channels","cams")}),-1.0);
+        
+      
+        Mesh line = mesh_line(origin,origin+dir*1000.0);
+        
+        line_mesh.merge(line);
+      }
+      
+      line_mesh -= trans;
+      line_mesh.rotate(-rot);
+      
+      cams.merge(line_mesh);
+      //viewer.data.add_edges(P1,P2,Eigen::RowVector3d(r,g,b);
+    }
+  //printf("\n");
+  
+  for(auto pos : Idx_It_Dim(extrinsics, "views")) {
+      Eigen::Vector3d trans(extrinsics(3,pos["views"]),extrinsics(4,pos["views"]),extrinsics(5,pos["views"]));
+      Eigen::Vector3d rot(extrinsics(0,pos["views"]),extrinsics(1,pos["views"]),extrinsics(2,pos["views"]));
+      
+      Mesh plane = mesh_plane().scale(1000);
+      
+      plane -= trans;
+      plane.rotate(-rot);
+      
+      cams.merge(plane);
+  }
+  
+}
+
+void single_cam_lines(Mesh &mesh, Mat_<double> lines, int channel, int cam)
+{
+  Mesh line_mesh;
+  
+  for(auto line_pos : Idx_It_Dims(lines,"x","y")) {
+    if (line_pos["x"] % 4 != 0)
+      continue;
+    if (line_pos["y"] % 4 != 0)
+      continue;
+    Eigen::Vector3d origin(lines({0,line_pos.r("x","y"),channel,cam}),lines({1,line_pos.r("x","y"),channel,cam}),0.0);
+    Eigen::Vector3d dir(lines({2,line_pos.r("x","y"),channel,cam}),lines({3,line_pos.r("x","y"),channel,cam}),-1.0);
+    
+    
+    Mesh line = mesh_line(origin-dir,origin+dir);
+    
+    line_mesh.merge(line);
+  }
+  
+  mesh = line_mesh;
+}
+#endif
+
 
 int main(const int argc, const char *argv[])
 {
   cliini_args *args = cliini_parsopts(argc, argv, &group);
 
   cliini_arg *input = cliargs_get(args, "input");
+  cliini_arg *camsel = cliargs_get(args, "cam");
   
   if (!input || cliarg_sum(input) != 1)
     errorexit("need exactly on input file");
@@ -100,46 +182,29 @@ int main(const int argc, const char *argv[])
 
   Mat_<double> extrinsics;
   Mat_<double> extrinsics_rel;
+  Mat_<double> lines;
   set->get(set->getSubGroup("calibration/intrinsics")/"extrinsics", extrinsics);
   set->get(set->getSubGroup("calibration/intrinsics")/"extrinsics_cams", extrinsics_rel);
+  
+  
+  Datastore *line_store = set->getStore(set->getSubGroup("calibration/intrinsics")/"lines");
+  line_store->read(lines);
+  
   extrinsics.names({"extrinsics","views"});
   extrinsics_rel.names({"extrinsics","channels","cams"});
+  lines.names({"lines","x","y","channels","cams"});
   
 #ifdef CLIF_WITH_LIBIGL
     
   Mesh cams;
   
-  Mesh cam = mesh_cam().scale(20);
-  cams.merge(cam);
-  
-  for(auto pos : Idx_It_Dims(extrinsics_rel,"channels","cams")) {
-      //cv::Vec3b col(0,0,0);
-      //col[ch%3]=255;
-      Eigen::Vector3d trans(extrinsics_rel(3,pos.r("channels","cams")),extrinsics_rel(4,pos.r("channels","cams")),extrinsics_rel(5,pos.r("channels","cams")));
-      Eigen::Vector3d rot(extrinsics_rel(0,pos.r("channels","cams")),extrinsics_rel(1,pos.r("channels","cams")),extrinsics_rel(2,pos.r("channels","cams")));
-      
-      //FIXME must exactly invert those operations?
-      Mesh cam = mesh_cam().scale(20);
-      cam -= trans;
-      cam.rotate(-rot);
-      std::cout << trans << "\n";
-      cams.merge(cam);
-      //cam_writer.add(cam_left,col);
-    }
-  
-  for(auto pos : Idx_It_Dim(extrinsics, "views")) {
-      Eigen::Vector3d trans(extrinsics(3,pos["views"]),extrinsics(4,pos["views"]),extrinsics(5,pos["views"]));
-      Eigen::Vector3d rot(extrinsics(0,pos["views"]),extrinsics(1,pos["views"]),extrinsics(2,pos["views"]));
-      
-      Mesh plane = mesh_plane().scale(1000);
-      /*plane.rotate(ref_rot);
-      plane += ref_trans;*/
-      
-      plane -= trans;
-      plane.rotate(-rot);
-      
-      cams.merge(plane);
+  if (camsel) {
+    int channel = cliarg_nth_int(camsel, 0);
+    int cam = cliarg_nth_int(camsel, 1);
+    single_cam_lines(cams, lines, channel, cam);
   }
+  else
+    update_cams_mesh(cams, extrinsics, extrinsics_rel, lines);
     
   cams.writeOBJ("cams.obj");  
      
