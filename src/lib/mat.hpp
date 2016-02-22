@@ -270,6 +270,29 @@ public:
     return *(T*)(((char*)_data)+calc_offset<T>(_step, 0, first, idxs...));
   }
   
+  template<typename ... Idxs, typename = typename std::enable_if<are_all_convertible<int, Idxs...>::value>::type>
+    Mat bindAll(Idxs ... idxs) const
+  {
+    return _bind_last_dim(0, idxs...);
+  }
+  
+  Mat _bind_last_dim(int dim, int last) const
+  {
+    if (last == -1)
+      return *this;
+    else
+      return bind(dim, last);
+  }
+  
+  template<typename ... Idxs, typename = typename std::enable_if<are_all_convertible<int, Idxs...>::value>::type>
+    Mat _bind_last_dim(int dim, int first, Idxs ... idxs) const
+  {
+    if (first == -1)
+      return _bind_last_dim(dim+1, idxs...);
+    else
+      return _bind_last_dim(dim+1, idxs...).bind(dim, first);
+  }
+  
   template<typename T, typename ... Idxs, typename = typename std::enable_if<are_all_convertible<int, Idxs...>::value>::type>
     T& at(int first, Idxs ... idxs) const
   {
