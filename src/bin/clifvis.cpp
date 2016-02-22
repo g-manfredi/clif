@@ -110,9 +110,10 @@ void update_cams_mesh(Mesh &cams, Mat_<double> extrinsics, Mat_<double> extrinsi
           continue;
         if (line_pos["y"] % 4 != 0)
           continue;
-        Eigen::Vector3d origin(lines({0,line_pos.r("x","y"),pos.r("channels","cams")}),lines({1,line_pos.r("x","y"),pos.r("channels","cams")}),0.0);
-        Eigen::Vector3d dir(lines({2,line_pos.r("x","y"),pos.r("channels","cams")}),lines({3,line_pos.r("x","y"),pos.r("channels","cams")}),-1.0);
         
+        Mat_<double> l = lines.bindAll(-1,line_pos["x"],line_pos["y"],pos["channels"],pos["cams"]);
+        Eigen::Vector3d origin(l(0),l(1),0.0);
+        Eigen::Vector3d dir(l(2),l(3),-1.0);
       
         Mesh line = mesh_line(origin,origin+dir*1000.0);
         
