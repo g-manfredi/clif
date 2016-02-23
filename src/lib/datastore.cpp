@@ -876,7 +876,7 @@ void Datastore::readChannel(const Idx &idx, cv::Mat *channel, int flags)
 DepthDist* Datastore::undist(double depth)
 {
   DepthDist *undist = NULL;
-  
+    
   if (!_undists.count(depth)) {
     cpath intrinsics;
     try {

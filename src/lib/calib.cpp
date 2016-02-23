@@ -1254,7 +1254,7 @@ bool ucalib_calibrate(Dataset *set, cpath proxy, cpath calib)
     line_store->write(lines);
     
     set->setAttribute(calib_root/"type", "UCALIB");
-    set->setAttribute(calib_root/"extrinsics", extrinsics);
+    set->setAttribute(calib_root/"extrinsics_views", extrinsics);
     set->setAttribute(calib_root/"extrinsics_cams", extrinsics_rel);
     set->setAttribute(calib_root/"rms", rms);
 

@@ -24,13 +24,13 @@ TD_DistType::TD_DistType(const cpath& path)
 }
 
 #ifdef CLIF_WITH_UCALIB 
-static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_pos, Mat_<float> &corr_line_m, Mat_<float> &extrinsics_m, int _w, int _h, bool calc_fit, cv::Point2d &_f, cv::Point2d &_m, double &_r)
+static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_pos, Mat_<double> &corr_line_m, Mat_<double> &extrinsics_m, int _w, int _h, bool calc_fit, cv::Point2d &_f, cv::Point2d &_m, double &_r)
 {
   std::cout << "generate map for " << map_pos << std::endl;
   
   std::vector<cv::Vec4d> linefits(corr_line_m["x"]*corr_line_m["y"]);
   
-  Idx lines_pos({IR(4, "line"), map_pos.r("x","views")});
+  Idx lines_pos({IR(4, "line"), map_pos.r("x","cams")});
   
   for(int j=0;j<corr_line_m["y"];j++)
     for(int i=0;i<corr_line_m["x"];i++)
@@ -129,24 +129,26 @@ bool DepthDist::load(Dataset *set)
 #ifndef CLIF_WITH_UCALIB
     return true;
 #else
+    
+    printf("gen Depthdist!\n");
       
     //FIXME cams might be missing!
-    Mat_<float> corr_line_m = set->readStore(path()/"lines");
+    Mat_<double> corr_line_m = set->readStore(path()/"lines");
     corr_line_m.names({"line","x","y","channels","cams"});
     
-    Mat_<float> extrinsics_m;
+    Mat_<double> extrinsics;
     
-    set->get(path()/"extrinsics", extrinsics_m);
-    extrinsics_m.names({"data","channels","cams","views"});
+    set->get(path()/"extrinsics_cams", extrinsics);
+    extrinsics.names({"extrinsics","channels","cams"});
     
-    _maps.create({IR(_w, "x"),IR(_h, "y"), extrinsics_m.r("channels","cams")});
+    _maps.create({IR(_w, "x"),IR(_h, "y"), extrinsics.r("channels","cams")});
     
-    float extrinsics_main[6];
+    double extrinsics_main[6];
     for(int i=0;i<6;i++)
-      extrinsics_main[i] = extrinsics_m(Idx({i,extrinsics_m["channels"]/2,extrinsics_m["cams"]/2,0}));
+      extrinsics_main[i] = extrinsics(Idx({i,extrinsics["channels"]/2,extrinsics["cams"]/2}));
     
     
-    _genmap(_maps, _depth, Idx({IR(0,"line"),IR(0,"x"),IR(0,"y"),IR(corr_line_m["channels"]/2,"channels"),IR(corr_line_m["cams"]/2,"cams")}), corr_line_m, extrinsics_m, _w, _h, true, _f, _m, _r);
+    _genmap(_maps, _depth, Idx({IR(0,"line"),IR(0,"x"),IR(0,"y"),IR(corr_line_m["channels"]/2,"channels"),IR(corr_line_m["cams"]/2,"cams")}), corr_line_m, extrinsics, _w, _h, true, _f, _m, _r);
     
     //center rotation and translation
     cv::Matx31f c_r(extrinsics_main[0],extrinsics_main[1],extrinsics_main[2]);
@@ -154,7 +156,9 @@ bool DepthDist::load(Dataset *set)
     cv::Matx33f c_r_m;
     cv::Rodrigues(c_r, c_r_m);
     
-    cv::Matx31f ref(0, 0, 0);
+    std::cout << "extr center rotate: \n" << c_r << "\nextr center translate:\n" << c_t << std::endl;
+    
+    cv::Matx31f ref(0, 0, -1000);
     cv::Matx31f ref_c = ref + c_t;
     cv::Matx21f res_c(ref_c(0)*_f.x/ref_c(2),ref_c(1)*_f.y/ref_c(2));
     
@@ -162,21 +166,23 @@ bool DepthDist::load(Dataset *set)
     
 
     //FIXME skip center view!
-    for(auto pos : Idx_It_Dims(extrinsics_m, "channels","cams")) {
+    for(auto pos : Idx_It_Dims(extrinsics, "channels","cams")) {
       //to move lines from local to ref view do:
       //undo local translation
       //undo local rotation (we are now in target coordinates)
       //do ref rotation
       //do ref translation
-      cv::Matx31f l_r(extrinsics_m({0,pos.r("channels","views")}),
-                      extrinsics_m({1,pos.r("channels","views")}),
-                      extrinsics_m({2,pos.r("channels","views")}));
-      cv::Matx31f l_t(extrinsics_m({3,pos.r("channels","views")}),
-                      extrinsics_m({4,pos.r("channels","views")}),
-                      extrinsics_m({5,pos.r("channels","views")}));
+      cv::Matx31f l_r(extrinsics({0,pos.r("channels","cams")}),
+                      extrinsics({1,pos.r("channels","cams")}),
+                      extrinsics({2,pos.r("channels","cams")}));
+      cv::Matx31f l_t(extrinsics({3,pos.r("channels","cams")}),
+                      extrinsics({4,pos.r("channels","cams")}),
+                      extrinsics({5,pos.r("channels","cams")}));
       cv::Matx33f l_r_m, l_r_m_t;
       cv::Rodrigues(l_r, l_r_m);
       transpose(l_r_m, l_r_m_t);
+      
+      std::cout << "cam rotate: \n" << l_r << "\ncam translate:\n" << l_t << std::endl;
       
       
       /*if (pos["channels"] == extrinsics_m["channels"]/2
@@ -194,13 +200,14 @@ bool DepthDist::load(Dataset *set)
       cv::Matx31f ref_l = ref + l_t;
       cv::Matx21f res(ref_l(0)*_f.x/ref_l(2),ref_l(1)*_f.y/ref_l(2));
       
+      std::cout << "ref_l: " << ref_l << std::endl;
       std::cout << "ref: " << res - res_c << std::endl;
       
       normalize(res-res_c, res);
       
-      if (pos["cams"] < extrinsics_m["cams"]/2)
+      if (pos["cams"] < extrinsics["cams"]/2)
         avg_dir -= res;
-      else if (pos["cams"] > extrinsics_m["cams"]/2)
+      else if (pos["cams"] > extrinsics["cams"]/2)
         avg_dir += res;
 
       
@@ -265,7 +272,7 @@ bool DepthDist::load(Dataset *set)
     std::vector<cv::Point3f> ref_points;
     
     for(auto map_pos : Idx_It_Dims(corr_line_m, "channels","cams")) {
-      _genmap(_maps, _depth, map_pos, corr_line_m, extrinsics_m, _w, _h, false, _f, _m, _r);
+      _genmap(_maps, _depth, map_pos, corr_line_m, extrinsics, _w, _h, false, _f, _m, _r);
     }
     
     return true;

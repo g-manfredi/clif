@@ -93,7 +93,7 @@ class Attribute {
     const char *getStr()
     {
       if (type != BaseType::STRING)
-        throw std::invalid_argument("Attribute type doesn't match requested type.");
+        throw std::invalid_argument("Attribute type doesn't match requested type");
       return (char*)data;
     };
     
