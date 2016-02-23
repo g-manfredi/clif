@@ -124,7 +124,9 @@ if (CLIF_COMPILER_MSVC)
   set(HDF5_USE_STATIC_LIBRARIES true)
 endif()
 
+
 #This is to avoid that stupid windows links dlls
+find_package(HDF5 REQUIRED C CXX)
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
 	if (CMAKE_BUILD_TYPE MATCHES Debug)
 	message(STATUS "DEBUG")
@@ -133,8 +135,6 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
 	message(STATUS "Release")
 		set(HDF5_C_LIBRARIES ${HDF5_hdf5_LIBRARY_RELEASE})
 	endif()
-elseif()
-	find_package(HDF5 REQUIRED C CXX)
 endif()
 message(STATUS ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES})
 list(APPEND CLIF_LINK_LIBRARIES ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES})
