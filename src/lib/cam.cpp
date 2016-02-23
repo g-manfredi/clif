@@ -129,9 +129,7 @@ bool DepthDist::load(Dataset *set)
 #ifndef CLIF_WITH_UCALIB
     return true;
 #else
-    
-    printf("gen Depthdist!\n");
-      
+          
     //FIXME cams might be missing!
     Mat_<double> corr_line_m = set->readStore(path()/"lines");
     corr_line_m.names({"line","x","y","channels","cams"});
@@ -338,6 +336,9 @@ void DepthDist::undistort(const clif::Mat & src, clif::Mat & dst, const Idx & po
       //pos_named["channels"] = c;
       //remap(cvMat(src.bind(2, c)), cvMat(dst.bind(2, c)), cvMat(maps_cam.bind(2, c)), cv::noArray(), interp);
     }
+  }
+  else {
+    dst = src;
   }
 }
 

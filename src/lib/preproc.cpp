@@ -310,6 +310,14 @@ void proc_image(Mat &in, Mat &out, const ProcData & proc, const Idx & pos)
   //FIXME hdr may need 4!
   assert(in.size() == 3);
   
+  if (flags == 0)
+  {
+    printf("FIXME implement copy!\n");
+    out.create(curr_in.type(), curr_in);
+    cvMat(curr_in).copyTo(cvMat(out));
+    return;
+  }
+  
   if (_handle_preproc(Improc::DEMOSAIC, curr_in, curr_out, out, flags)) {
     curr_out.create(curr_in.type(), {curr_in.r(0,1),3});
     cv::Mat cv_out;    
@@ -318,12 +326,6 @@ void proc_image(Mat &in, Mat &out, const ProcData & proc, const Idx & pos)
     //FIXME copy!
     //curr_out = Mat3d(cv_out);
     cvMat(Mat3d(cv_out)).copyTo(cvMat(curr_out));
-  }
-  else
-      
-  if (flags == 0)
-  {
-    printf("FIXME implement copy!\n");
   }
   
   if (_handle_preproc(Improc::CVT_GRAY, curr_in, curr_out, out, flags)) {
