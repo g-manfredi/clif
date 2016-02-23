@@ -765,12 +765,11 @@ cv::Mat cvMat(const Mat &m)
 {  
   cv::Mat tmp;
   int *idx = new int[m.size()];
-  size_t *step = new size_t[m.size()-1];
+  size_t *step = new size_t[m.size()];
   
   for(int i=0;i<m.size();i++) {
     idx[i] = m[m.size()-i-1];
-    if (i)
-      step[m.size()-i-1] = m.step()[i];
+    step[m.size()-i-1] = m.step()[i];
   }
   
   int type = CV_32S;

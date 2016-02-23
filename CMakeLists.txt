@@ -18,7 +18,7 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
   # using GCC
   message("use gcc")
   set(CLIF_BUILD_TYPE "SHARED")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -fno-omit-frame-pointer -fPIC -std=c++11 -march=native -fopenmp")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fno-omit-frame-pointer -fPIC -std=c++11 -march=native -fopenmp")
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   # using Visual Studio C++
   message("use msvc")
@@ -119,12 +119,26 @@ list(APPEND CLIF_LINK_LIBRARIES ${OpenCV_LIBRARIES})
 list(APPEND CLIF_INCLUDE_DIRS ${OpenCV_INCLUDE_DIRS})
 list(APPEND CLIF_LIBRARY_DIRS ${OpenCV_LIB_DIR})
 
-#FIXME check wether actual built is static?
-if (CLIF_COMPILER_MSVC)
-  set(HDF5_USE_STATIC_LIBRARIES true)
+
+
+#This is to avoid that stupid windows links dlls
+
+if (NOT HDF5_COMPILE_EXTERNAL)
+	find_package(HDF5 REQUIRED C CXX)
+elseif()
+	if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+		set(HDF5_USE_STATIC_LIBRARIES true)
+		if (CMAKE_BUILD_TYPE MATCHES Debug)
+		message(STATUS "DEBUG")
+			set(HDF5_C_LIBRARIES ${HDF5_LIBRARIES})
+		else()
+		message(STATUS "Release")
+			set(HDF5_C_LIBRARIES ${HDF5_LIBRARIES})
+		endif()
+	endif()
 endif()
-find_package(HDF5 REQUIRED C CXX)
-find_package(HDF5 REQUIRED)
+message("clif:")
+message(STATUS ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES} ${HDF5_INCLUDE_DIR})
 list(APPEND CLIF_LINK_LIBRARIES ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES})
 list(APPEND CLIF_INCLUDE_DIRS ${HDF5_INCLUDE_DIR})
 list(APPEND CLIF_LIBRARY_DIRS ${HDF5_LIBRARY_DIR})
@@ -136,7 +150,9 @@ list(APPEND CLIF_INCLUDE_DIRS ${Vigra_INCLUDE_DIRS})
 #FIXME ask Ullrich why theres not VIGRA_LIBRARY_DIRS?
 #list(APPEND CLIF_LIBRARY_DIRS !!!FIXME!!!)
 
-find_package(Boost REQUIRED COMPONENTS filesystem system)
+if (NOT HDF5_COMPILE_EXTERNAL)
+	find_package(Boost REQUIRED COMPONENTS filesystem system)
+endif()
 list(APPEND CLIF_LINK_LIBRARIES ${Boost_LIBRARIES})
 list(APPEND CLIF_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
 list(APPEND CLIF_LIBRARY_DIRS ${Boost_LIBRARY_DIRS})
