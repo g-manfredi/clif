@@ -263,7 +263,7 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
           cv::Mat ch = clifMat_channel(img_color, 0);
           
           unit_size_res = unit_size;
-          hdmarker_detect_subpattern(ch, corners_rough, corners, recursion_depth, &unit_size_res, debug_img_ptr);
+          hdmarker_detect_subpattern(ch, corners_rough, corners, recursion_depth, &unit_size_res, debug_img_ptr, NULL, 0, limit);
           
           printf("found %6lu corners for channel %d\n", corners.size(), c);
           
@@ -1001,7 +1001,7 @@ void update_cams_mesh(Mesh &cams, Mat_<double> extrinsics, Mat_<double> extrinsi
       //cam_writer.add(cam_left,col);
       //printf("extr:\n");
       //std::cout << -rot << "\n trans:\n" << -trans << std::endl;
-      printf("%.3f ", trans.norm());
+      //printf("%.3f ", trans.norm());
       
       Mesh line_mesh;
       
@@ -1025,7 +1025,7 @@ void update_cams_mesh(Mesh &cams, Mat_<double> extrinsics, Mat_<double> extrinsi
       cams.merge(line_mesh);
       //viewer.data.add_edges(P1,P2,Eigen::RowVector3d(r,g,b);
     }
-  printf("\n");
+  //printf("\n");
   
   for(auto pos : Idx_It_Dim(extrinsics, "views")) {
       Eigen::Vector3d trans(extrinsics(3,pos["views"]),extrinsics(4,pos["views"]),extrinsics(5,pos["views"]));
@@ -1480,12 +1480,12 @@ bool ucalib_calibrate_1(Dataset *set, cpath proxy, cpath calib)
 	  step(i-3) = extrinsics_m({i, pos.r("channels","views")}) - extrinsics_m({i, pos["channels"], pos["cams"]-1, pos["views"]});
 	  printf("%f = %f - %f\n", step(i-3), extrinsics_m({i, pos.r("channels","views")}), extrinsics_m({i, pos["channels"], pos["cams"]-1, pos["views"]}));
 	}
-	printf("step: %fx%fx%f\n", step(0), step(1), step(2));
+	//printf("step: %fx%fx%f\n", step(0), step(1), step(2));
 	avg_step += step;
 	step_count++;
       }
       
-      printf("\n");
+      //printf("\n");
     }
     
     Datastore *line_store = set->addStore(calib_root/"lines");
