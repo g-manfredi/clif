@@ -61,6 +61,16 @@ cliini_opt opts[] = {
     "<file>"
   },
   {
+    "cvt-gray",
+    0, //argcount
+    0, //argcount
+    CLIINI_NONE, //type
+    0, //flags
+    0,
+    NULL,
+    "convert image to grayscale on load"
+  },
+  {
     "types", //FIXME remove this
     1, //argcount
     1, //argcount
@@ -175,6 +185,7 @@ int main(const int argc, const char *argv[])
   cliini_arg *exclude = cliargs_get(args, "exclude");
   cliini_arg *stores = cliargs_get(args, "store");
   cliini_arg *dim_stores = cliargs_get(args, "store-dims");
+  cliini_arg *cvt_gray = cliargs_get(args, "cvt-gray");
   
   if (!args || cliargs_get(args, "help\n") || (!input && !calib_imgs && !stores) || !output) {
     cliini_help(&group);
@@ -356,8 +367,10 @@ int main(const int argc, const char *argv[])
         for(int j=sum;j<cliarg_inst_arg_count(stores, i);j++,sum++) {
           printf("%s\n", cliarg_nth_str(stores, sum));
           cv::Mat img = imread(cliarg_nth_str(stores, sum), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
-          if (img.channels() == 3)
-            cvtColor(img, img, COLOR_BGR2RGB);
+          if (img.channels() > 1 && cvt_gray)
+            cv::cvtColor(img, img, CV_BGR2GRAY);
+          else if (img.channels() == 3)
+            cvtColor(img, img, COLOR_BGR2RGB); 
           store->append(clif::Mat3d(img));
         }
       }
@@ -384,8 +397,10 @@ int main(const int argc, const char *argv[])
         for(int j=sum;j<cliarg_inst_arg_count(dim_stores, i);j++,sum++) {
           printf("%s\n", cliarg_nth_str(dim_stores, sum));
           cv::Mat img = imread(cliarg_nth_str(dim_stores, sum), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
-          if (img.channels() == 3)
-            cvtColor(img, img, COLOR_BGR2RGB);
+          if (img.channels() > 1 && cvt_gray)
+            cv::cvtColor(img, img, CV_BGR2GRAY);
+          else if (img.channels() == 3)
+            cvtColor(img, img, COLOR_BGR2RGB); 
           store->write(clif::Mat3d(img), pos);
           int currdim = 3;
           pos[currdim]++;
@@ -414,8 +429,10 @@ int main(const int argc, const char *argv[])
       printf("store idx %d: %s\n", i, input_imgs[i].c_str());
       cv::Mat img = imread(input_imgs[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
       assert(img.size().width && img.size().height);
-      if (img.channels() == 3)
-        cvtColor(img, img, COLOR_BGR2RGB);
+      if (img.channels() > 1 && cvt_gray)
+        cv::cvtColor(img, img, CV_BGR2GRAY);
+      else if (img.channels() == 3)
+        cvtColor(img, img, COLOR_BGR2RGB); 
       store->appendImage(&img);
     }
     

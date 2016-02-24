@@ -999,7 +999,7 @@ void update_cams_mesh(Mesh &cams, Mat_<double> extrinsics, Mat_<double> extrinsi
       //cam_writer.add(cam_left,col);
       //printf("extr:\n");
       //std::cout << -rot << "\n trans:\n" << -trans << std::endl;
-      //printf("%.3f ", trans.norm());
+      printf("%.3f ", trans.norm());
       
       Mesh line_mesh;
       
@@ -1023,7 +1023,7 @@ void update_cams_mesh(Mesh &cams, Mat_<double> extrinsics, Mat_<double> extrinsi
       cams.merge(line_mesh);
       //viewer.data.add_edges(P1,P2,Eigen::RowVector3d(r,g,b);
     }
-  //printf("\n");
+  printf("\n");
   
   for(auto pos : Idx_It_Dim(extrinsics, "views")) {
       Eigen::Vector3d trans(extrinsics(3,pos["views"]),extrinsics(4,pos["views"]),extrinsics(5,pos["views"]));
