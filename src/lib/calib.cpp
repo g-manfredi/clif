@@ -430,6 +430,7 @@ static void _calib_cam(Mat_<float> &proxy_m, Idx proxy_cam_idx, Idx res_idx, Mat
 }
 #endif
 
+#ifdef CLIF_WITH_UCALIB
 // Generic line error
 struct LineZ3GenericCenterLineError {
   LineZ3GenericCenterLineError(double x, double y)
@@ -979,6 +980,7 @@ static void _zline_problem_add_center_errors(ceres::Problem &problem, Mat_<doubl
                             &lines({0,pos.r("x","cams")}));
   }
 }
+#endif
 
 #ifdef CLIF_WITH_LIBIGL_VIEWER
 void update_cams_mesh(Mesh &cams, Mat_<double> extrinsics, Mat_<double> extrinsics_rel, Mat_<double> lines)
@@ -1059,6 +1061,7 @@ bool callback_pre_draw(igl::viewer::Viewer& viewer)
   return false;
 }
 
+#ifdef CLIF_WITH_UCALIB
 class ceres_iter_callback : public ceres::IterationCallback {
  public:
   explicit ceres_iter_callback() {};
@@ -1071,6 +1074,7 @@ class ceres_iter_callback : public ceres::IterationCallback {
     return ceres::SOLVER_CONTINUE;
   }
 };
+#endif
 
 
 void run_viewer(Mesh *mesh)
@@ -1083,6 +1087,7 @@ void run_viewer(Mesh *mesh)
 
 #endif
 
+#ifdef CLIF_WITH_UCALIB
 /*
  * optimize together:
  *  - per image camera movement (world rotation and translation)
@@ -1107,11 +1112,13 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   
   options.num_threads = 8;
   options.num_linear_solver_threads = 8;
-  
+
+#ifdef CLIF_WITH_LIBIGL_VIEWER
   ceres_iter_callback callback;
   
   options.callbacks.push_back(&callback);
   options.update_state_every_iteration = true;
+#endif
   
   Mat_<double> r({proxy.r("channels","cams")});
   Mat_<double> m({2, proxy.r("channels","cams")});
@@ -1202,10 +1209,13 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   ceres::Solve(options, &problem_reproj, &summary);
   
   printf("\nunconstrained rms ~%fmm\n", 2.0*sqrt(summary.final_cost/problem_reproj.NumResiduals()));
-  
+
+#ifdef CLIF_WITH_LIBIGL_VIEWER
   glfwSetWindowShouldClose(viewer.window, 1); 
   viewer_thread.join();
+#endif
 }
+#endif
 
 //FIXME repair!
 bool ucalib_calibrate(Dataset *set, cpath proxy, cpath calib)

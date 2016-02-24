@@ -72,7 +72,6 @@ if (EIGEN3_FOUND)
   
   set(CLIF_WITH_EIGEN3 true)
   add_definitions(-DCLIF_WITH_EIGEN3)
-  message(found eigen!)
 endif()
 
 ##dependend packages for libigl...
