@@ -825,7 +825,7 @@ CLIF_EXPORT int cliarg_nth_int(cliini_arg *arg, int n)
 
 static void print_help_opt(cliini_opt *opt)
 {
-  RETNULLONFALSE(opt)
+  RETONFALSE(opt)
   
   if (opt->flag && !opt->longflag)
     printf("-%c ", opt->flag);
@@ -848,7 +848,7 @@ static void print_help_opt(cliini_opt *opt)
 
 CLIF_EXPORT void cliini_help(cliini_optgroup *group)
 {
-  RETNULLONFALSE(group)
+  RETONFALSE(group)
   
   for(int i=0;i<group->group_count;i++)
     cliini_help(&group->groups[i]);
