@@ -46,6 +46,11 @@ if (NOT Vigra_FOUND)
   list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/vigra)
 endif()
 
+find_package(Eigen3 QUIET)
+if (NOT EIGEN3_FOUND)
+  list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/eigen3)
+endif()
+
 find_package(hdmarker QUIET)
 if (HDMARKER_FOUND)
   list(APPEND CLIF_PRIVATE_LINK_LIBRARIES ${HDMARKER_LIBRARIES})
