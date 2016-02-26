@@ -3,6 +3,12 @@
  
 #include <Eigen/Dense> 
 
+#ifdef CLIF_WITH_LIBIGL_VIEWER
+namespace igl { namespace  viewer {
+  class Viewer;
+}}
+#endif
+
 namespace clif {
 
 class Mesh
@@ -15,8 +21,14 @@ public:
   void rotate(const Eigen::Vector3d &r_v);
   void merge(const Mesh &other);
   
+  bool show();
+  
   Eigen::MatrixXd V;
   Eigen::MatrixXi F;
+private:
+#ifdef CLIF_WITH_LIBIGL_VIEWER
+  igl::viewer::Viewer *_viewer;
+#endif
 };
 
 Mesh mesh_cam();

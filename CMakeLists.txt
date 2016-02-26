@@ -18,7 +18,7 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
   # using GCC
   message("use gcc")
   set(CLIF_BUILD_TYPE "SHARED")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -fno-omit-frame-pointer -fPIC -std=c++11 -march=native -fopenmp")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O1 -fno-omit-frame-pointer -fPIC -std=c++11 -march=native -fopenmp")
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   # using Visual Studio C++
   message("use msvc")
@@ -73,7 +73,8 @@ endif()
 
 find_package(Eigen3)
 if (EIGEN3_FOUND)
-  list(APPEND CLIF_PRIVATE_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR})
+  #header only
+  list(APPEND CLIF_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR})
   
   set(CLIF_WITH_EIGEN3 true)
   add_definitions(-DCLIF_WITH_EIGEN3)
@@ -276,7 +277,7 @@ foreach(header ${CLIF_FULLPATH_HEADERS})
 endforeach()
 
 # for local built tree use 
-set(CLIF_INSTALL_INCLUDE_DIR "include" "include/clif")
+set(CLIF_INSTALL_INCLUDE_DIR "include" "include/clif" ${CLIF_INCLUDE_DIRS})
 foreach(dir ${CLIF_BUILD_LINK_DIRS})
   if (IS_ABSOLUTE "${dir}")
     set(CLIF_INSTALL_LIBRARY_DIR ${CLIF_INSTALL_LIBRARY_DIR} "${dir}")
@@ -295,7 +296,7 @@ configure_package_config_file(cmake/clifConfig.cmake.in
 set(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX_BACKUP})
 
 # for the installed package
-set(CLIF_INSTALL_INCLUDE_DIR "include" "include/clif")
+set(CLIF_INSTALL_INCLUDE_DIR "include" "include/clif" ${CLIF_INCLUDE_DIRS})
 set(CLIF_INSTALL_LIBRARY_DIR "lib")
 set(CLIF_INSTALL_LIBRARIES clif cliini clif-qt)
 set(CLIF_INSTALL_CMAKE_DIR "lib/cmake/clif")

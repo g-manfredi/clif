@@ -37,6 +37,7 @@ set(SOURCES enumtypes.cpp clif.cpp subset3d.cpp calib.cpp hdf5.cpp attribute.cpp
 
 if (CLIF_WITH_LIBIGL)
   list(APPEND SOURCES mesh.cpp)
+  list(APPEND LIBCLIF_HEADERS mesh.hpp)
 endif()
 
 add_library(clif ${CLIF_BUILD_TYPE} ${SOURCES})

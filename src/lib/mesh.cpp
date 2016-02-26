@@ -4,11 +4,18 @@
   #include <igl/writeOBJ.h>
 #endif
 
+#ifdef CLIF_WITH_LIBIGL_VIEWER
+  #include <igl/viewer/Viewer.h>
+  #include <thread>
+#endif
+
 namespace clif {
 
 void Mesh::writeOBJ(const char *filename)
 {
+#ifdef CLIF_WITH_LIBIGL
   igl::writeOBJ(filename,V,F);
+#endif
 }
 
 Mesh& Mesh::operator+=(const Eigen::Vector3d &rhs)
@@ -186,6 +193,33 @@ Mesh mesh_line(const Eigen::Vector3d &p1, const Eigen::Vector3d &p2)
   m.V = V;
   m.F = F;
   return m;
+}
+
+#ifdef CLIF_WITH_LIBIGL_VIEWER
+
+igl::viewer::Viewer **wtf;
+
+static void _run_viewer(const Mesh *mesh, igl::viewer::Viewer **viewer)
+{
+  if (!*viewer)
+    *viewer =  new igl::viewer::Viewer;
+  
+  (*viewer)->core.set_rotation_type(
+    igl::viewer::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
+  (*viewer)->data.set_mesh(mesh->V, mesh->F);
+  
+  (*viewer)->launch();
+}
+#endif
+
+bool Mesh::show()
+{
+#ifdef CLIF_WITH_LIBIGL_VIEWER
+  std::thread viewer_thread(_run_viewer, this, &_viewer);
+  return true;
+#else
+  return false;
+#endif
 }
 
 }
