@@ -17,7 +17,7 @@ const int maxsize = 1024*1024;
 #define MAXPARTS 1000
 #define SECTION_MAXLEN 4096
 
-CLIF_EXPORT cliini_opt *cliini_opt_new(const char *longflag,
+CLIINI_EXPORT cliini_opt *cliini_opt_new(const char *longflag,
                            int argcount_min,
                            int argcount_max,
                            int type,
@@ -148,7 +148,7 @@ static int _type_size(int type)
   }
 }
 
-CLIF_EXPORT void _cliini_opt_arg_store_val(cliini_opt *opt, const char *arg, void *val)
+CLIINI_EXPORT void _cliini_opt_arg_store_val(cliini_opt *opt, const char *arg, void *val)
 {  char *tmp;
   switch (opt->type) {
     //FIXME duplicate string?
@@ -170,7 +170,7 @@ static int _isopt(const char *str)
   return 0;
 }
 
-CLIF_EXPORT cliini_args *cliini_args_new()
+CLIINI_EXPORT cliini_args *cliini_args_new()
 {
   cliini_args *args = (cliini_args*)calloc(1, sizeof(cliini_args));
   
@@ -180,7 +180,7 @@ CLIF_EXPORT cliini_args *cliini_args_new()
   return args;
 }
 
-CLIF_EXPORT cliini_arg *cliini_args_add(cliini_args *args, cliini_opt *opt)
+CLIINI_EXPORT cliini_arg *cliini_args_add(cliini_args *args, cliini_opt *opt)
 {
   while (args->count >= args->max) {
     args->args = (cliini_arg*)realloc(args->args, sizeof(cliini_arg)*args->max*2);
@@ -194,7 +194,7 @@ CLIF_EXPORT cliini_arg *cliini_args_add(cliini_args *args, cliini_opt *opt)
 }
 
 //get arg for option opt from args - if not yet existing then create it
-CLIF_EXPORT cliini_arg *cliini_args_get_add(cliini_args *args, cliini_opt *opt)
+CLIINI_EXPORT cliini_arg *cliini_args_get_add(cliini_args *args, cliini_opt *opt)
 {
   int i;
   
@@ -252,7 +252,7 @@ static int _cliini_opt_parse(const int argc, const char *argv[], int argpos, cli
   return errors;
 }
 
-CLIF_EXPORT cliini_args *cliini_parsopts(const int argc, const char *argv[], cliini_optgroup *group)
+CLIINI_EXPORT cliini_args *cliini_parsopts(const int argc, const char *argv[], cliini_optgroup *group)
 {
   int error = 0;
   int i = 1;
@@ -474,7 +474,7 @@ static int parse_line(char *line, cliini_args *args, cliini_optgroup *group, cha
 
 #undef MAXPARTS
 
-CLIF_EXPORT cliini_args *cliini_parsefile(const char *filename, cliini_optgroup *group)
+CLIINI_EXPORT cliini_args *cliini_parsefile(const char *filename, cliini_optgroup *group)
 {
   if (!filename)
 	return NULL;
@@ -539,7 +539,7 @@ CLIF_EXPORT cliini_args *cliini_parsefile(const char *filename, cliini_optgroup 
 }
 
 
-CLIF_EXPORT cliini_args *cliini_parsebuf(const char *buf, cliini_optgroup *group)
+CLIINI_EXPORT cliini_args *cliini_parsebuf(const char *buf, cliini_optgroup *group)
 {
   char *line_end;
   char currsection[SECTION_MAXLEN];
@@ -632,7 +632,7 @@ static void print_doubles(double *vals, int count)
     printf(" %f", vals[i]);
 }
 
-CLIF_EXPORT void cliini_print_arg(cliini_arg *arg)
+CLIINI_EXPORT void cliini_print_arg(cliini_arg *arg)
 {
   int i;
   
@@ -653,7 +653,7 @@ CLIF_EXPORT void cliini_print_arg(cliini_arg *arg)
   printf("\n");
 }
 
-CLIF_EXPORT int cliini_fit_typeopts(cliini_args *args, cliini_args *typeargs)
+CLIINI_EXPORT int cliini_fit_typeopts(cliini_args *args, cliini_args *typeargs)
 {
   int i;
   int error = 0;
@@ -720,7 +720,7 @@ CLIF_EXPORT int cliini_fit_typeopts(cliini_args *args, cliini_args *typeargs)
   return error;
 }
 
-CLIF_EXPORT cliini_arg *cliargs_get(cliini_args *args, const char *name)
+CLIINI_EXPORT cliini_arg *cliargs_get(cliini_args *args, const char *name)
 {
   if (!args)
     return NULL;
@@ -732,7 +732,7 @@ CLIF_EXPORT cliini_arg *cliargs_get(cliini_args *args, const char *name)
   return NULL;
 }
 
-CLIF_EXPORT cliini_arg *cliargs_get_glob(cliini_args *args, const char *name)
+CLIINI_EXPORT cliini_arg *cliargs_get_glob(cliini_args *args, const char *name)
 {
   if (!args)
     return NULL;
@@ -744,14 +744,14 @@ CLIF_EXPORT cliini_arg *cliargs_get_glob(cliini_args *args, const char *name)
   return NULL;
 }
 
-CLIF_EXPORT int cliarg_inst_count(cliini_arg *arg)
+CLIINI_EXPORT int cliarg_inst_count(cliini_arg *arg)
 {
   RETNULLONFALSE(arg)
 
   return arg->inst_count;
 }
 
-CLIF_EXPORT int cliarg_inst_arg_count(cliini_arg *arg, int inst)
+CLIINI_EXPORT int cliarg_inst_arg_count(cliini_arg *arg, int inst)
 {
   if (!arg || inst >= arg->inst_count)
     return 0;
@@ -759,7 +759,7 @@ CLIF_EXPORT int cliarg_inst_arg_count(cliini_arg *arg, int inst)
   return arg->counts[inst];
 }
 
-CLIF_EXPORT int cliargs_count(cliini_args *args)
+CLIINI_EXPORT int cliargs_count(cliini_args *args)
 {
   if (!args)
     return NULL;
@@ -767,19 +767,19 @@ CLIF_EXPORT int cliargs_count(cliini_args *args)
   return args->count;
 }
 
-CLIF_EXPORT cliini_arg *cliargs_nth(cliini_args *args, int n)
+CLIINI_EXPORT cliini_arg *cliargs_nth(cliini_args *args, int n)
 {
   return &args->args[n];
 }
 
-CLIF_EXPORT int cliarg_sum(cliini_arg *arg)
+CLIINI_EXPORT int cliarg_sum(cliini_arg *arg)
 {
   if (!arg)
     return 0;
   return arg->sum;
 }
 
-CLIF_EXPORT void cliarg_strs(cliini_arg *arg, char **vals)
+CLIINI_EXPORT void cliarg_strs(cliini_arg *arg, char **vals)
 {
   RETONFALSE(arg)
   RETONFALSE(vals)
@@ -787,7 +787,7 @@ CLIF_EXPORT void cliarg_strs(cliini_arg *arg, char **vals)
   memcpy((void*)vals, arg->vals, sizeof(char*)*arg->sum);
 }
 
-CLIF_EXPORT void cliarg_doubles(cliini_arg *arg, double *vals)
+CLIINI_EXPORT void cliarg_doubles(cliini_arg *arg, double *vals)
 {
   RETONFALSE(arg)
   RETONFALSE(vals)
@@ -795,7 +795,7 @@ CLIF_EXPORT void cliarg_doubles(cliini_arg *arg, double *vals)
   memcpy((void*)vals, arg->vals, sizeof(double)*arg->sum);
 }
 
-CLIF_EXPORT void cliarg_ints(cliini_arg *arg, int *vals)
+CLIINI_EXPORT void cliarg_ints(cliini_arg *arg, int *vals)
 {
   RETONFALSE(arg)
   RETONFALSE(vals)
@@ -803,19 +803,19 @@ CLIF_EXPORT void cliarg_ints(cliini_arg *arg, int *vals)
   memcpy((void*)vals, arg->vals, sizeof(int)*arg->sum);
 }
 
-CLIF_EXPORT char  *cliarg_str(cliini_arg *arg)
+CLIINI_EXPORT char  *cliarg_str(cliini_arg *arg)
 {
   RETNULLONFALSE(arg)
   return ((char**)arg->vals)[0];
 }
 
-CLIF_EXPORT char  *cliarg_nth_str(cliini_arg *arg, int n)
+CLIINI_EXPORT char  *cliarg_nth_str(cliini_arg *arg, int n)
 {
   RETNULLONFALSE(arg)
   return ((char**)arg->vals)[n];
 }
 
-CLIF_EXPORT int cliarg_nth_int(cliini_arg *arg, int n)
+CLIINI_EXPORT int cliarg_nth_int(cliini_arg *arg, int n)
 {
   RETNULLONFALSE(arg)
   return ((int*)arg->vals)[n];
@@ -846,7 +846,7 @@ static void print_help_opt(cliini_opt *opt)
   printf("\n");
 }
 
-CLIF_EXPORT void cliini_help(cliini_optgroup *group)
+CLIINI_EXPORT void cliini_help(cliini_optgroup *group)
 {
   RETONFALSE(group)
   

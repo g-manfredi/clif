@@ -65,7 +65,7 @@ int ProcData::flags() const
   if (_store && (flags & DEMOSAIC) && _store->org() != DataOrg::BAYER_2x2)
     flags &= ~DEMOSAIC;
 
-  if (!isnan(_min) || !isnan(_max)) {
+  if (!std::isnan(_min) || !std::isnan(_max)) {
     flags |= NO_MEM_CACHE;
     flags |= NO_DISK_CACHE;
   }
@@ -283,12 +283,12 @@ void proc_image(Mat &in, Mat &out, const ProcData & proc, const Idx & pos)
   bool scale = false;
   double scale_val;
   
-  if (!isnan(min))
+  if (!std::isnan(min))
     sub = true;
   else
     min = 0.0;
   
-  if (!isnan(max)) {
+  if (!std::isnan(max)) {
     scale = true;
     scale_val = max-min;
   }

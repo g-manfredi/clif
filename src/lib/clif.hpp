@@ -6,7 +6,7 @@
 #include <boost/filesystem.hpp>
 #include <H5Cpp.h>
 
-#include "config.h"
+#include "clif/config.h"
 
 
 namespace clif {

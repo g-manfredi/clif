@@ -1,0 +1,16 @@
+#ifndef _CLIINI_CONFIG_H
+#define _CLIINI_CONFIG_H
+
+${CLIINI_SHARED}
+
+#ifdef CLIINI_SHARED
+	#ifdef CLIINI_EXPORT_LIBRARY
+	  #define CLIINI_EXPORT ${CLIINI_EXPORT}
+	#else
+	  #define CLIINI_EXPORT ${CLIINI_IMPORT}
+	#endif
+#else
+	#define CLIINI_EXPORT
+#endif
+
+#endif

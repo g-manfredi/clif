@@ -30,8 +30,8 @@ namespace clif {
     {      
       bool res = ((idx == other.idx) && 
              (flags == other.flags) &&
-             (min == other.min || (isnan(min) && isnan(other.min))) &&
-             (max == other.max || (isnan(max) && isnan(other.max))) &&
+             (min == other.min || (std::isnan(min) && std::isnan(other.min))) &&
+             (max == other.max || (std::isnan(max) && std::isnan(other.max))) &&
              (depth == other.depth) &&
              (scale == other.scale) &&
              (extra_flags == other.extra_flags));

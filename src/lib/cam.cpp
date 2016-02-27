@@ -46,7 +46,7 @@ static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_po
   GenCam cam;
   
   double d = _depth;
-  if (isnan(d) || d < 0.1)
+  if (std::isnan(d) || d < 0.1)
     d = 1000000000000.0;
   
   printf("depth: %f\n", d);
@@ -346,7 +346,7 @@ bool DepthDist::operator==(const Tree_Derived & rhs) const
 {
   const DepthDist * other = dynamic_cast<const DepthDist*>(&rhs);
   
-  if (other && ((other->_depth == _depth) || (isnan(other->_depth) && isnan(_depth))))
+  if (other && ((other->_depth == _depth) || (std::isnan(other->_depth) && std::isnan(_depth))))
     return true;
   
   return false; 

@@ -1,12 +1,217 @@
 cmake_minimum_required (VERSION 2.8.8)
 project(clif)
+string(TOUPPER ${PROJECT_NAME} PNU)
+
+#####################################################
+## VARIABLE DOCUMENTATION
+#####################################################
+#Meta:
+#  PNU              - project name in uppercase - prefixed to (nearly) all variables
+#
+#Dependencies (packages and respective cmake variables)
+#  _PKG               - required cmake package names - passed to find_package() - will also be included from ...Config.cmake
+#  _PKG_OPT           - optional cmake package names - passed to find_package() - will also be included from ...Config.cmake, ..._USE_${..._PKG_OPT} will be set to true if optional pkg is found
+# _PRIVATE_PKG
+# _PRIVATE_PKG_OPT
+###
+#  _PKG_INC           - variable names to add to include_directories (from the respecive find_package() calls)
+#  _PKG_LINK          - variable names to add to link_directories
+#  _PKG_LIB           - variable names to add to link_libraries
+#
+#actual directories/libraries from dependencies
+#  _INC          - actual content from _PKG_INC vars
+#  _LINK         - link dirs
+#  _LIB          - libs
+
+#  _PRIVATE_INC  - actual content from _PKG_INC vars
+#  _PRIVATE_LINK - link dirs
+#  _PRIVATE_LIB  - libs
+#
+#  _EXPORT_LIBS       - targets (libraries) for installation, export and to put into _LIBRARIES into ..Config.cmake
+#  _EXPORT_BINS       - targets (executables) to install
+#
+#
+#  _BUILD_TYPE        - SHARED or "" (set depending on compiler)
+#
+#  _PROJECT_HEADERS
+#  _PROJECT_LIBRARIES
+
+#####################################################
+## GLOBAL
+#####################################################
 
 set(CLIF_MINOR_VERSION 1)
 set(CLIF_MAJOR_VERSION 0)
 set(CLIF_VERSION ${CLIF_MAJOR_VERSION}.${CLIF_MINOR_VERSION})
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
-include(ClifCMakePackageConfigHelpers)
+include(CMakePackageConfigListHelpers)
+
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
+
+SET(BUILD_SHARED_LIBS ON)
+
+#####################################################
+## DEPENDENCIES
+#####################################################
+function(pkg_found PKG RET)
+  string(TOLOWER ${PKG} LOW)
+  string(TOUPPER ${PKG} UP)
+  
+  set(${RET} FALSE PARENT_SCOPE)
+  
+  if (${${PKG}_FOUND})
+    set(${RET} TRUE PARENT_SCOPE)
+  endif()
+  if (${${LOW}_FOUND})
+    set(${RET} TRUE PARENT_SCOPE)
+  endif()
+  if (${${UP}_FOUND})
+    set(${RET} TRUE PARENT_SCOPE)
+  endif()
+endfunction()
+
+#macro so find_package runs in global scope!
+macro(check_find PACKAGE RET)
+  find_package(${PACKAGE} QUIET)
+  
+  string(TOLOWER ${PACKAGE} PKG_LOW)
+  
+  #check if pkg was found (various conventions...)
+  pkg_found(${PACKAGE} FOUND)
+  if (FOUND)
+    message("${PACKAGE} - found")
+    set(${RET} TRUE)
+    add_definitions(-D${RET})
+  else()
+    #message("${${pkg_up}_FOUND}"
+    #message("did not find ${PACKAGE}, adding cmake/${PKG_LOW} to CMAKE_MODULE_PATH")
+    list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/find/${PKG_LOW})
+    find_package(${PACKAGE} QUIET)
+    pkg_found(${PACKAGE} FOUND)
+    if (FOUND)
+      message("${PACKAGE} - found using included Find${PACKAGE}.cmake")
+      set(${RET} TRUE)
+      add_definitions(-D${RET})
+    else()
+      message("${PACKAGE} - missing")
+      set(${RET} FALSE)
+    endif()
+  endif()
+endmacro()
+
+macro(clean_list LIST)
+  if (DEFINED ${LIST})
+    list(REMOVE_DUPLICATES ${LIST})
+  endif()
+endmacro()
+
+#####################################################
+## DEPENDENCIES
+#####################################################
+
+#eigen3
+list(APPEND ${PNU}_PKG_OPT Eigen3)
+list(APPEND ${PNU}_PKG_INC EIGEN3_INCLUDE_DIR)
+
+#ucalib (contains ceres-solver)
+list(APPEND ${PNU}_PRIVATE_PKG_OPT ucalib)
+list(APPEND ${PNU}_PRIVATE_PKG_INC  UCALIB_INCLUDE_DIRS)
+list(APPEND ${PNU}_PRIVATE_PKG_LINK UCALIB_LIBRARY_DIRS)
+list(APPEND ${PNU}_PRIVATE_PKG_LIB  UCALIB_LIBRARIES)
+
+#cliini 
+add_subdirectory(external/cliini)
+list(APPEND ${PNU}_PRIVATE_PKG cliini)
+list(APPEND ${PNU}_PRIVATE_PKG_INC  CLIINI_INCLUDE_DIRS)
+list(APPEND ${PNU}_PRIVATE_PKG_LINK CLIINI_LIBRARY_DIRS)
+list(APPEND ${PNU}_PRIVATE_PKG_LIB  CLIINI_LIBRARIES)
+
+#####################################################
+## EXPORT / INSTALL
+#####################################################
+
+# FIXME clif-qt should be optional
+list(APPEND ${PNU}_EXPORT_LIBS clif clif-qt)
+
+#####################################################
+## search packages
+#####################################################
+# check if found if not add our own FindXXX.cmake
+foreach(PACKAGE ${${PNU}_PKG_OPT} ${${PNU}_PRIVATE_PKG_OPT})
+  string(TOUPPER ${PACKAGE} PKG_UP)
+  check_find(${PACKAGE} ${PNU}_WITH_${PKG_UP})
+endforeach()
+
+foreach(PACKAGE ${${PNU}_PKG} ${${PNU}_PRIVATE_PKG})
+  string(TOUPPER ${PACKAGE} PKG_UP)
+  check_find(${PACKAGE} ${PNU}_WITH_${PKG_UP})
+  if (NOT ${${PNU}_WITH_${PKG_UP}})
+    list(APPEND ${PNU}_MISSING_REQUIRED ${PACKAGE})
+  endif()
+endforeach()
+
+if (${PNU}_MISSING_REQUIRED)
+  message("")
+  message("missing REQUIRED packages:")
+  foreach(PACKAGE ${${PNU}_MISSING_REQUIRED})
+    message(${PACKAGE})
+  endforeach()
+  message("")
+  message(FATAL_ERROR "required package(s) not found, exiting.")
+endif()
+
+#####################################################
+## SET INCLUDES, LIBS, ... (public)
+#####################################################
+
+foreach(INCLUDE ${${PNU}_PKG_INC})
+  list(APPEND ${PNU}_INC ${${INCLUDE}})
+endforeach()
+clean_list(${PNU}_INC)
+
+foreach(LIBDIR ${${PNU}_PKG_LINK})
+  list(APPEND ${PNU}_LINK ${${LIBDIR}})
+endforeach()
+clean_list(${PNU}_LINK)
+
+foreach(LIB ${${PNU}_PKG_LIB})
+  list(APPEND ${PNU}_LIB ${${LIB}})
+endforeach()
+clean_list(${PNU}_LIB)
+
+#####################################################
+## SET INCLUDES, LIBS, ... (private)
+#####################################################
+
+foreach(INCLUDE ${${PNU}_PRIVATE_PKG_INC})
+  list(APPEND ${PNU}_PRIVATE_INC ${${INCLUDE}})
+  message("private inc add ${INCLUDE} / ${${INCLUDE}}")
+endforeach()
+clean_list(${PNU}_PRIVATE_INC)
+
+foreach(LIBDIR ${${PNU}_PRIVATE_PKG_LINK})
+  list(APPEND ${PNU}_PRIVATE_LINK ${${LIBDIR}})
+endforeach()
+clean_list(${PNU}_PRIVATE_LINK)
+
+foreach(LIB ${${PNU}_PRIVATE_PKG_LIB})
+  list(APPEND ${PNU}_PRIVATE_LIB ${${LIB}})
+endforeach()
+clean_list(${PNU}_PRIVATE_LIB)
+
+
+#####################################################
+## actually inc/link DIRS (from above)
+#####################################################
+include_directories(${${PNU}_INC} ${${PNU}_PRIVATE_INC})
+link_directories(${${PNU}_LINK} ${${PNU}_PRIVATE_LINK})
+
+message("includes: ${${PNU}_INC} ${${PNU}_PRIVATE_INC}")
+
+######################
 
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
   # using Clang
@@ -46,11 +251,6 @@ if (NOT Vigra_FOUND)
   list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/vigra)
 endif()
 
-find_package(Eigen3 QUIET)
-if (NOT EIGEN3_FOUND)
-  list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/eigen3)
-endif()
-
 find_package(hdmarker QUIET)
 if (HDMARKER_FOUND)
   list(APPEND CLIF_PRIVATE_LINK_LIBRARIES ${HDMARKER_LIBRARIES})
@@ -61,24 +261,24 @@ if (HDMARKER_FOUND)
   add_definitions(-DCLIF_WITH_HDMARKER)
 endif()
 
-find_package(ucalib QUIET)
-if (UCALIB_FOUND)
-  list(APPEND CLIF_PRIVATE_LINK_LIBRARIES ${UCALIB_LIBRARIES})
-  list(APPEND CLIF_PRIVATE_INCLUDE_DIRS ${UCALIB_INCLUDE_DIRS})
-  list(APPEND CLIF_PRIVATE_LIBRARY_DIRS ${UCALIB_LIBRARY_DIRS})
+#find_package(ucalib QUIET)
+#if (UCALIB_FOUND)
+  #list(APPEND CLIF_PRIVATE_LINK_LIBRARIES ${UCALIB_LIBRARIES})
+  #list(APPEND CLIF_PRIVATE_INCLUDE_DIRS ${UCALIB_INCLUDE_DIRS})
+  #list(APPEND CLIF_PRIVATE_LIBRARY_DIRS ${UCALIB_LIBRARY_DIRS})
   
-  set(CLIF_WITH_UCALIB true)
-  add_definitions(-DCLIF_WITH_UCALIB)
-endif()
+  #set(CLIF_WITH_UCALIB true)
+  #add_definitions(-DCLIF_WITH_UCALIB)
+#endif()
 
-find_package(Eigen3)
-if (EIGEN3_FOUND)
+#find_package(Eigen3)
+#if (EIGEN3_FOUND)
   #header only
-  list(APPEND CLIF_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR})
+  #list(APPEND CLIF_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR})
   
-  set(CLIF_WITH_EIGEN3 true)
-  add_definitions(-DCLIF_WITH_EIGEN3)
-endif()
+  #set(CLIF_WITH_EIGEN3 true)
+  #add_definitions(-DCLIF_WITH_EIGEN3)
+#endif()
 
 ##dependend packages for libigl...
 find_package(glfw3 QUIET)
@@ -189,22 +389,22 @@ endif()
 if (FNMATCH_USE_INTERNAL)
   list(APPEND CLIF_BUILD_COMPILE_DIRS external/fnmatch)
 endif()
-list(APPEND CLIF_BUILD_COMPILE_DIRS external/cliini src/lib src/bin src/gui src/clifview)
+list(APPEND CLIF_BUILD_COMPILE_DIRS src/lib src/bin src/gui src/clifview)
 
 configure_file(config.h.in config.h)
 list(APPEND CLIF_HEADERS config.h)
 list(APPEND CLIF_FULLPATH_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/config.h) 
-list(APPEND CLIF_BUILD_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR} external/libigl/include)
+list(APPEND CLIF_BUILD_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/include external/libigl/include)
 
 foreach(dir ${CLIF_BUILD_COMPILE_DIRS})
   include_directories(${CLIF_BUILD_INCLUDE_DIRS} ${CLIF_INCLUDE_DIRS} ${CLIF_PRIVATE_INCLUDE_DIRS})
   link_directories(${CLIF_BUILD_LINK_DIRS} ${CLIF_LIBRARY_DIRS} ${CLIF_PRIVATE_LIBRARY_DIRS})
   set(CLIF_LIBRARIES ${CLIF_LINK_LIBRARIES})
   add_subdirectory(${dir})
-  list(REMOVE_DUPLICATES CLIF_BUILD_INCLUDE_DIRS)
-  list(REMOVE_DUPLICATES CLIF_INCLUDE_DIRS)
-  list(REMOVE_DUPLICATES CLIF_BUILD_LINK_DIRS)
-  list(REMOVE_DUPLICATES CLIF_LIBRARY_DIRS)
+  clean_list(CLIF_BUILD_INCLUDE_DIRS)
+  clean_list(CLIF_INCLUDE_DIRS)
+  clean_list(CLIF_BUILD_LINK_DIRS)
+  clean_list(CLIF_LIBRARY_DIRS)
 endforeach()
 
 message("")
@@ -276,56 +476,104 @@ foreach(header ${CLIF_FULLPATH_HEADERS})
   #message(${_FILE})
 endforeach()
 
-# for local built tree use 
-set(CLIF_INSTALL_INCLUDE_DIR "include" "include/clif" ${CLIF_INCLUDE_DIRS})
-foreach(dir ${CLIF_BUILD_LINK_DIRS})
-  if (IS_ABSOLUTE "${dir}")
-    set(CLIF_INSTALL_LIBRARY_DIR ${CLIF_INSTALL_LIBRARY_DIR} "${dir}")
-  else()
-    set(CLIF_INSTALL_LIBRARY_DIR ${CLIF_INSTALL_LIBRARY_DIR} "${CMAKE_CURRENT_BINARY_DIR}/${dir}")
-  endif()
-endforeach()
-set(CLIF_INSTALL_LIBRARIES clif cliini clif-qt)
-set(CLIF_INSTALL_CMAKE_DIR ${CMAKE_CURRENT_BINARY_DIR})
+#####################################################
+## EXPORT
+#####################################################
+
+#export helper
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
+include(CMakePackageConfigListHelpers)
+
+
+#####################################################
+## ...Config.cmake generation
+#####################################################
+
+set(CMAKECONFIG_PKG ${${PNU}_PKG} ${${PNU}_PKG_OPT})
+set(CMAKECONFIG_PKG_INC ${${PNU}_PKG_INC})
+set(CMAKECONFIG_PKG_LINK ${${PNU}_PKG_LINK})
+set(CMAKECONFIG_PKG_LIB ${${PNU}_PKG_LIB})
+
+set(CMAKECONFIG_INC "include") #in build dir - headers were already copied earlier
+list(APPEND CMAKECONFIG_INC ${CLIF_INSTALL_INCLUDE_DIR}) # FIXME remove this!
+
+set(CMAKECONFIG_LIB ${${PNU}_EXPORT_LIBS}) # our libs to link on import
+list(APPEND CMAKECONFIG_LIB ${CLIF_INSTALL_LIBRARIES}) # FIXME remove this!
+
+set(CMAKECONFIG_LINK "lib")
+list(APPEND CMAKECONFIG_LINK ${CLIF_INSTALL_LIBRARY_DIR}) # FIXME remove this!
+
+
+#####################################################
+## local config.cmake
+#####################################################
+
+#copy our own FindXXX.cmake macros
+file(COPY cmake/find DESTINATION ./)
+
+set(CMAKECONFIG_CMAKE_DIR ${CMAKE_CURRENT_BINARY_DIR})
+
+#set(CMAKECONFIG_LINK ${CMAKE_CURRENT_BINARY_DIR}/lib)
+
 set(INSTALL_PREFIX_BACKUP ${CMAKE_INSTALL_PREFIX})
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
-configure_package_config_file(cmake/clifConfig.cmake.in
-                              "${CLIF_INSTALL_CMAKE_DIR}/clifConfig.cmake"
-                              INSTALL_DESTINATION "${CLIF_INSTALL_CMAKE_DIR}"
-                              PATH_VARS CLIF_INSTALL_INCLUDE_DIR CLIF_INSTALL_LIBRARY_DIR CLIF_INSTALL_LIBRARIES CLIF_INSTALL_CMAKE_DIR)
+configure_package_config_file(cmake/projectConfig.cmake.in
+                              "${CMAKECONFIG_CMAKE_DIR}/${PROJECT_NAME}Config.cmake"
+                              INSTALL_DESTINATION "${CMAKECONFIG_CMAKE_DIR}"
+                              PATH_VARS CMAKECONFIG_PKG CMAKECONFIG_PKG_INC CMAKECONFIG_PKG_LINK CMAKECONFIG_PKG_LIB CMAKECONFIG_INC CMAKECONFIG_LINK CMAKECONFIG_LIB)
 set(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX_BACKUP})
+
+####
+
+# for local built tree use 
+# set(CLIF_INSTALL_INCLUDE_DIR "include" "include/clif" ${CLIF_INCLUDE_DIRS})
+# foreach(dir ${CLIF_BUILD_LINK_DIRS})
+#   if (IS_ABSOLUTE "${dir}")
+#     set(CLIF_INSTALL_LIBRARY_DIR ${CLIF_INSTALL_LIBRARY_DIR} "${dir}")
+#   else()
+#     set(CLIF_INSTALL_LIBRARY_DIR ${CLIF_INSTALL_LIBRARY_DIR} "${CMAKE_CURRENT_BINARY_DIR}/${dir}")
+#   endif()
+# endforeach()
+# set(CLIF_INSTALL_LIBRARIES clif cliini clif-qt)
+# set(CLIF_INSTALL_CMAKE_DIR ${CMAKE_CURRENT_BINARY_DIR})
+# set(INSTALL_PREFIX_BACKUP ${CMAKE_INSTALL_PREFIX})
+# set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
+# configure_package_config_file(cmake/clifConfig.cmake.in
+#                               "${CLIF_INSTALL_CMAKE_DIR}/clifConfig.cmake"
+#                               INSTALL_DESTINATION "${CLIF_INSTALL_CMAKE_DIR}"
+#                               PATH_VARS CLIF_INSTALL_INCLUDE_DIR CLIF_INSTALL_LIBRARY_DIR CLIF_INSTALL_LIBRARIES CLIF_INSTALL_CMAKE_DIR)
+# set(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX_BACKUP})
 
 # for the installed package
 set(CLIF_INSTALL_INCLUDE_DIR "include" "include/clif" ${CLIF_INCLUDE_DIRS})
 set(CLIF_INSTALL_LIBRARY_DIR "lib")
-set(CLIF_INSTALL_LIBRARIES clif cliini clif-qt)
+set(CLIF_INSTALL_LIBRARIES clif clif-qt)
 set(CLIF_INSTALL_CMAKE_DIR "lib/cmake/clif")
-configure_package_config_file(cmake/clifConfig.cmake.in
-                              "config/clifConfig.cmake"
+configure_package_config_file(cmake/projectConfig.cmake.in
+                              "config/projectConfig.cmake"
                               INSTALL_DESTINATION ${CLIF_INSTALL_CMAKE_DIR}
                               PATH_VARS CLIF_INSTALL_INCLUDE_DIR CLIF_INSTALL_LIBRARY_DIR CLIF_INSTALL_LIBRARIES CLIF_INSTALL_CMAKE_DIR)
 
-# ... for both
-configure_file(cmake/clifConfigVersion.cmake.in "${PROJECT_BINARY_DIR}/clifConfigVersion.cmake" @ONLY)
-
 # Install the clifConfig.cmake and clifConfigVersion.cmake
 install(FILES
-  "${PROJECT_BINARY_DIR}/config/clifConfig.cmake"
-  "${PROJECT_BINARY_DIR}/clifConfigVersion.cmake"
+  "${PROJECT_BINARY_DIR}/config/projectConfig.cmake"
   DESTINATION ${CLIF_INSTALL_CMAKE_DIR} COMPONENT dev)
 
 #export targets for installation
-install(EXPORT clif DESTINATION ${CLIF_INSTALL_CMAKE_DIR} COMPONENT dev)
+#install(EXPORT clif DESTINATION ${CLIF_INSTALL_CMAKE_DIR} COMPONENT dev)
 install(FILES ${CLIF_FULLPATH_HEADERS} DESTINATION include/clif )
 
+# FIXME check this on old cmake!
 #local export into binary dir (may be used with cmake .. -DCMAKE_PREFIX_PATH=<...> or with cmake-gui)
-if (${CMAKE_VERSION} VERSION_LESS 3.0.0)
+#if (${CMAKE_VERSION} VERSION_LESS 3.0.0)
   #TODO use a generated list of targets!
-  export(TARGETS clif cliini FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.cmake)
-else()
-  message(${CMAKE_VERSION})
-  export(EXPORT clif FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.cmake)
-endif()
+  #export(TARGETS clif FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.cmake)
+#else()
+  #message(${CMAKE_VERSION})
+  #export(EXPORT clif FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.cmake)
+  # FIXME where do we get a list of dependend imported targets?
+  #export(TARGETS clif FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.cmake)
+#endif()
 
 #export into cmakes local package cache - should be directly visible to cmake of local user
 export(PACKAGE clif)

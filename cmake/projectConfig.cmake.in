@@ -1,0 +1,77 @@
+# - Config file for the clif package
+# It defines the following variables
+#  CLIF_INCLUDE_DIRS - include directories for clif
+#  CLIF_LIBRARIES    - libraries to link against
+#  CLIF_EXECUTABLE   - the bar executable
+#  CLIF_LIBRARY_DIRS - where to find libraries
+ 
+# Compute paths
+#get_filename_component(CLIF_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+
+@PACKAGE_INIT@
+
+function(pkg_found PKG RET)
+  string(TOLOWER ${PKG} LOW)
+  string(TOUPPER ${PKG} UP)
+  
+  if (${${PKG}_FOUND})
+    set(${RET} TRUE PARENT_SCOPE)
+  endif()
+  if (${${LOW}_FOUND})
+    set(${RET} TRUE PARENT_SCOPE)
+  endif()
+  if (${${UP}_FOUND})
+    set(${RET} TRUE PARENT_SCOPE)
+  endif()
+endfunction()
+
+#import targets
+include("${CMAKE_CURRENT_LIST_DIR}/clif.cmake")
+
+#hack make this configurable!
+find_package(Qt5Widgets)
+
+
+## FIXME remove this in favor of packaged deps below
+#set_and_check(CLIF_INCLUDE_DIRS "@PACKAGE_CLIF_INSTALL_INCLUDE_DIR@")
+#list(APPEND CLIF_INCLUDE_DIRS ${Qt5Widgets_INCLUDE_DIRS})
+#set_and_check(CLIF_LIBRARY_DIRS "@PACKAGE_CLIF_INSTALL_LIBRARY_DIR@")
+#list(APPEND CLIF_LIBRARY_DIRS ${Qt5Widgets_LIBRARY_DIRS})
+# These are imported targets
+#set(CLIF_LIBRARIES ${Qt5Widgets_LIBRARIES} "@CLIF_INSTALL_LIBRARIES@")
+
+#@PNU@ includes and link dirs 
+set_and_check(@PNU@_INCLUDE_DIRS "@PACKAGE_CMAKECONFIG_INC@")
+set_and_check(@PNU@_LIBRARY_DIRS "@PACKAGE_CMAKECONFIG_LINK@")
+set(@PNU@_LIBRARIES "@CMAKECONFIG_LIB@")
+set(@PNU@_FOUND true)
+ 
+#dependencies nicely packaged
+set(@PNU@_PACKAGES @CMAKECONFIG_PKG@)
+set(@PNU@_PACKAGES_INC @CMAKECONFIG_PKG_INC@)
+set(@PNU@_PACKAGES_LINK @CMAKECONFIG_PKG_LINK@)
+set(@PNU@_PACKAGES_LIB @CMAKECONFIG_PKG_LIB@)
+
+#search package, try our own findXXX.cmake in find dir if not found
+foreach(PACKAGE ${@PNU@_PACKAGES})
+  find_package(${PACKAGE} QUIET)
+  pkg_found(${PACKAGE} FOUND)
+  if (${FOUND})
+  else()
+    string(TOLOWER ${PACKAGE} PKG_LOW)
+    list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/find/${PKG_LOW})
+  endif()
+  find_package(${PACKAGE} QUIET REQUIRED)
+endforeach()
+
+foreach(INCLUDE ${@PNU@_PACKAGES_INC})
+  list(APPEND @PNU@_INCLUDE_DIRS ${${INCLUDE}})
+endforeach()
+
+foreach(LIBDIR ${@PNU@_PACKAGES_LINK})
+  list(APPEND @PNU@_LIBRARY_DIRS ${${LIBDIR}})
+endforeach()
+
+foreach(LIB ${@PNU@_PACKAGES_LIB})
+  list(APPEND @PNU@_LIBRARIES ${${LIB}})
+endforeach()

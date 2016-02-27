@@ -1,7 +1,7 @@
 #ifndef _CLIINI_H
 #define _CLIINI_H
 
-#include "config.h"
+#include "cliini_config.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,52 +47,52 @@ typedef struct {
   int sum; //sum of counts
 } cliini_arg;
 
-typedef struct {
+typedef struct _cliini_args {
   cliini_arg *args;
   int count;
   int max;
 } cliini_args;
 
-CLIF_EXPORT cliini_args *cliini_parsopts(const int argc, const char *argv[], cliini_optgroup *group);
-CLIF_EXPORT cliini_args *cliini_parsefile(const char *filename, cliini_optgroup *group);
-CLIF_EXPORT cliini_args *cliini_parsebuf(const char *buf, cliini_optgroup *group);
+CLIINI_EXPORT cliini_args *cliini_parsopts(const int argc, const char *argv[], cliini_optgroup *group);
+CLIINI_EXPORT cliini_args *cliini_parsefile(const char *filename, cliini_optgroup *group);
+CLIINI_EXPORT cliini_args *cliini_parsebuf(const char *buf, cliini_optgroup *group);
 
-CLIF_EXPORT int cliini_fit_typeopts(cliini_args *args, cliini_args *typeargs);
+CLIINI_EXPORT int cliini_fit_typeopts(cliini_args *args, cliini_args *typeargs);
 
-CLIF_EXPORT int cliargs_count(cliini_args *args);
-CLIF_EXPORT cliini_arg *cliargs_nth(cliini_args *args, int n);
+CLIINI_EXPORT int cliargs_count(cliini_args *args);
+CLIINI_EXPORT cliini_arg *cliargs_nth(cliini_args *args, int n);
 
-CLIF_EXPORT void cliini_print_arg(cliini_arg *arg);
+CLIINI_EXPORT void cliini_print_arg(cliini_arg *arg);
 
-CLIF_EXPORT cliini_arg *cliargs_get(cliini_args *args, const char *name);
+CLIINI_EXPORT cliini_arg *cliargs_get(cliini_args *args, const char *name);
 //assumes that the args flags are wildcard patterns
-CLIF_EXPORT cliini_arg *cliargs_get_glob(cliini_args *args, const char *name);
+CLIINI_EXPORT cliini_arg *cliargs_get_glob(cliini_args *args, const char *name);
 
-CLIF_EXPORT int cliarg_inst_count(cliini_arg *arg); //number of instances of this options
-CLIF_EXPORT int cliarg_sum(cliini_arg *arg); //sum of all arguments for all instances
+CLIINI_EXPORT int cliarg_inst_count(cliini_arg *arg); //number of instances of this options
+CLIINI_EXPORT int cliarg_sum(cliini_arg *arg); //sum of all arguments for all instances
 
-CLIF_EXPORT int cliarg_arg_count(cliini_arg *arg); //number of arguments for the first instance
-CLIF_EXPORT int cliarg_inst_arg_count(cliini_arg *arg, int inst); //number of arguments for the respective instance
+CLIINI_EXPORT int cliarg_arg_count(cliini_arg *arg); //number of arguments for the first instance
+CLIINI_EXPORT int cliarg_inst_arg_count(cliini_arg *arg, int inst); //number of arguments for the respective instance
 
-CLIF_EXPORT char  *cliarg_str(cliini_arg *arg);
-CLIF_EXPORT int    cliarg_int(cliini_arg *arg);
-CLIF_EXPORT double cliarg_double(cliini_arg *arg);
+CLIINI_EXPORT char  *cliarg_str(cliini_arg *arg);
+CLIINI_EXPORT int    cliarg_int(cliini_arg *arg);
+CLIINI_EXPORT double cliarg_double(cliini_arg *arg);
 
-CLIF_EXPORT char  *cliarg_nth_str(cliini_arg *arg, int n);
-CLIF_EXPORT int    cliarg_nth_int(cliini_arg *arg, int n);
-CLIF_EXPORT double cliarg_nth_double(cliini_arg *arg, int n);
+CLIINI_EXPORT char  *cliarg_nth_str(cliini_arg *arg, int n);
+CLIINI_EXPORT int    cliarg_nth_int(cliini_arg *arg, int n);
+CLIINI_EXPORT double cliarg_nth_double(cliini_arg *arg, int n);
 
 //flat - return all values from all instances
-CLIF_EXPORT void cliarg_strs(cliini_arg *arg, char **vals);
-CLIF_EXPORT void cliarg_ints(cliini_arg *arg, int *vals);
-CLIF_EXPORT void cliarg_doubles(cliini_arg *arg, double *vals);
+CLIINI_EXPORT void cliarg_strs(cliini_arg *arg, char **vals);
+CLIINI_EXPORT void cliarg_ints(cliini_arg *arg, int *vals);
+CLIINI_EXPORT void cliarg_doubles(cliini_arg *arg, double *vals);
 
 //flat - return all values from single instance
-CLIF_EXPORT void cliarg_inst_strs(cliini_arg *arg, char **vals);
-CLIF_EXPORT void cliarg_inst_ints(cliini_arg *arg, int *vals);
-CLIF_EXPORT void cliarg_inst_doubles(cliini_arg *arg, double *vals);
+CLIINI_EXPORT void cliarg_inst_strs(cliini_arg *arg, char **vals);
+CLIINI_EXPORT void cliarg_inst_ints(cliini_arg *arg, int *vals);
+CLIINI_EXPORT void cliarg_inst_doubles(cliini_arg *arg, double *vals);
 
-CLIF_EXPORT void cliini_help(cliini_optgroup *group);
+CLIINI_EXPORT void cliini_help(cliini_optgroup *group);
 
 #ifdef __cplusplus
 }

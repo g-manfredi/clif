@@ -11,8 +11,6 @@
 
 #include <H5Cpp.h>
 
-#include "cliini.h"
-
 namespace clif {
 /*
  * \cond invalid type for BaseType lookup

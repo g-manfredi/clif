@@ -3,6 +3,8 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+#include "cliini.h"
+
 namespace clif {
 
 static BaseType BaseTypeAtomicMask = BaseType(int(BaseType::VECTOR)-1);

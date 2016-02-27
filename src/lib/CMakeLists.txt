@@ -40,10 +40,21 @@ if (CLIF_WITH_LIBIGL)
   list(APPEND LIBCLIF_HEADERS mesh.hpp)
 endif()
 
+get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+foreach(dir ${dirs})
+  message(STATUS "dir='${dir}'")
+endforeach()
+
+
 add_library(clif ${CLIF_BUILD_TYPE} ${SOURCES})
 
-target_link_libraries(clif PUBLIC ${CLIF_LINK_LIBRARIES})
-target_link_libraries(clif PRIVATE ${CLIF_PRIVATE_LINK_LIBRARIES})
+target_link_libraries(clif PUBLIC ${CLIF_LINK_LIBRARIES} ${${PNU}_LIB})
+#message("link public: ${CLIF_LINK_LIBRARIES} ${${PNU}_LIB}")
+target_link_libraries(clif PRIVATE ${CLIF_PRIVATE_LINK_LIBRARIES} ${${PNU}_PRIVATE_LIB})
+#message("link private: ${CLIF_PRIVATE_LINK_LIBRARIES} ${${PNU}_PRIVATE_LIB}")
+
+message("oublic link interface: ${INTERFACE_LINK_LIBRARIES}")
+
 
 set(CLIF_LINK_LIBRARIES ${CLIF_LINK_LIBRARIES} clif PARENT_SCOPE)
 set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)

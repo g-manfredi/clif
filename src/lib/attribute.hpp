@@ -10,6 +10,9 @@
 #include "stringtree.hpp"
 #include "enumtypes.hpp"
 
+//cliini args forward declaration
+struct _cliini_args;
+typedef struct _cliini_args cliini_args;
 
 namespace clif {
   

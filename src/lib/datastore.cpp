@@ -749,7 +749,7 @@ void apply_flags_channel(Datastore *store, cv::Mat *in, cv::Mat *out, int flags,
   if (flags & CVT_8U) {
     if (curr->depth() == CV_8U) {} //do nothing
     else if (curr->depth() == CV_16U) {
-      if (isnan(min) || isnan(max))
+      if (std::isnan(min) || std::isnan(max))
         *curr *= 1.0/256.0;
       else {
         *curr -= min;
@@ -759,7 +759,7 @@ void apply_flags_channel(Datastore *store, cv::Mat *in, cv::Mat *out, int flags,
       curr = out;
     }
     else {
-      if (!isnan(min) && !isnan(max)) {
+      if (!std::isnan(min) && !std::isnan(max)) {
         *curr -= min;
         *curr *= 256.0 / (max-min);
       }
@@ -936,7 +936,7 @@ void Datastore::readImage(const Idx& idx, cv::Mat *img, const ProcData &proc)
 
   double depth = act_proc.depth();
   
-  if (isnan(depth))
+  if (std::isnan(depth))
     depth = 0.0;
   
   //FIXME this will create undist even if img is cached!
