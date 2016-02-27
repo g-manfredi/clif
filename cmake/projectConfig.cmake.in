@@ -25,21 +25,6 @@ function(pkg_found PKG RET)
   endif()
 endfunction()
 
-#import targets
-include("${CMAKE_CURRENT_LIST_DIR}/clif.cmake")
-
-#hack make this configurable!
-find_package(Qt5Widgets)
-
-
-## FIXME remove this in favor of packaged deps below
-#set_and_check(CLIF_INCLUDE_DIRS "@PACKAGE_CLIF_INSTALL_INCLUDE_DIR@")
-#list(APPEND CLIF_INCLUDE_DIRS ${Qt5Widgets_INCLUDE_DIRS})
-#set_and_check(CLIF_LIBRARY_DIRS "@PACKAGE_CLIF_INSTALL_LIBRARY_DIR@")
-#list(APPEND CLIF_LIBRARY_DIRS ${Qt5Widgets_LIBRARY_DIRS})
-# These are imported targets
-#set(CLIF_LIBRARIES ${Qt5Widgets_LIBRARIES} "@CLIF_INSTALL_LIBRARIES@")
-
 #@PNU@ includes and link dirs 
 set_and_check(@PNU@_INCLUDE_DIRS "@PACKAGE_CMAKECONFIG_INC@")
 set_and_check(@PNU@_LIBRARY_DIRS "@PACKAGE_CMAKECONFIG_LINK@")
