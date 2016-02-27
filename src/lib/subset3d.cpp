@@ -30,7 +30,7 @@ void Subset3d::create(Dataset *data, cpath extr_group, const ProcData & proc)
     
   _store = _data->getStore(_root/"data");
   
-  _proc.set_flags(_proc.flags());
+  _proc.set_flags(_proc.flags() | UNDISTORT);
   _proc.set_store(_store);
   
   _data->getEnum((_root/"type"), _type);

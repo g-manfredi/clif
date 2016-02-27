@@ -313,8 +313,8 @@ void proc_image(Mat &in, Mat &out, const ProcData & proc, const Idx & pos)
   if (flags == 0)
   {
     printf("FIXME implement copy!\n");
-    out.create(curr_in.type(), curr_in);
-    cvMat(curr_in).copyTo(cvMat(out));
+    out.create(in.type(), in);
+    cvMat(in).copyTo(cvMat(out));
     return;
   }
   
