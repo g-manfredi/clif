@@ -82,6 +82,12 @@ void Mesh::merge(const Mesh &other)
   }
 }
 
+void Mesh::size(int v_count, int f_count)
+{
+  V.resize(v_count,3);
+  F.resize(f_count, 3);
+}
+
 Mesh mesh_cam()
 {
   Mesh m;
@@ -201,7 +207,7 @@ igl::viewer::Viewer **wtf;
 
 static void _run_viewer(const Mesh *mesh, igl::viewer::Viewer **viewer)
 {
-  if (!*viewer)
+  if (!(*viewer))
     *viewer =  new igl::viewer::Viewer;
   
   (*viewer)->core.set_rotation_type(
@@ -215,7 +221,8 @@ static void _run_viewer(const Mesh *mesh, igl::viewer::Viewer **viewer)
 bool Mesh::show()
 {
 #ifdef CLIF_WITH_LIBIGL_VIEWER
-  std::thread viewer_thread(_run_viewer, this, &_viewer);
+  //std::thread viewer_thread(_run_viewer, this, &_viewer);
+  _run_viewer(this, &_viewer);
   return true;
 #else
   return false;

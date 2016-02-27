@@ -1,7 +1,9 @@
 #ifndef CLIF_MESH_H
 #define CLIF_MESH_H
  
-#include <Eigen/Dense> 
+#include <Eigen/Dense>
+
+#include "clif/config.h"
 
 #ifdef CLIF_WITH_LIBIGL_VIEWER
 namespace igl { namespace  viewer {
@@ -20,6 +22,7 @@ public:
   Mesh& scale(double s);
   void rotate(const Eigen::Vector3d &r_v);
   void merge(const Mesh &other);
+  void size(int v_count, int f_count);
   
   bool show();
   
@@ -27,7 +30,7 @@ public:
   Eigen::MatrixXi F;
 private:
 #ifdef CLIF_WITH_LIBIGL_VIEWER
-  igl::viewer::Viewer *_viewer;
+  igl::viewer::Viewer *_viewer = NULL;
 #endif
 };
 

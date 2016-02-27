@@ -84,7 +84,7 @@ macro(check_find PACKAGE RET)
   if (FOUND)
     message("${PACKAGE} - found")
     set(${RET} TRUE)
-    add_definitions(-D${RET})
+    list(APPEND ${PNU}_DEFINES ${RET})
   else()
     #message("${${pkg_up}_FOUND}"
     #message("did not find ${PACKAGE}, adding cmake/${PKG_LOW} to CMAKE_MODULE_PATH")
@@ -94,7 +94,7 @@ macro(check_find PACKAGE RET)
     if (FOUND)
       message("${PACKAGE} - found using included Find${PACKAGE}.cmake")
       set(${RET} TRUE)
-      add_definitions(-D${RET})
+      list(APPEND ${PNU}_DEFINES ${RET})
     else()
       message("${PACKAGE} - missing")
       set(${RET} FALSE)
@@ -231,6 +231,7 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
 endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  # FIXME use CLIF_DEFINES
   add_definitions(-DCLIF_COMPILER_MSVC)
   add_definitions(-DCLIF_EXPORT_LIBRARY)
   add_definitions(-DCLIF_BUILD_STATIC)
@@ -258,7 +259,7 @@ if (HDMARKER_FOUND)
   list(APPEND CLIF_PRIVATE_LIBRARY_DIRS ${HDMARKER_LIBRARY_DIRS})
   
   set(CLIF_WITH_HDMARKER true)
-  add_definitions(-DCLIF_WITH_HDMARKER)
+  list(APPEND ${PNU}_DEFINES CLIF_WITH_HDMARKER)
 endif()
 
 #find_package(ucalib QUIET)
@@ -294,7 +295,7 @@ if (NOT ("${GLFW3_INCLUDE_DIR}" STREQUAL ""))
   list(APPEND CLIF_PRIVATE_LIBRARY_DIRS ${GLFW3_LIBRARY_DIR})
   
   set(CLIF_WITH_GLFW3 true)
-  add_definitions(-DCLIF_WITH_GLFW3)
+  list(APPEND ${PNU}_DEFINES CLIF_WITH_GLFW3)
 endif()
 
 find_package(GLEW)
@@ -305,17 +306,17 @@ if (GLEW_FOUND)
   message("glew lib: ${GLEW_LIBRARIES}")
   
   set(CLIF_WITH_GLEW true)
-  add_definitions(-DCLIF_WITH_GLEW)
+  list(APPEND ${PNU}_DEFINES CLIF_WITH_GLEW)
 endif()
 
 if (CLIF_WITH_EIGEN3)
   set(CLIF_WITH_LIBIGL true)
-  add_definitions(-DCLIF_WITH_LIBIGL)
+  list(APPEND ${PNU}_DEFINES CLIF_WITH_LIBIGL)
 endif()
 
 if (CLIF_WITH_LIBIGL AND CLIF_WITH_GLFW3 AND CLIF_WITH_GLEW)  
   set(CLIF_WITH_LIBIGL_VIEWER true)
-  add_definitions(-DCLIF_WITH_LIBIGL_VIEWER)
+  list(APPEND ${PNU}_DEFINES CLIF_WITH_LIBIGL_VIEWER)
   #add_definitions(-DIGL_VIEWER_WITH_NANOGUI)
 endif()
 
@@ -367,6 +368,7 @@ find_package(Qt5Widgets QUIET)
 
 if (Qt5Widgets_FOUND)
   set(CLIF_BUILD_QT TRUE)
+  # FIXME use CLIF_DEFINES
   add_definitions(-DCLIF_BUILD_QT)
   
   list(APPEND CLIF_LINK_LIBRARIES ${Qt5Widgets_LIBRARIES})
@@ -391,10 +393,15 @@ if (FNMATCH_USE_INTERNAL)
 endif()
 list(APPEND CLIF_BUILD_COMPILE_DIRS src/lib src/bin src/gui src/clifview)
 
+foreach(define ${${PNU}_DEFINES})
+  set(${PNU}_DEFINES_STRING "${${PNU}_DEFINES_STRING}\n#define ${define}")
+endforeach()
+
 configure_file(config.h.in config.h)
 list(APPEND CLIF_HEADERS config.h)
 list(APPEND CLIF_FULLPATH_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/config.h) 
 list(APPEND CLIF_BUILD_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/include external/libigl/include)
+
 
 foreach(dir ${CLIF_BUILD_COMPILE_DIRS})
   include_directories(${CLIF_BUILD_INCLUDE_DIRS} ${CLIF_INCLUDE_DIRS} ${CLIF_PRIVATE_INCLUDE_DIRS})
