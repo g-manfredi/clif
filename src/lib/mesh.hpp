@@ -9,6 +9,9 @@
 namespace igl { namespace  viewer {
   class Viewer;
 }}
+namespace std {
+  class thread;
+}
 #endif
 
 namespace clif {
@@ -23,14 +26,19 @@ public:
   void rotate(const Eigen::Vector3d &r_v);
   void merge(const Mesh &other);
   void size(int v_count, int f_count);
+  void color(bool use_color);
   
-  bool show();
+  bool show(bool block = true);
   
   Eigen::MatrixXd V;
   Eigen::MatrixXi F;
+  Eigen::MatrixXd C;
 private:
 #ifdef CLIF_WITH_LIBIGL_VIEWER
   igl::viewer::Viewer *_viewer = NULL;
+  std::thread *_viewer_thread = NULL;
+public :
+  ~Mesh();
 #endif
 };
 

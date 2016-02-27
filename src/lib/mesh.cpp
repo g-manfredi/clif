@@ -88,6 +88,14 @@ void Mesh::size(int v_count, int f_count)
   F.resize(f_count, 3);
 }
 
+void Mesh::color(bool use_color)
+{
+  if (use_color)
+    C.resize(V.rows(), V.cols());
+  else
+    C.resize(0, 0);
+}
+
 Mesh mesh_cam()
 {
   Mesh m;
@@ -203,7 +211,13 @@ Mesh mesh_line(const Eigen::Vector3d &p1, const Eigen::Vector3d &p2)
 
 #ifdef CLIF_WITH_LIBIGL_VIEWER
 
-igl::viewer::Viewer **wtf;
+Mesh::~Mesh()
+{
+  if (_viewer_thread) {
+    //glfwSetWindowShouldClose(_viewer->window, 1); 
+    _viewer_thread->join();
+  }
+}
 
 static void _run_viewer(const Mesh *mesh, igl::viewer::Viewer **viewer)
 {
@@ -213,16 +227,23 @@ static void _run_viewer(const Mesh *mesh, igl::viewer::Viewer **viewer)
   (*viewer)->core.set_rotation_type(
     igl::viewer::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
   (*viewer)->data.set_mesh(mesh->V, mesh->F);
+  if (mesh->C.rows())
+    (*viewer)->data.set_colors(mesh->C);
   
   (*viewer)->launch();
 }
 #endif
 
-bool Mesh::show()
+bool Mesh::show(bool block)
 {
 #ifdef CLIF_WITH_LIBIGL_VIEWER
-  //std::thread viewer_thread(_run_viewer, this, &_viewer);
-  _run_viewer(this, &_viewer);
+  if (_viewer)
+    return false;
+  
+  if (block)
+    _run_viewer(this, &_viewer);
+  else
+    _viewer_thread = new std::thread(_run_viewer, this, &_viewer);
   return true;
 #else
   return false;
