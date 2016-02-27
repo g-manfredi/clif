@@ -230,6 +230,10 @@ static void _run_viewer(const Mesh *mesh, igl::viewer::Viewer **viewer)
   if (mesh->C.rows())
     (*viewer)->data.set_colors(mesh->C);
   
+  (*viewer)->core.show_lines = false;
+  //(*viewer)->core.shininess = 0.0;
+  (*viewer)->core.lighting_factor = 0.0;
+  
   (*viewer)->launch();
 }
 #endif
