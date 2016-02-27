@@ -237,7 +237,9 @@ std::ostream& operator<<(std::ostream& out, const Idx& idx)
 void *BaseType_new(BaseType type, off_t count)
 {
   void *ptr = malloc(count*baseType_size(type));
-  assert(ptr);
+  if (!ptr) {
+    printf("unable to allocate %fGiB memory", count*baseType_size(type)/1073741824.0);
+  }
   
   if (type > BaseTypeMaxAtomicType)
     callByBaseType<basetype_create_class_instances>(type, ptr, count);
