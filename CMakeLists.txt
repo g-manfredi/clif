@@ -127,7 +127,7 @@ list(APPEND CLIF_LIBRARY_DIRS ${OpenCV_LIB_DIR})
 
 #This is to avoid that stupid windows links dlls
 
-if (NOT HDF5_COMPILE_EXTERNAL)
+if (NOT COMPILE_EXTERNAL)
 	find_package(HDF5 REQUIRED C CXX)
 elseif()
 	if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
@@ -154,7 +154,7 @@ list(APPEND CLIF_INCLUDE_DIRS ${Vigra_INCLUDE_DIRS})
 #FIXME ask Ullrich why theres not VIGRA_LIBRARY_DIRS?
 #list(APPEND CLIF_LIBRARY_DIRS !!!FIXME!!!)
 
-if (NOT HDF5_COMPILE_EXTERNAL)
+if (NOT COMPILE_EXTERNAL)
 	find_package(Boost REQUIRED COMPONENTS filesystem system)
 endif()
 list(APPEND CLIF_LINK_LIBRARIES ${Boost_LIBRARIES})
@@ -167,10 +167,14 @@ find_package(Qt5Widgets QUIET)
 if (Qt5Widgets_FOUND)
   set(CLIF_BUILD_QT TRUE)
   add_definitions(-DCLIF_BUILD_QT)
-  
-  list(APPEND CLIF_LINK_LIBRARIES ${Qt5Widgets_LIBRARIES})
+  if (COMPILE_EXTERNAL)#This is necessary because windows somehow don't want to add the debug part when it gets compiled by openlf
+	list(APPEND CLIF_LINK_LIBRARIES ${Qt5Widgets_LIBRARIES} debug;Qt5::Widgets)
+  else()
+	list(APPEND CLIF_LINK_LIBRARIES ${Qt5Widgets_LIBRARIES})
+  endif()
   list(APPEND CLIF_INCLUDE_DIRS ${Qt5Widgets_INCLUDE_DIRS})
   list(APPEND CLIF_LIBRARY_DIRS ${Qt5Widgets_LIBRARY_DIRS})
+  message("QTQTQTQT: ${CLIF_LINK_LIBRARIES}")
 else()
   set(CLIF_BUILD_QT_REASON "[Qt5Widgets not found]")
 endif()

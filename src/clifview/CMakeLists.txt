@@ -7,6 +7,7 @@ project(clifview)
 if (CLIF_BUILD_QT)
    find_package(Qt5Widgets REQUIRED)
    find_package(Qt5Network REQUIRED)
+   
    find_package(Boost REQUIRED COMPONENTS filesystem system)
    
    set(CMAKE_AUTOMOC ON)
