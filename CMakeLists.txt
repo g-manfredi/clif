@@ -107,7 +107,7 @@ if (GLEW_FOUND)
   add_definitions(-DCLIF_WITH_GLEW)
 endif()
 
-if (CLIF_WITH_EIGEN3)
+if (CLIF_WITH_EIGEN3 AND (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")) #LIBIGL is not part of EIGEN3 in windows
   set(CLIF_WITH_LIBIGL true)
   add_definitions(-DCLIF_WITH_LIBIGL)
 endif()
