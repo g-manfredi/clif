@@ -1042,7 +1042,7 @@ void update_cams_mesh(Mesh &cams, Mat_<double> extrinsics, Mat_<double> extrinsi
 }
 
 //globals for viewer
-igl::viewer::Viewer viewer;
+igl::viewer::Viewer *_viewer;
 Mat_<double> *extr_ptr = NULL;
 Mat_<double> *extr_rel_ptr = NULL;
 Mat_<double> *lines_ptr = NULL;
@@ -1069,7 +1069,7 @@ class ceres_iter_callback : public ceres::IterationCallback {
   ~ceres_iter_callback() {}
 
   virtual ceres::CallbackReturnType operator()(const ceres::IterationSummary& summary) {
-    viewer.callback_pre_draw = callback_pre_draw;
+    _viewer->callback_pre_draw = callback_pre_draw;
     glfwPostEmptyEvent();
     return ceres::SOLVER_CONTINUE;
   }
@@ -1079,10 +1079,13 @@ class ceres_iter_callback : public ceres::IterationCallback {
 
 void run_viewer(Mesh *mesh)
 {
-  viewer.core.set_rotation_type(igl::viewer::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
-  viewer.data.set_mesh(mesh->V, mesh->F);
+  if (!_viewer)
+    _viewer = new igl::viewer::Viewer;
   
-  viewer.launch();
+  _viewer->core.set_rotation_type(igl::viewer::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
+  _viewer->data.set_mesh(mesh->V, mesh->F);
+  
+  _viewer->launch();
 }
 
 #endif
