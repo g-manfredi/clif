@@ -129,6 +129,38 @@ list(APPEND ${PNU}_PRIVATE_PKG_INC  CLIINI_INCLUDE_DIRS)
 list(APPEND ${PNU}_PRIVATE_PKG_LINK CLIINI_LIBRARY_DIRS)
 list(APPEND ${PNU}_PRIVATE_PKG_LIB  CLIINI_LIBRARIES)
 
+
+list(APPEND ${PNU}_PKG OpenCV)
+list(APPEND ${PNU}_PKG_INC  OpenCV_INCLUDE_DIRS)
+list(APPEND ${PNU}_PKG_LINK OpenCV_LIB_DIR)
+list(APPEND ${PNU}_PKG_LIB  OpenCV_LIBRARIES)
+
+
+list(APPEND ${PNU}_PKG Vigra)
+list(APPEND ${PNU}_PKG_INC Vigra_INCLUDE_DIRS)
+set(VIGRAIMPEX_VAR vigraimpex)
+list(APPEND ${PNU}_PKG_LIB VIGRAIMPEX_VAR)
+#FIXME ask Ullrich why theres no VIGRA_LIBRARIES?
+
+list(APPEND ${PNU}_PKG_OPT hdmarker)
+list(APPEND ${PNU}_PKG_INC  HDMARKER_INCLUDE_DIRS)
+list(APPEND ${PNU}_PKG_LINK HDMARKER_LIBRARY_DIRS)
+list(APPEND ${PNU}_PKG_LIB  HDMARKER_LIBRARIES)
+  
+#see https://github.com/glfw/glfw/issues/483
+find_package(glfw QUIET)
+if ("${GLFW3_INCLUDE_DIR}" STREQUAL "")
+  set(glfw3_DIR /usr/lib/cmake/glfw/)
+endif()
+list(APPEND ${PNU}_PKG_OPT glfw3)
+list(APPEND ${PNU}_PKG_INC  GLFW3_INCLUDE_DIR)
+list(APPEND ${PNU}_PKG_LINK GLFW3_LIBRARY_DIR)
+list(APPEND ${PNU}_PKG_LIB  GLFW3_LIBRARY)
+
+list(APPEND ${PNU}_PKG_OPT GLEW)
+list(APPEND ${PNU}_PKG_INC  GLEW_INCLUDE_DIRS)
+list(APPEND ${PNU}_PKG_LIB  GLEW_LIBRARIES)
+
 #####################################################
 ## EXPORT / INSTALL
 #####################################################
@@ -139,13 +171,30 @@ list(APPEND ${PNU}_EXPORT_LIBS clif clif-qt)
 #####################################################
 ## search packages
 #####################################################
-# check if found if not add our own FindXXX.cmake
-foreach(PACKAGE ${${PNU}_PKG_OPT} ${${PNU}_PRIVATE_PKG_OPT})
+foreach(PACKAGE ${${PNU}_PKG_OPT})
+  string(TOUPPER ${PACKAGE} PKG_UP)
+  check_find(${PACKAGE} ${PNU}_WITH_${PKG_UP})
+  if (${PNU}_WITH_${PKG_UP})
+    list(APPEND ${PNU}_EXPORT_DEPS ${PACKAGE})
+  endif()
+endforeach()
+
+foreach(PACKAGE ${${PNU}_PRIVATE_PKG_OPT})
   string(TOUPPER ${PACKAGE} PKG_UP)
   check_find(${PACKAGE} ${PNU}_WITH_${PKG_UP})
 endforeach()
 
-foreach(PACKAGE ${${PNU}_PKG} ${${PNU}_PRIVATE_PKG})
+foreach(PACKAGE ${${PNU}_PKG})
+  string(TOUPPER ${PACKAGE} PKG_UP)
+  check_find(${PACKAGE} ${PNU}_WITH_${PKG_UP})
+  if (NOT ${${PNU}_WITH_${PKG_UP}})
+    list(APPEND ${PNU}_MISSING_REQUIRED ${PACKAGE})
+  else()
+    list(APPEND ${PNU}_EXPORT_DEPS ${PACKAGE})
+  endif()
+endforeach()
+
+foreach(PACKAGE ${${PNU}_PRIVATE_PKG})
   string(TOUPPER ${PACKAGE} PKG_UP)
   check_find(${PACKAGE} ${PNU}_WITH_${PKG_UP})
   if (NOT ${${PNU}_WITH_${PKG_UP}})
@@ -162,6 +211,23 @@ if (${PNU}_MISSING_REQUIRED)
   message("")
   message(FATAL_ERROR "required package(s) not found, exiting.")
 endif()
+
+#####################################################
+## FEATURES depending on multiple packages
+#####################################################
+
+if (CLIF_WITH_EIGEN3)
+  set(CLIF_WITH_LIBIGL true)
+  list(APPEND ${PNU}_DEFINES CLIF_WITH_LIBIGL)
+endif()
+
+if (CLIF_WITH_LIBIGL AND CLIF_WITH_GLFW3 AND CLIF_WITH_GLEW)  
+  set(CLIF_WITH_LIBIGL_VIEWER true)
+  list(APPEND ${PNU}_DEFINES CLIF_WITH_LIBIGL_VIEWER)
+  #add_definitions(-DIGL_VIEWER_WITH_NANOGUI)
+endif()
+
+find_package(OpenCV REQUIRED)
 
 #####################################################
 ## SET INCLUDES, LIBS, ... (public)
@@ -188,7 +254,6 @@ clean_list(${PNU}_LIB)
 
 foreach(INCLUDE ${${PNU}_PRIVATE_PKG_INC})
   list(APPEND ${PNU}_PRIVATE_INC ${${INCLUDE}})
-  message("private inc add ${INCLUDE} / ${${INCLUDE}}")
 endforeach()
 clean_list(${PNU}_PRIVATE_INC)
 
@@ -209,24 +274,19 @@ clean_list(${PNU}_PRIVATE_LIB)
 include_directories(${${PNU}_INC} ${${PNU}_PRIVATE_INC})
 link_directories(${${PNU}_LINK} ${${PNU}_PRIVATE_LINK})
 
-message("includes: ${${PNU}_INC} ${${PNU}_PRIVATE_INC}")
-
 ######################
 
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
   # using Clang
-  message("use clang")
   list(APPEND CMAKE_CXX_FLAGS "-std=c++11")
   #FIXME
   add_definitions(-DFNM_EXTMATCH=0)
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
   # using GCC
-  message("use gcc")
   set(CLIF_BUILD_TYPE "SHARED")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O1 -fno-omit-frame-pointer -fPIC -std=c++11 -march=native -fopenmp")
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   # using Visual Studio C++
-  message("use msvc")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /noOy /W2 /EHsc")
 endif()
 
@@ -241,90 +301,6 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   set(CLIF_EXPORT "__declspec(dllexport)")
   set(CLIF_IMPORT "__declspec(dllimport)")
 endif()
-
-find_package(OpenCV QUIET)
-if (NOT OpenCV_FOUND)
-  list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/opencv)
-endif()
-
-find_package(Vigra QUIET)
-if (NOT Vigra_FOUND)
-  list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/vigra)
-endif()
-
-find_package(hdmarker QUIET)
-if (HDMARKER_FOUND)
-  list(APPEND CLIF_PRIVATE_LINK_LIBRARIES ${HDMARKER_LIBRARIES})
-  list(APPEND CLIF_PRIVATE_INCLUDE_DIRS ${HDMARKER_INCLUDE_DIRS})
-  list(APPEND CLIF_PRIVATE_LIBRARY_DIRS ${HDMARKER_LIBRARY_DIRS})
-  
-  set(CLIF_WITH_HDMARKER true)
-  list(APPEND ${PNU}_DEFINES CLIF_WITH_HDMARKER)
-endif()
-
-#find_package(ucalib QUIET)
-#if (UCALIB_FOUND)
-  #list(APPEND CLIF_PRIVATE_LINK_LIBRARIES ${UCALIB_LIBRARIES})
-  #list(APPEND CLIF_PRIVATE_INCLUDE_DIRS ${UCALIB_INCLUDE_DIRS})
-  #list(APPEND CLIF_PRIVATE_LIBRARY_DIRS ${UCALIB_LIBRARY_DIRS})
-  
-  #set(CLIF_WITH_UCALIB true)
-  #add_definitions(-DCLIF_WITH_UCALIB)
-#endif()
-
-#find_package(Eigen3)
-#if (EIGEN3_FOUND)
-  #header only
-  #list(APPEND CLIF_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR})
-  
-  #set(CLIF_WITH_EIGEN3 true)
-  #add_definitions(-DCLIF_WITH_EIGEN3)
-#endif()
-
-##dependend packages for libigl...
-find_package(glfw3 QUIET)
-if ("${GLFW3_INCLUDE_DIR}" STREQUAL "")
-  #wrong path was used in some glfw versions
-  set(glfw3_DIR /usr/lib/cmake/glfw/)
-endif()
-
-find_package(glfw3 QUIET)
-if (NOT ("${GLFW3_INCLUDE_DIR}" STREQUAL ""))
-  list(APPEND CLIF_PRIVATE_LINK_LIBRARIES ${GLFW3_LIBRARY})
-  list(APPEND CLIF_PRIVATE_INCLUDE_DIRS ${GLFW3_INCLUDE_DIR})
-  list(APPEND CLIF_PRIVATE_LIBRARY_DIRS ${GLFW3_LIBRARY_DIR})
-  
-  set(CLIF_WITH_GLFW3 true)
-  list(APPEND ${PNU}_DEFINES CLIF_WITH_GLFW3)
-endif()
-
-find_package(GLEW)
-if (GLEW_FOUND)
-  list(APPEND CLIF_PRIVATE_LINK_LIBRARIES ${GLEW_LIBRARIES})
-  list(APPEND CLIF_PRIVATE_INCLUDE_DIRS ${GLEW_INCLUDE_DIRS})
-  
-  message("glew lib: ${GLEW_LIBRARIES}")
-  
-  set(CLIF_WITH_GLEW true)
-  list(APPEND ${PNU}_DEFINES CLIF_WITH_GLEW)
-endif()
-
-if (CLIF_WITH_EIGEN3)
-  set(CLIF_WITH_LIBIGL true)
-  list(APPEND ${PNU}_DEFINES CLIF_WITH_LIBIGL)
-endif()
-
-if (CLIF_WITH_LIBIGL AND CLIF_WITH_GLFW3 AND CLIF_WITH_GLEW)  
-  set(CLIF_WITH_LIBIGL_VIEWER true)
-  list(APPEND ${PNU}_DEFINES CLIF_WITH_LIBIGL_VIEWER)
-  #add_definitions(-DIGL_VIEWER_WITH_NANOGUI)
-endif()
-
-find_package(OpenCV REQUIRED)
-list(APPEND CLIF_LINK_LIBRARIES ${OpenCV_LIBRARIES})
-list(APPEND CLIF_INCLUDE_DIRS ${OpenCV_INCLUDE_DIRS})
-list(APPEND CLIF_LIBRARY_DIRS ${OpenCV_LIB_DIR})
-
 
 
 #This is to avoid that stupid windows links dlls
@@ -343,18 +319,10 @@ elseif()
 		endif()
 	endif()
 endif()
-message("clif:")
-message(STATUS ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES} ${HDF5_INCLUDE_DIR})
+
 list(APPEND CLIF_LINK_LIBRARIES ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES})
 list(APPEND CLIF_INCLUDE_DIRS ${HDF5_INCLUDE_DIR})
 list(APPEND CLIF_LIBRARY_DIRS ${HDF5_LIBRARY_DIR})
-
-find_package(Vigra REQUIRED)
-#FIXME ask Ullrich why theres not VIGRA_LIBRARIES?
-list(APPEND CLIF_LINK_LIBRARIES vigraimpex)
-list(APPEND CLIF_INCLUDE_DIRS ${Vigra_INCLUDE_DIRS})
-#FIXME ask Ullrich why theres not VIGRA_LIBRARY_DIRS?
-#list(APPEND CLIF_LIBRARY_DIRS !!!FIXME!!!)
 
 if (NOT HDF5_COMPILE_EXTERNAL)
 	find_package(Boost REQUIRED COMPONENTS filesystem system)
@@ -496,7 +464,7 @@ include(CMakePackageConfigListHelpers)
 ## ...Config.cmake generation
 #####################################################
 
-set(CMAKECONFIG_PKG ${${PNU}_PKG} ${${PNU}_PKG_OPT})
+set(CMAKECONFIG_PKG ${${PNU}_EXPORT_DEPS})
 set(CMAKECONFIG_PKG_INC ${${PNU}_PKG_INC})
 set(CMAKECONFIG_PKG_LINK ${${PNU}_PKG_LINK})
 set(CMAKECONFIG_PKG_LIB ${${PNU}_PKG_LIB})
@@ -552,19 +520,19 @@ set(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX_BACKUP})
 # set(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX_BACKUP})
 
 # for the installed package
-set(CLIF_INSTALL_INCLUDE_DIR "include" "include/clif" ${CLIF_INCLUDE_DIRS})
-set(CLIF_INSTALL_LIBRARY_DIR "lib")
-set(CLIF_INSTALL_LIBRARIES clif clif-qt)
-set(CLIF_INSTALL_CMAKE_DIR "lib/cmake/clif")
-configure_package_config_file(cmake/projectConfig.cmake.in
-                              "config/projectConfig.cmake"
-                              INSTALL_DESTINATION ${CLIF_INSTALL_CMAKE_DIR}
-                              PATH_VARS CLIF_INSTALL_INCLUDE_DIR CLIF_INSTALL_LIBRARY_DIR CLIF_INSTALL_LIBRARIES CLIF_INSTALL_CMAKE_DIR)
+# set(CLIF_INSTALL_INCLUDE_DIR "include" "include/clif" ${CLIF_INCLUDE_DIRS})
+# set(CLIF_INSTALL_LIBRARY_DIR "lib")
+# set(CLIF_INSTALL_LIBRARIES clif clif-qt)
+# set(CLIF_INSTALL_CMAKE_DIR "lib/cmake/clif")
+# configure_package_config_file(cmake/projectConfig.cmake.in
+#                               "config/projectConfig.cmake"
+#                               INSTALL_DESTINATION ${CLIF_INSTALL_CMAKE_DIR}
+#                               PATH_VARS CLIF_INSTALL_INCLUDE_DIR CLIF_INSTALL_LIBRARY_DIR CLIF_INSTALL_LIBRARIES CLIF_INSTALL_CMAKE_DIR)
 
 # Install the clifConfig.cmake and clifConfigVersion.cmake
-install(FILES
-  "${PROJECT_BINARY_DIR}/config/projectConfig.cmake"
-  DESTINATION ${CLIF_INSTALL_CMAKE_DIR} COMPONENT dev)
+#install(FILES
+  #"${PROJECT_BINARY_DIR}/config/projectConfig.cmake"
+  #DESTINATION ${CLIF_INSTALL_CMAKE_DIR} COMPONENT dev)
 
 #export targets for installation
 #install(EXPORT clif DESTINATION ${CLIF_INSTALL_CMAKE_DIR} COMPONENT dev)
