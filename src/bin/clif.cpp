@@ -364,13 +364,15 @@ int main(const int argc, const char *argv[])
         }
         printf("add store %s\n", store_path);
         Datastore *store = set->addStore(store_path, dim);
-        for(int j=sum;j<cliarg_inst_arg_count(stores, i);j++,sum++) {
-          printf("%s\n", cliarg_nth_str(stores, sum));
-          cv::Mat img = imread(cliarg_nth_str(stores, sum), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+#pragma omp parallel for ordered schedule(dynamic)
+        for(int j=sum;j<cliarg_inst_arg_count(stores, i);j++) {
+          printf("%s\n", cliarg_nth_str(stores, j));
+          cv::Mat img = imread(cliarg_nth_str(stores, j), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
           if (img.channels() > 1 && cvt_gray)
             cv::cvtColor(img, img, CV_BGR2GRAY);
           else if (img.channels() == 3)
-            cvtColor(img, img, COLOR_BGR2RGB); 
+            cvtColor(img, img, COLOR_BGR2RGB);
+#pragma omp ordered
           store->append(clif::Mat3d(img));
         }
       }
@@ -389,21 +391,24 @@ int main(const int argc, const char *argv[])
           exit(EXIT_FAILURE);
         }
         Idx size(dim);
-        Idx pos(dim);
         for(int n=0;n<dim;n++,sum++)
           size[n] = atoi(cliarg_nth_str(dim_stores, sum));
         printf("add store %s\n", store_path);
         Datastore *store = set->addStore(store_path, dim);
-        for(int j=sum;j<cliarg_inst_arg_count(dim_stores, i);j++,sum++) {
-          printf("%s\n", cliarg_nth_str(dim_stores, sum));
-          cv::Mat img = imread(cliarg_nth_str(dim_stores, sum), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+#pragma omp parallel for schedule(dynamic)
+        for(int j=sum;j<cliarg_inst_arg_count(dim_stores, i);j++) {
+          Idx pos(dim);
+        
+          printf("%s\n", cliarg_nth_str(dim_stores, j));
+          cv::Mat img = imread(cliarg_nth_str(dim_stores, j), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
           if (img.channels() > 1 && cvt_gray)
             cv::cvtColor(img, img, CV_BGR2GRAY);
           else if (img.channels() == 3)
-            cvtColor(img, img, COLOR_BGR2RGB); 
+            cvtColor(img, img, COLOR_BGR2RGB);
+#pragma omp critical
           store->write(clif::Mat3d(img), pos);
           int currdim = 3;
-          pos[currdim]++;
+          pos[currdim] = j-sum;
           while(size[currdim] > 0 && pos[currdim] >= size[currdim] && currdim < dim-1) {
             pos[currdim] = 0;
             currdim++;
@@ -424,7 +429,7 @@ int main(const int argc, const char *argv[])
     //set dims for 3d LG (imgs are 3d themselves...)
     
     Datastore *store = set->getStore("data");
-    
+#pragma omp parallel for ordered schedule(dynamic)
     for(uint i=0;i<input_imgs.size();i++) {
       printf("store idx %d: %s\n", i, input_imgs[i].c_str());
       cv::Mat img = imread(input_imgs[i], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
@@ -432,7 +437,8 @@ int main(const int argc, const char *argv[])
       if (img.channels() > 1 && cvt_gray)
         cv::cvtColor(img, img, CV_BGR2GRAY);
       else if (img.channels() == 3)
-        cvtColor(img, img, COLOR_BGR2RGB); 
+        cvtColor(img, img, COLOR_BGR2RGB);
+#pragma omp ordered
       store->appendImage(&img);
     }
     
@@ -479,10 +485,12 @@ int main(const int argc, const char *argv[])
       Dataset *in_set = f_in.openDataset(0);
       Datastore *in_imgs = in_set->getStore("data");
         
-      char buf[4096];
+#pragma omp parallel for schedule(dynamic)
       for(int c=0;c<in_imgs->imgCount();c++) {
+        char buf[4096];
         cv::Mat img;
         sprintf(buf, clif_extract_images[i].c_str(), c);
+#pragma omp critical
         printf("store idx %d: %s\n", c, buf);
         std::vector<int> idx(in_imgs->dims(), 0);
         idx[3] = c;
