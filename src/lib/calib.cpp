@@ -23,6 +23,7 @@
   #include "ceres/ceres.h"
   #include "ceres/rotation.h"
   
+  const double proj_center_size = 0.1;
   const double strong_proj_constr_weight = 0.1;
   const double proj_constr_weight = 1e-4;
   const double center_constr_weight = 0.1;
@@ -816,8 +817,6 @@ struct LineZ3GenericCenterError {
   }
 };
 
-const double proj_center_size = 0.5;
-
 static void _zline_problem_add_proj_error(ceres::Problem &problem, Mat_<double> &lines, cv::Point2i img_size, Mat_<double> &proj, double proj_constraint)
 {
   double two_sigma_squared = 2.0*(img_size.x*img_size.x+img_size.y*img_size.y)*proj_center_size*proj_center_size;
@@ -1214,7 +1213,7 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   printf("\nunconstrained rms ~%fmm\n", 2.0*sqrt(summary.final_cost/problem_reproj.NumResiduals()));
 
 #ifdef CLIF_WITH_LIBIGL_VIEWER
-  glfwSetWindowShouldClose(viewer.window, 1); 
+  glfwSetWindowShouldClose(_viewer->window, 1); 
   viewer_thread.join();
 #endif
 }
@@ -1342,6 +1341,7 @@ bool ucalib_calibrate(Dataset *set, cpath proxy, cpath calib)
 #else
 {
   //FIXME report error
+  printf("ERROR calibration not available - clif compiled without ucalib!\n");
   return false;
 }
 #endif
