@@ -159,8 +159,6 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
     
     //FIXME remove this!
     Marker::init();
-    
-    printf("start processing!\n");
 
     for(;pos<map_size;pos.step(1, map_size)) {
       std::vector<int> idx(imgs->dims());
@@ -176,8 +174,7 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
       cv::Mat *debug_img_ptr = NULL;
       cv::Mat debug_img;          
       
-      int skip = 4;
-      if (imgs->org() == DataOrg::BAYER_2x2) {
+      if (imgs->org() == DataOrg::BAYER_2x2) {        
         for(int mc=0;mc<3;mc++)
           for(int m=0;m<4;m++)
             masks[mc][m] = false;
@@ -217,7 +214,6 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
           char buf[128];
 
           for(int c=0;c<channels;c++) {
-            
             if (debug_store)
               debug_img_ptr = &debug_imgs[c];
             
@@ -251,7 +247,6 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
             cv::merge(debug_imgs, 3, debug_img);
       }
       else {
-        printf("proc nobayer\n");
         cv::Mat debug_imgs[proc.d()];
         
         //grayscale rough detection
@@ -266,13 +261,6 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
         
         
         for(int c=0;c<channels;c++) {
-          if (skip >= 0) {
-            skip--;
-            printf("skip!\n");
-            continue;
-          }
-          else
-            printf("no skip\n");
           if (debug_store)
             debug_img_ptr = &debug_imgs[c];
           

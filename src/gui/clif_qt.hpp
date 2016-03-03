@@ -6,7 +6,7 @@
 
 #include <QImage>
 
-#include "config.h"
+#include "clif/config.h"
 
 namespace clif {
   

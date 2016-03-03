@@ -8,7 +8,7 @@
 
 #include <QDialog>
 
-#include "config.h"
+#include "clif/config.h"
 
 class QVBoxLayout;
 class QImage;
