@@ -23,7 +23,7 @@
   #include "ceres/ceres.h"
   #include "ceres/rotation.h"
   
-  const double proj_center_size = 0.1;
+  const double proj_center_size = 0.5;
   const double strong_proj_constr_weight = 0.1;
   const double proj_constr_weight = 1e-4;
   const double center_constr_weight = 0.1;
@@ -47,8 +47,14 @@ typedef unsigned int uint;
 bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_imgs)
 {
   cpath img_root, map_root;
-  if (!s->deriveGroup("calibration/imgs", imgset, "calibration/mapping", calibset, img_root, map_root))
-    abort();
+  bool wtf;
+  wtf = s->deriveGroup("calibration/imgs", imgset, "calibration/mapping", calibset, img_root, map_root);
+  std::cout << wtf << "\n";
+  if (!wtf)
+    //abort();
+    printf("should actually abort!\n");
+  else
+    printf("all good\n");
   
   Datastore *debug_store = NULL;
 
@@ -153,8 +159,9 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
     
     //FIXME remove this!
     Marker::init();
-
     
+    printf("start processing!\n");
+
     for(;pos<map_size;pos.step(1, map_size)) {
       std::vector<int> idx(imgs->dims());
       for(int i=3;i<idx.size();i++)
@@ -169,6 +176,7 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
       cv::Mat *debug_img_ptr = NULL;
       cv::Mat debug_img;          
       
+      int skip = 4;
       if (imgs->org() == DataOrg::BAYER_2x2) {
         for(int mc=0;mc<3;mc++)
           for(int m=0;m<4;m++)
@@ -209,6 +217,7 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
           char buf[128];
 
           for(int c=0;c<channels;c++) {
+            
             if (debug_store)
               debug_img_ptr = &debug_imgs[c];
             
@@ -242,6 +251,7 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
             cv::merge(debug_imgs, 3, debug_img);
       }
       else {
+        printf("proc nobayer\n");
         cv::Mat debug_imgs[proc.d()];
         
         //grayscale rough detection
@@ -256,6 +266,13 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
         
         
         for(int c=0;c<channels;c++) {
+          if (skip >= 0) {
+            skip--;
+            printf("skip!\n");
+            continue;
+          }
+          else
+            printf("no skip\n");
           if (debug_store)
             debug_img_ptr = &debug_imgs[c];
           

@@ -295,6 +295,8 @@ bool Attributes::deriveGroup(const cpath & in_parent, cpath in_child, const cpat
   
   append(a);
   
+  printf("returntrue!\n");
+  
   return true;
 }
 
