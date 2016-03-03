@@ -938,6 +938,136 @@ static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, const Mat_
   }
 }
 
+class ApxMedian
+{
+public:
+  ApxMedian(double step, double max)
+  {
+    _inv_step = 1.0/step;
+    _lin_buckets = int(M_E*_inv_step)+1;
+    _max_idx = _lin_buckets+log(max*100.0)*_inv_step;
+    _buckets.resize(_max_idx);
+    _max_idx--;
+  };
+  
+  
+  void add(double val)
+  {
+    val = abs(val)*100.0;
+    
+    if (val >= M_E)
+      _buckets[min(int(_lin_buckets+log(val)*_inv_step), _max_idx)]++;
+    else
+      _buckets[val*_inv_step]++;
+    
+    _count++;
+  };
+  
+  double median()
+  {
+    int sum = 0;
+    for(int i=0;i<_max_idx;i++) {
+      sum += _buckets[i];
+      if (sum >= _count/2) {
+        printf("bucket %d sum %d count/2: %d\n", i, sum, _count/2);
+        if (i < _lin_buckets)
+          return i/_inv_step*0.01;
+        else
+          return exp(i - _lin_buckets)*0.01;
+      }
+    }
+  }
+  
+private:
+  std::vector<int> _buckets;
+  int _max_idx;
+  int _lin_buckets;
+  double _inv_step;
+  int _count = 0;
+};
+
+static int _zline_problem_filter_pinhole_lines(const Mat_<float>& proxy, Mat_<double> &extrinsics, Mat_<double> &extrinsics_rel, Mat_<double> &lines, double threshold)
+{
+  double step = 0.0001;
+  ApxMedian med(step, 1.0);
+  int count = 0, remain = 0;
+  cv::Point2i center(proxy["x"]/2, proxy["y"]/2);
+  
+  //channels == 0 && cams == 0
+  for(auto ray : Idx_It_Dims(proxy, "x", "views")) {
+    bool ref_cam = true;
+    
+    for(int i=proxy.dim("channels");i<=proxy.dim("cams");i++)
+      if (ray[i])
+        ref_cam = false;
+      
+    cv::Point2f p(proxy({0,ray.r("x",-1)}),
+                  proxy({1,ray.r("x",-1)}));
+    
+    if (isnan(p.x) || isnan(p.y))
+      continue;
+    
+    double residuals[2];
+    
+    if (ref_cam) {
+      LineZ3DirPinholeError err(p.x, p.y);
+      err.operator()<double>(&extrinsics({0,ray["views"]}), &lines({2,ray.r("x","cams")}), residuals);
+    }
+    else {
+      LineZ3DirPinholeExtraError err(p.x, p.y);
+      err.operator()<double>(&extrinsics({0,ray["views"]}), &extrinsics_rel({0,ray.r("channels","cams")}), &lines({2,ray.r("x","cams")}), residuals);
+    }
+    
+    double err = residuals[0]*residuals[0]+residuals[1]*residuals[1];
+    med.add(err);
+    /*if (err >= 0.1) {
+      proxy({0,ray.r("x",-1)}) = std::numeric_limits<double>::quiet_NaN();
+      proxy({1,ray.r("x",-1)}) = std::numeric_limits<double>::quiet_NaN();
+    }*/
+  }
+  
+  double th = med.median()*4.0 + step;
+  
+  for(auto ray : Idx_It_Dims(proxy, "x", "views")) {
+    bool ref_cam = true;
+    
+    for(int i=proxy.dim("channels");i<=proxy.dim("cams");i++)
+      if (ray[i])
+        ref_cam = false;
+      
+    cv::Point2f p(proxy({0,ray.r("x",-1)}),
+                  proxy({1,ray.r("x",-1)}));
+    
+    if (isnan(p.x) || isnan(p.y))
+      continue;
+    
+    double residuals[2];
+    
+    if (ref_cam) {
+      LineZ3DirPinholeError err(p.x, p.y);
+      err.operator()<double>(&extrinsics({0,ray["views"]}), &lines({2,ray.r("x","cams")}), residuals);
+    }
+    else {
+      LineZ3DirPinholeExtraError err(p.x, p.y);
+      err.operator()<double>(&extrinsics({0,ray["views"]}), &extrinsics_rel({0,ray.r("channels","cams")}), &lines({2,ray.r("x","cams")}), residuals);
+    }
+    
+    double err = residuals[0]*residuals[0]+residuals[1]*residuals[1];
+    med.add(err);
+    if (err >= th) {
+      count++;
+      proxy({0,ray.r("x",-1)}) = std::numeric_limits<double>::quiet_NaN();
+      proxy({1,ray.r("x",-1)}) = std::numeric_limits<double>::quiet_NaN();
+    }
+    else
+      remain++;
+  }
+  
+  printf("median: %f\n", med.median());
+  printf("removed %d data points, %d remain\n", count, remain);
+  return count;
+}
+
 static void _zline_problem_add_generic_lines(ceres::Problem &problem, const Mat_<float>& proxy, Mat_<double> &extrinsics, Mat_<double> &extrinsics_rel, Mat_<double> &lines, bool reproj_error_calc_only = false)
 {
   cv::Point2i center(proxy["x"]/2, proxy["y"]/2);
@@ -1107,6 +1237,28 @@ void run_viewer(Mesh *mesh)
 #endif
 
 #ifdef CLIF_WITH_UCALIB
+
+double solve_pinhole(const ceres::Solver::Options &options, const Mat_<float>& proxy, Mat_<double> &lines, Point2i img_size, Mat_<double> &extrinsics, Mat_<double> &extrinsics_rel, Mat_<double> proj, double proj_weight)
+{
+  ceres::Solver::Summary summary;
+  ceres::Problem problem;
+  
+  _zline_problem_add_pinhole_lines(problem, proxy, extrinsics, extrinsics_rel, lines);
+  _zline_problem_add_proj_error(problem, lines, img_size, proj, proj_weight);
+  
+  printf("solving pinhole problem (proj w = %f...\n", proj_weight);
+  ceres::Solve(options, &problem, &summary);
+  //std::cout << summary.FullReport() << "\n";
+  printf("\npinhole rms ~%fmm\n", 2.0*sqrt(summary.final_cost/problem.NumResiduals()));
+  
+  return 2.0*sqrt(summary.final_cost/problem.NumResiduals());
+}
+
+int filter_pinhole(const Mat_<float>& proxy, Mat_<double> &lines, Point2i img_size, Mat_<double> &extrinsics, Mat_<double> &extrinsics_rel, Mat_<double> proj, double threshold)
+{
+  return _zline_problem_filter_pinhole_lines(proxy, extrinsics, extrinsics_rel, lines, threshold);
+}
+
 /*
  * optimize together:
  *  - per image camera movement (world rotation and translation)
@@ -1174,7 +1326,7 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   
 #endif
   
-  ceres::Solver::Summary summary;
+  /*ceres::Solver::Summary summary;
   ceres::Problem problem;
   
   _zline_problem_add_pinhole_lines(problem, proxy, extrinsics, extrinsics_rel, lines);
@@ -1183,9 +1335,23 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   printf("solving pinhole problem (strong projection)...\n");
   ceres::Solve(options, &problem, &summary);
   std::cout << summary.FullReport() << "\n";
-  printf("\npinhole rms ~%fmm\n", 2.0*sqrt(summary.final_cost/problem.NumResiduals()));
+  printf("\npinhole rms ~%fmm\n", 2.0*sqrt(summary.final_cost/problem.NumResiduals()));*/
   
-  ceres::Problem problem2;
+  int filtered = 1;
+  //while (filtered) {
+    solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, strong_proj_constr_weight);
+    //filtered = filter_pinhole(proxy, lines, img_size, extrinsics, extrinsics_rel, proj, 0.2);
+  //}
+  filtered = 1;
+  while (filtered) {
+    solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, proj_constr_weight);
+    filtered = filter_pinhole(proxy, lines, img_size, extrinsics, extrinsics_rel, proj, 0.2);
+  }
+  
+  
+  //_zline_problem_eval_pinhole_lines(problem, proxy, extrinsics, extrinsics_rel, lines);
+  
+  /*ceres::Problem problem2;
   
   _zline_problem_add_pinhole_lines(problem2, proxy, extrinsics, extrinsics_rel, lines);
   _zline_problem_add_proj_error(problem2, lines, img_size, proj, proj_constr_weight);
@@ -1227,7 +1393,7 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   
   ceres::Solve(options, &problem_reproj, &summary);
   
-  printf("\nunconstrained rms ~%fmm\n", 2.0*sqrt(summary.final_cost/problem_reproj.NumResiduals()));
+  printf("\nunconstrained rms ~%fmm\n", 2.0*sqrt(summary.final_cost/problem_reproj.NumResiduals()));*/
 
 #ifdef CLIF_WITH_LIBIGL_VIEWER
   glfwSetWindowShouldClose(_viewer->window, 1); 
