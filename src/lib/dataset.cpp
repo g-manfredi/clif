@@ -122,7 +122,10 @@ void Dataset::create(ClifFile &f, cpath name)
   if (name.empty())
     name = "default";
   
-  _path = "/clif" / name;
+  if (name.is_absolute())
+    _path = name;
+  else
+    _path = "/clif" / name;
   _file = f;
 }
 
