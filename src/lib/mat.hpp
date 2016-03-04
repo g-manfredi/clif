@@ -66,7 +66,7 @@ public:
   Idx(const H5::DataSpace &space);
   
   //convert to/from std::vector<int>
-  Idx(const std::vector<int> &v) : std::vector<int>(v) {};
+  Idx(const std::vector<int> &v) { static_cast<std::vector<int>&>(*this) = v; };
   operator std::vector<int>() { return *static_cast<std::vector<int>*>(this); };
   int& operator[](int idx) { return std::vector<int>::operator[](idx); };
   const int& operator[](int idx) const { return std::vector<int>::operator[](idx); };

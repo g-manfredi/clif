@@ -202,7 +202,8 @@ void Datastore::read(clif::Mat &m, const ProcData &proc_)
   assert(!_memonly);
   assert(dims() >= 4);
   
-  m.create(proc.type(), {proc.w(), proc.h(), proc.d(), Idx(extent()).r(3,-1)});
+  Idx wtf = Idx(extent());
+  m.create(proc.type(), {proc.w(), proc.h(), proc.d(), wtf.r(3,-1)});
   
   //FIXME solve copy in readImage and preproc!
   for(auto pos : Idx_It_Dims(m, 3, -1)) {

@@ -22,8 +22,9 @@ Idx::Idx(std::initializer_list<int> l) : std::vector<int>(l) {};
 Idx::Idx(std::initializer_list<IdxRange> l)
 {
   int sum = 0;
-  for(auto it : l)
-    sum += it.end-it.start+1;
+  for (auto it : l) {
+	  sum += it.end - it.start + 1;
+  }
   
   resize(sum);
   
@@ -49,8 +50,8 @@ int DimSpec::get(const Idx *ref) const
 {
   if (_dim == INT_MIN)
     return ref->dim(_name)+_offset;
-  else if (_dim < 0)
-    return ref->size() + _dim + _offset;
+  else if (_dim < 0) 
+	  return ref->size() + _dim + _offset;
   else
     return _dim+_offset;
 }
@@ -158,6 +159,7 @@ IdxRange::IdxRange(const Idx *src_, int start_, int end_)
     end = start;
   
   if (src_->size()) {
+
     src = src_;
     if (end < 0)
       end = src->size()+end;
@@ -187,8 +189,7 @@ IdxRange Idx::r(const DimSpec &start, const DimSpec &end) const
   if (!end.valid())
     de = INT_MIN;
   else
-    de = end.get(this);
-  
+    de = end.get(this);  
   return IdxRange(this, ds, de);
 }
 
