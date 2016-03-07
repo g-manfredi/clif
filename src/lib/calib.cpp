@@ -1263,7 +1263,7 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
 {
   ceres::Solver::Options options;
   options.max_num_iterations = 5000;
-  options.function_tolerance = 1e-12;
+  //options.function_tolerance = 1e-12;
   options.minimizer_progress_to_stdout = true;
   //options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
   
@@ -1273,6 +1273,7 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   
   //for threading!
   options.linear_solver_type = ceres::DENSE_SCHUR;
+  //options.linear_solver_type = ceres::SPARSE_SCHUR;
   
   options.num_threads = 8;
   options.num_linear_solver_threads = 8;
