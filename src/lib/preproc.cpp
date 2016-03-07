@@ -392,7 +392,7 @@ void proc_image(Mat &in, Mat &out, const ProcData & proc, const Idx & pos)
   }
   
   if (_handle_preproc(Improc::_SCALE, curr_in, curr_out, out, flags)) {
-    float sigma = 0.25/proc.scale();
+    float sigma = 0.5/proc.scale();
     int ks = int(sigma)*6+1;
     cv::Mat tmp;
     

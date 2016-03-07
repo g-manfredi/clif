@@ -23,7 +23,7 @@
   #include "ceres/ceres.h"
   #include "ceres/rotation.h"
   
-  const double proj_center_size = 0.1;
+  const double proj_center_size = 0.3;
   const double strong_proj_constr_weight = 10.0;
   const double proj_constr_weight = 1e-4;
   const double center_constr_weight = 0.1;
@@ -883,6 +883,8 @@ static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, const Mat_
   cv::Point2i center(proxy["x"]/2, proxy["y"]/2);
   
   //channels == 0 && cams == 0
+  int last_view = 0;
+  int ray_count = 0;
   for(auto ray : Idx_It_Dims(proxy, "x", "views")) {
     bool ref_cam = true;
     
@@ -895,6 +897,14 @@ static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, const Mat_
     
     if (isnan(p.x) || isnan(p.y))
       continue;
+    
+    if (ray["views"] != last_view) {
+      printf("view %d: %d rays\n", last_view, ray_count);
+      last_view = ray["views"];
+      ray_count = 0;
+    }
+    else
+      ray_count++;
     
     //keep center looking straight (in local ref system)
     if (ray["y"] == center.y && ray["x"] == center.x) {
@@ -925,6 +935,7 @@ static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, const Mat_
                               &lines({2,ray.r("x","cams")}));
     }
   }
+  printf("view %d: %d rays\n", last_view, ray_count);
 }
 
 class ApxMedian
@@ -997,7 +1008,7 @@ static int _zline_problem_filter_pinhole_lines(const Mat_<float>& proxy, Mat_<do
     if (isnan(p.x) || isnan(p.y))
       continue;
     
-    double residuals[2];
+    double residuals[3];
     
     if (ref_cam) {
       LineZ3DirPinholeError err(p.x, p.y);
@@ -1034,7 +1045,7 @@ static int _zline_problem_filter_pinhole_lines(const Mat_<float>& proxy, Mat_<do
     if (isnan(p.x) || isnan(p.y))
       continue;
     
-    double residuals[2];
+    double residuals[3];
     
     if (ref_cam) {
       LineZ3DirPinholeError err(p.x, p.y);
@@ -1121,6 +1132,8 @@ static void _zline_problem_add_center_errors(ceres::Problem &problem, Mat_<doubl
 }
 #endif
 
+Mat_<double> proj;
+
 #ifdef CLIF_WITH_LIBIGL_VIEWER
 void update_cams_mesh(Mesh &cams, Mat_<double> extrinsics, Mat_<double> extrinsics_rel, Mat_<double> lines)
 {
@@ -1172,12 +1185,15 @@ void update_cams_mesh(Mesh &cams, Mat_<double> extrinsics, Mat_<double> extrinsi
       
       Mesh plane = mesh_plane().scale(1000);
       
+      printf("trans %d %fx%fx%f\n", pos["views"], trans(0), trans(1), trans(2));
+      
       plane -= trans;
       plane.rotate(-rot);
       
       cams.merge(plane);
   }
   
+  printf("proj %f %f\n", proj(0, 0), proj(1,0));
 }
 
 //globals for viewer
@@ -1287,7 +1303,8 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   
   Mat_<double> r({proxy.r("channels","cams")});
   Mat_<double> m({2, proxy.r("channels","cams")});
-  Mat_<double> proj({2,proxy.r("channels","cams")});
+  //Mat_<double> proj({2,proxy.r("channels","cams")});
+  proj.create({2,proxy.r("channels","cams")});
   
   for(auto pos : Idx_It_Dims(r, 0, -1))
     r(pos) = 0;
@@ -1300,13 +1317,14 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
     for(int i=0;i<5;i++)
       extrinsics({i, cam_pos["views"]}) = 0;
     extrinsics({5, cam_pos["views"]}) = 1000;
+    extrinsics({2, cam_pos["views"]}) = M_PI*0.5;
   }
 
   for(auto pos : Idx_It_Dims(extrinsics_rel, 0, -1))
     extrinsics_rel(pos) = 0;
   
-  for(auto pos : Idx_It_Dims(extrinsics_rel, 1, -1))
-    extrinsics_rel({3,pos.r(1,-1)}) = -50*pos["cams"];
+  //for(auto pos : Idx_It_Dims(extrinsics_rel, 1, -1))
+    //extrinsics_rel({3,pos.r(1,-1)}) = -50*pos["cams"];
   
   for(auto line_pos : Idx_It_Dims(lines, 0, -1))
     lines(line_pos) = 0;
@@ -1449,6 +1467,7 @@ bool ucalib_calibrate(Dataset *set, cpath proxy, cpath calib)
     set->setAttribute(calib_root/"extrinsics_views", extrinsics);
     set->setAttribute(calib_root/"extrinsics_cams", extrinsics_rel);
     set->setAttribute(calib_root/"rms", rms);
+    set->setAttribute(calib_root/"projection", proj);
 
     printf("finished ucalib calibration!\n");
     return true;
