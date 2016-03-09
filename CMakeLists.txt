@@ -2,6 +2,7 @@ cmake_minimum_required (VERSION 2.8.8)
 project(clif)
 string(TOUPPER ${PROJECT_NAME} PNU)
 
+
 #####################################################
 ## VARIABLE DOCUMENTATION
 #####################################################
@@ -51,7 +52,14 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 
-SET(BUILD_SHARED_LIBS ON)
+foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
+	string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
+	set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
+	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+endforeach()
+
+set(${PNU}_BUILD_TYPE "SHARED")
 
 #####################################################
 ## DEPENDENCIES
@@ -123,7 +131,6 @@ list(APPEND ${PNU}_PRIVATE_PKG_LINK UCALIB_LIBRARY_DIRS)
 list(APPEND ${PNU}_PRIVATE_PKG_LIB  UCALIB_LIBRARIES)
 
 #cliini 
-add_subdirectory(external/cliini)
 list(APPEND ${PNU}_PRIVATE_PKG cliini)
 list(APPEND ${PNU}_PRIVATE_PKG_INC  CLIINI_INCLUDE_DIRS)
 list(APPEND ${PNU}_PRIVATE_PKG_LINK CLIINI_LIBRARY_DIRS)
@@ -158,15 +165,50 @@ list(APPEND ${PNU}_PKG_LINK GLFW3_LIBRARY_DIR)
 list(APPEND ${PNU}_PKG_LIB  GLFW3_LIBRARY)
 
 list(APPEND ${PNU}_PKG_OPT GLEW)
-list(APPEND ${PNU}_PKG_INC  GLEW_INCLUDE_DIRS)
-list(APPEND ${PNU}_PKG_LIB  GLEW_LIBRARIES)
+list(APPEND ${PNU}_PKG_INC GLEW_INCLUDE_DIRS)
+list(APPEND ${PNU}_PKG_LIB GLEW_LIBRARIES)
+
+# FIXME boost vs h?
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+	set(Boost_USE_STATIC_LIBS ON)
+endif()
+find_package(Boost REQUIRED COMPONENTS filesystem system)
+list(APPEND CLIF_LINK_LIBRARIES ${Boost_LIBRARIES})
+list(APPEND CLIF_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
+list(APPEND CLIF_LIBRARY_DIRS ${Boost_LIBRARY_DIRS})
 
 #####################################################
 ## EXPORT / INSTALL
 #####################################################
 
 # FIXME clif-qt should be optional
-list(APPEND ${PNU}_EXPORT_LIBS clif clif-qt)
+#list(APPEND ${PNU}_EXPORT_LIBS clif clif-qt)
+
+#####################################################
+## HACK/EXTRA
+#####################################################
+
+# FIXME how to handle order for packages which are in a subdirectory (fnmatch) and where other packages depend upon (cliini)
+# FIXME detailed (package based) dependency handling?
+
+if (NOT DEFINED FNMATCH_USE_INTERNAL)
+  find_path(FNMATCH_INCLUDE_DIR NAMES fnmatch.h)
+  if (NOT FNMATCH_INCLUDE_DIR)
+    set(FNMATCH_USE_INTERNAL TRUE CACHE BOOL "use internal fnmatch code")
+  else()
+    set(FNMATCH_USE_INTERNAL FALSE CACHE BOOL "use internal fnmatch code")
+  endif()
+endif()
+
+#compile
+if (FNMATCH_USE_INTERNAL)
+  add_subdirectory(external/fnmatch)
+  include_directories(external/fnmatch)
+  link_directories(external/fnmatch)
+endif()
+
+#cliini (is referenced as package above)
+add_subdirectory(external/cliini)
 
 #####################################################
 ## search packages
@@ -217,8 +259,9 @@ endif()
 #####################################################
 
 if (CLIF_WITH_EIGEN3)
-  set(CLIF_WITH_LIBIGL true)
-  list(APPEND ${PNU}_DEFINES CLIF_WITH_LIBIGL)
+# disable ATM
+#  set(CLIF_WITH_LIBIGL true)
+#  list(APPEND ${PNU}_DEFINES CLIF_WITH_LIBIGL)
 endif()
 
 if (CLIF_WITH_LIBIGL AND CLIF_WITH_GLFW3 AND CLIF_WITH_GLEW)  
@@ -234,17 +277,29 @@ find_package(OpenCV REQUIRED)
 #####################################################
 
 foreach(INCLUDE ${${PNU}_PKG_INC})
-  list(APPEND ${PNU}_INC ${${INCLUDE}})
+  if (NOT ("${${INCLUDE}}" MATCHES ".*-NOTFOUND"))
+    list(APPEND ${PNU}_INC ${${INCLUDE}})
+  else()
+    # FIXME remove including in deps!
+  endif()
 endforeach()
 clean_list(${PNU}_INC)
 
 foreach(LIBDIR ${${PNU}_PKG_LINK})
-  list(APPEND ${PNU}_LINK ${${LIBDIR}})
+  if (NOT ("${${LIBDIR}}" MATCHES ".*-NOTFOUND"))
+    list(APPEND ${PNU}_LINK ${${LIBDIR}})
+  else()
+    # FIXME remove including in deps!
+  endif()
 endforeach()
 clean_list(${PNU}_LINK)
 
 foreach(LIB ${${PNU}_PKG_LIB})
-  list(APPEND ${PNU}_LIB ${${LIB}})
+  if (NOT ("${${LIB}}" MATCHES ".*-NOTFOUND"))
+    list(APPEND ${PNU}_LIB ${${LIB}})
+  else()
+    # FIXME remove including in deps!
+  endif()
 endforeach()
 clean_list(${PNU}_LIB)
 
@@ -253,17 +308,29 @@ clean_list(${PNU}_LIB)
 #####################################################
 
 foreach(INCLUDE ${${PNU}_PRIVATE_PKG_INC})
-  list(APPEND ${PNU}_PRIVATE_INC ${${INCLUDE}})
+  if (NOT ("${${INCLUDE}}" MATCHES ".*-NOTFOUND"))
+    list(APPEND ${PNU}_PRIVATE_INC ${${INCLUDE}})
+  else()
+    # FIXME remove including in deps!
+  endif()
 endforeach()
 clean_list(${PNU}_PRIVATE_INC)
 
 foreach(LIBDIR ${${PNU}_PRIVATE_PKG_LINK})
-  list(APPEND ${PNU}_PRIVATE_LINK ${${LIBDIR}})
+  if (NOT ("${${LIBDIR}}" MATCHES ".*-NOTFOUND"))
+    list(APPEND ${PNU}_PRIVATE_LINK ${${LIBDIR}})
+  else()
+    # FIXME remove including in deps!
+  endif()
 endforeach()
 clean_list(${PNU}_PRIVATE_LINK)
 
 foreach(LIB ${${PNU}_PRIVATE_PKG_LIB})
-  list(APPEND ${PNU}_PRIVATE_LIB ${${LIB}})
+  if (NOT ("${${LIB}}" MATCHES ".*-NOTFOUND"))
+    list(APPEND ${PNU}_PRIVATE_LIB ${${LIB}})
+  else()
+    # FIXME remove including in deps!
+  endif()
 endforeach()
 clean_list(${PNU}_PRIVATE_LIB)
 
@@ -276,36 +343,42 @@ link_directories(${${PNU}_LINK} ${${PNU}_PRIVATE_LINK})
 
 ######################
 
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+set(${PNU}_BUILD_TYPE "SHARED")
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL Clang)
   # using Clang
   list(APPEND CMAKE_CXX_FLAGS "-std=c++11")
   #FIXME
   add_definitions(-DFNM_EXTMATCH=0)
-elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL GNU)
   # using GCC
-  set(CLIF_BUILD_TYPE "SHARED")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fno-omit-frame-pointer -fPIC -std=c++11 -march=native -fopenmp")
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   # using Visual Studio C++
+  set(${PNU}_BUILD_TYPE "STATIC")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /noOy /W2 /EHsc")
 endif()
-
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   # FIXME use CLIF_DEFINES
   add_definitions(-DCLIF_COMPILER_MSVC)
   add_definitions(-DCLIF_EXPORT_LIBRARY)
   add_definitions(-DCLIF_BUILD_STATIC)
   set(CLIF_COMPILER_MSVC true)
-  set(CLIF_BUILD_STATIC true)
-  set(CLIF_BUILD_TYPE)
   set(CLIF_EXPORT "__declspec(dllexport)")
   set(CLIF_IMPORT "__declspec(dllimport)")
+  set(CMAKE_DEBUG_POSTFIX "d")
+endif()
+
+if (${PNU}_BUILD_TYPE STREQUAL "STATIC")
+  set(BUILD_SHARED_LIBS OFF)
+else()
+  set(BUILD_SHARED_LIBS ON)
 endif()
 
 
 #This is to avoid that stupid windows links dlls
 
-if (NOT HDF5_COMPILE_EXTERNAL)
+if (NOT COMPILE_EXTERNAL)
 	find_package(HDF5 REQUIRED C CXX)
 elseif()
 	if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
@@ -324,12 +397,12 @@ list(APPEND CLIF_LINK_LIBRARIES ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES})
 list(APPEND CLIF_INCLUDE_DIRS ${HDF5_INCLUDE_DIR})
 list(APPEND CLIF_LIBRARY_DIRS ${HDF5_LIBRARY_DIR})
 
-if (NOT HDF5_COMPILE_EXTERNAL)
-	find_package(Boost REQUIRED COMPONENTS filesystem system)
-endif()
-list(APPEND CLIF_LINK_LIBRARIES ${Boost_LIBRARIES})
-list(APPEND CLIF_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
-list(APPEND CLIF_LIBRARY_DIRS ${Boost_LIBRARY_DIRS})
+find_package(Vigra REQUIRED)
+#FIXME ask Ullrich why theres not VIGRA_LIBRARIES?
+list(APPEND CLIF_LINK_LIBRARIES vigraimpex)
+list(APPEND CLIF_INCLUDE_DIRS ${Vigra_INCLUDE_DIRS})
+#FIXME ask Ullrich why theres not VIGRA_LIBRARY_DIRS?
+#list(APPEND CLIF_LIBRARY_DIRS !!!FIXME!!!)
 
 
 find_package(Qt5Widgets QUIET)
@@ -338,27 +411,31 @@ if (Qt5Widgets_FOUND)
   set(CLIF_BUILD_QT TRUE)
   # FIXME use CLIF_DEFINES
   add_definitions(-DCLIF_BUILD_QT)
-  
-  list(APPEND CLIF_LINK_LIBRARIES ${Qt5Widgets_LIBRARIES})
+  if (COMPILE_EXTERNAL)#This is necessary because windows somehow don't want to add the debug part when it gets compiled by openlf
+	list(APPEND CLIF_LINK_LIBRARIES ${Qt5Widgets_LIBRARIES} debug;Qt5::Widgets)
+  else()
+	list(APPEND CLIF_LINK_LIBRARIES ${Qt5Widgets_LIBRARIES})
+  endif()
   list(APPEND CLIF_INCLUDE_DIRS ${Qt5Widgets_INCLUDE_DIRS})
   list(APPEND CLIF_LIBRARY_DIRS ${Qt5Widgets_LIBRARY_DIRS})
+  #message("QTQTQTQT: ${CLIF_LINK_LIBRARIES}")
 else()
   set(CLIF_BUILD_QT_REASON "[Qt5Widgets not found]")
 endif()
 
-if (NOT DEFINED FNMATCH_USE_INTERNAL)
-  find_path(FNMATCH_INCLUDE_DIR NAMES fnmatch.h)
-  if (NOT FNMATCH_INCLUDE_DIR)
-    set(FNMATCH_USE_INTERNAL TRUE CACHE BOOL "use internal fnmatch code")
-  else()
-    set(FNMATCH_USE_INTERNAL FALSE CACHE BOOL "use internal fnmatch code")
-  endif()
-endif()
-
-#compile
-if (FNMATCH_USE_INTERNAL)
-  list(APPEND CLIF_BUILD_COMPILE_DIRS external/fnmatch)
-endif()
+# if (NOT DEFINED FNMATCH_USE_INTERNAL)
+#   find_path(FNMATCH_INCLUDE_DIR NAMES fnmatch.h)
+#   if (NOT FNMATCH_INCLUDE_DIR)
+#     set(FNMATCH_USE_INTERNAL TRUE CACHE BOOL "use internal fnmatch code")
+#   else()
+#     set(FNMATCH_USE_INTERNAL FALSE CACHE BOOL "use internal fnmatch code")
+#   endif()
+# endif()
+# 
+# #compile
+# if (FNMATCH_USE_INTERNAL)
+#   list(APPEND CLIF_BUILD_COMPILE_DIRS external/fnmatch)
+# endif()
 list(APPEND CLIF_BUILD_COMPILE_DIRS src/lib src/bin src/gui src/clifview)
 
 foreach(define ${${PNU}_DEFINES})
@@ -371,15 +448,35 @@ list(APPEND CLIF_FULLPATH_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 list(APPEND CLIF_BUILD_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/include external/libigl/include)
 
 
+# include_directories(${CLIF_BUILD_INCLUDE_DIRS} ${CLIF_INCLUDE_DIRS} ${CLIF_PRIVATE_INCLUDE_DIRS})
+# link_directories(${CLIF_BUILD_LINK_DIRS} ${CLIF_LIBRARY_DIRS} ${CLIF_PRIVATE_LIBRARY_DIRS})
+# set(CLIF_LIBRARIES ${CLIF_LINK_LIBRARIES})
+# add_subdirectory(${dir})
+# clean_list(CLIF_BUILD_INCLUDE_DIRS)
+# clean_list(CLIF_INCLUDE_DIRS)
+# clean_list(CLIF_BUILD_LINK_DIRS)
+# clean_list(CLIF_LIBRARY_DIRS)
+#set(CLIF_LIBRARIES ${CLIF_LINK_LIBRARIES})
+
+#   clean_list(CLIF_BUILD_INCLUDE_DIRS)
+#   clean_list(CLIF_INCLUDE_DIRS)
+#   clean_list(CLIF_BUILD_LINK_DIRS)
+#   clean_list(CLIF_LIBRARY_DIRS)
+
+
+# FIXME remove all content and move to _LIB, _LINK, _INC
+link_directories(${CLIF_LIBRARY_DIRS})
+ link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+include_directories(${CLIF_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR}/include ${CMAKE_CURRENT_BINARY_DIR}/include/clif)
+list(APPEND ${PNU}_LIB ${CLIF_LINK_LIBRARIES})
+
 foreach(dir ${CLIF_BUILD_COMPILE_DIRS})
-  include_directories(${CLIF_BUILD_INCLUDE_DIRS} ${CLIF_INCLUDE_DIRS} ${CLIF_PRIVATE_INCLUDE_DIRS})
-  link_directories(${CLIF_BUILD_LINK_DIRS} ${CLIF_LIBRARY_DIRS} ${CLIF_PRIVATE_LIBRARY_DIRS})
-  set(CLIF_LIBRARIES ${CLIF_LINK_LIBRARIES})
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/${dir})
+  link_directories(${CMAKE_CURRENT_SOURCE_DIR}/${dir})
+endforeach()
+
+foreach(dir ${CLIF_BUILD_COMPILE_DIRS})
   add_subdirectory(${dir})
-  clean_list(CLIF_BUILD_INCLUDE_DIRS)
-  clean_list(CLIF_INCLUDE_DIRS)
-  clean_list(CLIF_BUILD_LINK_DIRS)
-  clean_list(CLIF_LIBRARY_DIRS)
 endforeach()
 
 message("")
@@ -470,14 +567,15 @@ set(CMAKECONFIG_PKG_LINK ${${PNU}_PKG_LINK})
 set(CMAKECONFIG_PKG_LIB ${${PNU}_PKG_LIB})
 
 set(CMAKECONFIG_INC "include") #in build dir - headers were already copied earlier
-list(APPEND CMAKECONFIG_INC ${CLIF_INSTALL_INCLUDE_DIR}) # FIXME remove this!
+list(APPEND CMAKECONFIG_INC ${CLIF_INSTALL_INCLUDE_DIR} ${CLIF_INCLUDE_DIRS}) # FIXME remove this!
 
 set(CMAKECONFIG_LIB ${${PNU}_EXPORT_LIBS}) # our libs to link on import
-list(APPEND CMAKECONFIG_LIB ${CLIF_INSTALL_LIBRARIES}) # FIXME remove this!
+list(APPEND CMAKECONFIG_LIB ${CLIF_INSTALL_LIBRARIES}) # FIXME remove this! (clif libraries)
+list(APPEND CMAKECONFIG_LIB ${CLIF_LINK_LIBRARIES}) # FIXME remove this! (direct dependecies)
+
 
 set(CMAKECONFIG_LINK "lib")
 list(APPEND CMAKECONFIG_LINK ${CLIF_INSTALL_LIBRARY_DIR}) # FIXME remove this!
-
 
 #####################################################
 ## local config.cmake

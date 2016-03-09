@@ -1,6 +1,8 @@
 #include "fnmatch.h"
 
 #include <Shlwapi.h>
+//THIS ... IS ... WINDOOOOOOWS!
+#pragma comment(lib,"shlwapi.lib");
 
 __declspec(dllexport) int fnmatch(const char *pattern, const char *string, int flags)
 {

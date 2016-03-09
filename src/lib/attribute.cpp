@@ -300,8 +300,9 @@ bool Attributes::deriveGroup(const cpath & in_parent, cpath in_child, const cpat
   return true;
 }
 
-bool Attributes::groupExists(const cpath & path)
+bool Attributes::groupExists(cpath path)
 {
+  path = resolve(path);
   for(uint i=0;i<attrs.size();i++)
     if (has_prefix(attrs[i].name, path))
       return true;

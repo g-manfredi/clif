@@ -1,6 +1,10 @@
 cmake_minimum_required (VERSION 2.6)
 project(clif-bin)
 
+remove_definitions(-DCLIF_EXPORT_LIBRARY)
+
+cmake_policy(VERSION 2.8.11)
+
 #add_executable(loadbench loadbench.cpp)
 add_executable(clif-bin clif.cpp)
 add_executable(clifinfo clifinfo.cpp)
@@ -18,7 +22,7 @@ add_executable(h5remove h5remove.cpp)
 add_executable(clifvis clifvis.cpp)
 add_executable(clifprocstore clifprocstore.cpp)
 
-SET_TARGET_PROPERTIES(clif-bin PROPERTIES OUTPUT_NAME clif)
+#SET_TARGET_PROPERTIES(clif-bin PROPERTIES OUTPUT_NAME clif)
 
 #target_link_libraries(loadbench clif)
 target_link_libraries(clif-bin clif cliini)
