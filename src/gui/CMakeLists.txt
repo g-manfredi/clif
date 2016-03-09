@@ -8,8 +8,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/mod
 #set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -std=c++11 -Wall")
 
 if(CLIF_BUILD_QT)
-  find_package(Qt5Core)
-  find_package(Qt5Network)
+  find_package(Qt5Core REQUIRED)
+  find_package(Qt5Network REQUIRED)
+  
+  add_definitions(${Qt5Widgets_DEFINITIONS})
+  add_definitions(${Qt5Network_DEFINITIONS})
 
   set(CMAKE_AUTOMOC ON)
   set(CMAKE_INCLUDE_CURRENT_DIR ON)
