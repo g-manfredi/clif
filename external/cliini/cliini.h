@@ -55,7 +55,7 @@ typedef struct _cliini_args {
 
 CLIINI_EXPORT cliini_args *cliini_parsopts(const int argc, const char *argv[], cliini_optgroup *group);
 CLIINI_EXPORT cliini_args *cliini_parsefile(const char *filename, cliini_optgroup *group);
-CLIINI_EXPORT cliini_args *cliini_parsebuf(const char *buf, cliini_optgroup *group);
+CLIINI_EXPORT cliini_args *cliini_parsebuf(char *buf, cliini_optgroup *group);
 
 CLIINI_EXPORT int cliini_fit_typeopts(cliini_args *args, cliini_args *typeargs);
 

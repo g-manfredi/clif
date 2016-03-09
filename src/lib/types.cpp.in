@@ -1,12 +1,13 @@
 #include "types.hpp"
 
+#include <string.h>
 #include <cstddef>
 
 namespace clif {
   
 static const char *types_buf = "@CLIF_DEFAULT_TYPES_BUF@";
   
-cliini_args *default_types()
+CLIF_EXPORT cliini_args *default_types()
 {
   cliini_optgroup group = {
     NULL,
@@ -16,7 +17,8 @@ cliini_args *default_types()
     CLIINI_ALLOW_UNKNOWN_OPT
   };
   
-  return cliini_parsebuf(types_buf, &group);
+  //FIXME free!
+  return cliini_parsebuf(strdup(types_buf), &group);
 }
   
 }

@@ -1,6 +1,9 @@
 cmake_minimum_required (VERSION 2.6)
 project(libclif)
 
+#CMP0020 - 2.8.11, CMP0022 - 2.8.12
+cmake_policy(VERSION 2.8.12)
+
 function(createEnumStrings ENUMSTR)
   set(${ENUMSTR}Enums ${${ENUMSTR}} PARENT_SCOPE)
   set(${ENUMSTR}Strs "\"${${ENUMSTR}}\"")

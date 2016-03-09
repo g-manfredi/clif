@@ -2,10 +2,11 @@
 #define _CLIF_TYPES_H
 
 #include "cliini.h"
+#include "clif/config.h"
 
 namespace clif {
   
-cliini_args *default_types();
+CLIF_EXPORT cliini_args *default_types();
 
 }
 

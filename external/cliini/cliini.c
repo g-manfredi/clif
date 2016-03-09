@@ -539,7 +539,7 @@ CLIINI_EXPORT cliini_args *cliini_parsefile(const char *filename, cliini_optgrou
 }
 
 
-CLIINI_EXPORT cliini_args *cliini_parsebuf(const char *buf, cliini_optgroup *group)
+CLIINI_EXPORT cliini_args *cliini_parsebuf(char *buf, cliini_optgroup *group)
 {
   char *line_end;
   char currsection[SECTION_MAXLEN];

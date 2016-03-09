@@ -1,6 +1,8 @@
 cmake_minimum_required (VERSION 2.6)
 project(clif-qt)
 
+cmake_policy(VERSION 2.8.11)
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 
 #set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -std=c++11 -Wall")
@@ -18,7 +20,7 @@ if(CLIF_BUILD_QT)
   add_library(${PROJECT_NAME} ${CLIF_BUILD_TYPE} clifscaledimageview.cpp clifepiview.cpp clif_qt.cpp clifstoreview.cpp clifviewcaller.cpp)
 
   #TODO add clif
-  target_link_libraries(${PROJECT_NAME} ${CLIF_LIBRARIES} ${Qt5Core_LIBRARIES} ${Qt5Widgets_LIBRARIES} ${Qt5Network_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME} clif ${CLIF_LIB} ${CLIF_LIBRARIES} ${Qt5Core_LIBRARIES} ${Qt5Widgets_LIBRARIES} ${Qt5Network_LIBRARIES})
   
   set(CLIF_LINK_LIBRARIES ${CLIF_LINK_LIBRARIES} ${PROJECT_NAME} PARENT_SCOPE)
   set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)

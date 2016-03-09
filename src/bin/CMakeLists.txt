@@ -1,6 +1,10 @@
 cmake_minimum_required (VERSION 2.6)
 project(clif-bin)
 
+remove_definitions(-DCLIF_EXPORT_LIBRARY)
+
+cmake_policy(VERSION 2.8.11)
+
 #add_executable(loadbench loadbench.cpp)
 add_executable(clif-bin clif.cpp)
 add_executable(clifinfo clifinfo.cpp)

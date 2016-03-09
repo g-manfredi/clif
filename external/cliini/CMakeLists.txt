@@ -15,7 +15,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 
 ####################
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   add_definitions(-D${PNU}_COMPILER_MSVC)
   add_definitions(-D${PNU}_EXPORT_LIBRARY)
   add_definitions(-D${PNU}_BUILD_STATIC)
@@ -76,6 +76,9 @@ endif()
 set(CMAKECONFIG_INC "include") #in build dir - headers were already copied earlier
 set(CMAKECONFIG_LIB "cliini") # our libs to link on import
 set(CMAKECONFIG_LINK "lib") #lib dir
+if (${PNU}_COMPILER_MSVC)
+  set(CMAKECONFIG_LINK "lib/Release" "lib/Debug") #lib dir
+endif()
 
 
 #####################################################
