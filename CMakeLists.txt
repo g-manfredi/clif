@@ -50,8 +50,14 @@ include(CMakePackageConfigListHelpers)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
-
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
+
+foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
+	string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
+	set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
+	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+endforeach()
 
 set(${PNU}_BUILD_TYPE "SHARED")
 
@@ -162,10 +168,11 @@ list(APPEND ${PNU}_PKG_OPT GLEW)
 list(APPEND ${PNU}_PKG_INC GLEW_INCLUDE_DIRS)
 list(APPEND ${PNU}_PKG_LIB GLEW_LIBRARIES)
 
-# FIXME boost vs hdf5?
-if (NOT HDF5_COMPILE_EXTERNAL)
-  find_package(Boost REQUIRED COMPONENTS filesystem system)
+# FIXME boost vs h?
+if (CLIF_COMPILER_MSVC)
+	set(Boost_USE_STATIC_LIBS ON)
 endif()
+find_package(Boost REQUIRED COMPONENTS filesystem system)
 list(APPEND CLIF_LINK_LIBRARIES ${Boost_LIBRARIES})
 list(APPEND CLIF_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
 list(APPEND CLIF_LIBRARY_DIRS ${Boost_LIBRARY_DIRS})
@@ -175,7 +182,7 @@ list(APPEND CLIF_LIBRARY_DIRS ${Boost_LIBRARY_DIRS})
 #####################################################
 
 # FIXME clif-qt should be optional
-list(APPEND ${PNU}_EXPORT_LIBS clif clif-qt)
+#list(APPEND ${PNU}_EXPORT_LIBS clif clif-qt)
 
 #####################################################
 ## HACK/EXTRA
@@ -359,6 +366,7 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   set(CLIF_COMPILER_MSVC true)
   set(CLIF_EXPORT "__declspec(dllexport)")
   set(CLIF_IMPORT "__declspec(dllimport)")
+  set(CMAKE_DEBUG_POSTFIX "d")
 endif()
 
 if (${PNU}_BUILD_TYPE STREQUAL "STATIC")
@@ -396,9 +404,6 @@ list(APPEND CLIF_INCLUDE_DIRS ${Vigra_INCLUDE_DIRS})
 #FIXME ask Ullrich why theres not VIGRA_LIBRARY_DIRS?
 #list(APPEND CLIF_LIBRARY_DIRS !!!FIXME!!!)
 
-if (NOT COMPILE_EXTERNAL)
-	find_package(Boost REQUIRED COMPONENTS filesystem system)
-endif()
 list(APPEND CLIF_LINK_LIBRARIES ${Boost_LIBRARIES})
 list(APPEND CLIF_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
 list(APPEND CLIF_LIBRARY_DIRS ${Boost_LIBRARY_DIRS})
@@ -416,7 +421,7 @@ if (Qt5Widgets_FOUND)
   endif()
   list(APPEND CLIF_INCLUDE_DIRS ${Qt5Widgets_INCLUDE_DIRS})
   list(APPEND CLIF_LIBRARY_DIRS ${Qt5Widgets_LIBRARY_DIRS})
-  message("QTQTQTQT: ${CLIF_LINK_LIBRARIES}")
+  #message("QTQTQTQT: ${CLIF_LINK_LIBRARIES}")
 else()
   set(CLIF_BUILD_QT_REASON "[Qt5Widgets not found]")
 endif()
@@ -464,6 +469,7 @@ list(APPEND CLIF_BUILD_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/include external
 
 # FIXME remove all content and move to _LIB, _LINK, _INC
 link_directories(${CLIF_LIBRARY_DIRS})
+ link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 include_directories(${CLIF_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR}/include ${CMAKE_CURRENT_BINARY_DIR}/include/clif)
 list(APPEND ${PNU}_LIB ${CLIF_LINK_LIBRARIES})
 
@@ -570,11 +576,8 @@ set(CMAKECONFIG_LIB ${${PNU}_EXPORT_LIBS}) # our libs to link on import
 list(APPEND CMAKECONFIG_LIB ${CLIF_INSTALL_LIBRARIES}) # FIXME remove this! (clif libraries)
 list(APPEND CMAKECONFIG_LIB ${CLIF_LINK_LIBRARIES}) # FIXME remove this! (direct dependecies)
 
-if (NOT CLIF_COMPILER_MSVC)
-  set(CMAKECONFIG_LINK "lib")
-else()
-  set(CMAKECONFIG_LINK "lib/Release" "lib/Debug")
-endif()
+
+set(CMAKECONFIG_LINK "lib")
 list(APPEND CMAKECONFIG_LINK ${CLIF_INSTALL_LIBRARY_DIR}) # FIXME remove this!
 
 #####################################################

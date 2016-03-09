@@ -8,8 +8,6 @@ if (CLIF_BUILD_QT)
    find_package(Qt5Widgets REQUIRED)
    find_package(Qt5Network REQUIRED)
    
-   find_package(Boost REQUIRED COMPONENTS filesystem system)
-   
    set(CMAKE_AUTOMOC ON)
    set(CMAKE_INCLUDE_CURRENT_DIR ON)
    
@@ -33,8 +31,11 @@ if (CLIF_BUILD_QT)
 	   SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
    endif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
-   add_executable (${PROJECT_NAME} ${srcs} ${hdrs} ${Boost_INCLUDE_DIRS})
-   target_link_libraries(${PROJECT_NAME} clif-qt cliini ${Qt5Widgets_LIBRARIES} ${Qt5Network_LIBRARIES})
+   add_executable (${PROJECT_NAME} ${srcs} ${hdrs})
+   target_link_libraries(${PROJECT_NAME} PRIVATE ${CLIF_LINK_LIBRARIES} ${Qt5Widgets_LIBRARIES} ${Qt5Network_LIBRARIES})
+   
+   target_link_libraries(${PROJECT_NAME} PUBLIC ${CLIF_LINK_LIBRARIES} ${${PNU}_LIB})
+   target_link_libraries(${PROJECT_NAME} PRIVATE ${CLIF_PRIVATE_LINK_LIBRARIES} ${${PNU}_PRIVATE_LIB})
 
    install(TARGETS ${PROJECT_NAME} DESTINATION bin )
 endif()

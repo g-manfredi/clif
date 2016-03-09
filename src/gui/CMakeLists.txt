@@ -23,11 +23,18 @@ if(CLIF_BUILD_QT)
   add_library(${PROJECT_NAME} ${CLIF_BUILD_TYPE} clifscaledimageview.cpp clifepiview.cpp clif_qt.cpp clifstoreview.cpp clifviewcaller.cpp)
 
   #TODO add clif
-  target_link_libraries(${PROJECT_NAME} clif ${CLIF_LIB} ${CLIF_LIBRARIES} ${Qt5Core_LIBRARIES} ${Qt5Widgets_LIBRARIES} ${Qt5Network_LIBRARIES})
+  #target_link_libraries(${PROJECT_NAME} ${CLIF_LINK_LIBRARIES} ${Qt5Core_LIBRARIES} ${Qt5Widgets_LIBRARIES} ${Qt5Network_LIBRARIES})
   
-  set(CLIF_LINK_LIBRARIES ${CLIF_LINK_LIBRARIES} ${PROJECT_NAME} PARENT_SCOPE)
+  target_link_libraries(${PROJECT_NAME} PUBLIC ${CLIF_LINK_LIBRARIES} ${${PNU}_LIB} ${Qt5Core_LIBRARIES} ${Qt5Widgets_LIBRARIES} ${Qt5Network_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${CLIF_PRIVATE_LINK_LIBRARIES} ${${PNU}_PRIVATE_LIB})
+  
   set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
-  set(CLIF_BUILD_LINK_DIRS ${CLIF_BUILD_LINK_DIRS} ${CMAKE_CURRENT_BINARY_DIR} PARENT_SCOPE)
+  
+  if(NOT CLIF_COMPILER_MSVC)
+    set(CLIF_LINK_LIBRARIES ${CLIF_LINK_LIBRARIES} clif-qt PARENT_SCOPE)
+  else()
+    set(CLIF_LINK_LIBRARIES ${CLIF_LINK_LIBRARIES} optimized;clif-qt debug;clif-qtd PARENT_SCOPE)
+  endif()
 
   list(APPEND CLIF_QT_HEADERS clifscaledimageview.hpp clifepiview.hpp clif_qt.hpp clifviewcaller.hpp)
 

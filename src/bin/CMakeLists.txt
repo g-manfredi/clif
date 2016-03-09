@@ -22,7 +22,7 @@ add_executable(h5remove h5remove.cpp)
 add_executable(clifvis clifvis.cpp)
 add_executable(clifprocstore clifprocstore.cpp)
 
-SET_TARGET_PROPERTIES(clif-bin PROPERTIES OUTPUT_NAME clif)
+#SET_TARGET_PROPERTIES(clif-bin PROPERTIES OUTPUT_NAME clif)
 
 #target_link_libraries(loadbench clif)
 target_link_libraries(clif-bin clif cliini)
