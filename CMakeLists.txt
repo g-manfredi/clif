@@ -564,7 +564,7 @@ set(CMAKECONFIG_PKG_LINK ${${PNU}_PKG_LINK})
 set(CMAKECONFIG_PKG_LIB ${${PNU}_PKG_LIB})
 
 set(CMAKECONFIG_INC "include") #in build dir - headers were already copied earlier
-list(APPEND CMAKECONFIG_INC ${CLIF_INSTALL_INCLUDE_DIR}) # FIXME remove this!
+list(APPEND CMAKECONFIG_INC ${CLIF_INSTALL_INCLUDE_DIR} ${CLIF_INCLUDE_DIRS}) # FIXME remove this!
 
 set(CMAKECONFIG_LIB ${${PNU}_EXPORT_LIBS}) # our libs to link on import
 list(APPEND CMAKECONFIG_LIB ${CLIF_INSTALL_LIBRARIES}) # FIXME remove this! (clif libraries)
