@@ -825,16 +825,16 @@ struct LineZ3GenericCenterError {
   }
 };
 
-double calc_line_pos_weight(cv::Point2i pos, cv::Point2i proxy_size, double r)
+double calc_line_pos_weight(cv::Point2i pos, cv::Point2i proxy_size, double r, double min_weight = non_center_rest_weigth)
 {
   int pmax = std::max(proxy_size.x, proxy_size.y);
   
   double w = norm(Point2d((pos.x+0.5-proxy_size.x*0.5)/pmax,(pos.y+0.5-proxy_size.y*0.5)/pmax));
   
-  return std::max(std::max(r-w, 0.0)*(1.0/r), non_center_rest_weigth);
+  return std::max(std::max(r-w, 0.0)*(1.0/r), min_weight);
 }
 
-static void _zline_problem_add_proj_error(ceres::Problem &problem, Mat_<double> &lines, cv::Point2i img_size, Mat_<double> &proj, double proj_constraint)
+static void _zline_problem_add_proj_error(ceres::Problem &problem, Mat_<double> &lines, cv::Point2i img_size, Mat_<double> &proj, double proj_constraint, double min_weight)
 {
   double two_sigma_squared = 2.0*(img_size.x*img_size.x+img_size.y*img_size.y)*proj_center_size*proj_center_size;
   cv::Point2i proxy_size(lines["x"], lines["y"]);
@@ -845,7 +845,7 @@ static void _zline_problem_add_proj_error(ceres::Problem &problem, Mat_<double> 
     
     Point2d ip = Point2d((x+0.5-proxy_size.x*0.5)*img_size.x/proxy_size.x,(y+0.5-proxy_size.y*0.5)*img_size.y/proxy_size.y);
       
-    double w = calc_line_pos_weight(cv::Point2i(x, y), proxy_size, center_constr_weight);
+    double w = calc_line_pos_weight(cv::Point2i(x, y), proxy_size, center_constr_weight, min_weight);
     
     w *= proj_constraint;
     
@@ -887,7 +887,7 @@ static void _zline_problem_add_proj_error_4P(ceres::Problem &problem, Mat_<doubl
   }
 }
 
-static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, cv::Point2i img_size, const Mat_<float>& proxy, Mat_<double> &extrinsics, Mat_<double> &extrinsics_rel, Mat_<double> &lines, ceres::LossFunction *loss = NULL)
+static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, cv::Point2i img_size, const Mat_<float>& proxy, Mat_<double> &extrinsics, Mat_<double> &extrinsics_rel, Mat_<double> &lines, ceres::LossFunction *loss = NULL, bool falloff = true)
 {
   cv::Point2i center(proxy["x"]/2, proxy["y"]/2);
   
@@ -910,7 +910,12 @@ static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, cv::Point2
     if (isnan(p.x) || isnan(p.y))
       continue;
     
-    double w = calc_line_pos_weight(cv::Point2i(ray["x"], ray["y"]), proxy_size, extr_center_size);
+    double w;
+    
+    if (falloff)
+      w = calc_line_pos_weight(cv::Point2i(ray["x"], ray["y"]), proxy_size, extr_center_size);
+    else
+      w = 1.0;
  
     if (ray["views"] != last_view) {
       printf("view %d: %d rays\n", last_view, ray_count);
@@ -1261,14 +1266,14 @@ void run_viewer(Mesh *mesh)
 
 #ifdef CLIF_WITH_UCALIB
 
-double solve_pinhole(const ceres::Solver::Options &options, const Mat_<float>& proxy, Mat_<double> &lines, Point2i img_size, Mat_<double> &extrinsics, Mat_<double> &extrinsics_rel, Mat_<double> proj, double proj_weight)
+double solve_pinhole(const ceres::Solver::Options &options, const Mat_<float>& proxy, Mat_<double> &lines, Point2i img_size, Mat_<double> &extrinsics, Mat_<double> &extrinsics_rel, Mat_<double> proj, double proj_weight, double min_weight_proj = non_center_rest_weigth)
 {
   ceres::Solver::Summary summary;
   ceres::Problem problem;
   
-  _zline_problem_add_pinhole_lines(problem, img_size, proxy, extrinsics, extrinsics_rel, lines/*, new ceres::CauchyLoss(1.0)*/);
+  _zline_problem_add_pinhole_lines(problem, img_size, proxy, extrinsics, extrinsics_rel, lines, NULL/*, new ceres::CauchyLoss(1.0)*/);
   if (proj_weight > 0.0)
-    _zline_problem_add_proj_error(problem, lines, img_size, proj, proj_weight);
+    _zline_problem_add_proj_error(problem, lines, img_size, proj, proj_weight, min_weight_proj);
   
   printf("solving pinhole problem (proj w = %f...\n", proj_weight);
   ceres::Solve(options, &problem, &summary);
@@ -1384,7 +1389,7 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   }*/
   
   solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, strong_proj_constr_weight);
-  solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, 0.0);
+  solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, 1e-4, 0.0);
   
   
   //_zline_problem_eval_pinhole_lines(problem, proxy, extrinsics, extrinsics_rel, lines);
