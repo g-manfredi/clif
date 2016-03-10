@@ -155,7 +155,7 @@ list(APPEND ${PNU}_PKG_LINK HDMARKER_LIBRARY_DIRS)
 list(APPEND ${PNU}_PKG_LIB  HDMARKER_LIBRARIES)
   
 #see https://github.com/glfw/glfw/issues/483
-find_package(glfw QUIET)
+find_package(glfw3 QUIET)
 if ("${GLFW3_INCLUDE_DIR}" STREQUAL "")
   set(glfw3_DIR /usr/lib/cmake/glfw/)
 endif()
