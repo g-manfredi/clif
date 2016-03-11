@@ -9,7 +9,7 @@ namespace clif {
 class DepthDist : public Tree_Derived_Base<DepthDist>
 {
 public:
-  DepthDist(const cpath& path, double at_depth, int w, int h);
+  DepthDist(const cpath& path, double at_depth, int w, int h, const Mat & m = Mat());
   
   virtual bool load(Dataset *set);
   virtual bool operator==(const Tree_Derived & rhs) const;
@@ -53,6 +53,8 @@ public:
 private:
   DistModel _type;
 };
+
+void precalc_undists_maps(Dataset *set, int start_disp, int stop_disp, int step);
 
 }
 

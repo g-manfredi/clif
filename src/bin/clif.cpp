@@ -18,6 +18,7 @@
 #include "hdf5.hpp"
 #include "clif_cv.hpp"
 #include "calib.hpp"
+#include "cam.hpp"
 
 #include <H5Library.h>
 
@@ -99,6 +100,17 @@ cliini_opt opts[] = {
     NULL,
     "import images into [#dims]-dimensional store at [path] with dimensions [dim0]x[dim1]x..., first dimensions must be (in that order): image widht, height, #channels. Images will be appended at dim3 and on overflow the index will be counted up (so you can fill a multi-dimensional matrix with images).",
     "[path] [#dims] [dim0] [dim1] ... [dim#] <img file1> <img file 2> ..."
+  },
+  {
+    "precalc-undist",
+    3, //argcount
+    3, //argcount
+    CLIINI_INT,
+    0,
+    0,
+    NULL,
+    "precalculate undistortion/recticication maps",
+    "[disp_start] [disp_stop] [step]"
   },
   {
     "include",
@@ -186,6 +198,7 @@ int main(const int argc, const char *argv[])
   cliini_arg *stores = cliargs_get(args, "store");
   cliini_arg *dim_stores = cliargs_get(args, "store-dims");
   cliini_arg *cvt_gray = cliargs_get(args, "cvt-gray");
+  cliini_arg *precalc_undist = cliargs_get(args, "precalc-undist");
   
   if (!args || cliargs_get(args, "help\n") || (!input && !calib_imgs && !stores) || !output) {
     cliini_help(&group);
@@ -457,6 +470,9 @@ int main(const int argc, const char *argv[])
     if (cliargs_get(args, "ucalib-calibrate")) {
       ucalib_calibrate(set);
       set->writeAttributes();
+    }
+    if (precalc_undist) {
+      precalc_undists_maps(set, cliarg_nth_int(precalc_undist, 0), cliarg_nth_int(precalc_undist, 1), cliarg_nth_int(precalc_undist, 2));
     }
     delete set;
   }
