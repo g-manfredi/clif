@@ -260,8 +260,8 @@ endif()
 
 if (CLIF_WITH_EIGEN3)
 # disable ATM
-  set(CLIF_WITH_LIBIGL true)
-  list(APPEND ${PNU}_DEFINES CLIF_WITH_LIBIGL)
+  #set(CLIF_WITH_LIBIGL true)
+  #list(APPEND ${PNU}_DEFINES CLIF_WITH_LIBIGL)
   #execute_process(COMMAND git submodule update --init ${CMAKE_CURRENT_SOURCE_DIR}/external/libigl)
 endif()
 
