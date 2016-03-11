@@ -12,8 +12,8 @@
 
 namespace clif {
 
-DepthDist::DepthDist(const cpath& path, double at_depth, int w, int h, const Mat & m)
-  : Tree_Derived_Base<DepthDist>(path), _depth(at_depth), _w(w), _h(h)
+DepthDist::DepthDist(const cpath& path, double at_depth, int w, int h, bool force_calc, const Mat & m)
+  : Tree_Derived_Base<DepthDist>(path), _depth(at_depth), _w(w), _h(h), _force_calc(force_calc)
 {
   if (m.size())
     _maps = m;
@@ -151,37 +151,39 @@ bool DepthDist::load(Dataset *set)
     
     //check for precalculated maps
     
-    Datastore *map_store = set->store(path()/"undist_cache/map");
-    if (map_store) {
-      printf("load precalculated map!\n");
-      
-      Subset3d subset(set);
-      int start,stop,step;
-      
-      set->get(path()/"undist_cache/disp_start", start);
-      set->get(path()/"undist_cache/disp_stop", stop);
-      set->get(path()/"undist_cache/disp_step", step);
-      
-      int load_idx = (subset.depth2disparity(_depth)-start)/step;
-      
-      int limit = std::min(std::max(load_idx,0),stop);
-      if (limit != load_idx) {
-        load_idx = limit;
-        printf("undist map for depth %f not available, loading %f\n", subset.disparity2depth(load_idx));
+    if (!_force_calc) {
+      Datastore *map_store = set->store(path()/"undist_cache/map");
+      if (map_store) {
+        printf("load precalculated map!\n");
+        
+        Subset3d subset(set);
+        int start,stop,step;
+        
+        set->get(path()/"undist_cache/disp_start", start);
+        set->get(path()/"undist_cache/disp_stop", stop);
+        set->get(path()/"undist_cache/disp_step", step);
+        
+        int load_idx = (subset.depth2disparity(_depth)-start)/step;
+        
+        int limit = std::min(std::max(load_idx,0),stop);
+        if (limit != load_idx) {
+          load_idx = limit;
+          printf("undist map for depth %f not available, loading %f\n", subset.disparity2depth(load_idx));
+        }
+        else
+          printf("load undist map for depth %f\n", _depth);
+        
+        Idx subspace = {0,1,2,3};
+        Idx idx = {0,0,0,0,load_idx};
+    
+        map_store->read_full_subdims(_maps, subspace, idx);
+        
+        return true;
+        
       }
       else
-        printf("load undist map for depth %f\n", _depth);
-      
-      Idx subspace = {0,1,2,3};
-      Idx idx = {0,0,0,0,load_idx};
-  
-      map_store->read_full_subdims(_maps, subspace, idx);
-      
-      return true;
-      
+        printf("no cache found at %s, calculating\n", (path()/"undist_cache/map").c_str());
     }
-    else
-      printf("no cache found at %s, calculating\n", (path()/"undist_cache/map").c_str());
 
     
     
@@ -398,10 +400,14 @@ void precalc_undists_maps(Dataset *set, int start_disp, int stop_disp, int step)
   
   Datastore *lines_store = set->store(intrinsics/"lines");
   
-  clif::Mat_<cv::Point2f> undist_maps({w,h,lines_store->extent()[3],lines_store->extent()[4],(stop_disp-start_disp)/step+1});
+  clif::Mat_<cv::Point2f> undist_map({w,h,lines_store->extent()[3],lines_store->extent()[4]});
+  
+  Datastore *map_store = set->addStore(intrinsics/"undist_cache/map", 4);
+  
+  //{w,h,lines_store->extent()[3],lines_store->extent()[4],(stop_disp-start_disp)/step+1}
     
   for(int d=start_disp;d<=stop_disp;d+=step) {
-    DepthDist *undist = dynamic_cast<DepthDist*>(set->tree_derive(DepthDist(intrinsics, subset.disparity2depth(d) ,w ,h, undist_maps.bind(4, (d-start_disp)/step))));
+    DepthDist *undist = dynamic_cast<DepthDist*>(set->tree_derive(DepthDist(intrinsics, subset.disparity2depth(d) ,w ,h, true, undist_map)));
     
     auto it = set->_derive_cache.find(intrinsics.generic_string());
   
@@ -413,11 +419,11 @@ void precalc_undists_maps(Dataset *set, int start_disp, int stop_disp, int step)
       
     set->_derive_cache.erase(it);
     delete undist;
+    
+    Idx pos({0,0,0,0,(d-start_disp)/step});
+    map_store->write(undist_map, pos);
   }
   
-  
-  Datastore *map_store = set->addStore(intrinsics/"undist_cache/map", undist_maps.size());
-  map_store->write(undist_maps);
   set->setAttribute(intrinsics/"undist_cache/disp_start", start_disp);
   set->setAttribute(intrinsics/"undist_cache/disp_stop", stop_disp);
   set->setAttribute(intrinsics/"undist_cache/disp_step", step);
