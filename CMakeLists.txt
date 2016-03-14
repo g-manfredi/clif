@@ -61,6 +61,8 @@ endforeach()
 
 set(${PNU}_BUILD_TYPE "SHARED")
 
+option(${PNU}_BUILD_LIBIGL "checkout and build libigl" OFF)
+
 #####################################################
 ## DEPENDENCIES
 #####################################################
@@ -258,18 +260,17 @@ endif()
 ## FEATURES depending on multiple packages
 #####################################################
 
-if (CLIF_WITH_EIGEN3)
-# disable ATM
-  #set(CLIF_WITH_LIBIGL true)
-  #list(APPEND ${PNU}_DEFINES CLIF_WITH_LIBIGL)
-  #execute_process(COMMAND git submodule update --init ${CMAKE_CURRENT_SOURCE_DIR}/external/libigl)
+if (CLIF_WITH_EIGEN3 AND CLIF_BUILD_LIBIGL)
+  set(CLIF_WITH_LIBIGL true)
+  list(APPEND ${PNU}_DEFINES CLIF_WITH_LIBIGL)
+  execute_process(COMMAND git submodule update --init ${CMAKE_CURRENT_SOURCE_DIR}/external/libigl)
+  # FIXME not generic?
+  list(APPEND CLIF_INCLUDE_DIRS "external/libigl/include")
 endif()
 
 if (CLIF_WITH_LIBIGL AND CLIF_WITH_GLFW3 AND CLIF_WITH_GLEW)  
   set(CLIF_WITH_LIBIGL_VIEWER true)
   list(APPEND ${PNU}_DEFINES CLIF_WITH_LIBIGL_VIEWER)
-  # FIXME not generic!
-  list(APPEND CLIF_INCLUDE_DIRS "external/libigl/include")
   #add_definitions(-DIGL_VIEWER_WITH_NANOGUI)
 endif()
 
