@@ -23,8 +23,8 @@
   #include "ceres/ceres.h"
   #include "ceres/rotation.h"
   
-  const double proj_center_size = 0.1;
-  const double extr_center_size = 0.1;
+  const double proj_center_size = 0.2;
+  const double extr_center_size = 0.2;
   const double non_center_rest_weigth = 1e-6;
   const double strong_proj_constr_weight = 10.0;
   const double proj_constr_weight = 1e-4;
@@ -889,6 +889,8 @@ static void _zline_problem_add_proj_error_4P(ceres::Problem &problem, Mat_<doubl
   }
 }
 
+int _calib_cams_limit = 1000;
+
 static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, cv::Point2i img_size, const Mat_<float>& proxy, Mat_<double> &extrinsics, Mat_<double> &extrinsics_rel, Mat_<double> &lines, ceres::LossFunction *loss = NULL, bool falloff = true, double min_weight = non_center_rest_weigth)
 {
   cv::Point2i center(proxy["x"]/2, proxy["y"]/2);
@@ -902,7 +904,7 @@ static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, cv::Point2
   for(auto ray : Idx_It_Dims(proxy, "x", "views")) {
     bool ref_cam = true;
     
-    if (ray["cams"])
+    if (ray["cams"] > _calib_cams_limit)
       continue;
     
     for(int i=proxy.dim("channels");i<=proxy.dim("cams");i++)
@@ -927,8 +929,6 @@ static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, cv::Point2
       last_view = ray["views"];
       ray_count = 0;
     }
-    else
-      ray_count++;
     
     //keep center looking straight (in local ref system)
     if (ray["y"] == center.y && ray["x"] == center.x) {
@@ -936,6 +936,7 @@ static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, cv::Point2
       LineZ3CenterDirError::Create();
       problem.AddResidualBlock(cost_function, loss, 
                               &lines({2,ray.r("x","cams")}));
+      ray_count++;
     }
     
     if (w > 0.0) {
@@ -959,6 +960,7 @@ static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, cv::Point2
                                 //use only direction part!
                                 &lines({2,ray.r("x","cams")}));
       }
+      ray_count++;
     }
   }
   printf("view %d: %d rays\n", last_view, ray_count);
@@ -1306,8 +1308,8 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
 {
   ceres::Solver::Options options;
   options.max_num_iterations = 5000;
-  options.function_tolerance = 1e-12;
-  options.parameter_tolerance = 1e-12;
+  //options.function_tolerance = 1e-12;
+  //options.parameter_tolerance = 1e-12;
   options.minimizer_progress_to_stdout = true;
   //options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
   
@@ -1316,8 +1318,8 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   extrinsics_rel.create({IR(6, "extrinsics"), proxy.r("channels","cams")});
   
   //for threading!
-  options.linear_solver_type = ceres::DENSE_SCHUR;
-  //options.linear_solver_type = ceres::SPARSE_SCHUR;
+  //options.linear_solver_type = ceres::DENSE_SCHUR;
+  options.linear_solver_type = ceres::SPARSE_SCHUR;
   
   options.num_threads = 8;
   options.num_linear_solver_threads = 8;
@@ -1396,12 +1398,13 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
     filtered = filter_pinhole(proxy, lines, img_size, extrinsics, extrinsics_rel, proj, 0.2);
   }*/
   
-  solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, strong_proj_constr_weight, 0.0);
-  int filtered = 1;
+  for(_calib_cams_limit=0;_calib_cams_limit<proxy["cams"];_calib_cams_limit=std::min(_calib_cams_limit*2+1,proxy["cams"]))
+    solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, strong_proj_constr_weight, 0.0);
+  /*int filtered = 1;
   while (filtered) {
     solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, strong_proj_constr_weight, 0.0);
     filtered = filter_pinhole(proxy, lines, img_size, extrinsics, extrinsics_rel, proj, 0.2);
-  }
+  }*/
   solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, strong_proj_constr_weight, non_center_rest_weigth);
   solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, 1e-4, 0.0);
   

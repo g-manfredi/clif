@@ -263,7 +263,7 @@ endif()
 if (CLIF_WITH_EIGEN3 AND CLIF_BUILD_LIBIGL)
   set(CLIF_WITH_LIBIGL true)
   list(APPEND ${PNU}_DEFINES CLIF_WITH_LIBIGL)
-  execute_process(COMMAND git submodule update --init ${CMAKE_CURRENT_SOURCE_DIR}/external/libigl)
+  #execute_process(COMMAND git submodule update --init ${CMAKE_CURRENT_SOURCE_DIR}/external/libigl)
   # FIXME not generic?
   list(APPEND CLIF_INCLUDE_DIRS "external/libigl/include")
 endif()
@@ -355,7 +355,7 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL Clang)
   add_definitions(-DFNM_EXTMATCH=0)
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL GNU)
   # using GCC
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fno-omit-frame-pointer -fPIC -std=c++11 -march=native -fopenmp")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -fno-omit-frame-pointer -fPIC -std=c++11 -march=native -fopenmp")
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   # using Visual Studio C++
   set(${PNU}_BUILD_TYPE "STATIC")
