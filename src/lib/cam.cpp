@@ -1,6 +1,7 @@
 #include "cam.hpp"
 
 #include "dataset.hpp"
+#include "subset3d.hpp"
 
 #ifdef CLIF_WITH_UCALIB
   #include "ucalib/gencam.hpp"
@@ -11,10 +12,11 @@
 
 namespace clif {
 
-DepthDist::DepthDist(const cpath& path, double at_depth, int w, int h)
-  : Tree_Derived_Base<DepthDist>(path), _depth(at_depth), _w(w), _h(h)
+DepthDist::DepthDist(const cpath& path, double at_depth, int w, int h, bool force_calc, const Mat & m)
+  : Tree_Derived_Base<DepthDist>(path), _depth(at_depth), _w(w), _h(h), _force_calc(force_calc)
 {
-
+  if (m.size())
+    _maps = m;
 }
 
 TD_DistType::TD_DistType(const cpath& path)
@@ -139,11 +141,50 @@ bool DepthDist::load(Dataset *set)
     set->get(path()/"extrinsics_cams", extrinsics);
     extrinsics.names({"extrinsics","channels","cams"});
     
+    printf("alloc maps\n");
     _maps.create({IR(_w, "x"),IR(_h, "y"), extrinsics.r("channels","cams")});
+    printf("alloced maps\n");
     
     double extrinsics_main[6];
     for(int i=0;i<6;i++)
       extrinsics_main[i] = extrinsics(Idx({i,extrinsics["channels"]/2,extrinsics["cams"]/2}));
+    
+    //check for precalculated maps
+    
+    if (!_force_calc) {
+      Datastore *map_store = set->store(path()/"undist_cache/map");
+      if (map_store) {
+        printf("load precalculated map!\n");
+        
+        Subset3d subset(set);
+        int start,stop,step;
+        
+        set->get(path()/"undist_cache/disp_start", start);
+        set->get(path()/"undist_cache/disp_stop", stop);
+        set->get(path()/"undist_cache/disp_step", step);
+        
+        int load_idx = (subset.depth2disparity(_depth)-start)/step;
+        
+        int limit = std::min(std::max(load_idx,0),stop);
+        if (limit != load_idx) {
+          load_idx = limit;
+          printf("undist map for depth %f not available, loading %f\n", subset.disparity2depth(load_idx));
+        }
+        else
+          printf("load undist map for depth %f\n", _depth);
+        
+        Idx subspace = {0,1,2,3};
+        Idx idx = {0,0,0,0,load_idx};
+    
+        map_store->read_full_subdims(_maps, subspace, idx);
+        
+        return true;
+        
+      }
+      else
+        printf("no cache found at %s, calculating\n", (path()/"undist_cache/map").c_str());
+    }
+
     
     
     _genmap(_maps, _depth, Idx({IR(0,"line"),IR(0,"x"),IR(0,"y"),IR(corr_line_m["channels"]/2,"channels"),IR(corr_line_m["cams"]/2,"cams")}), corr_line_m, extrinsics, _w, _h, true, _f, _m, _r);
@@ -340,6 +381,52 @@ void DepthDist::undistort(const clif::Mat & src, clif::Mat & dst, const Idx & po
   else {
     dst = src;
   }
+}
+
+void precalc_undists_maps(Dataset *set, int start_disp, int stop_disp, int step)
+{
+  int w, h;
+  
+  Datastore *imgs = set->store(set->getSubGroup("calibration/extrinsics")/"data");
+  if (!imgs)
+    imgs = set->store(set->getSubGroup("calibration/imgs")/"data");
+  
+  w = imgs->extent()[0];
+  h = imgs->extent()[1];
+  
+  cpath intrinsics = set->getSubGroup("calibration/intrinsics");
+  
+  Subset3d subset(set);
+  
+  Datastore *lines_store = set->store(intrinsics/"lines");
+  
+  clif::Mat_<cv::Point2f> undist_map({w,h,lines_store->extent()[3],lines_store->extent()[4]});
+  
+  Datastore *map_store = set->addStore(intrinsics/"undist_cache/map", 4);
+  
+  //{w,h,lines_store->extent()[3],lines_store->extent()[4],(stop_disp-start_disp)/step+1}
+    
+  for(int d=start_disp;d<=stop_disp;d+=step) {
+    DepthDist *undist = dynamic_cast<DepthDist*>(set->tree_derive(DepthDist(intrinsics, subset.disparity2depth(d) ,w ,h, true, undist_map)));
+    
+    auto it = set->_derive_cache.find(intrinsics.generic_string());
+  
+    while (it != set->_derive_cache.end())
+      if (*it->second == *undist)
+        break;
+      else
+        ++it;
+      
+    set->_derive_cache.erase(it);
+    delete undist;
+    
+    Idx pos({0,0,0,0,(d-start_disp)/step});
+    map_store->write(undist_map, pos);
+  }
+  
+  set->setAttribute(intrinsics/"undist_cache/disp_start", start_disp);
+  set->setAttribute(intrinsics/"undist_cache/disp_stop", stop_disp);
+  set->setAttribute(intrinsics/"undist_cache/disp_step", step);
 }
 
 bool DepthDist::operator==(const Tree_Derived & rhs) const
