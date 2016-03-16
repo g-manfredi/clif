@@ -673,6 +673,7 @@ struct RectProjDirError {
     T py = wy * p[1];    
     residuals[0] = (T(ix)-px)*T(w);
     residuals[1] = (T(iy)-py)*T(w);
+    residuals[2] = p[0]-p[1];
     
     return true;
   }
@@ -680,7 +681,7 @@ struct RectProjDirError {
   // Factory to hide the construction of the CostFunction object from
   // the client code.
   static ceres::CostFunction* Create(cv::Point2d ip, double weight) {
-    return (new ceres::AutoDiffCostFunction<RectProjDirError, 2, 2, 2>(
+    return (new ceres::AutoDiffCostFunction<RectProjDirError, 3, 2, 2>(
                 new RectProjDirError(ip, weight)));
   }
 
@@ -890,6 +891,7 @@ static void _zline_problem_add_proj_error_4P(ceres::Problem &problem, Mat_<doubl
 }
 
 int _calib_cams_limit = 1000;
+int _calib_views_limit = 1000;
 
 static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, cv::Point2i img_size, const Mat_<float>& proxy, Mat_<double> &extrinsics, Mat_<double> &extrinsics_rel, Mat_<double> &lines, ceres::LossFunction *loss = NULL, bool falloff = true, double min_weight = non_center_rest_weigth)
 {
@@ -905,6 +907,8 @@ static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, cv::Point2
     bool ref_cam = true;
     
     if (ray["cams"] > _calib_cams_limit)
+      continue;
+    if (ray["views"] > _calib_views_limit)
       continue;
     
     for(int i=proxy.dim("channels");i<=proxy.dim("cams");i++)
@@ -1221,7 +1225,7 @@ void update_cams_mesh(Mesh &cams, Mat_<double> extrinsics, Mat_<double> extrinsi
       cams.merge(plane);
   }
   
-  //printf("proj %f %f\n", proj(0, 0), proj(1,0));
+  printf("proj %f %f\n", proj(0, 0), proj(1,0));
 }
 
 //globals for viewer
@@ -1341,13 +1345,13 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   for(auto pos : Idx_It_Dims(m, 0, -1))
     m(pos) = 0;
   for(auto pos : Idx_It_Dims(proj, 0, -1))
-    proj(pos) = 1000;
+    proj(pos) = 10000;
   
   for(auto cam_pos : Idx_It_Dim(extrinsics, "views")) {
     for(int i=0;i<5;i++)
       extrinsics({i, cam_pos["views"]}) = 0;
     extrinsics({5, cam_pos["views"]}) = 1000;
-    //extrinsics({2, cam_pos["views"]}) = M_PI*1.5;
+    //extrinsics({2, cam_pos["views"]}) = M_PI*0.5;
   }
 
   for(auto pos : Idx_It_Dims(extrinsics_rel, 0, -1))
@@ -1398,15 +1402,22 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
     filtered = filter_pinhole(proxy, lines, img_size, extrinsics, extrinsics_rel, proj, 0.2);
   }*/
   
+  
+  /*options.max_num_iterations = 200;
+  _calib_cams_limit = 0;
+  for(_calib_views_limit=0;_calib_views_limit<proxy["views"];_calib_views_limit=std::min(_calib_views_limit*2+1,proxy["views"]))
+    solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, strong_proj_constr_weight, non_center_rest_weigth);
+  options.max_num_iterations = 5000;*/
+  
   for(_calib_cams_limit=0;_calib_cams_limit<proxy["cams"];_calib_cams_limit=std::min(_calib_cams_limit*2+1,proxy["cams"]))
-    solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, strong_proj_constr_weight, 0.0);
+    solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, strong_proj_constr_weight, non_center_rest_weigth);
   /*int filtered = 1;
   while (filtered) {
     solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, strong_proj_constr_weight, 0.0);
     filtered = filter_pinhole(proxy, lines, img_size, extrinsics, extrinsics_rel, proj, 0.2);
   }*/
   solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, strong_proj_constr_weight, non_center_rest_weigth);
-  solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, 1e-4, 0.0);
+  //solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, 1e-4, 0.0);
   
   
   //_zline_problem_eval_pinhole_lines(problem, proxy, extrinsics, extrinsics_rel, lines);
@@ -1467,8 +1478,12 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
 bool ucalib_calibrate(Dataset *set, cpath proxy, cpath calib)
 #ifdef CLIF_WITH_UCALIB
 {
-  cpath proxy_root, calib_root;
+  cpath proxy_root, calib_root, extr_root;
   if (!set->deriveGroup("calibration/proxy", proxy, "calibration/intrinsics", calib, proxy_root, calib_root))
+    abort();
+  
+  
+  if (!set->deriveGroup("calibration/proxy", proxy, "calibration/extrinsics", calib, proxy_root, extr_root))
     abort();
   
   int im_size[2];
@@ -1504,16 +1519,38 @@ bool ucalib_calibrate(Dataset *set, cpath proxy, cpath calib)
     Mat_<double> extrinsics;
     Mat_<double> extrinsics_rel;
     
+    //FIXME hack!
+    std::cout << proxy_m << "\n";
+    for(auto pos : Idx_It_Dims(proxy_m, 0,-1)) {
+      if (!isnan(proxy_m(pos))) {
+        if (pos["cams"] == 0 && pos["views"] == 0)
+          printf("%dx%d %d: %f -> %f\n",pos["x"],pos["y"],pos["point"],proxy_m(pos),proxy_m(pos)*5);
+        proxy_m(pos) *= 5;
+      }
+    }
+    
     double rms = fit_cams_lines_multi(proxy_m, lines, cv::Point2i(im_size[0],im_size[1]), extrinsics, extrinsics_rel);
     
     Datastore *line_store = set->addStore(calib_root/"lines");
     line_store->write(lines);
     
+    
     set->setAttribute(calib_root/"type", "UCALIB");
     set->setAttribute(calib_root/"extrinsics_views", extrinsics);
     set->setAttribute(calib_root/"extrinsics_cams", extrinsics_rel);
     set->setAttribute(calib_root/"rms", rms);
-    set->setAttribute(calib_root/"projection", proj);
+    //set->setAttribute(calib_root/"projection", proj);
+    std::vector<double> proj_hack(2);
+    proj_hack[0] = proj(0);
+    proj_hack[1] = proj(0);
+    set->setAttribute(calib_root/"projection", proj_hack);
+    
+    cv::Point3f step(extrinsics_rel(3,0,extrinsics_rel["cams"]-1),extrinsics_rel(4,0,extrinsics_rel["cams"]-1),extrinsics_rel(5,0,extrinsics_rel["cams"]-1));
+    std::cout << step << "\n";
+    std::vector<double> step_vec = {norm(step)/extrinsics_rel["cams"],0,0};
+    set->setAttribute(extr_root/"line_step", step_vec);
+    printf("baseline: %f\n", step_vec[0]);
+    set->setAttribute(extr_root/"type", "LINE");
 
     printf("finished ucalib calibration!\n");
     return true;
