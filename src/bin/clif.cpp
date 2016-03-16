@@ -150,20 +150,23 @@ cliini_optgroup group = {
   0
 };
 
-const char *clif_extension_pattern = "*.cli?";
-const char *ini_extension_pattern = "*.ini";
-const char *mat_extension_pattern = "*.mat";
+const char *clif_extension_pattern = ".clif";
+const char *ini_extension_pattern = ".ini";
+const char *mat_extension_pattern = ".mat";
 //ksh extension match using FNM_EXTMATCH
-const char *img_extension_pattern = "*.+(png|tif|tiff|jpg|jpeg|jpe|jp2|bmp|dib|pbm|pgm|ppm|sr|ras)";
+//const char *img_extension_pattern = "*.+(png|tif|tiff|jpg|jpeg|jpe|jp2|bmp|dib|pbm|pgm|ppm|sr|ras)";
+const char *img_extension_pattern = ".tif";
 
 vector<string> extract_matching_strings(cliini_arg *arg, const char *pattern)
 {
   vector<string> files;
   
-  for(int i=0;i<cliarg_sum(arg);i++)
+  for(int i=0;i<cliarg_sum(arg);i++) {
     //FIXME not working on windows!
-    if (!fnmatch(pattern, cliarg_nth_str(arg, i), FNM_CASEFOLD | FNM_EXTMATCH))
+	std::cout << boost::filesystem::extension(cliarg_nth_str(arg, i)) << "\n";
+    if (!boost::filesystem::extension(cliarg_nth_str(arg, i)).compare(pattern))
       files.push_back(cliarg_nth_str(arg, i));
+  }
     
   return files;
 }
