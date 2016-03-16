@@ -23,12 +23,16 @@
   #include "ceres/ceres.h"
   #include "ceres/rotation.h"
   
-  const double proj_center_size = 0.2;
+  const double proj_center_size = 0.1;
   const double extr_center_size = 0.2;
-  const double non_center_rest_weigth = 1e-6;
+  const double non_center_rest_weigth = 1e-4;
   const double strong_proj_constr_weight = 10.0;
   const double proj_constr_weight = 1e-4;
   const double center_constr_weight = 0.1;
+  const double enforce_cams_line = 10.0;
+  
+  int _calib_cams_limit = 1000;
+  int _calib_views_limit = 1000;
 #endif
   
 #ifdef CLIF_WITH_LIBIGL_VIEWER
@@ -563,6 +567,40 @@ struct LineZ3DirPinholeError {
   double x_,y_,w_;
 };
 
+// Pinhole line error
+struct LinExtrError {
+  LinExtrError(double idx)
+      : idx_(idx) {}
+      
+  template <typename T>
+  bool operator()(const T* const dir, const T* const extr,
+                  T* residuals) const {
+                    
+                    
+    T c[3], w_c[3];
+    c[0] = extr[3];
+    c[1] = extr[4];
+    c[2] = extr[5];
+    ceres::AngleAxisRotatePoint(extr, c, w_c);
+    
+    //compare with projected pinhole camera ray
+    residuals[0] = (w_c[0]-dir[0]*T(idx_))*T(enforce_cams_line);
+    residuals[1] = (w_c[1]-dir[1]*T(idx_))*T(enforce_cams_line);
+    residuals[2] = (w_c[2]-dir[2]*T(idx_))*T(enforce_cams_line);
+    
+    return true;
+  }
+
+  // Factory to hide the construction of the CostFunction object from
+  // the client code.
+  static ceres::CostFunction* Create(double idx) {
+    return (new ceres::AutoDiffCostFunction<LinExtrError, 3, 3, 6>(
+                new LinExtrError(idx)));
+  }
+
+  double idx_;
+};
+
 //center dir error (should be zero!)
 struct LineZ3CenterDirError {
   LineZ3CenterDirError() {}
@@ -863,6 +901,26 @@ static void _zline_problem_add_proj_error(ceres::Problem &problem, Mat_<double> 
   }
 }
 
+static void _zline_problem_add_lin_views(ceres::Problem &problem, Mat_<double> &extrinsics_rel, double *dir)
+{      
+  for(auto pos : Idx_It_Dims(extrinsics_rel, "channels", "cams")) {
+    if (!pos["cams"])
+      continue;
+    if (pos["cams"] > _calib_cams_limit)
+      continue;
+    
+    ceres::CostFunction* cost_function =
+        LinExtrError::Create(pos["cams"]);
+        
+    problem.AddResidualBlock(cost_function,
+                            NULL,
+                            dir,
+                            &extrinsics_rel(pos));
+  }
+}
+
+
+
 static void _zline_problem_add_proj_error_4P(ceres::Problem &problem, Mat_<double> &lines, cv::Point2i img_size, Mat_<double> &proj, double proj_constraint)
 {
   double two_sigma_squared = 2.0*(img_size.x*img_size.x+img_size.y*img_size.y)*proj_center_size*proj_center_size;
@@ -889,9 +947,6 @@ static void _zline_problem_add_proj_error_4P(ceres::Problem &problem, Mat_<doubl
                             &lines({0,pos.r("x","cams")}));
   }
 }
-
-int _calib_cams_limit = 1000;
-int _calib_views_limit = 1000;
 
 static void _zline_problem_add_pinhole_lines(ceres::Problem &problem, cv::Point2i img_size, const Mat_<float>& proxy, Mat_<double> &extrinsics, Mat_<double> &extrinsics_rel, Mat_<double> &lines, ceres::LossFunction *loss = NULL, bool falloff = true, double min_weight = non_center_rest_weigth)
 {
@@ -1283,10 +1338,12 @@ double solve_pinhole(const ceres::Solver::Options &options, const Mat_<float>& p
 {
   ceres::Solver::Summary summary;
   ceres::Problem problem;
+  double dir[3] = {0,0,0};
   
   _zline_problem_add_pinhole_lines(problem, img_size, proxy, extrinsics, extrinsics_rel, lines, NULL, true, min_weight);
   if (proj_weight > 0.0)
     _zline_problem_add_proj_error(problem, lines, img_size, proj, proj_weight, 0.0);
+  //_zline_problem_add_lin_views(problem, extrinsics_rel, dir);
   
   printf("solving pinhole problem (proj w = %f...\n", proj_weight);
   ceres::Solve(options, &problem, &summary);
@@ -1409,11 +1466,12 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
     solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, strong_proj_constr_weight, non_center_rest_weigth);
   options.max_num_iterations = 5000;*/
   
-  for(_calib_cams_limit=0;_calib_cams_limit<proxy["cams"];_calib_cams_limit=std::min(_calib_cams_limit*2+1,proxy["cams"]))
+  for(_calib_cams_limit=0;_calib_cams_limit<proxy["cams"];_calib_cams_limit=std::min(_calib_cams_limit*4+1,proxy["cams"])) {
     solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, strong_proj_constr_weight, non_center_rest_weigth);
+  }
   /*int filtered = 1;
   while (filtered) {
-    solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, strong_proj_constr_weight, 0.0);
+    solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, strong_proj_constr_weight, non_center_rest_weigth);
     filtered = filter_pinhole(proxy, lines, img_size, extrinsics, extrinsics_rel, proj, 0.2);
   }*/
   solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, strong_proj_constr_weight, non_center_rest_weigth);
@@ -1520,14 +1578,14 @@ bool ucalib_calibrate(Dataset *set, cpath proxy, cpath calib)
     Mat_<double> extrinsics_rel;
     
     //FIXME hack!
-    std::cout << proxy_m << "\n";
+    /*std::cout << proxy_m << "\n";
     for(auto pos : Idx_It_Dims(proxy_m, 0,-1)) {
       if (!isnan(proxy_m(pos))) {
         if (pos["cams"] == 0 && pos["views"] == 0)
           printf("%dx%d %d: %f -> %f\n",pos["x"],pos["y"],pos["point"],proxy_m(pos),proxy_m(pos)*5);
         proxy_m(pos) *= 5;
       }
-    }
+    }*/
     
     double rms = fit_cams_lines_multi(proxy_m, lines, cv::Point2i(im_size[0],im_size[1]), extrinsics, extrinsics_rel);
     

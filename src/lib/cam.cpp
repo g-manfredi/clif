@@ -165,7 +165,7 @@ bool DepthDist::load(Dataset *set)
         
         int load_idx = (subset.depth2disparity(_depth)-start)/step;
         
-        int limit = std::min(std::max(load_idx,0),stop);
+        int limit = std::min(std::max(load_idx,0),map_store->extent()[4]-1);
         if (limit != load_idx) {
           load_idx = limit;
           printf("undist map for depth %f not available, loading %f\n", subset.disparity2depth(load_idx));
