@@ -133,8 +133,6 @@ bool DepthDist::load(Dataset *set)
 #else
           
     //FIXME cams might be missing!
-    Mat_<double> corr_line_m = set->readStore(path()/"lines");
-    corr_line_m.names({"line","x","y","channels","cams"});
     
     Mat_<double> extrinsics;
     
@@ -184,8 +182,12 @@ bool DepthDist::load(Dataset *set)
       else
         printf("no cache found at %s, calculating\n", (path()/"undist_cache/map").c_str());
     }
-
     
+    
+    printf("read lines!\n");
+    Mat_<double> corr_line_m = set->readStore(path()/"lines");
+    corr_line_m.names({"line","x","y","channels","cams"});
+    printf("have read lines!\n");   
     
     _genmap(_maps, _depth, Idx({IR(0,"line"),IR(0,"x"),IR(0,"y"),IR(corr_line_m["channels"]/2,"channels"),IR(corr_line_m["cams"]/2,"cams")}), corr_line_m, extrinsics, _w, _h, true, _f, _m, _r);
     

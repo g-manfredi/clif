@@ -614,8 +614,11 @@ void Mat_H5AttrRead(Mat &m, H5::Attribute &a)
 
 void h5_dataset_read(H5::H5File f, const cpath &path, Mat &m)
 {
+  printf("open %s\n", path.generic_string().c_str());
   H5::DataSet data = f.openDataSet(path.generic_string().c_str());
+  printf("read\n");
   read(data, m);
+  printf("done\n");
 }
 
 void read(H5::DataSet &data, Mat &m)

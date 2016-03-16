@@ -887,8 +887,8 @@ DepthDist* Datastore::undist(double depth)
     catch (std::invalid_argument) {
       return NULL;
     }
-//#pragma omp critical
- //   {
+#pragma omp critical
+    {
       //FIXME BAAAD hack!
       if (dataset()->_derive_cache.size() > 10) {
         double max = 0;
@@ -915,7 +915,7 @@ DepthDist* Datastore::undist(double depth)
       }
       
       undist = dynamic_cast<DepthDist*>(dataset()->tree_derive(DepthDist(intrinsics, depth,extent()[0],extent()[1])));
-    //}
+    }
     
     if (undist)
       _undists[depth] = undist;
