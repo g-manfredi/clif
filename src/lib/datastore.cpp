@@ -887,7 +887,7 @@ DepthDist* Datastore::undist(double depth)
     catch (std::invalid_argument) {
       return NULL;
     }
-#pragma omp critical
+#pragma omp critical (undist_cache)
     {
       //FIXME BAAAD hack!
       if (dataset()->_derive_cache.size() > 10) {
