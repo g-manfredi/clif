@@ -254,6 +254,18 @@ bool Dataset::readStore(const boost::filesystem::path &path, Mat &m)
   return true;
 }
 
+void Dataset::append(Dataset *set)
+{
+  Attributes::append(set);
+  
+  for (auto& it: set->_stores) {
+    Datastore *store = addStore(it.second->path(), it.second->dims());
+    Mat m;
+    it.second->read(m);
+    store->write(m);
+  }
+}
+
 Mat Dataset::readStore(const boost::filesystem::path &path)
 {
   Mat m;
