@@ -1299,7 +1299,7 @@ bool callback_pre_draw(igl::viewer::Viewer& viewer)
     viewer.data.set_mesh(mesh.V, mesh.F);
   }
   
-  viewer.callback_pre_draw = NULL;
+  viewer.callback_pre_draw = nullptr;
   return false;
 }
 
