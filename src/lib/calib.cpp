@@ -1578,14 +1578,14 @@ bool ucalib_calibrate(Dataset *set, cpath proxy, cpath calib)
     Mat_<double> extrinsics_rel;
     
     //FIXME hack!
-    /*std::cout << proxy_m << "\n";
+    std::cout << proxy_m << "\n";
     for(auto pos : Idx_It_Dims(proxy_m, 0,-1)) {
       if (!isnan(proxy_m(pos))) {
         if (pos["cams"] == 0 && pos["views"] == 0)
           printf("%dx%d %d: %f -> %f\n",pos["x"],pos["y"],pos["point"],proxy_m(pos),proxy_m(pos)*5);
-        proxy_m(pos) *= 5;
+        proxy_m(pos) *= 10;
       }
-    }*/
+    }
     
     double rms = fit_cams_lines_multi(proxy_m, lines, cv::Point2i(im_size[0],im_size[1]), extrinsics, extrinsics_rel);
     

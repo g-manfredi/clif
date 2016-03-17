@@ -68,6 +68,10 @@ class Dataset : public Attributes {
     Datastore *addStore(const boost::filesystem::path &path, int dims = 4);
     void addStore(Datastore *store);
     
+    void append(Dataset *set);
+    void append(Attribute *a) { Attributes::append(a); }
+    void append(Attributes &a) { Attributes::append(a); }
+    
     //FIXME somehow avoid construction?
     Tree_Derived *tree_derive(const Tree_Derived & ref);
     

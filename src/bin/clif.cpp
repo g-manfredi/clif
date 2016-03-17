@@ -72,6 +72,16 @@ cliini_opt opts[] = {
     "convert image to grayscale on load"
   },
   {
+    "deep-copy",
+    0, //argcount
+    0, //argcount
+    CLIINI_NONE, //type
+    0, //flags
+    0,
+    NULL,
+    "do full copy instead of shallow (external link)"
+  },
+  {
     "types", //FIXME remove this
     1, //argcount
     1, //argcount
@@ -199,6 +209,13 @@ int main(const int argc, const char *argv[])
   cliini_arg *dim_stores = cliargs_get(args, "store-dims");
   cliini_arg *cvt_gray = cliargs_get(args, "cvt-gray");
   cliini_arg *precalc_undist = cliargs_get(args, "precalc-undist");
+  cliini_arg *deep_copy = cliargs_get(args, "deep-copy");
+  
+  if (deep_copy) {
+    printf("deep copy!\n");
+    link_output = false;
+  }
+  
   
   if (!args || cliargs_get(args, "help\n") || (!input && !calib_imgs && !stores) || !output) {
     cliini_help(&group);
