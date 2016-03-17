@@ -415,7 +415,7 @@ class Attributes {
     {
       Attribute *attr = get(name);
       if (!attr)
-        throw std::invalid_argument("attribute \""+name.generic_string()+"\" does not exist!");
+        throw std::invalid_argument("attribute \""/*+name.generic_string()+*/"\" does not exist!");
       attr->get(a1, args...);
     };
     

@@ -127,10 +127,6 @@ bool DepthDist::load(Dataset *set)
     if (_type != DistModel::UCALIB)
       return true;
     
-    
-#ifndef CLIF_WITH_UCALIB
-    return true;
-#else
           
     //FIXME cams might be missing!
     
@@ -182,7 +178,11 @@ bool DepthDist::load(Dataset *set)
       else
         printf("no cache found at %s, calculating\n", (path()/"undist_cache/map").c_str());
     }
-    
+	
+#ifndef CLIF_WITH_UCALIB
+	printf("WARNING: clif was compiled without ucalib - undistortion will not work!");
+    return true;
+#else
     
     printf("read lines!\n");
     Mat_<double> corr_line_m = set->readStore(path()/"lines");
