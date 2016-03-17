@@ -366,12 +366,17 @@ void clifMat2cv(cv::Mat *in, cv::Mat *out)
 {
   std::vector<cv::Mat> channels(in->size[0]);
 
-  for(int i=0;i<in->size[0];i++)
-    //FIXME need clone else merge will memcpy overlaying memory areas. why?
-    channels[i] = mat_2d_from_3d(in, i);
+  if (in->size[0] == 3) {
+	  for (int i = 0; i < in->size[0]; i++)
+		  //FIXME need clone else merge will memcpy overlaying memory areas. why?
+		  channels[i] = mat_2d_from_3d(in, i);
 
-  out->create(in->size[1], in->size[2], in->type());
-  cv::merge(channels, *out);
+	  out->create(in->size[1], in->size[2], in->type());
+	  cv::merge(channels, *out);
+  }
+  else {
+	  *out = mat_2d_from_3d(in, 0);
+  }
 }
 
 void cv2ClifMat(cv::Mat *in, cv::Mat *out)
