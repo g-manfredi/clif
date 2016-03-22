@@ -199,7 +199,6 @@ void Datastore::read(clif::Mat &m, const ProcData &proc_)
   proc.set_store(this);
   
   //FIXME for now
-  assert(!_memonly);
   assert(dims() >= 4);
   
   Idx wtf = Idx(extent());
@@ -303,6 +302,8 @@ void Datastore::write(const clif::Mat &m)
   assert(_type == m.type());
   
   _mat = m;
+  
+  _extent = m;
 }
 
 void Datastore::write(const clif::Mat * const m)
@@ -957,49 +958,60 @@ void Datastore::readImage(const Idx& idx, cv::Mat *img, const ProcData &proc)
   
   clif::Mat tmp;
   
+  Mat m_read;
+ 
   //WARNING we MUST not change flags after this point!    
   if (mat_cache_get(&tmp, opts)) {
     *img = cvMat(tmp);
     return;
   }
-  
-  //printf("read idx %d", idx[3]);
-  
-  assert((act_proc.flags() & FORCE_REUSE) == 0);
-  
-  if (((act_proc.flags() & NO_DISK_CACHE) == 0) && _get_cache_path(cache_file)) {
-    use_disk_cache = true;
-    cache_file /= _cache_filename(this, idx[3], act_proc.flags(), act_proc.scale(), depth);
     
-    Idx _fixme_storage_size(3);
-    BaseType _fixme_storage_type = act_proc.type();
+  if (!_memonly) {
+    //printf("read idx %d", idx[3]);
     
-    _fixme_storage_size[0] = act_proc.w();
-    _fixme_storage_size[1] = act_proc.h();
-    _fixme_storage_size[2] = act_proc.d();
+    assert((act_proc.flags() & FORCE_REUSE) == 0);
+    
+    if (((act_proc.flags() & NO_DISK_CACHE) == 0) && _get_cache_path(cache_file)) {
+      use_disk_cache = true;
+      cache_file /= _cache_filename(this, idx[3], act_proc.flags(), act_proc.scale(), depth);
       
-    //FIXME only create, don't allocate - calc in read!
-    tmp.create(_fixme_storage_type, _fixme_storage_size);
-    
-    if (!tmp.read(cache_file.string().c_str())) {
-      //printf("...cached\n");
-      //backing memory location might have changed due to mmap
-      //FIXME
-      *img = cvMat(tmp);
-      mat_cache_set(opts, &tmp);
-      return;
+      Idx _fixme_storage_size(3);
+      BaseType _fixme_storage_type = act_proc.type();
+      
+      _fixme_storage_size[0] = act_proc.w();
+      _fixme_storage_size[1] = act_proc.h();
+      _fixme_storage_size[2] = act_proc.d();
+        
+      //FIXME only create, don't allocate - calc in read!
+      tmp.create(_fixme_storage_type, _fixme_storage_size);
+      
+      if (!tmp.read(cache_file.string().c_str())) {
+        //printf("...cached\n");
+        //backing memory location might have changed due to mmap
+        //FIXME
+        *img = cvMat(tmp);
+        mat_cache_set(opts, &tmp);
+        return;
+      }
     }
+    //printf("\n");
+    
+    //FIXME implement flexible datastore layouts (hdr, etc...)
+    Idx subspace = {0,1,2};
+    
+    clif::read_full_subdims(_data, m_read, subspace, idx);
   }
-  //printf("\n");
-  
-  //FIXME implement flexible datastore layouts (hdr, etc...)
-  Idx subspace = {0,1,2};
-  
-  Mat m_read;
-  clif::read_full_subdims(_data, m_read, subspace, idx);
+  else {
+    //FIXME for now 4D only
+    assert(dims() == 4);
+    m_read = cvMat(_mat.bind(3,idx[3]));
+  }
   
   clif::Mat processed;
+  printf("start proc depth %f", act_proc.depth());
+  std::cout << idx << "\n";
   proc_image(m_read, processed, act_proc, idx);
+  printf("stop proc\n");
   
   mat_cache_set(opts, &processed);
   if (use_disk_cache) {

@@ -25,6 +25,8 @@ Mesh& Mesh::operator+=(const Eigen::Vector3d &rhs)
     V(i,1) += rhs(1);
     V(i,2) += rhs(2);
   }
+
+  return *this;
 }
 
 Mesh& Mesh::operator-=(const Eigen::Vector3d &rhs)
@@ -34,6 +36,8 @@ Mesh& Mesh::operator-=(const Eigen::Vector3d &rhs)
     V(i,1) -= rhs(1);
     V(i,2) -= rhs(2);
   }
+
+  return *this;
 }
 
 
@@ -244,8 +248,11 @@ bool Mesh::show(bool block)
   if (_viewer)
     return false;
   
-  if (block)
+  if (block) {
     _run_viewer(this, &_viewer);
+    delete _viewer;
+    _viewer = NULL;
+  }
   else
     _viewer_thread = new std::thread(_run_viewer, this, &_viewer);
   return true;
