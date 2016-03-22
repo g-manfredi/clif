@@ -1460,11 +1460,11 @@ double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point
   }*/
   
   
-  /*options.max_num_iterations = 200;
-  _calib_cams_limit = 0;
+  //options.max_num_iterations = 100;
+  /*_calib_cams_limit = 0;
   for(_calib_views_limit=0;_calib_views_limit<proxy["views"];_calib_views_limit=std::min(_calib_views_limit*2+1,proxy["views"]))
-    solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, strong_proj_constr_weight, non_center_rest_weigth);
-  options.max_num_iterations = 5000;*/
+    solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, strong_proj_constr_weight, non_center_rest_weigth);*/
+  //options.max_num_iterations = 5000;
   
   for(_calib_cams_limit=0;_calib_cams_limit<proxy["cams"];_calib_cams_limit=std::min(_calib_cams_limit*4+1,proxy["cams"])) {
     solve_pinhole(options, proxy, lines, img_size, extrinsics, extrinsics_rel, proj, strong_proj_constr_weight, non_center_rest_weigth);
@@ -1578,14 +1578,14 @@ bool ucalib_calibrate(Dataset *set, cpath proxy, cpath calib)
     Mat_<double> extrinsics_rel;
     
     //FIXME hack!
-    std::cout << proxy_m << "\n";
+    /*std::cout << proxy_m << "\n";
     for(auto pos : Idx_It_Dims(proxy_m, 0,-1)) {
       if (!isnan(proxy_m(pos))) {
         if (pos["cams"] == 0 && pos["views"] == 0)
           printf("%dx%d %d: %f -> %f\n",pos["x"],pos["y"],pos["point"],proxy_m(pos),proxy_m(pos)*5);
         proxy_m(pos) *= 10;
       }
-    }
+    }*/
     
     double rms = fit_cams_lines_multi(proxy_m, lines, cv::Point2i(im_size[0],im_size[1]), extrinsics, extrinsics_rel);
     
