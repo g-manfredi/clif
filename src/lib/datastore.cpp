@@ -1004,7 +1004,7 @@ void Datastore::readImage(const Idx& idx, cv::Mat *img, const ProcData &proc)
   else {
     //FIXME for now 4D only
     assert(dims() == 4);
-    m_read = cvMat(_mat.bind(3,idx[3]));
+    m_read = _mat.bind(3,idx[3]);
   }
   
   clif::Mat processed;
