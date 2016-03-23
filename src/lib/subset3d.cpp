@@ -13,22 +13,39 @@ using namespace std;
 using namespace clif;
 using namespace cv;
 
-Subset3d::Subset3d(Dataset *data, cpath extr_group, const ProcData & proc)
+Subset3d::Subset3d(Dataset *set, const cpath & from, const ProcData & proc)
 {
-  create(data, extr_group, proc);
+  if (!create(set, from, proc))
+    abort();
 }
 
-void Subset3d::create(Dataset *data, cpath extr_group, const ProcData & proc)
+bool Subset3d::create(Dataset *set, const cpath & from, const ProcData & proc)
 {
-  _data = data;
+  _data = set;
   _proc = proc;
   
-  if (extr_group.empty())
-    _root = _data->getSubGroup("calibration/extrinsics", extr_group);
+  if (from.empty())
+    _root = _data->getSubGroup("calibration/extrinsics", from);
   else
-    _root = data->resolve(extr_group);
+    _root = _data->resolve(from);
     
-  _store = _data->getStore(_root/"data");
+  _store = _data->store(_root/"data");
+  
+  if (!_store) {
+    _root = _data->resolve(from/"extrinsics");
+    _store = _data->store(_root/"data");
+    
+    if (!_store)
+      return false;
+    
+    //FIXME load remaining options!
+    Attribute *a = _data->get(from/"preproc/scale");
+    if (a) {
+      float scale;
+      a->get(scale);
+      _proc.set_scale(scale);
+    }
+  }
   
   _proc.set_flags(_proc.flags() | UNDISTORT);
   _proc.set_store(_store);
@@ -60,6 +77,24 @@ void Subset3d::create(Dataset *data, cpath extr_group, const ProcData & proc)
   
   //TODO which extrinsics to select!
   _data->get(_data->getSubGroup("calibration/intrinsics")/"/projection", _f, 2);
+  
+  return true;
+}
+
+
+cpath Subset3d::save(Dataset *set, const cpath & to)
+{
+  cpath to_ = set->resolve(to);
+  
+  if (!to_.size()) {
+    //FIXME check if it exists!
+    to_ = "subset/default";
+  }
+  
+  set->addLink(to_/"extrinsics",_root);
+  set->setAttribute(to_/"preproc/scale", _proc.scale());
+  
+  return to_;
 }
 
 ExtrType Subset3d::type()
