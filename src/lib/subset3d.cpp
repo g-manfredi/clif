@@ -86,7 +86,7 @@ cpath Subset3d::save(Dataset *set, const cpath & to)
 {
   cpath to_ = set->resolve(to);
   
-  if (!to_.size()) {
+  if (to_.empty()) {
     //FIXME check if it exists!
     to_ = "subset/default";
   }
