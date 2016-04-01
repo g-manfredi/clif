@@ -42,9 +42,9 @@ public:
            double depth = std::numeric_limits<double>::quiet_NaN(),
            Interpolation interp = Interpolation::LINEAR,
            float scale = 1.0,
-           int every = 1
+           int skip = 0
           );
-  ACC_D(int, every, 1)
+  ACC_D(int, skip, 0)
   ACC_D(double, min, std::numeric_limits<double>::quiet_NaN())
   ACC_D(double, max, std::numeric_limits<double>::quiet_NaN())
   ACC_D(double, depth, std::numeric_limits<double>::quiet_NaN())

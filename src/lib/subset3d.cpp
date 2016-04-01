@@ -39,11 +39,17 @@ bool Subset3d::create(Dataset *set, const cpath & from, const ProcData & proc)
       return false;
     
     //FIXME load remaining options!
-    Attribute *a = _data->get(from/"preproc/scale");
-    if (a) {
+    Attribute *scale_attr = _data->get(from/"preproc/scale");
+    if (scale_attr) {
       float scale;
-      a->get(scale);
+      scale_attr->get(scale);
       _proc.set_scale(scale);
+    }
+    Attribute *skip_attr = _data->get(from/"preproc/skip");
+    if (skip_attr) {
+      int skip;
+      skip_attr->get(skip);
+      _proc.set_skip(skip);
     }
   }
   
@@ -93,6 +99,7 @@ cpath Subset3d::save(Dataset *set, const cpath & to)
   
   set->addLink(to_/"extrinsics",_root);
   set->setAttribute(to_/"preproc/scale", _proc.scale());
+  set->setAttribute(to_/"preproc/skip",  _proc.skip());
   
   return to_;
 }
@@ -270,7 +277,7 @@ template<typename T> void warp_1d_nearest(Mat in, Mat out, int offset)
 
 void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit)
 {
-  int w, h, channels;
+  int w, h, channels, skip;
   double step, depth;
   Idx idx(_store->dims());
   
@@ -308,7 +315,26 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit)
   w = proc_curr.w();
   h = EPIHeight();
   channels = proc_curr.d();
-    
+
+  skip = proc_curr.skip();
+  bool debug_skip = false;
+  int middle_idx = int(floor(_store->clif::Datastore::imgCount() / 2.0));
+  if (debug_skip)
+	  std::cout << "epi height:   " << h << std::endl << "middle index: "
+		  	<< middle_idx << std::endl;
+  int start_idx = 0;
+  if (skip){
+	  start_idx = middle_idx - int(floor(h / 2.0)) * (skip + 1);
+  }
+
+  if (start_idx < 0) {
+		std::cout << "WARNING: Skip " << skip
+				<< " caused start index to be negative (" << start_idx
+				<< "). Setting start index to 0." << std::endl;
+	  start_idx = 0;
+  }
+
+
   int epi_size[3];
   epi_size[2] = w;
   epi_size[1] = h;
@@ -321,7 +347,7 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit)
     epi->setTo(0);
   
   int cv_t_count = cv::getNumThreads();
-  
+  int i_noskip = start_idx; //index in original epi
 #pragma omp critical
   if (!cv_t_count)
     cv::setNumThreads(0);
@@ -329,7 +355,9 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit)
   for(int i=0;i<h;i++) {
     Idx idx_l(_store->dims());
     cv::Mat img;
-    idx_l[3] = i;
+    idx_l[3] = i_noskip;
+    if(debug_skip)
+    	std::cout << i_noskip << " ";
 #pragma omp critical
     _store->readImage(idx_l, &img, proc_curr);
     
@@ -362,7 +390,10 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit)
         }
       }
     }
+    i_noskip += skip+1;
   }
+  if(debug_skip)
+	  std::cout << std::endl;
   
 #pragma omp critical
   if (!cv_t_count)
@@ -478,7 +509,7 @@ int Subset3d::EPIWidth()
 int Subset3d::EPIHeight()
 {
   //FIXME use extrinsics group size! (for cross type...)  
-  return _store->clif::Datastore::imgCount();
+	return int(ceil(_store->clif::Datastore::imgCount() / (_proc.skip() + 1.0)));
 }
 
 cpath Subset3d::extrinsics_group()
