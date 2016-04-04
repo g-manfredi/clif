@@ -31,6 +31,7 @@ bool Subset3d::create(Dataset *set, const cpath & from, const ProcData & proc)
     
   _store = _data->store(_root/"data");
   
+  int skip = 0;
   if (!_store) {
     _root = _data->resolve(from/"extrinsics");
     _store = _data->store(_root/"data");
@@ -46,11 +47,17 @@ bool Subset3d::create(Dataset *set, const cpath & from, const ProcData & proc)
       _proc.set_scale(scale);
     }
     Attribute *skip_attr = _data->get(from/"preproc/skip");
+
     if (skip_attr) {
-      int skip;
       skip_attr->get(skip);
       _proc.set_skip(skip);
     }
+    Attribute *epi_height_attr = _data->get(from/"preproc/custom_epi_height");
+	if (epi_height_attr) {
+	  int custom_epi_height;
+	  epi_height_attr->get(custom_epi_height);
+	  _proc.set_custom_epi_height(custom_epi_height);
+	}
   }
   
   _proc.set_flags(_proc.flags() | UNDISTORT);
@@ -71,6 +78,8 @@ bool Subset3d::create(Dataset *set, const cpath & from, const ProcData & proc)
     assert(line_step[2] == 0.0);
 
     step_length = line_step[0];
+    if (skip)
+    	step_length *= (skip + 1);
   }
   else if (_type == ExtrType::CIRCLE)
   {
@@ -100,6 +109,7 @@ cpath Subset3d::save(Dataset *set, const cpath & to)
   set->addLink(to_/"extrinsics",_root);
   set->setAttribute(to_/"preproc/scale", _proc.scale());
   set->setAttribute(to_/"preproc/skip",  _proc.skip());
+  set->setAttribute(to_/"preproc/custom_epi_height",  _proc.custom_epi_height());
   
   return to_;
 }
@@ -323,7 +333,7 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit)
 	  std::cout << "epi height:   " << h << std::endl << "middle index: "
 		  	<< middle_idx << std::endl;
   int start_idx = 0;
-  if (skip){
+  if (h < _store->clif::Datastore::imgCount()){
 	  start_idx = middle_idx - int(floor(h / 2.0)) * (skip + 1);
   }
 
@@ -509,7 +519,12 @@ int Subset3d::EPIWidth()
 int Subset3d::EPIHeight()
 {
   //FIXME use extrinsics group size! (for cross type...)  
-	return int(ceil(_store->clif::Datastore::imgCount() / (_proc.skip() + 1.0)));
+	int height = 0;
+	if (_proc.custom_epi_height())
+		height = _proc.custom_epi_height();
+	else
+		height = int(ceil(_store->clif::Datastore::imgCount() / (_proc.skip() + 1.0)));
+	return height;
 }
 
 cpath Subset3d::extrinsics_group()
