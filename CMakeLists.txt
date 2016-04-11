@@ -48,6 +48,8 @@ set(CLIF_VERSION ${CLIF_MAJOR_VERSION}.${CLIF_MINOR_VERSION})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 include(CMakePackageConfigListHelpers)
 
+include(ExternalProject)
+
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
@@ -210,8 +212,9 @@ if (FNMATCH_USE_INTERNAL)
   link_directories(external/fnmatch)
 endif()
 
-#cliini (is referenced as package above)
+#included external projects (is referenced as package above)
 add_subdirectory(external/cliini)
+add_subdirectory(external/ucalib)
 
 #####################################################
 ## search packages
