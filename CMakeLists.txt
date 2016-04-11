@@ -187,7 +187,11 @@ endif()
 
 #included external projects (is referenced as package above)
 add_subdirectory(external/cliini)
-#add_subdirectory(external/ucalib)
+
+# TODO optional subproject handling
+set(DEP_LISTS_SOFT_FAIL true)
+add_subdirectory(external/ucalib)
+set(DEP_LISTS_SOFT_FAIL false)
 
 dep_lists_pkg_search(${PNU})
 
