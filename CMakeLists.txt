@@ -47,8 +47,7 @@ set(CLIF_VERSION ${CLIF_MAJOR_VERSION}.${CLIF_MINOR_VERSION})
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 include(CMakePackageConfigListHelpers)
-
-include(ExternalProject)
+include(FlexDepLists)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
@@ -87,33 +86,7 @@ function(pkg_found PKG RET)
 endfunction()
 
 #macro so find_package runs in global scope!
-macro(check_find PACKAGE RET)
-  find_package(${PACKAGE} QUIET)
-  
-  string(TOLOWER ${PACKAGE} PKG_LOW)
-  
-  #check if pkg was found (various conventions...)
-  pkg_found(${PACKAGE} FOUND)
-  if (FOUND)
-    message("${PACKAGE} - found")
-    set(${RET} TRUE)
-    list(APPEND ${PNU}_DEFINES ${RET})
-  else()
-    #message("${${pkg_up}_FOUND}"
-    #message("did not find ${PACKAGE}, adding cmake/${PKG_LOW} to CMAKE_MODULE_PATH")
-    list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/find/${PKG_LOW})
-    find_package(${PACKAGE} QUIET)
-    pkg_found(${PACKAGE} FOUND)
-    if (FOUND)
-      message("${PACKAGE} - found using included Find${PACKAGE}.cmake")
-      set(${RET} TRUE)
-      list(APPEND ${PNU}_DEFINES ${RET})
-    else()
-      message("${PACKAGE} - missing")
-      set(${RET} FALSE)
-    endif()
-  endif()
-endmacro()
+
 
 macro(clean_list LIST)
   if (DEFINED ${LIST})
@@ -214,51 +187,53 @@ endif()
 
 #included external projects (is referenced as package above)
 add_subdirectory(external/cliini)
-add_subdirectory(external/ucalib)
+#add_subdirectory(external/ucalib)
+
+dep_lists_pkg_search(${PNU})
 
 #####################################################
 ## search packages
 #####################################################
-foreach(PACKAGE ${${PNU}_PKG_OPT})
-  string(TOUPPER ${PACKAGE} PKG_UP)
-  check_find(${PACKAGE} ${PNU}_WITH_${PKG_UP})
-  if (${PNU}_WITH_${PKG_UP})
-    list(APPEND ${PNU}_EXPORT_DEPS ${PACKAGE})
-  endif()
-endforeach()
-
-foreach(PACKAGE ${${PNU}_PRIVATE_PKG_OPT})
-  string(TOUPPER ${PACKAGE} PKG_UP)
-  check_find(${PACKAGE} ${PNU}_WITH_${PKG_UP})
-endforeach()
-
-foreach(PACKAGE ${${PNU}_PKG})
-  string(TOUPPER ${PACKAGE} PKG_UP)
-  check_find(${PACKAGE} ${PNU}_WITH_${PKG_UP})
-  if (NOT ${${PNU}_WITH_${PKG_UP}})
-    list(APPEND ${PNU}_MISSING_REQUIRED ${PACKAGE})
-  else()
-    list(APPEND ${PNU}_EXPORT_DEPS ${PACKAGE})
-  endif()
-endforeach()
-
-foreach(PACKAGE ${${PNU}_PRIVATE_PKG})
-  string(TOUPPER ${PACKAGE} PKG_UP)
-  check_find(${PACKAGE} ${PNU}_WITH_${PKG_UP})
-  if (NOT ${${PNU}_WITH_${PKG_UP}})
-    list(APPEND ${PNU}_MISSING_REQUIRED ${PACKAGE})
-  endif()
-endforeach()
-
-if (${PNU}_MISSING_REQUIRED)
-  message("")
-  message("missing REQUIRED packages:")
-  foreach(PACKAGE ${${PNU}_MISSING_REQUIRED})
-    message(${PACKAGE})
-  endforeach()
-  message("")
-  message(FATAL_ERROR "required package(s) not found, exiting.")
-endif()
+# foreach(PACKAGE ${${PNU}_PKG_OPT})
+#   string(TOUPPER ${PACKAGE} PKG_UP)
+#   check_find(${PACKAGE} ${PNU}_WITH_${PKG_UP})
+#   if (${PNU}_WITH_${PKG_UP})
+#     list(APPEND ${PNU}_EXPORT_DEPS ${PACKAGE})
+#   endif()
+# endforeach()
+# 
+# foreach(PACKAGE ${${PNU}_PRIVATE_PKG_OPT})
+#   string(TOUPPER ${PACKAGE} PKG_UP)
+#   check_find(${PACKAGE} ${PNU}_WITH_${PKG_UP})
+# endforeach()
+# 
+# foreach(PACKAGE ${${PNU}_PKG})
+#   string(TOUPPER ${PACKAGE} PKG_UP)
+#   check_find(${PACKAGE} ${PNU}_WITH_${PKG_UP})
+#   if (NOT ${${PNU}_WITH_${PKG_UP}})
+#     list(APPEND ${PNU}_MISSING_REQUIRED ${PACKAGE})
+#   else()
+#     list(APPEND ${PNU}_EXPORT_DEPS ${PACKAGE})
+#   endif()
+# endforeach()
+# 
+# foreach(PACKAGE ${${PNU}_PRIVATE_PKG})
+#   string(TOUPPER ${PACKAGE} PKG_UP)
+#   check_find(${PACKAGE} ${PNU}_WITH_${PKG_UP})
+#   if (NOT ${${PNU}_WITH_${PKG_UP}})
+#     list(APPEND ${PNU}_MISSING_REQUIRED ${PACKAGE})
+#   endif()
+# endforeach()
+# 
+# if (${PNU}_MISSING_REQUIRED)
+#   message("")
+#   message("missing REQUIRED packages:")
+#   foreach(PACKAGE ${${PNU}_MISSING_REQUIRED})
+#     message(${PACKAGE})
+#   endforeach()
+#   message("")
+#   message(FATAL_ERROR "required package(s) not found, exiting.")
+# endif()
 
 #####################################################
 ## FEATURES depending on multiple packages
@@ -490,7 +465,6 @@ foreach(dir ${CLIF_BUILD_COMPILE_DIRS})
   add_subdirectory(${dir})
 endforeach()
 
-message("")
 message("build info:")
 message("  optional components:")
 
