@@ -258,7 +258,7 @@ public:
   
   int read(const char *path);
   int write(const char *path);
-  Mat bind(int dim, int pos) const;
+  Mat bind(DimSpec dim, int pos) const;
   
   void copyTo(Mat &m);
   

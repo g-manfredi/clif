@@ -25,8 +25,8 @@ TD_DistType::TD_DistType(const cpath& path)
 
 }
 
-#ifdef CLIF_WITH_UCALIB 
-static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_pos, Mat_<double> &corr_line_m, Mat_<double> &extrinsics_m, int _w, int _h, bool calc_fit, cv::Point2d &_f, cv::Point2d &_m, double &_r)
+#ifdef CLIF_WITH_UCALIB
+static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_pos, Mat_<double> &corr_line_m, Mat_<double> &extrinsics_m, int _w, int _h, cv::Point2d &_f)
 {
   std::cout << "generate map for " << map_pos << std::endl;
   
@@ -45,28 +45,19 @@ static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_po
       
   printf("create gencam\n");
   
-  GenCam cam;
-  
   double d = _depth;
   if (std::isnan(d) || d < 0.1)
     d = 1000000000000.0;
   
   printf("depth: %f\n", d);
   
-  if (calc_fit) {
-    cam = GenCam(linefits, cv::Point2i(_w,_h), cv::Point2i(corr_line_m[1],corr_line_m[2]), d);
-    _f = cam.f;
-    _m = cam.move;
-    _r = cam.rot;
-  }
-  else
-    cam = GenCam(linefits, cv::Point2i(_w,_h), cv::Point2i(corr_line_m[1],corr_line_m[2]), d, _f, _m, _r);
+  cv::Point2d m(0,0);
+  double r = 0;
     
-    
-  printf("%fx%f %fx%f %f\n", _f.x, _f.y, _m.x, _m.y, _r);
+  printf("focal length: %fx%f\n", _f.x, _f.y);
   
   cv::Mat map = cvMat(_maps.bind(3, map_pos["cams"]).bind(2, map_pos["channels"]));
-  cam.get_undist_map_for_depth(map, d);
+  get_undist_map_for_depth(corr_line_m.bind("cams", map_pos["cams"]), map, d, cv::Point2i(_w,_h), _f);
 }
 #endif
   
@@ -83,24 +74,31 @@ bool TD_DistType::load(Dataset *set)
   }
 }
   
+  
 bool DepthDist::load(Dataset *set)
 {
-  try {
+  //try {
+  
     Idx proxy_size;
+    
+    double f[2];
+    f[0] = 0;
+    f[1] = 0;
+    set->get(_path / "projection", f, 2);
+      
+    _f.x = f[0];
+    _f.y = f[1];
     
     set->getEnum(_path/"type", _type);
     
     if (_type == DistModel::CV8) {
-      double f[2], c[2];
-      
-      f[0] = 0;
-      f[1] = 0;
+      double c[2];
+
       c[0] = 0;
       c[1] = 0;
       cv::Mat cv_cam = cv::Mat::eye(3,3,CV_64F);
       std::vector<double> cv_dist;
-  
-      set->get(_path / "projection", f, 2);
+
       cv_cam.at<double>(0,0) = f[0];
       cv_cam.at<double>(1,1) = f[1];
     
@@ -188,8 +186,6 @@ bool DepthDist::load(Dataset *set)
     Mat_<double> corr_line_m = set->readStore(path()/"lines");
     corr_line_m.names({"line","x","y","channels","cams"});
     printf("have read lines!\n");   
-    
-    _genmap(_maps, _depth, Idx({IR(0,"line"),IR(0,"x"),IR(0,"y"),IR(corr_line_m["channels"]/2,"channels"),IR(corr_line_m["cams"]/2,"cams")}), corr_line_m, extrinsics, _w, _h, true, _f, _m, _r);
     
     //center rotation and translation
     cv::Matx31f c_r(extrinsics_main[0],extrinsics_main[1],extrinsics_main[2]);
@@ -313,15 +309,15 @@ bool DepthDist::load(Dataset *set)
     std::vector<cv::Point3f> ref_points;
     
     for(auto map_pos : Idx_It_Dims(corr_line_m, "channels","cams")) {
-      _genmap(_maps, _depth, map_pos, corr_line_m, extrinsics, _w, _h, false, _f, _m, _r);
+      _genmap(_maps, _depth, map_pos, corr_line_m, extrinsics, _w, _h, _f);
     }
     
     return true;
 #endif
-  }
+  /*}
   catch (std::invalid_argument) {
     return false;
-  }
+  }*/
 }
 
 void DepthDist::undistort(const clif::Mat & src, clif::Mat & dst, const Idx & pos, int interp)

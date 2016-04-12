@@ -864,14 +864,15 @@ cv::Mat cvImg(const Mat &m)
 }
 
 
-Mat Mat::bind(int dim, int pos) const
+Mat Mat::bind(DimSpec dim, int pos) const
 {
+  int dim_i = dim.get(this);
   Mat b_mat = *this;
   
   b_mat.resize(size()-1);
   b_mat._step.resize(b_mat.size());
   
-  for(int i=0;i<dim;i++) {
+  for(int i=0;i<dim_i;i++) {
     b_mat[i] = operator[](i);
     b_mat._step[i] = _step[i];
   }
@@ -880,12 +881,12 @@ Mat Mat::bind(int dim, int pos) const
     b_mat[dim] = operator[](dim+1);
     b_mat._step[dim] = _step[dim]*_step[dim+1];
   }*/
-  for(int i=dim;i<b_mat.size();i++) {
+  for(int i=dim_i;i<b_mat.size();i++) {
     b_mat[i] = operator[](i+1);
     b_mat._step[i] = _step[i+1];
   }
   
-  b_mat._data = (char*)_data + _step[dim]*pos;
+  b_mat._data = (char*)_data + _step[dim_i]*pos;
   
   return b_mat;
 }
