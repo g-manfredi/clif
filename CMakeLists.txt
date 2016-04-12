@@ -85,15 +85,6 @@ function(pkg_found PKG RET)
   endif()
 endfunction()
 
-#macro so find_package runs in global scope!
-
-
-macro(clean_list LIST)
-  if (DEFINED ${LIST})
-    list(REMOVE_DUPLICATES ${LIST})
-  endif()
-endmacro()
-
 #####################################################
 ## DEPENDENCIES
 #####################################################
@@ -101,6 +92,11 @@ endmacro()
 #eigen3
 list(APPEND ${PNU}_PKG_OPT Eigen3)
 list(APPEND ${PNU}_PKG_INC EIGEN3_INCLUDE_DIR)
+
+list(APPEND ${PNU}_PKG MetaMat)
+list(APPEND ${PNU}_PKG_INC  METAMAT_INCLUDE_DIRS)
+list(APPEND ${PNU}_PKG_LINK METAMAT_LIBRARY_DIRS)
+list(APPEND ${PNU}_PKG_LIB  METAMAT_LIBRARIES)
 
 #ucalib (contains ceres-solver)
 list(APPEND ${PNU}_PRIVATE_PKG_OPT ucalib)
@@ -147,13 +143,13 @@ list(APPEND ${PNU}_PKG_INC GLEW_INCLUDE_DIRS)
 list(APPEND ${PNU}_PKG_LIB GLEW_LIBRARIES)
 
 # FIXME boost vs h?
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-	set(Boost_USE_STATIC_LIBS ON)
-endif()
-find_package(Boost REQUIRED COMPONENTS filesystem system)
-list(APPEND CLIF_LINK_LIBRARIES ${Boost_LIBRARIES})
-list(APPEND CLIF_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
-list(APPEND CLIF_LIBRARY_DIRS ${Boost_LIBRARY_DIRS})
+# if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+# 	set(Boost_USE_STATIC_LIBS ON)
+# endif()
+# find_package(Boost REQUIRED COMPONENTS filesystem system)
+# list(APPEND CLIF_LINK_LIBRARIES ${Boost_LIBRARIES})
+# list(APPEND CLIF_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
+# list(APPEND CLIF_LIBRARY_DIRS ${Boost_LIBRARY_DIRS})
 
 #####################################################
 ## EXPORT / INSTALL
@@ -187,57 +183,19 @@ endif()
 
 #included external projects (is referenced as package above)
 add_subdirectory(external/cliini)
+add_subdirectory(external/mm)
 
 # TODO optional subproject handling
 set(DEP_LISTS_SOFT_FAIL true)
 add_subdirectory(external/ucalib)
 set(DEP_LISTS_SOFT_FAIL false)
 
-dep_lists_pkg_search(${PNU})
-
 #####################################################
 ## search packages
 #####################################################
-# foreach(PACKAGE ${${PNU}_PKG_OPT})
-#   string(TOUPPER ${PACKAGE} PKG_UP)
-#   check_find(${PACKAGE} ${PNU}_WITH_${PKG_UP})
-#   if (${PNU}_WITH_${PKG_UP})
-#     list(APPEND ${PNU}_EXPORT_DEPS ${PACKAGE})
-#   endif()
-# endforeach()
-# 
-# foreach(PACKAGE ${${PNU}_PRIVATE_PKG_OPT})
-#   string(TOUPPER ${PACKAGE} PKG_UP)
-#   check_find(${PACKAGE} ${PNU}_WITH_${PKG_UP})
-# endforeach()
-# 
-# foreach(PACKAGE ${${PNU}_PKG})
-#   string(TOUPPER ${PACKAGE} PKG_UP)
-#   check_find(${PACKAGE} ${PNU}_WITH_${PKG_UP})
-#   if (NOT ${${PNU}_WITH_${PKG_UP}})
-#     list(APPEND ${PNU}_MISSING_REQUIRED ${PACKAGE})
-#   else()
-#     list(APPEND ${PNU}_EXPORT_DEPS ${PACKAGE})
-#   endif()
-# endforeach()
-# 
-# foreach(PACKAGE ${${PNU}_PRIVATE_PKG})
-#   string(TOUPPER ${PACKAGE} PKG_UP)
-#   check_find(${PACKAGE} ${PNU}_WITH_${PKG_UP})
-#   if (NOT ${${PNU}_WITH_${PKG_UP}})
-#     list(APPEND ${PNU}_MISSING_REQUIRED ${PACKAGE})
-#   endif()
-# endforeach()
-# 
-# if (${PNU}_MISSING_REQUIRED)
-#   message("")
-#   message("missing REQUIRED packages:")
-#   foreach(PACKAGE ${${PNU}_MISSING_REQUIRED})
-#     message(${PACKAGE})
-#   endforeach()
-#   message("")
-#   message(FATAL_ERROR "required package(s) not found, exiting.")
-# endif()
+dep_lists_pkg_search(${PNU})
+
+
 
 #####################################################
 ## FEATURES depending on multiple packages
@@ -263,73 +221,9 @@ endif()
 find_package(OpenCV REQUIRED)
 
 #####################################################
-## SET INCLUDES, LIBS, ... (public)
+## SET AND USE INCLUDES, LIBS, LINK_DIRS
 #####################################################
-
-foreach(INCLUDE ${${PNU}_PKG_INC})
-  if (NOT ("${${INCLUDE}}" MATCHES ".*-NOTFOUND"))
-    list(APPEND ${PNU}_INC ${${INCLUDE}})
-  else()
-    # FIXME remove including in deps!
-  endif()
-endforeach()
-clean_list(${PNU}_INC)
-
-foreach(LIBDIR ${${PNU}_PKG_LINK})
-  if (NOT ("${${LIBDIR}}" MATCHES ".*-NOTFOUND"))
-    list(APPEND ${PNU}_LINK ${${LIBDIR}})
-  else()
-    # FIXME remove including in deps!
-  endif()
-endforeach()
-clean_list(${PNU}_LINK)
-
-foreach(LIB ${${PNU}_PKG_LIB})
-  if (NOT ("${${LIB}}" MATCHES ".*-NOTFOUND"))
-    list(APPEND ${PNU}_LIB ${${LIB}})
-  else()
-    # FIXME remove including in deps!
-  endif()
-endforeach()
-clean_list(${PNU}_LIB)
-
-#####################################################
-## SET INCLUDES, LIBS, ... (private)
-#####################################################
-
-foreach(INCLUDE ${${PNU}_PRIVATE_PKG_INC})
-  if (NOT ("${${INCLUDE}}" MATCHES ".*-NOTFOUND"))
-    list(APPEND ${PNU}_PRIVATE_INC ${${INCLUDE}})
-  else()
-    # FIXME remove including in deps!
-  endif()
-endforeach()
-clean_list(${PNU}_PRIVATE_INC)
-
-foreach(LIBDIR ${${PNU}_PRIVATE_PKG_LINK})
-  if (NOT ("${${LIBDIR}}" MATCHES ".*-NOTFOUND"))
-    list(APPEND ${PNU}_PRIVATE_LINK ${${LIBDIR}})
-  else()
-    # FIXME remove including in deps!
-  endif()
-endforeach()
-clean_list(${PNU}_PRIVATE_LINK)
-
-foreach(LIB ${${PNU}_PRIVATE_PKG_LIB})
-  if (NOT ("${${LIB}}" MATCHES ".*-NOTFOUND"))
-    list(APPEND ${PNU}_PRIVATE_LIB ${${LIB}})
-  else()
-    # FIXME remove including in deps!
-  endif()
-endforeach()
-clean_list(${PNU}_PRIVATE_LIB)
-
-
-#####################################################
-## actually inc/link DIRS (from above)
-#####################################################
-include_directories(${${PNU}_INC} ${${PNU}_PRIVATE_INC})
-link_directories(${${PNU}_LINK} ${${PNU}_PRIVATE_LINK})
+dep_lists_inc_link(${PNU})
 
 ######################
 

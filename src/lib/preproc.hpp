@@ -2,6 +2,7 @@
 #define _CLIF_PREPROC_H
 
 #include "mat.hpp"
+#include "core.hpp"
 
 #include <limits>
 #include <functional>

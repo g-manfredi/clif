@@ -1,3 +1,9 @@
+macro(dep_lists_clean_list LIST)
+  if (DEFINED ${LIST})
+    list(REMOVE_DUPLICATES ${LIST})
+  endif()
+endmacro()
+
 macro(dep_lists_check_find PACKAGE RET)
   find_package(${PACKAGE} QUIET)
   
@@ -89,3 +95,73 @@ macro(dep_lists_pkg_search PNU)
     endif()
   endif()
 endmacro(dep_lists_pkg_search)
+
+macro(dep_lists_inc_link PNU)
+  #####################################################
+  ## SET INCLUDES, LIBS, ... (public)
+  #####################################################
+  foreach(INCLUDE ${${PNU}_PKG_INC})
+    if (NOT ("${${INCLUDE}}" MATCHES ".*-NOTFOUND"))
+      list(APPEND ${PNU}_INC ${${INCLUDE}})
+    else()
+      # FIXME remove including in deps!
+    endif()
+  endforeach()
+  dep_lists_clean_list(${PNU}_INC)
+
+  foreach(LIBDIR ${${PNU}_PKG_LINK})
+    if (NOT ("${${LIBDIR}}" MATCHES ".*-NOTFOUND"))
+      list(APPEND ${PNU}_LINK ${${LIBDIR}})
+    else()
+      # FIXME remove including in deps!
+    endif()
+  endforeach()
+  dep_lists_clean_list(${PNU}_LINK)
+
+  foreach(LIB ${${PNU}_PKG_LIB})
+    if (NOT ("${${LIB}}" MATCHES ".*-NOTFOUND"))
+      list(APPEND ${PNU}_LIB ${${LIB}})
+    else()
+      # FIXME remove including in deps!
+    endif()
+  endforeach()
+  dep_lists_clean_list(${PNU}_LIB)
+
+  #####################################################
+  ## SET INCLUDES, LIBS, ... (private)
+  #####################################################
+
+  foreach(INCLUDE ${${PNU}_PRIVATE_PKG_INC})
+    if (NOT ("${${INCLUDE}}" MATCHES ".*-NOTFOUND"))
+      list(APPEND ${PNU}_PRIVATE_INC ${${INCLUDE}})
+    else()
+      # FIXME remove including in deps!
+    endif()
+  endforeach()
+  dep_lists_clean_list(${PNU}_PRIVATE_INC)
+
+  foreach(LIBDIR ${${PNU}_PRIVATE_PKG_LINK})
+    if (NOT ("${${LIBDIR}}" MATCHES ".*-NOTFOUND"))
+      list(APPEND ${PNU}_PRIVATE_LINK ${${LIBDIR}})
+    else()
+      # FIXME remove including in deps!
+    endif()
+  endforeach()
+  dep_lists_clean_list(${PNU}_PRIVATE_LINK)
+
+  foreach(LIB ${${PNU}_PRIVATE_PKG_LIB})
+    if (NOT ("${${LIB}}" MATCHES ".*-NOTFOUND"))
+      list(APPEND ${PNU}_PRIVATE_LIB ${${LIB}})
+    else()
+      # FIXME remove including in deps!
+    endif()
+  endforeach()
+  dep_lists_clean_list(${PNU}_PRIVATE_LIB)
+
+
+  #####################################################
+  ## actually inc/link DIRS (from above)
+  #####################################################
+  include_directories(${${PNU}_INC} ${${PNU}_PRIVATE_INC})
+  link_directories(${${PNU}_LINK} ${${PNU}_PRIVATE_LINK})
+endmacro(dep_lists_inc_link)

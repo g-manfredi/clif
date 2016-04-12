@@ -10,14 +10,12 @@
 #include "Windows.h"
 #endif
 
-
-
 using namespace H5;
 
 typedef unsigned int uint;
 
 namespace clif {
-
+  
 bool h5_obj_exists(H5::H5File f, const char * const path)
 {  
   H5E_auto2_t  oldfunc;
@@ -44,7 +42,7 @@ bool h5_obj_exists(H5::H5File f, const boost::filesystem::path path)
 {
   return h5_obj_exists(f, path.generic_string().c_str());
 }
-  
+
 static void datasetlist_append_group(std::vector<std::string> &list, H5::Group &g,  std::string group_path)
 {    
   for(uint i=0;i<g.getNumObjs();i++) {
