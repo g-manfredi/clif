@@ -1499,12 +1499,6 @@ bool ucalib_calibrate(Dataset *set, cpath proxy, cpath calib)
   Mat_<float> corr_line_m;
   
   set->get(proxy_root/"source/img_size", im_size, 2);
-  
-  Cam_Config cam_config = { 0.0065, 12.0, 300.0, -1, -1 };
-  Calib_Config conf = { true, 190, 420 };
-
-  cam_config.w = im_size[0];
-  cam_config.h = im_size[1];
     
   Datastore *proxy_store = set->store(proxy_root/"proxy");
   proxy_store->read(proxy_m);
@@ -1558,70 +1552,6 @@ bool ucalib_calibrate(Dataset *set, cpath proxy, cpath calib)
 
     printf("finished ucalib calibration!\n");
     return true;
-
-    /*int step_count = 0;
-    cv::Matx31f avg_step(0,0,0);
-    
-    printf("start ucalib calibration!\n");
-    
-    int views_dim = proxy_m.size()-1;
-    
-    Idx corr_size {IR(4, "line"), proxy_m.r("x", "cams")};
-    Idx cams_size {proxy_m.r("channels","cams")};
-    std::cout << "cams_size: " << cams_size << "\n";
-    
-    corr_line_m.create(corr_size);
-    std::cout << "corr_line_m: " << corr_line_m << "\n";
-    
-    Point2i proxy_size(proxy_m[1],proxy_m[2]);
-    
-    Mat_<double> rms_m(cams_size);
-    Mat_<double> proj_rms_m(cams_size);
-    
-    Mat_<float> proj_m({IR(2, "projection"), cams_size});
-    
-    //TODO first place to need view dimension - rework to make views optional?
-    Mat_<float> extrinsics_m({IR(6, "extrinsics"), proxy_m.r("channels","views")});
-    
-    for(auto pos : Idx_It_Dims(proxy_m, "channels","cams")) {
-      std::cout << "process cam:" << pos << std::endl;
-      Idx res_idx(cams_size.size());
-      for(int i=0;i<res_idx.size();i++)
-	res_idx[i] = pos[i+3];
-      //FIXME should solve all cams at the same time!
-      _calib_cam(proxy_m, pos, res_idx, corr_line_m, proxy_size, rms_m, proj_rms_m, proj_m, extrinsics_m, cam_config,conf, im_size);
-      
-      cv::Matx31f step;
-      if (pos["cams"] > 0) {
-	for(int i=3;i<6;i++) {
-	  step(i-3) = extrinsics_m({i, pos.r("channels","views")}) - extrinsics_m({i, pos["channels"], pos["cams"]-1, pos["views"]});
-	  printf("%f = %f - %f\n", step(i-3), extrinsics_m({i, pos.r("channels","views")}), extrinsics_m({i, pos["channels"], pos["cams"]-1, pos["views"]}));
-	}
-	printf("step: %fx%fx%f\n", step(0), step(1), step(2));
-	avg_step += step;
-	step_count++;
-      }
-      
-      printf("\n");
-    }
-    
-    Datastore *line_store = set->addStore(calib_root/"lines");
-    line_store->write(corr_line_m);
-    
-    set->setAttribute(calib_root/"type", "UCALIB");
-    set->setAttribute(calib_root/"rms", rms_m);
-    set->setAttribute(calib_root/"projection_rms", proj_rms_m);
-    set->setAttribute(calib_root/"projection", proj_m);
-    set->setAttribute(calib_root/"extrinsics", extrinsics_m);
-    
-    avg_step *= 1.0/step_count;
-    
-    printf("average step: %fx%fx%f\n", avg_step(0), avg_step(1), avg_step(2));
-    
-    
-    
-    printf("finished ucalib calibration!\n");
-    return true;*/
   }
 }
 #else
@@ -1674,9 +1604,6 @@ bool generate_proxy_loess(Dataset *set, int proxy_w, int proxy_h , cpath map, cp
   
   Idx map_pos(wpoints_m.size());
   
-  Cam_Config cam_config = { 0.0065, 12.0, 300.0, im_size[0], im_size[1] };
-  Calib_Config conf = { true, 190, 420 };
-  
   for(int color=0;color<wpoints_m[0];color++) {
     
     map_pos = Idx(wpoints_m.size());
@@ -1693,37 +1620,9 @@ bool generate_proxy_loess(Dataset *set, int proxy_w, int proxy_h , cpath map, cp
         wpoints[j] = Point3f(wpoints_m(map_pos)[j].x,wpoints_m(map_pos)[j].y,0);
       
       Mat proxy_bound = proxy_m;
-      for(int i=proxy_m.size()-1;i>=3;i--) {
+      for(int i=proxy_m.size()-1;i>=3;i--)
         proxy_bound = proxy_bound.bind(i, map_pos[i-3]);
-        printf("bound proxy dim %d: new dims: %d\n", i, proxy_bound.size());
-      }
       proxy_backwards_poly_generate(proxy_bound, ipoints, wpoints, Point2i(im_size[0], im_size[1]));
-      
-      /*vector<vector<Point2f>> ipoints_ar(1);
-      vector<vector<Point3f>> wpoints_ar(1);
-      
-      ipoints_ar[0] = ipoints;
-      wpoints_ar[0] = wpoints;
-      
-      DistCorrLines dist_lines = DistCorrLines(0, 0, 0, cam_config.w, cam_config.h, 100.0, cam_config, conf, Point2i(proxy_w,proxy_h));
-      dist_lines.add(ipoints_ar, wpoints_ar, 20.0);
-      
-      std::cout << "fit " << map_pos << std::endl;
-      dist_lines.proxy_backwards_poly_generate();
-      
-      Idx proxy_pos(wpoints_m.size()+3);
-      for(int i=0;i<map_pos.size();i++)
-        proxy_pos[i+3] = map_pos[i];
-      
-      for(int j=0;j<proxy_h;j++)
-        for(int i=0;i<proxy_w;i++) {
-          proxy_pos[1] = i;
-          proxy_pos[2] = j;
-          proxy_pos[0] = 0;
-          proxy_m(proxy_pos) = dist_lines.proxy_backwards[0][j*proxy_w+i].x;
-          proxy_pos[0] = 1;
-          proxy_m(proxy_pos) = dist_lines.proxy_backwards[0][j*proxy_w+i].y;
-        }*/
     }
   }
   
