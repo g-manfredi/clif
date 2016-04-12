@@ -94,14 +94,13 @@ set(${PNU}_EXPORT_LIBS metamat)
 #####################################################
 
 set(HEADERS mat.hpp basetype.hpp)
-add_custom_target(copy_headers)
-add_custom_command(TARGET copy_headers PRE_BUILD
+add_custom_command(TARGET metamat PRE_BUILD
                      COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/include/mm/)
 foreach(H ${HEADERS})
-  add_custom_command(TARGET copy_headers PRE_BUILD
+  add_custom_command(TARGET metamat PRE_BUILD
                      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${H} ${CMAKE_CURRENT_BINARY_DIR}/include/mm/)
 endforeach()
-add_dependencies(metamat copy_headers)
+add_dependencies(metamat ${CMAKE_CURRENT_SOURCE_DIR}/mat.hpp ${CMAKE_CURRENT_SOURCE_DIR}/basetype.hpp)
 
 #export helper
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
