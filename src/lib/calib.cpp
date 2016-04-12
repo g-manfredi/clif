@@ -1692,7 +1692,14 @@ bool generate_proxy_loess(Dataset *set, int proxy_w, int proxy_h , cpath map, cp
       for(int j=0;j<wpoints_m(map_pos).size();j++)
         wpoints[j] = Point3f(wpoints_m(map_pos)[j].x,wpoints_m(map_pos)[j].y,0);
       
-      vector<vector<Point2f>> ipoints_ar(1);
+      Mat proxy_bound = proxy_m;
+      for(int i=proxy_m.size()-1;i>=3;i--) {
+        proxy_bound = proxy_bound.bind(i, map_pos[i-3]);
+        printf("bound proxy dim %d: new dims: %d\n", i, proxy_bound.size());
+      }
+      proxy_backwards_poly_generate(proxy_bound, ipoints, wpoints, Point2i(im_size[0], im_size[1]));
+      
+      /*vector<vector<Point2f>> ipoints_ar(1);
       vector<vector<Point3f>> wpoints_ar(1);
       
       ipoints_ar[0] = ipoints;
@@ -1716,7 +1723,7 @@ bool generate_proxy_loess(Dataset *set, int proxy_w, int proxy_h , cpath map, cp
           proxy_m(proxy_pos) = dist_lines.proxy_backwards[0][j*proxy_w+i].x;
           proxy_pos[0] = 1;
           proxy_m(proxy_pos) = dist_lines.proxy_backwards[0][j*proxy_w+i].y;
-        }
+        }*/
     }
   }
   
