@@ -3,9 +3,7 @@
  
 #include <Eigen/Dense>
 
-#include "clif/config.h"
-
-#ifdef CLIF_WITH_LIBIGL_VIEWER
+#ifdef MM_MESH_WITH_VIEWER
 namespace igl { namespace  viewer {
   class Viewer;
 }}
@@ -34,7 +32,7 @@ public:
   Eigen::MatrixXi F;
   Eigen::MatrixXd C;
 private:
-#ifdef CLIF_WITH_LIBIGL_VIEWER
+#ifdef MM_MESH_WITH_VIEWER
   igl::viewer::Viewer *_viewer = NULL;
   std::thread *_viewer_thread = NULL;
 public :

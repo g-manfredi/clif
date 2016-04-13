@@ -50,8 +50,8 @@ list(APPEND ${PNU}_LINK_LIBRARIES ${Boost_LIBRARIES})
 list(APPEND ${PNU}_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
 list(APPEND ${PNU}_LIBRARY_DIRS ${Boost_LIBRARY_DIRS})
 
-dep_lists_pkg_search(${PNU})
-dep_lists_inc_link(${PNU})
+dep_lists_pkg_search()
+dep_lists_prepare_env()
 
 ######################
 

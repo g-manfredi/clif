@@ -128,19 +128,7 @@ list(APPEND ${PNU}_PKG_INC  HDMARKER_INCLUDE_DIRS)
 list(APPEND ${PNU}_PKG_LINK HDMARKER_LIBRARY_DIRS)
 list(APPEND ${PNU}_PKG_LIB  HDMARKER_LIBRARIES)
   
-#see https://github.com/glfw/glfw/issues/483
-find_package(glfw3 QUIET)
-if ("${GLFW3_INCLUDE_DIR}" STREQUAL "")
-  set(glfw3_DIR /usr/lib/cmake/glfw/)
-endif()
-list(APPEND ${PNU}_PKG_OPT glfw3)
-list(APPEND ${PNU}_PKG_INC  GLFW3_INCLUDE_DIR)
-list(APPEND ${PNU}_PKG_LINK GLFW3_LIBRARY_DIR)
-list(APPEND ${PNU}_PKG_LIB  GLFW3_LIBRARY)
-
-list(APPEND ${PNU}_PKG_OPT GLEW)
-list(APPEND ${PNU}_PKG_INC GLEW_INCLUDE_DIRS)
-list(APPEND ${PNU}_PKG_LIB GLEW_LIBRARIES)
+dep_lists_append(mm-mesh OPTIONAL)
 
 # FIXME boost vs h?
 # if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
@@ -187,7 +175,10 @@ add_subdirectory(external/mm)
 
 # TODO optional subproject handling
 set(DEP_LISTS_SOFT_FAIL true)
+
 add_subdirectory(external/ucalib)
+add_subdirectory(external/mm-mesh)
+
 set(DEP_LISTS_SOFT_FAIL false)
 
 #####################################################
@@ -223,7 +214,7 @@ find_package(OpenCV REQUIRED)
 #####################################################
 ## SET AND USE INCLUDES, LIBS, LINK_DIRS
 #####################################################
-dep_lists_inc_link(${PNU})
+dep_lists_prepare_env(${PNU})
 
 ######################
 

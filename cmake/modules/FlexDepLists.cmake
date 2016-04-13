@@ -14,7 +14,7 @@ macro(dep_lists_check_find PACKAGE RET)
   if (FOUND)
     message("${PACKAGE} - found")
     set(${RET} TRUE)
-    list(APPEND ${PNU}_DEFINES ${RET})
+    list(APPEND ${PNU}_FEATURES ${RET})
   else()
     #message("${${pkg_up}_FOUND}"
     #message("did not find ${PACKAGE}, adding cmake/${PKG_LOW} to CMAKE_MODULE_PATH")
@@ -24,7 +24,7 @@ macro(dep_lists_check_find PACKAGE RET)
     if (FOUND)
       message("${PACKAGE} - found using included Find${PACKAGE}.cmake")
       set(${RET} TRUE)
-      list(APPEND ${PNU}_DEFINES ${RET})
+      list(APPEND ${PNU}_FEATURES ${RET})
     else()
       message("${PACKAGE} - missing")
       set(${RET} FALSE)
@@ -112,7 +112,7 @@ macro(dep_lists_opt_get _FDP_LIST _FDP_IDX _FDP_OUT)
   endif()
 endmacro(dep_lists_opt_get)
 
-macro(dep_lists_inc_link)
+macro(dep_lists_prepare_env)
   
   if (ARGV0)
     set(_FDP_PNU ${ARGV0})
@@ -187,7 +187,14 @@ macro(dep_lists_inc_link)
   #####################################################
   include_directories(${${_FDP_PNU}_INC} ${${_FDP_PNU}_PRIVATE_INC})
   link_directories(${${_FDP_PNU}_LINK} ${${_FDP_PNU}_PRIVATE_LINK})
-endmacro(dep_lists_inc_link)
+  
+  foreach(F ${${_FDP_PNU}_FEATURES})
+    message("has feature ${F}")
+    set(${F} true)
+    string(REPLACE "-" "_" F ${F})
+    add_definitions(-D${F})
+  endforeach()
+endmacro(dep_lists_prepare_env)
 
 macro(dep_lists_append _FDP_NAME)
   message("parse dep_lists_append for ${_FDP_NAME}")
@@ -225,13 +232,13 @@ macro(dep_lists_append _FDP_NAME)
     set(_FDP_LIB ${_FDP_NAME_UPPER}_LIBRARIES)
   endif()
   
-  message("PNU: ${_FDP_PREFIX}")
-  message("NAME: ${_FDP_NAME}")
-  message("INC: ${_FDP_INC}")
-  message("LINK: ${_FDP_LINK}")
-  message("LIB: ${_FDP_LIB}")
-  message("OPTIONAL: ${dep_lists_append_OPTIONAL}")
-  message("PRIVATE: ${dep_lists_append_PRIVATE}")
+#   message("PNU: ${_FDP_PREFIX}")
+#   message("NAME: ${_FDP_NAME}")
+#   message("INC: ${_FDP_INC}")
+#   message("LINK: ${_FDP_LINK}")
+#   message("LIB: ${_FDP_LIB}")
+#   message("OPTIONAL: ${dep_lists_append_OPTIONAL}")
+#   message("PRIVATE: ${dep_lists_append_PRIVATE}")
   
   if (dep_lists_append_PRIVATE)
     set(_FDP_PREFIX ${_FDP_PREFIX}_PRIVATE)
@@ -301,6 +308,7 @@ function(dep_lists_export_local)
 
   set(CMAKECONFIG_INC "include") #in build dir - headers were already copied above
   set(CMAKECONFIG_LIB ${${_FDP_PNU}_EXPORT_LIBS}) # our libs to link on import
+  set(CMAKECONFIG_FEATURES ${${_FDP_PNU}_FEATURES})
 
 
   #####################################################

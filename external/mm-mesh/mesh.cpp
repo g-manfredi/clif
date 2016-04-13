@@ -1,10 +1,10 @@
 #include "mesh.hpp"
 
-#ifdef CLIF_WITH_LIBIGL
+#ifdef MM_MESH_WITH_LIBIGL
   #include <igl/writeOBJ.h>
 #endif
 
-#ifdef CLIF_WITH_LIBIGL_VIEWER
+#ifdef MM_MESH_WITH_VIEWER
   #include <igl/viewer/Viewer.h>
   #include <thread>
 #endif
@@ -13,7 +13,7 @@ namespace clif {
 
 void Mesh::writeOBJ(const char *filename)
 {
-#ifdef CLIF_WITH_LIBIGL
+#ifdef MM_MESH_WITH_LIBIGL
   igl::writeOBJ(filename,V,F);
 #endif
 }
@@ -213,7 +213,7 @@ Mesh mesh_line(const Eigen::Vector3d &p1, const Eigen::Vector3d &p2)
   return m;
 }
 
-#ifdef CLIF_WITH_LIBIGL_VIEWER
+#ifdef MM_MESH_WITH_VIEWER
 
 Mesh::~Mesh()
 {
@@ -244,7 +244,7 @@ static void _run_viewer(const Mesh *mesh, igl::viewer::Viewer **viewer)
 
 bool Mesh::show(bool block)
 {
-#ifdef CLIF_WITH_LIBIGL_VIEWER
+#ifdef MM_MESH_WITH_VIEWER
   if (_viewer)
     return false;
   
