@@ -1311,7 +1311,7 @@ int filter_pinhole(const Mat_<float>& proxy, Mat_<double> &lines, Point2i img_si
  */
 //proxy.names({"point","x","y","channels","cams","views"});
 //lines.names({"line","x","y","channels","cams"})
-double fit_cams_lines_multi(const Mat_<float>& proxy, Mat_<double> &lines, Point2i img_size, Mat_<double> &extrinsics, Mat_<double> &extrinsics_rel)
+double fit_cams_lines_multi(const Mat_<float>& proxy, Point2i img_size, Mat_<double> &lines, Mat_<double> &extrinsics, Mat_<double> &extrinsics_rel)
 {
   ceres::Solver::Options options;
   options.max_num_iterations = 5000;
@@ -1527,7 +1527,7 @@ bool ucalib_calibrate(Dataset *set, cpath proxy, cpath calib)
       }
     }*/
     
-    double rms = fit_cams_lines_multi(proxy_m, lines, cv::Point2i(im_size[0],im_size[1]), extrinsics, extrinsics_rel);
+    double rms = fit_cams_lines_multi(proxy_m, cv::Point2i(im_size[0],im_size[1]), lines, extrinsics, extrinsics_rel);
     
     Datastore *line_store = set->addStore(calib_root/"lines");
     line_store->write(lines);

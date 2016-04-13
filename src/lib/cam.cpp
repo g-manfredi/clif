@@ -26,34 +26,14 @@ TD_DistType::TD_DistType(const cpath& path)
 }
 
 #ifdef CLIF_WITH_UCALIB
-static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_pos, Mat_<double> &corr_line_m, Mat_<double> &extrinsics_m, int _w, int _h, cv::Point2d &_f)
+static void _genmap(Mat_<cv::Point2f> & _maps, double _depth, const Idx & map_pos, Mat_<double> &corr_line_m, int _w, int _h, cv::Point2d &_f)
 {
-  std::cout << "generate map for " << map_pos << std::endl;
-  
-  std::vector<cv::Vec4d> linefits(corr_line_m["x"]*corr_line_m["y"]);
-  
-  Idx lines_pos({IR(4, "line"), map_pos.r("x","cams")});
-  
-  for(int j=0;j<corr_line_m["y"];j++)
-    for(int i=0;i<corr_line_m["x"];i++)
-      for (int e=0;e<4;e++) {
-        lines_pos[0] = e;
-        lines_pos["x"] = i;
-        lines_pos["y"] = j;
-        linefits[j*corr_line_m["x"]+i][e] = corr_line_m(lines_pos);
-      }
-      
-  printf("create gencam\n");
-  
   double d = _depth;
   if (std::isnan(d) || d < 0.1)
     d = 1000000000000.0;
   
+  std::cout << "generate map for " << map_pos << std::endl;
   printf("depth: %f\n", d);
-  
-  cv::Point2d m(0,0);
-  double r = 0;
-    
   printf("focal length: %fx%f\n", _f.x, _f.y);
   
   cv::Mat map = cvMat(_maps.bind(3, map_pos["cams"]).bind(2, map_pos["channels"]));
@@ -77,8 +57,7 @@ bool TD_DistType::load(Dataset *set)
   
 bool DepthDist::load(Dataset *set)
 {
-  //try {
-  
+  try {
     Idx proxy_size;
     
     double f[2];
@@ -105,9 +84,6 @@ bool DepthDist::load(Dataset *set)
       Attribute *a = set->get(_path / "projection_center");
       if (a) {
         a->get(c, 2);
-        //FIXME causes very misaligned undistortion?
-        //cv_cam.at<double>(0,2) = c[0];
-        //cv_cam.at<double>(1,2) = c[1];
         cv_cam.at<double>(0,2) = _w/2;
         cv_cam.at<double>(1,2) = _h/2;
       }
@@ -182,10 +158,8 @@ bool DepthDist::load(Dataset *set)
     return true;
 #else
     
-    printf("read lines!\n");
     Mat_<double> corr_line_m = set->readStore(path()/"lines");
     corr_line_m.names({"line","x","y","channels","cams"});
-    printf("have read lines!\n");   
     
     //center rotation and translation
     cv::Matx31f c_r(extrinsics_main[0],extrinsics_main[1],extrinsics_main[2]);
@@ -220,34 +194,11 @@ bool DepthDist::load(Dataset *set)
       transpose(l_r_m, l_r_m_t);
       
       std::cout << "cam rotate: \n" << l_r << "\ncam translate:\n" << l_t << std::endl;
-      
-      
-      /*if (pos["channels"] == extrinsics_m["channels"]/2
-        && pos["cams"] == extrinsics_m["cams"]/2)
-        printf("shoud stay the same!                                       !!!!!!!!!!!!!!!!!!!!!\n");*/
-      
       std::cout << pos << std::endl;
       
       
       cv::Matx33f rotm = c_r_m*l_r_m_t;
-      
-      
-      //calculate after-projection rotation angle - to align array dir with view horizon
-      //move a point parallel to each cam/view project it, calc avg angle towards center view projected point
-      cv::Matx31f ref_l = ref + l_t;
-      cv::Matx21f res(ref_l(0)*_f.x/ref_l(2),ref_l(1)*_f.y/ref_l(2));
-      
-      std::cout << "ref_l: " << ref_l << std::endl;
-      std::cout << "ref: " << res - res_c << std::endl;
-      
-      normalize(res-res_c, res);
-      
-      if (pos["cams"] < extrinsics["cams"]/2)
-        avg_dir -= res;
-      else if (pos["cams"] > extrinsics["cams"]/2)
-        avg_dir += res;
-
-      
+            
       for(auto pos_lines : Idx_It_Dims(corr_line_m, "x", "y")) {
         cv::Matx31f offset(corr_line_m({0, pos_lines.r("x","y"), pos.r("channels","cams")}),
                            corr_line_m({1, pos_lines.r("x","y"), pos.r("channels","cams")}),
@@ -257,33 +208,19 @@ bool DepthDist::load(Dataset *set)
                            1.0);
         
         
-        /*if (pos_lines["x"] == 32 && pos_lines["y"] == 24) {
-          std::cout << "start: " << offset << "\n" << dir << std::endl;
-          
-          
-          std::cout << "rot1: " << l_r_m_t << std::endl;
-          std::cout << "rot2: " << c_r_m << std::endl;
-          std::cout << "rot1*rot2: " << c_r_m*l_r_m_t << std::endl;
-        }*/
-        
+        //revert cam translation to origin (first cam) 
         offset -= l_t;
+        //invert cam rotation and apply center cam rotation
         offset = rotm * offset;
-        //offset = l_r_m_t * offset;
-        //offset = c_r_m * offset;
+        //apply center cam translation
         offset += c_t;
         
-        //dir -= l_t;
+        //direction is only rotated
         dir = rotm*dir;
-        //dir = l_r_m_t * offset;
-        //dir = c_r_m * offset;
-        //dir += c_t;
         
         //normalize
         dir *= 1.0/dir(2);
         offset -= offset(2)*dir;
-        
-        /*if (pos_lines["x"] == 32 && pos_lines["y"] == 24)
-          std::cout << "res: " << offset << dir << std::endl;*/
         
         corr_line_m({0, pos_lines.r("x","y"), pos.r("channels","cams")}) = offset(0);
         corr_line_m({1, pos_lines.r("x","y"), pos.r("channels","cams")}) = offset(1);
@@ -293,10 +230,6 @@ bool DepthDist::load(Dataset *set)
       }
       
     }
-    
-    std::cout << "avg dir:" << avg_dir << "\n" << atan2(avg_dir(1),avg_dir(0))/M_PI*180 << "°" << std::endl;
-    
-    _r = atan2(avg_dir(1),avg_dir(0));
     
     std::cout << "maps:" << _maps << std::endl;
     
@@ -308,16 +241,15 @@ bool DepthDist::load(Dataset *set)
         
     std::vector<cv::Point3f> ref_points;
     
-    for(auto map_pos : Idx_It_Dims(corr_line_m, "channels","cams")) {
-      _genmap(_maps, _depth, map_pos, corr_line_m, extrinsics, _w, _h, _f);
-    }
+    for(auto map_pos : Idx_It_Dims(corr_line_m, "channels","cams"))
+      _genmap(_maps, _depth, map_pos, corr_line_m, _w, _h, _f);
     
     return true;
 #endif
-  /*}
+  }
   catch (std::invalid_argument) {
     return false;
-  }*/
+  }
 }
 
 void DepthDist::undistort(const clif::Mat & src, clif::Mat & dst, const Idx & pos, int interp)
