@@ -255,7 +255,7 @@ endmacro()
 
 # install ${${PNU}_HEADERS} into CMAKE_CURRENT_BINARY_DIR/${PNL}/
 # FIXME only works for relative path headers atm!
-macro(dep_lists_export)
+function(dep_lists_export_local)
 
   set(dep_lists_append_UNPARSED_ARGUMENTS "")
   cmake_parse_arguments(dep_lists_append "" "HEADER_PREFIX" "" ${ARGN})
@@ -267,6 +267,8 @@ macro(dep_lists_export)
   else()
     string(TOUPPER ${PROJECT_NAME} _FDP_PNU)
   endif()
+  
+  string(TOLOWER ${_FDP_PNU} PNL)
   
   #output prefix (normally upper case project name)
   if (dep_lists_append_HEADER_PREFIX)
@@ -285,5 +287,32 @@ macro(dep_lists_export)
     list(APPEND _FPD_HEADER_DEPLIST ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/${_H})
   endforeach()
   
-  add_custom_target(_FPD_${_FDP_PNU}_HEADERS ALL DEPENDS ${_FPD_HEADER_DEPLIST})
-endmacro(dep_lists_export)
+  add_custom_target(${PNL}-header-export ALL DEPENDS ${_FPD_HEADER_DEPLIST})
+
+  include(CMakePackageConfigListHelpers)
+
+  #####################################################
+  ## ...Config.cmake generation
+  #####################################################
+  set(CMAKECONFIG_PKG ${${_FDP_PNU}_PKG})
+  set(CMAKECONFIG_PKG_INC ${${_FDP_PNU}_PKG_INC})
+  set(CMAKECONFIG_PKG_LINK ${${_FDP_PNU}_PKG_LINK})
+  set(CMAKECONFIG_PKG_LIB ${${_FDP_PNU}_PKG_LIB})
+
+  set(CMAKECONFIG_INC "include") #in build dir - headers were already copied above
+  set(CMAKECONFIG_LIB ${${_FDP_PNU}_EXPORT_LIBS}) # our libs to link on import
+
+
+  #####################################################
+  ## local config.cmake
+  #####################################################
+  set(CMAKECONFIG_CMAKE_DIR ${CMAKE_CURRENT_BINARY_DIR})
+  set(CMAKECONFIG_LINK ${CMAKE_CURRENT_BINARY_DIR})
+
+  set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
+  configure_package_config_file(cmake/projectConfig.cmake.in
+                                "${CMAKECONFIG_CMAKE_DIR}/${PROJECT_NAME}Config.cmake"
+                                INSTALL_DESTINATION "${CMAKECONFIG_CMAKE_DIR}"
+                                PATH_VARS CMAKECONFIG_PKG CMAKECONFIG_PKG_INC CMAKECONFIG_PKG_LINK CMAKECONFIG_PKG_LIB CMAKECONFIG_INC CMAKECONFIG_LINK CMAKECONFIG_LIB)
+  export(PACKAGE ${PROJECT_NAME})
+endfunction()
