@@ -252,3 +252,38 @@ endmacro(dep_lists_append)
 macro(dep_lists_cleanup)
   file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake")
 endmacro()
+
+# install ${${PNU}_HEADERS} into CMAKE_CURRENT_BINARY_DIR/${PNL}/
+# FIXME only works for relative path headers atm!
+macro(dep_lists_export)
+
+  set(dep_lists_append_UNPARSED_ARGUMENTS "")
+  cmake_parse_arguments(dep_lists_append "" "HEADER_PREFIX" "" ${ARGN})
+  dep_lists_opt_get(dep_lists_append_UNPARSED_ARGUMENTS 0 _FDP_A0)
+
+  #project name prefix (for list names)
+  if (_FDP_A0)
+    set(_FDP_PNU ${_FDP_A0})
+  else()
+    string(TOUPPER ${PROJECT_NAME} _FDP_PNU)
+  endif()
+  
+  #output prefix (normally upper case project name)
+  if (dep_lists_append_HEADER_PREFIX)
+    set(_FDP_HEADER_PREFIX ${dep_lists_append_HEADER_PREFIX})
+  else()
+    string(TOLOWER ${_FDP_PNU} _FDP_HEADER_PREFIX)
+  endif()
+  
+  add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/ COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX})
+  set(_FPD_HEADER_DEPLIST ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX})
+                     
+  foreach(_H ${${_FDP_PNU}_HEADERS})
+    add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/${_H}
+                       COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${_H} ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/
+                       DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${_H})
+    list(APPEND _FPD_HEADER_DEPLIST ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/${_H})
+  endforeach()
+  
+  add_custom_target(_FPD_${_FDP_PNU}_HEADERS ALL DEPENDS ${_FPD_HEADER_DEPLIST})
+endmacro(dep_lists_export)
