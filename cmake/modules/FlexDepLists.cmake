@@ -51,6 +51,24 @@ macro(dep_lists_check_find PACKAGE RET)
   endif()
 endmacro()
 
+macro(dep_lists_exec_find PNU PKG SUCC FAIL)
+
+  cmake_policy(VERSION 3.1)
+
+  string(TOUPPER ${PKG} _FDP_PKG_UP)
+  dep_lists_check_find(${PKG} ${PNU}_WITH_${_FDP_PKG_UP})
+  if (${${PNU}_WITH_${_FDP_PKG_UP}})
+    if (NOT "${SUCC}" STREQUAL "")
+      list(APPEND ${SUCC} ${PKG})
+    endif()
+  else()
+    if (NOT "${FAIL}" STREQUAL "")
+      list(APPEND ${FAIL} ${PKG})
+    endif()
+  endif()
+
+endmacro(dep_lists_exec_find)
+
 macro(dep_lists_pkg_search)
   
   if (ARGV0)
@@ -61,44 +79,22 @@ macro(dep_lists_pkg_search)
 
   #message("")
   #message("searching dependencies for ${_FDP_PNU}:")
-
+  
   foreach(PACKAGE ${${_FDP_PNU}_PKG_OPT})
-    string(TOUPPER ${PACKAGE} PKG_UP)
-    dep_lists_check_find(${PACKAGE} ${_FDP_PNU}_WITH_${PKG_UP})
-    if (NOT ${${_FDP_PNU}_WITH_${PKG_UP}})
-      list(APPEND ${_FDP_PNU}_MISSING_OPTIONAL ${PACKAGE})
-    else()
-      list(APPEND ${_FDP_PNU}_EXPORT_DEPS ${PACKAGE})
-    endif()
+    dep_lists_exec_find(${_FDP_PNU} ${PACKAGE} ${_FDP_PNU}_EXPORT_DEPS ${_FDP_PNU}_MISSING_OPTIONAL)
   endforeach()
-
+  
   foreach(PACKAGE ${${_FDP_PNU}_PRIVATE_PKG_OPT})
-    string(TOUPPER ${PACKAGE} PKG_UP)
-    dep_lists_check_find(${PACKAGE} ${_FDP_PNU}_WITH_${PKG_UP})
-    if (NOT ${${_FDP_PNU}_WITH_${PKG_UP}})
-      list(APPEND ${_FDP_PNU}_MISSING_OPTIONAL ${PACKAGE})
-    endif()
+    dep_lists_exec_find(${_FDP_PNU} ${PACKAGE} ""                      ${_FDP_PNU}_MISSING_OPTIONAL)
   endforeach()
-
+  
   foreach(PACKAGE ${${_FDP_PNU}_PKG})
-    string(TOUPPER ${PACKAGE} PKG_UP)
-    dep_lists_check_find(${PACKAGE} ${_FDP_PNU}_WITH_${PKG_UP})
-    if (NOT ${${_FDP_PNU}_WITH_${PKG_UP}})
-      list(APPEND ${_FDP_PNU}_MISSING_REQUIRED ${PACKAGE})
-    else()
-      list(APPEND ${_FDP_PNU}_EXPORT_DEPS ${PACKAGE})
-    endif()
+    dep_lists_exec_find(${_FDP_PNU} ${PACKAGE} ${_FDP_PNU}_EXPORT_DEPS ${PACKAGE} ${_FDP_PNU}_MISSING_REQUIRED)
   endforeach()
-
+  
   foreach(PACKAGE ${${_FDP_PNU}_PRIVATE_PKG})
-    string(TOUPPER ${PACKAGE} PKG_UP)
-    dep_lists_check_find(${PACKAGE} ${_FDP_PNU}_WITH_${PKG_UP})
-    if (NOT ${${_FDP_PNU}_WITH_${PKG_UP}})
-      list(APPEND ${_FDP_PNU}_MISSING_REQUIRED ${PACKAGE})
-    endif()
+    dep_lists_exec_find(${_FDP_PNU} ${PACKAGE} ""                      ${PACKAGE} ${_FDP_PNU}_MISSING_REQUIRED)
   endforeach()
-
-  message("")
     
   if (${_FDP_PNU}_MISSING_OPTIONAL)
     message("${BoldRed}missing OPTIONAL packages:")
@@ -216,7 +212,7 @@ endmacro(dep_lists_prepare_env)
 
 macro(dep_lists_append _FDP_NAME)
   set(dep_lists_append_UNPARSED_ARGUMENTS "")
-  cmake_parse_arguments(dep_lists_append "OPTIONAL;PRIVATE" "PREFIX" "" ${ARGN})
+  cmake_parse_arguments(dep_lists_append "OPTIONAL;PRIVATE" "PREFIX" "COMPONENTS" ${ARGN})
   
   string(TOUPPER ${_FDP_NAME} _FDP_NAME_UPPER)
   
@@ -225,6 +221,10 @@ macro(dep_lists_append _FDP_NAME)
     set(_FDP_PREFIX ${dep_lists_append_PREFIX})
   else()
     string(TOUPPER ${PROJECT_NAME} _FDP_PREFIX)
+  endif()
+  
+  if (dep_lists_append_COMPONENTS)
+    set(${_FDP_PREFIX}_${_FDP_NAME}_COMPONENTS ${dep_lists_append_COMPONENTS})
   endif()
   
   dep_lists_opt_get(dep_lists_append_UNPARSED_ARGUMENTS 0 _FDP_A0)

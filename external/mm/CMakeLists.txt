@@ -20,42 +20,6 @@ foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
 endforeach()
 
 set(${PNU}_BUILD_TYPE "SHARED")
-
-
-#####################################################
-## DEPENDENCIES
-#####################################################
-# eigen3
-list(APPEND ${PNU}_PKG_OPT Eigen3)
-list(APPEND ${PNU}_PKG_INC EIGEN3_INCLUDE_DIR)
-
-#vigra
-#FIXME ask Ullrich why theres no VIGRA_LIBRARIES?
-list(APPEND ${PNU}_PKG Vigra)
-list(APPEND ${PNU}_PKG_INC Vigra_INCLUDE_DIRS)
-set(VIGRAIMPEX_VAR vigraimpex)
-list(APPEND ${PNU}_PKG_LIB VIGRAIMPEX_VAR)
-
-#opencv
-list(APPEND ${PNU}_PKG OpenCV)
-list(APPEND ${PNU}_PKG_INC OpenCV_INCLUDE_DIRS)
-list(APPEND ${PNU}_PKG_LIB OpenCV_LIBS)
-
-#boost
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-	set(Boost_USE_STATIC_LIBS ON)
-endif()
-find_package(Boost REQUIRED COMPONENTS filesystem system)
-list(APPEND ${PNU}_LINK_LIBRARIES ${Boost_LIBRARIES})
-list(APPEND ${PNU}_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
-list(APPEND ${PNU}_LIBRARY_DIRS ${Boost_LIBRARY_DIRS})
-
-dep_lists_pkg_search()
-dep_lists_prepare_env()
-
-######################
-
-set(${PNU}_BUILD_TYPE "SHARED")
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL Clang)
   # using Clang
   list(APPEND CMAKE_CXX_FLAGS "-std=c++11")
@@ -76,6 +40,34 @@ else()
   set(BUILD_SHARED_LIBS ON)
 endif()
 
+#####################################################
+## DEPENDENCIES
+#####################################################
+dep_lists_cleanup()
+
+dep_lists_append(Eigen3 OPTIONAL EIGEN3_INCLUDE_DIR)
+dep_lists_append(OpenCV OpenCV_INCLUDE_DIRS "" OpenCV_LIBS)
+dep_lists_append(Eigen3 OPTIONAL)
+
+# FIXME use global static/shared switch boost
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+	set(Boost_USE_STATIC_LIBS ON)
+endif()
+# FIXME implement components: COMPONENTS filesystem system
+dep_lists_append(Boost Boost_INCLUDE_DIRS Boost_LIBRARY_DIRS Boost_LIBRARIES COMPONENTS filesystem system)
+
+set(VIGRAIMPEX_VAR vigraimpex)
+dep_lists_append(Vigra Vigra_INCLUDE_DIRS "" VIGRAIMPEX_VAR)
+
+dep_lists_pkg_search()
+
+find_package(Boost COMPONENTS filesystem system)
+message("boost libs: ${Boost_LIBRARIES}")
+
+dep_lists_prepare_env()
+
+######################
+
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 
@@ -94,13 +86,7 @@ set(${PNU}_EXPORT_LIBS metamat)
 #####################################################
 
 set(HEADERS mat.hpp basetype.hpp)
-add_custom_command(TARGET metamat PRE_BUILD
-                     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/include/mm/)
-foreach(H ${HEADERS})
-  add_custom_command(TARGET metamat PRE_BUILD
-                     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${H} ${CMAKE_CURRENT_BINARY_DIR}/include/mm/)
-endforeach()
-add_dependencies(metamat ${CMAKE_CURRENT_SOURCE_DIR}/mat.hpp ${CMAKE_CURRENT_SOURCE_DIR}/basetype.hpp)
+# FIXME export
 
 #export helper
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
