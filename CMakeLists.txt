@@ -357,59 +357,12 @@ endforeach()
 message("build info:")
 message("  optional components:")
 
-if(CLIF_BUILD_QT)
-  message("    qt-widgets         -   yes")
-else()
-  message("    qt-widgets         -   no - ${CLIF_BUILD_QT_REASON}")
-endif()
-
-if(FNMATCH_USE_INTERNAL)
-  message("    internal fnmatch   -   yes (no fnmatch.h header found)")
-else()
-  message("    internal fnmatch   -   no")
-endif()
-
-if(CLIF_WITH_HDMARKER)
-  message("    hdmarker detection -   yes")
-else()
-  message("    hdmarker detection -   no")
-endif()
-
-if(CLIF_WITH_UCALIB)
-  message("    ucalib calibration -   yes")
-else()
-  message("    ucalib calibration -   no")
-endif()
-
-if(CLIF_WITH_LIBIGL)
-  message("    mesh (libigl)      -   yes")
-else()
-  message("    mesh (libigl)      -   no")
-endif()
-
-if(CLIF_WITH_EIGEN3)
-  message("      eigen3           -   yes")
-else()
-  message("      eigen3           -   no")
-endif()
-
-if(CLIF_WITH_LIBIGL_VIEWER)
-  message("    mesh viewer        -   yes")
-else()
-  message("    mesh viewer        -   no")
-endif()
-
-if(CLIF_WITH_GLFW3)
-  message("      glfw3            -   yes")
-else()
-  message("      glfw3            -   no")
-endif()
-
-if(CLIF_WITH_GLEW)
-  message("      GLEW             -   yes")
-else()
-  message("      GLEW             -   no")
-endif()
+msg_yesno("    qt-widgets" CLIF_BUILD_QT)
+msg_yesno("    internal fnmatch" FNMATCH_USE_INTERNAL COLOR Green)
+msg_yesno("    hdmarker detection" CLIF_WITH_HDMARKER)
+msg_yesno("    ucalib calibration" CLIF_WITH_UCALIB)
+msg_yesno("    mesh libigl" MM-MESH_WITH_LIBIGL)
+msg_yesno("    mesh viewer" MM-MESH_WITH_VIEWER)
 
 message("")
 
@@ -526,4 +479,6 @@ install(FILES ${CLIF_FULLPATH_HEADERS} DESTINATION include/clif )
 export(PACKAGE clif)
 
 
+message("${PROJECT_NAME} features: ${${PNU}_FEATURES}")
+message("${MM-MESH} features: ${MM-MESH_FEATURES}")
 
