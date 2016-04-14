@@ -31,6 +31,7 @@ endfunction()
 set(@PNU@_INCLUDE_DIRS "@PACKAGE_CMAKECONFIG_INC@")
 set(@PNU@_LIBRARY_DIRS "@PACKAGE_CMAKECONFIG_LINK@")
 set(@PNU@_LIBRARIES "@CMAKECONFIG_LIB@")
+set(@PNU@_FEATURES "@CMAKECONFIG_FEATURES@")
 set(@PNU@_FOUND true)
  
 #dependencies nicely packaged
@@ -39,13 +40,18 @@ set(@PNU@_PACKAGES_INC @CMAKECONFIG_PKG_INC@)
 set(@PNU@_PACKAGES_LINK @CMAKECONFIG_PKG_LINK@)
 set(@PNU@_PACKAGES_LIB @CMAKECONFIG_PKG_LIB@)
 
-#hack because glfw was using the wrong config path
+# FIXME hack because glfw was using the wrong config path
 #see https://github.com/glfw/glfw/issues/483
 find_package(glfw QUIET)
 if ("${GLFW3_INCLUDE_DIR}" STREQUAL "")
-  message("add alt path")
   set(glfw3_DIR /usr/lib/cmake/glfw/)
 endif()
+
+foreach(F ${@PNU@_FEATURES})
+  set(${F} true)
+  string(REPLACE "-" "_" F ${F})
+  add_definitions(-D${F})
+endforeach()
 
 #message("@PNU@ dependency search")
 #search package, try our own findXXX.cmake in find dir if not found

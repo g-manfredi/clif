@@ -479,6 +479,3 @@ install(FILES ${CLIF_FULLPATH_HEADERS} DESTINATION include/clif )
 export(PACKAGE clif)
 
 
-message("${PROJECT_NAME} features: ${${PNU}_FEATURES}")
-message("${MM-MESH} features: ${MM-MESH_FEATURES}")
-
