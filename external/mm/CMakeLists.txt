@@ -1,7 +1,6 @@
 cmake_minimum_required (VERSION 2.8.8)
 project(MetaMat)
 string(TOUPPER ${PROJECT_NAME} PNU)
-string(TOLOWER ${PROJECT_NAME} PNL)
 
 # FIXME handle common includes
 include(CMakePackageConfigListHelpers)
@@ -60,10 +59,6 @@ set(VIGRAIMPEX_VAR vigraimpex)
 dep_lists_append(Vigra Vigra_INCLUDE_DIRS "" VIGRAIMPEX_VAR)
 
 dep_lists_pkg_search()
-
-find_package(Boost COMPONENTS filesystem system)
-message("boost libs: ${Boost_LIBRARIES}")
-
 dep_lists_prepare_env()
 
 ######################
@@ -85,55 +80,9 @@ set(${PNU}_EXPORT_LIBS metamat)
 ## EXPORT
 #####################################################
 
-set(HEADERS mat.hpp basetype.hpp)
-# FIXME export
-
-#export helper
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
-include(CMakePackageConfigListHelpers)
-
-
-#####################################################
-## ...Config.cmake generation
-#####################################################
-
-set(CMAKECONFIG_PKG ${${PNU}_EXPORT_DEPS})
-set(CMAKECONFIG_PKG_INC ${${PNU}_PKG_INC})
-set(CMAKECONFIG_PKG_LINK ${${PNU}_PKG_LINK})
-set(CMAKECONFIG_PKG_LIB ${${PNU}_PKG_LIB})
-
-set(CMAKECONFIG_INC "include") #in build dir - headers were already copied earlier
-list(APPEND CMAKECONFIG_INC ${CLIF_INSTALL_INCLUDE_DIR} ${CLIF_INCLUDE_DIRS}) # FIXME remove this!
-
-set(CMAKECONFIG_LIB ${${PNU}_EXPORT_LIBS}) # our libs to link on import
-list(APPEND CMAKECONFIG_LIB ${${PNU}_INSTALL_LIBRARIES}) # FIXME remove this! (clif libraries)
-list(APPEND CMAKECONFIG_LIB ${${PNU}_LINK_LIBRARIES}) # FIXME remove this! (direct dependecies)
-
-
-set(CMAKECONFIG_LINK "lib")
-list(APPEND CMAKECONFIG_LINK ${${PNU}_INSTALL_LIBRARY_DIR}) # FIXME remove this!
-
-#####################################################
-## local config.cmake
-#####################################################
-
-#copy our own FindXXX.cmake macros
-file(COPY cmake/find DESTINATION ./)
-
-set(CMAKECONFIG_CMAKE_DIR ${CMAKE_CURRENT_BINARY_DIR})
-
-#set(CMAKECONFIG_LINK ${CMAKE_CURRENT_BINARY_DIR}/lib)
-
-set(INSTALL_PREFIX_BACKUP ${CMAKE_INSTALL_PREFIX})
-set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
-configure_package_config_file(cmake/projectConfig.cmake.in
-                              "${CMAKECONFIG_CMAKE_DIR}/${PROJECT_NAME}Config.cmake"
-                              INSTALL_DESTINATION "${CMAKECONFIG_CMAKE_DIR}"
-                              PATH_VARS CMAKECONFIG_PKG CMAKECONFIG_PKG_INC CMAKECONFIG_PKG_LINK CMAKECONFIG_PKG_LIB CMAKECONFIG_INC CMAKECONFIG_LINK CMAKECONFIG_LIB)
-set(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX_BACKUP})
-
-#export into cmakes local package cache - should be directly visible to cmake of local user
-export(PACKAGE ${PROJECT_NAME})
+#copy headers and generate XXXConfig.cmake
+set(${PNU}_HEADERS mat.hpp basetype.hpp)
+dep_lists_export_local()
 
 
 

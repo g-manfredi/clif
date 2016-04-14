@@ -23,8 +23,13 @@ macro(dep_lists_clean_list LIST)
   endif()
 endmacro()
 
-macro(dep_lists_check_find PACKAGE RET)
-  find_package(${PACKAGE} QUIET)
+macro(dep_lists_check_find PACKAGE RET PNU)
+
+  if (${PNU}_${PACKAGE}_COMPONENTS)
+    find_package(${PACKAGE} QUIET COMPONENTS ${${PNU}_${PACKAGE}_COMPONENTS})
+  else()
+    find_package(${PACKAGE} QUIET)
+  endif()
   
   string(TOLOWER ${PACKAGE} PKG_LOW)
   
@@ -38,7 +43,13 @@ macro(dep_lists_check_find PACKAGE RET)
     #message("${${pkg_up}_FOUND}"
     #message("did not find ${PACKAGE}, adding cmake/${PKG_LOW} to CMAKE_MODULE_PATH")
     list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/find/${PKG_LOW})
-    find_package(${PACKAGE} QUIET)
+    
+    if (${PNU}_${PACKAGE}_COMPONENTS)
+      find_package(${PACKAGE} QUIET COMPONENTS ${${PNU}_${PACKAGE}_COMPONENTS})
+    else()
+      find_package(${PACKAGE} QUIET)
+    endif()
+    
     pkg_found(${PACKAGE} FOUND)
     if (FOUND)
       #message("${PACKAGE} - found using included Find${PACKAGE}.cmake")
@@ -56,7 +67,7 @@ macro(dep_lists_exec_find PNU PKG SUCC FAIL)
   cmake_policy(VERSION 3.1)
 
   string(TOUPPER ${PKG} _FDP_PKG_UP)
-  dep_lists_check_find(${PKG} ${PNU}_WITH_${_FDP_PKG_UP})
+  dep_lists_check_find(${PKG} ${PNU}_WITH_${_FDP_PKG_UP} ${PNU})
   if (${${PNU}_WITH_${_FDP_PKG_UP}})
     if (NOT "${SUCC}" STREQUAL "")
       list(APPEND ${SUCC} ${PKG})

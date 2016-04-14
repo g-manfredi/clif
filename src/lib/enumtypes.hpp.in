@@ -9,7 +9,7 @@
 
 #include <opencv2/core/core.hpp>
 
-#include <mm/mat.hpp>
+#include <metamat/mat.hpp>
 
 namespace clif {
   //enum class DataType : int {${DataTypeEnums}};
