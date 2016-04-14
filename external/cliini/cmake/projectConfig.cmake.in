@@ -1,16 +1,1 @@
-# dependency less config packages
-# It defines the following variables
-#  _INCLUDE_DIRS - include directories for clif
-#  _LIBRARIES    - libraries to link against
-#  _EXECUTABLE   - the bar executable
-#  _LIBRARY_DIRS - where to find libraries
- 
-@PACKAGE_INIT@
-
-string(TOLOWER "@PNU@" PNL)
-
-#@PNU@ includes and link dirs 
-set(@PNU@_INCLUDE_DIRS "@PACKAGE_CMAKECONFIG_INC@")
-set(@PNU@_LIBRARY_DIRS "@PACKAGE_CMAKECONFIG_LINK@")
-set(@PNU@_LIBRARIES "@CMAKECONFIG_LIB@")
-set(@PNU@_FOUND true)
+../../../cmake/projectConfig.cmake.in
