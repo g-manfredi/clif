@@ -42,7 +42,7 @@ endif()
 #####################################################
 ## DEPENDENCIES
 #####################################################
-dep_lists_cleanup()
+dep_lists_init()
 
 dep_lists_append(Eigen3 OPTIONAL EIGEN3_INCLUDE_DIR)
 dep_lists_append(OpenCV OpenCV_INCLUDE_DIRS "" OpenCV_LIBS)

@@ -284,8 +284,12 @@ macro(dep_lists_append _FDP_NAME)
   list(APPEND ${_FDP_PREFIX}_LIB  "${_FDP_LIB}")
 endmacro(dep_lists_append)
 
-macro(dep_lists_cleanup)
+macro(dep_lists_init)
   file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake")
+  
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 endmacro()
 
 # install ${${PNU}_HEADERS} into CMAKE_CURRENT_BINARY_DIR/${PNL}/
@@ -343,7 +347,8 @@ function(dep_lists_export_local)
   ## local config.cmake
   #####################################################
   set(CMAKECONFIG_CMAKE_DIR ${CMAKE_CURRENT_BINARY_DIR})
-  set(CMAKECONFIG_LINK ${CMAKE_CURRENT_BINARY_DIR})
+  # FIXME multiple configs?
+  set(CMAKECONFIG_LINK ${CMAKE_CURRENT_BINARY_DIR}/lib)
 
   set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
   configure_package_config_file(cmake/projectConfig.cmake.in

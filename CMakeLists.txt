@@ -2,7 +2,6 @@ cmake_minimum_required (VERSION 2.8.8)
 project(clif)
 string(TOUPPER ${PROJECT_NAME} PNU)
 
-
 #####################################################
 ## VARIABLE DOCUMENTATION
 #####################################################
@@ -49,9 +48,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/mod
 include(CMakePackageConfigListHelpers)
 include(FlexDepLists)
 
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
+dep_lists_init()
 
 # FIXME add Debug, etc. on win!
 foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
