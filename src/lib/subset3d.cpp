@@ -73,7 +73,7 @@ bool Subset3d::create(Dataset *set, const cpath & from, const ProcData & proc)
     _data->get(_root/"/line_step", line_step, 3);
     
     //TODO for now we only support horizontal lines!
-    assert(line_step[0] != 0.0);
+    //assert(line_step[0] != 0.0);
     assert(line_step[1] == 0.0);
     assert(line_step[2] == 0.0);
 
@@ -338,6 +338,7 @@ void Subset3d::readEPI(cv::Mat *epi, int line, double disparity, Unit unit)
   }
 
   if (start_idx < 0) {
+	  if (debug_skip)
 		std::cout << "WARNING: Skip " << skip
 				<< " caused start index to be negative (" << start_idx
 				<< "). Setting start index to 0." << std::endl;
@@ -520,10 +521,11 @@ int Subset3d::EPIHeight()
 {
   //FIXME use extrinsics group size! (for cross type...)  
 	int height = 0;
+	int max_height = int(ceil(_store->clif::Datastore::imgCount() / (_proc.skip() + 1.0)));
 	if (_proc.custom_epi_height())
-		height = _proc.custom_epi_height();
+		height = std::min(_proc.custom_epi_height(), max_height);
 	else
-		height = int(ceil(_store->clif::Datastore::imgCount() / (_proc.skip() + 1.0)));
+		height = max_height;
 	return height;
 }
 
