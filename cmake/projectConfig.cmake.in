@@ -112,6 +112,15 @@ foreach(PACKAGE ${@PNU@_PACKAGES})
     else()
       find_package(${PACKAGE} QUIET)
     endif()
+    
+    
+    pkg_found(${PACKAGE} FOUND)
+    if (FOUND)
+      set(FDP_HAVE_FOUND_${PACKAGE} TRUE)
+    else()
+      set(FDP_HAVE_FOUND_${PACKAGE} FALSE)
+    endif()
+    
   
   endif()
 endforeach()
