@@ -3,40 +3,6 @@ project(clif)
 string(TOUPPER ${PROJECT_NAME} PNU)
 
 #####################################################
-## VARIABLE DOCUMENTATION
-#####################################################
-#Meta:
-#  PNU              - project name in uppercase - prefixed to (nearly) all variables
-#
-#Dependencies (packages and respective cmake variables)
-#  _PKG               - required cmake package names - passed to find_package() - will also be included from ...Config.cmake
-#  _PKG_OPT           - optional cmake package names - passed to find_package() - will also be included from ...Config.cmake, ..._USE_${..._PKG_OPT} will be set to true if optional pkg is found
-# _PRIVATE_PKG
-# _PRIVATE_PKG_OPT
-###
-#  _PKG_INC           - variable names to add to include_directories (from the respecive find_package() calls)
-#  _PKG_LINK          - variable names to add to link_directories
-#  _PKG_LIB           - variable names to add to link_libraries
-#
-#actual directories/libraries from dependencies
-#  _INC          - actual content from _PKG_INC vars
-#  _LINK         - link dirs
-#  _LIB          - libs
-
-#  _PRIVATE_INC  - actual content from _PKG_INC vars
-#  _PRIVATE_LINK - link dirs
-#  _PRIVATE_LIB  - libs
-#
-#  _EXPORT_LIBS       - targets (libraries) for installation, export and to put into _LIBRARIES into ..Config.cmake
-#  _EXPORT_BINS       - targets (executables) to install
-#
-#
-#  _BUILD_TYPE        - SHARED or "" (set depending on compiler)
-#
-#  _PROJECT_HEADERS
-#  _PROJECT_LIBRARIES
-
-#####################################################
 ## GLOBAL
 #####################################################
 

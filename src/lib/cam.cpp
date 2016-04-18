@@ -4,7 +4,7 @@
 #include "subset3d.hpp"
 
 #ifdef CLIF_WITH_UCALIB
-  #include "ucalib/gencam.hpp"
+  #include "ucalib/ucalib.hpp"
 #endif
   
 #include <opencv2/imgproc/imgproc.hpp>

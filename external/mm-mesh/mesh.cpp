@@ -261,4 +261,26 @@ bool Mesh::show(bool block)
 #endif
 }
 
+static bool _update_viewer(igl::viewer::Viewer& viewer, Mesh *m)
+{ 
+
+  viewer.data.clear();
+  viewer.data.set_mesh(m->V, m->F);
+  viewer.callback_pre_draw = nullptr;
+  
+  glfwPostEmptyEvent();
+  
+  return false;
 }
+
+Mesh& Mesh::operator=(const Mesh &m)
+{
+  V = m.V;
+  F = m.F;
+  C = m.C;
+  
+  if (_viewer)
+    _viewer->callback_pre_draw = std::bind(_update_viewer, std::placeholders::_1, this);
+}
+
+} //namespace clif

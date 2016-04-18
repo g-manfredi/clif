@@ -20,6 +20,7 @@ public:
   void writeOBJ(const char *filename);
   Mesh& operator+=(const Eigen::Vector3d &rhs);
   Mesh& operator-=(const Eigen::Vector3d &rhs);
+  Mesh& operator=(const Mesh &m);
   Mesh& scale(double s);
   void rotate(const Eigen::Vector3d &r_v);
   void merge(const Mesh &other);
