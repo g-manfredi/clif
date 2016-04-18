@@ -23,26 +23,13 @@ macro(dep_lists_clean_list LIST)
   endif()
 endmacro()
 
+#if components are specified those are serialized into ${PNU}_PKG_COMPONENTS
 macro(dep_lists_check_find PACKAGE RET PNU)
-
-  if (${PNU}_${PACKAGE}_COMPONENTS)
-    find_package(${PACKAGE} QUIET COMPONENTS ${${PNU}_${PACKAGE}_COMPONENTS})
+  if (FDP_HAVE_SEARCHED_${PACKAGE} AND "${FDP_HAVE_SEARCHED_${PACKAGE}_COMPONENTS}" STREQUAL "${${PNU}_${PACKAGE}_COMPONENTS}")
+    #message("already searched for ${PACKAGE}")
   else()
-    find_package(${PACKAGE} QUIET)
-  endif()
-  
-  string(TOLOWER ${PACKAGE} PKG_LOW)
-  
-  #check if pkg was found (various conventions...)
-  pkg_found(${PACKAGE} FOUND)
-  if (FOUND)
-    #message("${PACKAGE} - found")
-    set(${RET} TRUE)
-    list(APPEND ${PNU}_FEATURES ${RET})
-  else()
-    #message("${${pkg_up}_FOUND}"
-    #message("did not find ${PACKAGE}, adding cmake/${PKG_LOW} to CMAKE_MODULE_PATH")
-    list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/find/${PKG_LOW})
+    set(FDP_HAVE_SEARCHED_${PACKAGE} true)
+    set(FDP_HAVE_SEARCHED_${PACKAGE}_COMPONENTS ${${PNU}_${PACKAGE}_COMPONENTS})
     
     if (${PNU}_${PACKAGE}_COMPONENTS)
       find_package(${PACKAGE} QUIET COMPONENTS ${${PNU}_${PACKAGE}_COMPONENTS})
@@ -50,11 +37,35 @@ macro(dep_lists_check_find PACKAGE RET PNU)
       find_package(${PACKAGE} QUIET)
     endif()
     
+    string(TOLOWER ${PACKAGE} PKG_LOW)
+    
+    #check if pkg was found (various conventions...)
     pkg_found(${PACKAGE} FOUND)
+    
+    if (NOT FOUND)
+      list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/find/${PKG_LOW})
+      
+      if (${PNU}_${PACKAGE}_COMPONENTS)
+        find_package(${PACKAGE} QUIET COMPONENTS ${${PNU}_${PACKAGE}_COMPONENTS})
+      else()
+        find_package(${PACKAGE} QUIET)
+      endif()
+      
+      pkg_found(${PACKAGE} FOUND)
+    endif()
+    
     if (FOUND)
       #message("${PACKAGE} - found using included Find${PACKAGE}.cmake")
       set(${RET} TRUE)
       list(APPEND ${PNU}_FEATURES ${RET})
+      
+      if (${PNU}_${PACKAGE}_COMPONENTS)
+        foreach(COMPONENT ${${PNU}_${PACKAGE}_COMPONENTS})
+          list(APPEND ${PNU}_PKG_COMPONENTS "${PNU}_${PACKAGE}_COMPONENTS")
+          message("comp append: ${COMPONENT}")
+          list(APPEND ${PNU}_PKG_COMPONENTS "${COMPONENT}")
+        endforeach()
+      endif()
     else()
       #message("${PACKAGE} - missing")
       set(${RET} FALSE)
@@ -337,6 +348,9 @@ function(dep_lists_export_local)
   set(CMAKECONFIG_PKG_INC ${${_FDP_PNU}_PKG_INC})
   set(CMAKECONFIG_PKG_LINK ${${_FDP_PNU}_PKG_LINK})
   set(CMAKECONFIG_PKG_LIB ${${_FDP_PNU}_PKG_LIB})
+  
+  
+  set(CMAKECONFIG_PKG_COMPONENTS ${${PNU}_PKG_COMPONENTS})
 
   set(CMAKECONFIG_INC "include") #in build dir - headers were already copied above
   set(CMAKECONFIG_LIB ${${_FDP_PNU}_EXPORT_LIBS}) # our libs to link on import
@@ -354,7 +368,7 @@ function(dep_lists_export_local)
   configure_package_config_file(cmake/projectConfig.cmake.in
                                 "${CMAKECONFIG_CMAKE_DIR}/${PROJECT_NAME}Config.cmake"
                                 INSTALL_DESTINATION "${CMAKECONFIG_CMAKE_DIR}"
-                                PATH_VARS CMAKECONFIG_PKG CMAKECONFIG_PKG_INC CMAKECONFIG_PKG_LINK CMAKECONFIG_PKG_LIB CMAKECONFIG_INC CMAKECONFIG_LINK CMAKECONFIG_LIB)
+                                PATH_VARS CMAKECONFIG_PKG CMAKECONFIG_PKG_INC CMAKECONFIG_PKG_LINK CMAKECONFIG_PKG_LIB CMAKECONFIG_INC CMAKECONFIG_LINK CMAKECONFIG_LIB CMAKECONFIG_PKG_COMPONENTS)
   export(PACKAGE ${PROJECT_NAME})
 endfunction()
 
