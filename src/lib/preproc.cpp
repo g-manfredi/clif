@@ -9,8 +9,8 @@
 
 namespace clif {
   
-ProcData::ProcData(int flags, Datastore *store, double min, double max, double depth, Interpolation interp, float scale, int skip, int custom_epi_height)
-: _flags(flags), _min(min), _max(max), _depth(depth), _interpolation(interp), _scale(scale), _skip(skip), _custom_epi_height(custom_epi_height)
+ProcData::ProcData(int flags, Datastore *store, double min, double max, double depth, Interpolation interp, float scale, int skip, int custom_epi_height, double focus_point)
+: _flags(flags), _min(min), _max(max), _depth(depth), _interpolation(interp), _scale(scale), _skip(skip), _custom_epi_height(custom_epi_height), _focus_point(focus_point)
 {  
   if (store)
     set_store(store);
@@ -271,6 +271,7 @@ void proc_image(Mat &in, Mat &out, const ProcData & proc, const Idx & pos)
   double max = proc.max();
   Datastore *store = proc.store();
   double depth = proc.depth();
+  double focus_point = proc.focus_point();
     
   flags &= ~NO_MEM_CACHE;
   flags &= ~NO_DISK_CACHE;
@@ -388,6 +389,15 @@ void proc_image(Mat &in, Mat &out, const ProcData & proc, const Idx & pos)
       printf("distortion model not supported\n");
       abort();
       }
+    if (focus_point != 0 && !std::isnan(focus_point)) {
+    	//do rectification
+    	int step_length = 0;
+    	double init_trans = (pos[3] - 1) * step_length / 2.0;
+    	double translation = init_trans - pos[3] * step_length;
+        double alpha = -std::atan2(translation, focus_point);
+        warp_image(curr_in, curr_out, translation, alpha, focus_point, K0,
+                             args.direction, use_points=False)
+    }
     }
   }
   

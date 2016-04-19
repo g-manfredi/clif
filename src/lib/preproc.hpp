@@ -43,7 +43,8 @@ public:
            Interpolation interp = Interpolation::LINEAR,
            float scale = 1.0,
            int skip = 0,
-		   int custom_epi_height = 0
+		   int custom_epi_height = 0,
+		   double focus_point = std::numeric_limits<double>::quiet_NaN()
           );
   ACC_D(int, skip, 0)
   ACC_D(int, custom_epi_height, 0)
@@ -52,6 +53,7 @@ public:
   ACC_D(double, depth, std::numeric_limits<double>::quiet_NaN())
   ACC_D(float, scale, 1.0)
   ACC_D(Interpolation, interpolation, Interpolation::LINEAR)
+  ACC_D(double, focus_point, std::numeric_limits<double>::quiet_NaN())
   ACC(cpath, intrinsics)
   
 public:

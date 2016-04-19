@@ -69,15 +69,17 @@ bool Subset3d::create(Dataset *set, const cpath & from, const ProcData & proc)
     
   if (_type == ExtrType::LINE) {
     double line_step[3];
+    double focus_point;
     
     _data->get(_root/"/line_step", line_step, 3);
     
     //TODO for now we only support horizontal lines!
-    //assert(line_step[0] != 0.0);
+    assert(line_step[0] != 0.0);
     assert(line_step[1] == 0.0);
     assert(line_step[2] == 0.0);
 
     step_length = line_step[0];
+    _data->get(_root/"/focus_point", focus_point, 1);
     if (skip)
     	step_length *= (skip + 1);
   }
