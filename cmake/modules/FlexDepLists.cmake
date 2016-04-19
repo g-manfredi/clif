@@ -231,7 +231,7 @@ macro(dep_lists_prepare_env)
   foreach(LIBDIR ${${_FDP_PNU}_PKG_LINK})
     if (NOT ("${${LIBDIR}}" MATCHES ".*-NOTFOUND"))
       list(APPEND ${_FDP_PNU}_LINK ${${LIBDIR}})
-      list(APPEND ${_FDP_PNU}_LINK_FOUND ${LIBDIR})
+      list(APPEND ${_FDP_PNU}_PKG_LINK_FOUND ${LIBDIR})
     else()
       # FIXME remove including in deps!
     endif()
@@ -240,13 +240,16 @@ macro(dep_lists_prepare_env)
 
   foreach(LIB ${${_FDP_PNU}_PKG_LIB})
     if (NOT ("${${LIB}}" MATCHES ".*-NOTFOUND"))
+      dep_lists_msg_info("add lib var content: ${LIB} : ${${LIB}}")
       list(APPEND ${_FDP_PNU}_LIB ${${LIB}})
-      list(APPEND ${_FDP_PNU}_LIB_FOUND ${LIB})
+      list(APPEND ${_FDP_PNU}_PKG_LIB_FOUND ${LIB})
     else()
+      dep_lists_msg_info("lib var not found: ${LIB} : ${${LIB}}")
       # FIXME remove including in deps!
     endif()
   endforeach()
-  dep_lists_clean_list(${_FDP_PNU}_LIB)
+  # WARNING no dep_lists_clean_list because it can contain (repeated) build type specifiesr (like debug, optimized, ...)
+  #dep_lists_clean_list(${_FDP_PNU}_LIB)
 
   #####################################################
   ## SET INCLUDES, LIBS, ... (private)
@@ -277,7 +280,8 @@ macro(dep_lists_prepare_env)
       # FIXME remove including in deps!
     endif()
   endforeach()
-  dep_lists_clean_list(${_FDP_PNU}_PRIVATE_LIB)
+  # WARNING no dep_lists_clean_list because it can contain (repeated) build type specifiesr (like debug, optimized, ...)
+  #dep_lists_clean_listdep_lists_clean_list(${_FDP_PNU}_PRIVATE_LIB)
 
 
   #####################################################
@@ -293,9 +297,9 @@ macro(dep_lists_prepare_env)
     add_definitions(-D${F})
   endforeach()
   
-  list(APPEND ${_FDP_PNU}_LIBRARIES ${_FDP_PNU}_LIB)
-  list(APPEND ${_FDP_PNU}_INCLUDE_DIRS ${_FDP_PNU}_INC)
-  list(APPEND ${_FDP_PNU}_LIBRARY_DIRS ${_FDP_PNU}_LIB)
+  list(APPEND ${_FDP_PNU}_LIBRARIES ${${_FDP_PNU}_LIB})
+  list(APPEND ${_FDP_PNU}_INCLUDE_DIRS ${${_FDP_PNU}_INC})
+  list(APPEND ${_FDP_PNU}_LIBRARY_DIRS ${${_FDP_PNU}_LIB})
 endmacro(dep_lists_prepare_env)
 
 macro(dep_lists_append _FDP_NAME)

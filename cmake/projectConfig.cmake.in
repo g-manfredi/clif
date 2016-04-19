@@ -93,7 +93,7 @@ foreach(PACKAGE ${@PNU@_PACKAGES})
     set(FDP_HAVE_SEARCHED_${PACKAGE}_COMPONENTS ${@PNU@_${PACKAGE}_COMPONENTS})
   
     if (@PNU@_${PACKAGE}_COMPONENTS)
-      message(STATUS "search with COMPS: ${@PNU@_${PACKAGE}_COMPONENTS}")
+      #message(STATUS "search with COMPS: ${@PNU@_${PACKAGE}_COMPONENTS}")
       find_package(${PACKAGE} QUIET COMPONENTS ${@PNU@_${PACKAGE}_COMPONENTS})
     else()
       find_package(${PACKAGE} QUIET)
