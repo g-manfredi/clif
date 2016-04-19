@@ -62,6 +62,7 @@ bool Subset3d::create(Dataset *set, const cpath & from, const ProcData & proc)
   
   _proc.set_flags(_proc.flags() | UNDISTORT);
   _proc.set_store(_store);
+  _proc.set_img_count(_store->imgCount());
   
   _data->getEnum((_root/"type"), _type);
   
@@ -69,9 +70,8 @@ bool Subset3d::create(Dataset *set, const cpath & from, const ProcData & proc)
     
   if (_type == ExtrType::LINE) {
     double line_step[3];
-    double focus_point;
     
-    _data->get(_root/"/line_step", line_step, 3);
+    _data->get(_root/"line_step", line_step, 3);
     
     //TODO for now we only support horizontal lines!
     assert(line_step[0] != 0.0);
@@ -79,8 +79,19 @@ bool Subset3d::create(Dataset *set, const cpath & from, const ProcData & proc)
     assert(line_step[2] == 0.0);
 
     step_length = line_step[0];
-    _data->get(_root/"/focus_point", focus_point, 1);
+    _proc.set_step_length(step_length);
+    //this has to be the original step length that was used for the capture
+    //since it is used for the rectification.
+
+
+    Attribute *focus_point_attr = _data->get(_root/"focus_point");
+    if (focus_point_attr) {
+    	focus_point_attr->get(focus_point);
+    	_proc.set_focus_point(focus_point);
+    }
+
     if (skip)
+    	// important for mesh creation
     	step_length *= (skip + 1);
   }
   else if (_type == ExtrType::CIRCLE)
@@ -94,6 +105,7 @@ bool Subset3d::create(Dataset *set, const cpath & from, const ProcData & proc)
   
   //TODO which extrinsics to select!
   _data->get(_data->getSubGroup("calibration/intrinsics")/"/projection", _f, 2);
+  _proc.set_f(_f);
   
   return true;
 }

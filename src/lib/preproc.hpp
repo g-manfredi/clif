@@ -43,8 +43,7 @@ public:
            Interpolation interp = Interpolation::LINEAR,
            float scale = 1.0,
            int skip = 0,
-		   int custom_epi_height = 0,
-		   double focus_point = std::numeric_limits<double>::quiet_NaN()
+		   int custom_epi_height = 0
           );
   ACC_D(int, skip, 0)
   ACC_D(int, custom_epi_height, 0)
@@ -54,8 +53,23 @@ public:
   ACC_D(float, scale, 1.0)
   ACC_D(Interpolation, interpolation, Interpolation::LINEAR)
   ACC_D(double, focus_point, std::numeric_limits<double>::quiet_NaN())
+  ACC_D(double, step_length, std::numeric_limits<double>::quiet_NaN())
+  ACC_D(int, img_count, 0)
   ACC(cpath, intrinsics)
   
+
+
+private:
+	double _f[2];
+public:
+	const double f(int dim = 0) const {
+		return cvRound(_f[dim]*_scale);
+	}
+	void set_f(double *val) {
+		_f[0] = val[0];
+		_f[1] = val[1];
+	}
+
 public:
   Datastore* store() const;
   void set_store(Datastore *store);
