@@ -1,6 +1,8 @@
 #ifndef _CLIF_ENUMTYPES_H
 #define _CLIF_ENUMTYPES_H
 
+#include <metamat/mat.hpp>
+
 #include <unordered_map>
 #include <typeindex>
 #include <string.h>
@@ -8,8 +10,6 @@
 #include <vector>
 
 #include <opencv2/core/core.hpp>
-
-#include <metamat/mat.hpp>
 
 namespace clif {
   //enum class DataType : int {${DataTypeEnums}};

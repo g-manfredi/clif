@@ -44,8 +44,10 @@ endif()
 #####################################################
 dep_lists_init()
 
-dep_lists_append(Eigen3 OPTIONAL EIGEN3_INCLUDE_DIR)
 dep_lists_append(OpenCV OpenCV_INCLUDE_DIRS "" OpenCV_LIBS)
+dep_lists_append(HDF5 COMPONENTS C CXX)
+
+dep_lists_append(Eigen3 OPTIONAL EIGEN3_INCLUDE_DIR)
 dep_lists_append(Eigen3 OPTIONAL)
 
 # FIXME use global static/shared switch boost

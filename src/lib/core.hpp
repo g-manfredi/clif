@@ -1,10 +1,11 @@
 #ifndef _CLIF_CORE_H
 #define _CLIF_CORE_H
 
+#include "enumtypes.hpp"
+#include "helpers.hpp"
+
 #include <boost/filesystem.hpp>
 
-#include "helpers.hpp"
-#include "enumtypes.hpp"
 
 
 namespace clif {

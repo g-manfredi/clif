@@ -24,7 +24,7 @@ add_executable(clifprocstore clifprocstore.cpp)
 
 if (CLIF_COMPILER_MSVC)
   #link_directories("C:/Users/Test/Desktop/UniHD_OpenLF/glew-1.13.0/lib/Release/Win32")
-  target_link_libraries(clif-bin clif cliini ${CLIF_LINK_LIBRARIES})
+  target_link_libraries(clif-bin clif)
 else()
   set_target_properties(clif-bin PROPERTIES OUTPUT_NAME clif)
   target_link_libraries(clif-bin clif cliini)
