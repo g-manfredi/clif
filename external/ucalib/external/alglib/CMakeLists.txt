@@ -1,5 +1,6 @@
 cmake_minimum_required (VERSION 2.8.8)
-project(MetaMat)
+project(Alglib)
+
 string(TOUPPER ${PROJECT_NAME} PNU)
 
 # FIXME handle common includes
@@ -43,47 +44,34 @@ endif()
 ## DEPENDENCIES
 #####################################################
 dep_lists_init()
-
-dep_lists_append(OpenCV OpenCV_INCLUDE_DIRS "" OpenCV_LIBS)
-dep_lists_append(HDF5 COMPONENTS C CXX)
-
-dep_lists_append(Eigen3 OPTIONAL EIGEN3_INCLUDE_DIR)
-
-# FIXME use global static/shared switch boost
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-	set(Boost_USE_STATIC_LIBS ON)
-endif()
-# FIXME implement components: COMPONENTS filesystem system
-dep_lists_append(Boost Boost_INCLUDE_DIRS Boost_LIBRARY_DIRS Boost_LIBRARIES COMPONENTS filesystem system)
-
-set(VIGRAIMPEX_VAR vigraimpex)
-dep_lists_append(Vigra Vigra_INCLUDE_DIRS "" VIGRAIMPEX_VAR)
-
 dep_lists_pkg_search()
 dep_lists_prepare_env()
 
-######################
+file(DOWNLOAD http://www.alglib.net/translator/re/alglib-3.10.0.cpp.gpl.tgz "${CMAKE_CURRENT_BINARY_DIR}/alglib.tgz")
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src")
+execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${CMAKE_CURRENT_BINARY_DIR}/alglib.tgz"
+WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src")
 
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+file(GLOB ${PNU}_SRCS "${CMAKE_CURRENT_BINARY_DIR}/src/cpp/src/*.cpp")
+file(GLOB ${PNU}_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/src/cpp/src/*.h")
 
+
+#message("source: ")
 
 #####################################################
 ## COMPILE
 #####################################################
 # headers are included so they form a dependency for file(COPY later)
-add_library(metamat mat.cpp basetype.cpp)
-target_link_libraries(metamat PUBLIC ${${PNU}_LINK_LIBRARIES} ${${PNU}_LIB})
-target_link_libraries(metamat PRIVATE ${${PNU}_PRIVATE_LINK_LIBRARIES} ${${PNU}_PRIVATE_LIB})
+add_library(Alglib ${${PNU}_SRCS})
 
-set(${PNU}_EXPORT_LIBS metamat)
+set(${PNU}_EXPORT_LIBS Alglib)
 
 #####################################################
 ## EXPORT
 #####################################################
 
 #copy headers and generate XXXConfig.cmake
-set(${PNU}_HEADERS mat.hpp basetype.hpp)
-dep_lists_export_local()
+dep_lists_export_local(DIRECT_HEADER_INCLUDE)
 
 
 

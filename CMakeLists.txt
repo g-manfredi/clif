@@ -2,6 +2,8 @@ cmake_minimum_required (VERSION 2.8.8)
 project(clif)
 string(TOUPPER ${PROJECT_NAME} PNU)
 
+option(GPL_BUILD "create GPL'ed binaries" OFF)
+
 #####################################################
 ## GLOBAL
 #####################################################
