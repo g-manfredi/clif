@@ -31,6 +31,8 @@ public:
   
   double disparity2depth(double disparity)
   {
+    if (!std::isnan(focus_point) && focus_point != 0)
+    	disparity += depth2disparity(focus_point);
     return f()*step_length/disparity;
   }
   
@@ -55,6 +57,7 @@ public:
   
   double _f[2];
   double step_length;
+  double focus_point;
   
   cpath extrinsics_group();
   //double world_to_camera[6];
