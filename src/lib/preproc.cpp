@@ -418,7 +418,7 @@ void proc_image(Mat &in, Mat &out, const ProcData & proc, const Idx & pos)
 		t = t / t.at<double>(2, 0); // normalize vector
 		// construct translation matrix
 		cv::Mat T = cv::Mat::eye(3, 3, CV_64F);
-		T.col(2) = t;
+		t.copyTo(T.col(2));
 		// Define rotation matrix
 		//TODO for now we only support horizontal lines!
 		double r[3][3] = {{cos(alpha),  0, sin(alpha)},
@@ -434,14 +434,12 @@ void proc_image(Mat &in, Mat &out, const ProcData & proc, const Idx & pos)
 		H = H / H.at<double>(2, 2); // normalize matrix
 
 		cv::Size img_size = cv::Size_<int>(w, h);
-		cv::Mat in_mat  = cv::Mat(img_size, CV_64F);
-		cv::Mat out_mat = cv::Mat(img_size, CV_64F);
 		// iterate color channels
 		for(int c=0;c<curr_out[2];c++){
-			in_mat = cvMat(curr_out.bind(2, c));
+			cv::Mat out_mat = cvMat(curr_out.bind(2, c));
+			cv::Mat in_mat = out_mat.clone();
 			cv::warpPerspective(in_mat, out_mat, H, img_size,
 					cv::INTER_LINEAR | cv::WARP_INVERSE_MAP);
-			curr_out.bind(2, c) = Mat(out_mat);
 		}
     }
     }
