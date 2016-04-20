@@ -68,7 +68,7 @@ dep_lists_export_local()
 #####################################################
 ## SHOW CONFIG
 #####################################################
-message("build info:")
+message("build info for ${PROJECT_NAME}:")
 message("  optional components:")
 
 msg_yesno("    opengl viewer" ${PNU}_WITH_VIEWER)

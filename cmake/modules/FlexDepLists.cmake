@@ -58,6 +58,23 @@ if (NOT WIN32)
   set(BoldWhite   "${Esc}[1;37m")
 endif()
 
+function(dep_lists_pkg_found PKG RET)
+  string(TOLOWER ${PKG} LOW)
+  string(TOUPPER ${PKG} UP)
+  
+  set(${RET} FALSE PARENT_SCOPE)
+  
+  if (${${PKG}_FOUND})
+    set(${RET} TRUE PARENT_SCOPE)
+  endif()
+  if (${${LOW}_FOUND})
+    set(${RET} TRUE PARENT_SCOPE)
+  endif()
+  if (${${UP}_FOUND})
+    set(${RET} TRUE PARENT_SCOPE)
+  endif()
+endfunction()
+
 macro(dep_lists_clean_list LIST)
   if (DEFINED ${LIST})
     list(REMOVE_DUPLICATES ${LIST})
@@ -70,6 +87,35 @@ macro(dep_lists_msg_info MSG)
       message(${MSG})
     endif()
   endif()
+endmacro()
+
+#like cmake_parse_arguments but keeps empty args
+macro(dep_lists_parse _dlp_NAME _dlp_OPTS _dlp_SINGLE _dlp_MULTI)
+  set(_dlp_ARGS "")
+  set(_dlp_ARGLIST "${ARGN}")
+  
+  # FIXME reset to input after macro?
+  cmake_policy(SET CMP0054 NEW)
+  
+  foreach(_dlp_ARG IN LISTS _dlp_ARGLIST)
+    if("${_dlp_ARG}" STREQUAL "")
+      list(APPEND _dlp_ARGS "DEP_LISTS_PARSE_EMPTY")
+    else()
+      list(APPEND _dlp_ARGS ${_dlp_ARG})
+    endif()
+  endforeach()
+  
+  cmake_parse_arguments("${_dlp_NAME}" "${_dlp_OPTS}" "${_dlp_SINGLE}" "${_dlp_MULTI}" ${_dlp_ARGS})
+  
+  set(_dlp_ARGS ${dep_lists_append_UNPARSED_ARGUMENTS})
+  set(dep_lists_append_UNPARSED_ARGUMENTS "")
+  foreach(_dlp_ARG ${_dlp_ARGS})
+    if("${_dlp_ARG}" STREQUAL "DEP_LISTS_PARSE_EMPTY")
+      list(APPEND dep_lists_append_UNPARSED_ARGUMENTS "")
+    else()
+      list(APPEND dep_lists_append_UNPARSED_ARGUMENTS ${_dlp_ARG})
+    endif()
+  endforeach()
 endmacro()
 
 #if components are specified those are serialized into ${PNU}_PKG_COMPONENTS
@@ -95,7 +141,7 @@ macro(dep_lists_check_find PACKAGE RET PNU)
     string(TOLOWER ${PACKAGE} PKG_LOW)
     
     #check if pkg was found (various conventions...)
-    pkg_found(${PACKAGE} FOUND)
+    dep_lists_pkg_found(${PACKAGE} FOUND)
     
     if (NOT FOUND)
       list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/find/${PKG_LOW})
@@ -106,7 +152,7 @@ macro(dep_lists_check_find PACKAGE RET PNU)
         find_package(${PACKAGE} QUIET)
       endif()
       
-      pkg_found(${PACKAGE} FOUND)
+      dep_lists_pkg_found(${PACKAGE} FOUND)
     endif()
     
     if (FOUND)
@@ -310,7 +356,7 @@ endmacro(dep_lists_prepare_env)
 
 macro(dep_lists_append _FDP_NAME)
   set(dep_lists_append_UNPARSED_ARGUMENTS "")
-  cmake_parse_arguments(dep_lists_append "OPTIONAL;PRIVATE" "PREFIX" "COMPONENTS" ${ARGN})
+  dep_lists_parse(dep_lists_append "OPTIONAL;PRIVATE" "PREFIX" "COMPONENTS" "${ARGN}")
   
   string(TOUPPER ${_FDP_NAME} _FDP_NAME_UPPER)
   
@@ -324,7 +370,7 @@ macro(dep_lists_append _FDP_NAME)
   if (dep_lists_append_COMPONENTS)
     set(${_FDP_PREFIX}_${_FDP_NAME}_COMPONENTS ${dep_lists_append_COMPONENTS})
   endif()
-  
+    
   dep_lists_opt_get(dep_lists_append_UNPARSED_ARGUMENTS 0 _FDP_A0)
   dep_lists_opt_get(dep_lists_append_UNPARSED_ARGUMENTS 1 _FDP_A1)
   dep_lists_opt_get(dep_lists_append_UNPARSED_ARGUMENTS 2 _FDP_A2)

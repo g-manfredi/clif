@@ -2,6 +2,10 @@ cmake_minimum_required (VERSION 2.8.8)
 project(clif)
 string(TOUPPER ${PROJECT_NAME} PNU)
 
+#####################################################
+## OPTIONS
+#####################################################
+
 option(GPL_BUILD "create GPL'ed binaries" OFF)
 
 #####################################################
@@ -16,8 +20,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/mod
 include(CMakePackageConfigListHelpers)
 include(FlexDepLists)
 
-dep_lists_init()
-
 # FIXME add Debug, etc. on win!
 foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
 	string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
@@ -26,141 +28,11 @@ foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 endforeach()
 
+#####################################################
+## COMPILER
+#####################################################
+
 set(${PNU}_BUILD_TYPE "SHARED")
-
-option(${PNU}_BUILD_LIBIGL "checkout and build libigl" OFF)
-
-#####################################################
-## DEPENDENCIES
-#####################################################
-function(pkg_found PKG RET)
-  string(TOLOWER ${PKG} LOW)
-  string(TOUPPER ${PKG} UP)
-  
-  set(${RET} FALSE PARENT_SCOPE)
-  
-  if (${${PKG}_FOUND})
-    set(${RET} TRUE PARENT_SCOPE)
-  endif()
-  if (${${LOW}_FOUND})
-    set(${RET} TRUE PARENT_SCOPE)
-  endif()
-  if (${${UP}_FOUND})
-    set(${RET} TRUE PARENT_SCOPE)
-  endif()
-endfunction()
-
-#####################################################
-## DEPENDENCIES
-#####################################################
-
-list(APPEND ${PNU}_PKG MetaMat)
-list(APPEND ${PNU}_PKG_INC  METAMAT_INCLUDE_DIRS)
-list(APPEND ${PNU}_PKG_LINK METAMAT_LIBRARY_DIRS)
-list(APPEND ${PNU}_PKG_LIB  METAMAT_LIBRARIES)
-
-#ucalib (contains ceres-solver)
-list(APPEND ${PNU}_PRIVATE_PKG_OPT ucalib)
-list(APPEND ${PNU}_PRIVATE_PKG_INC  UCALIB_INCLUDE_DIRS)
-list(APPEND ${PNU}_PRIVATE_PKG_LINK UCALIB_LIBRARY_DIRS)
-list(APPEND ${PNU}_PRIVATE_PKG_LIB  UCALIB_LIBRARIES)
-
-#cliini 
-list(APPEND ${PNU}_PRIVATE_PKG cliini)
-list(APPEND ${PNU}_PRIVATE_PKG_INC  CLIINI_INCLUDE_DIRS)
-list(APPEND ${PNU}_PRIVATE_PKG_LINK CLIINI_LIBRARY_DIRS)
-list(APPEND ${PNU}_PRIVATE_PKG_LIB  CLIINI_LIBRARIES)
-
-
-list(APPEND ${PNU}_PKG OpenCV)
-list(APPEND ${PNU}_PKG_INC  OpenCV_INCLUDE_DIRS)
-list(APPEND ${PNU}_PKG_LINK OpenCV_LIB_DIR)
-list(APPEND ${PNU}_PKG_LIB  OpenCV_LIBRARIES)
-
-
-list(APPEND ${PNU}_PKG Vigra)
-list(APPEND ${PNU}_PKG_INC Vigra_INCLUDE_DIRS)
-set(VIGRAIMPEX_VAR vigraimpex)
-list(APPEND ${PNU}_PKG_LIB VIGRAIMPEX_VAR)
-#FIXME ask Ullrich why theres no VIGRA_LIBRARIES?
-
-list(APPEND ${PNU}_PKG_OPT hdmarker)
-list(APPEND ${PNU}_PKG_INC  HDMARKER_INCLUDE_DIRS)
-list(APPEND ${PNU}_PKG_LINK HDMARKER_LIBRARY_DIRS)
-list(APPEND ${PNU}_PKG_LIB  HDMARKER_LIBRARIES)
-  
-dep_lists_append(mm-mesh OPTIONAL)
-
-# FIXME boost vs h?
-# if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-# 	set(Boost_USE_STATIC_LIBS ON)
-# endif()
-# find_package(Boost REQUIRED COMPONENTS filesystem system)
-# list(APPEND CLIF_LINK_LIBRARIES ${Boost_LIBRARIES})
-# list(APPEND CLIF_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
-# list(APPEND CLIF_LIBRARY_DIRS ${Boost_LIBRARY_DIRS})
-
-#####################################################
-## EXPORT / INSTALL
-#####################################################
-
-# FIXME clif-qt should be optional
-#list(APPEND ${PNU}_EXPORT_LIBS clif clif-qt)
-
-#####################################################
-## HACK/EXTRA
-#####################################################
-
-# FIXME how to handle order for packages which are in a subdirectory (fnmatch) and where other packages depend upon (cliini)
-# FIXME detailed (package based) dependency handling?
-
-if (NOT DEFINED FNMATCH_USE_INTERNAL)
-  find_path(FNMATCH_INCLUDE_DIR NAMES fnmatch.h)
-  if (NOT FNMATCH_INCLUDE_DIR)
-    set(FNMATCH_USE_INTERNAL TRUE CACHE BOOL "use internal fnmatch code")
-  else()
-    set(FNMATCH_USE_INTERNAL FALSE CACHE BOOL "use internal fnmatch code")
-  endif()
-endif()
-
-#compile
-if (FNMATCH_USE_INTERNAL)
-  add_subdirectory(external/fnmatch)
-  include_directories(external/fnmatch)
-  link_directories(external/fnmatch)
-endif()
-
-#included external projects (is referenced as package above)
-add_subdirectory(external/cliini)
-add_subdirectory(external/mm)
-
-# TODO optional subproject handling
-set(DEP_LISTS_SOFT_FAIL true)
-
-add_subdirectory(external/mm-mesh)
-add_subdirectory(external/ucalib)
-
-set(DEP_LISTS_SOFT_FAIL false)
-
-#####################################################
-## search packages
-#####################################################
-dep_lists_pkg_search(${PNU})
-
-
-
-#####################################################
-## FEATURES depending on multiple packages
-#####################################################
-
-find_package(OpenCV REQUIRED)
-
-#####################################################
-## SET AND USE INCLUDES, LIBS, LINK_DIRS
-#####################################################
-dep_lists_prepare_env(${PNU})
-
-######################
 
 set(${PNU}_BUILD_TYPE "SHARED")
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL Clang)
@@ -194,53 +66,80 @@ else()
   set(BUILD_SHARED_LIBS ON)
 endif()
 
+#####################################################
+## COMPILER
+#####################################################
 
-#This is to avoid that stupid windows links dlls
+dep_lists_init()
 
-if (NOT COMPILE_EXTERNAL)
-	find_package(HDF5 REQUIRED C CXX)
-elseif()
-	if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-		set(HDF5_USE_STATIC_LIBRARIES true)
-		if (CMAKE_BUILD_TYPE MATCHES Debug)
-		message(STATUS "DEBUG")
-			set(HDF5_C_LIBRARIES ${HDF5_LIBRARIES})
-		else()
-		message(STATUS "Release")
-			set(HDF5_C_LIBRARIES ${HDF5_LIBRARIES})
-		endif()
-	endif()
-endif()
+dep_lists_append(OpenCV OpenCV_INCLUDE_DIRS "" OpenCV_LIBS)
+dep_lists_append(MetaMat)
+dep_lists_append(cliini)
 
-list(APPEND CLIF_LINK_LIBRARIES ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES})
-list(APPEND CLIF_INCLUDE_DIRS ${HDF5_INCLUDE_DIR})
-list(APPEND CLIF_LIBRARY_DIRS ${HDF5_LIBRARY_DIR})
+set(VIGRAIMPEX_VAR vigraimpex)
+dep_lists_append(Vigra Vigra_INCLUDE_DIRS VIGRAIMPEX_VAR)
 
-find_package(Vigra REQUIRED)
-#FIXME ask Ullrich why theres not VIGRA_LIBRARIES?
-list(APPEND CLIF_LINK_LIBRARIES vigraimpex)
-list(APPEND CLIF_INCLUDE_DIRS ${Vigra_INCLUDE_DIRS})
-#FIXME ask Ullrich why theres not VIGRA_LIBRARY_DIRS?
-#list(APPEND CLIF_LIBRARY_DIRS !!!FIXME!!!)
+dep_lists_append(hdmarker OPTIONAL)
+dep_lists_append(mm-mesh OPTIONAL)
+dep_lists_append(ucalib OPTIONAL)
+dep_lists_append(Qt5Widgets OPTIONAL Qt5Widgets_INCLUDE_DIRS Qt5Widgets_LIBRARY_DIRS Qt5Widgets_LIBRARIES)
 
+#####################################################
+## SUBPROJECTS
+#####################################################
 
-find_package(Qt5Widgets QUIET)
+# FIXME how to handle order for packages which are in a subdirectory (fnmatch) and where other packages depend upon (cliini)
+# FIXME detailed (package based) dependency handling?
 
-if (Qt5Widgets_FOUND)
-  set(CLIF_BUILD_QT TRUE)
-  # FIXME use CLIF_DEFINES
-  add_definitions(-DCLIF_BUILD_QT)
-  if (COMPILE_EXTERNAL)#This is necessary because windows somehow don't want to add the debug part when it gets compiled by openlf
-	list(APPEND CLIF_LINK_LIBRARIES ${Qt5Widgets_LIBRARIES} debug;Qt5::Widgets)
+if (NOT DEFINED FNMATCH_USE_INTERNAL)
+  find_path(FNMATCH_INCLUDE_DIR NAMES fnmatch.h)
+  if (NOT FNMATCH_INCLUDE_DIR)
+    set(FNMATCH_USE_INTERNAL TRUE CACHE BOOL "use internal fnmatch code")
   else()
-	list(APPEND CLIF_LINK_LIBRARIES ${Qt5Widgets_LIBRARIES})
+    set(FNMATCH_USE_INTERNAL FALSE CACHE BOOL "use internal fnmatch code")
   endif()
-  list(APPEND CLIF_INCLUDE_DIRS ${Qt5Widgets_INCLUDE_DIRS})
-  list(APPEND CLIF_LIBRARY_DIRS ${Qt5Widgets_LIBRARY_DIRS})
-  #message("QTQTQTQT: ${CLIF_LINK_LIBRARIES}")
-else()
-  set(CLIF_BUILD_QT_REASON "[Qt5Widgets not found]")
 endif()
+
+if (FNMATCH_USE_INTERNAL)
+  add_subdirectory(external/fnmatch)
+  include_directories(external/fnmatch)
+  link_directories(external/fnmatch)
+endif()
+
+#included external projects (are referenced as package above)
+add_subdirectory(external/cliini)
+add_subdirectory(external/mm)
+
+# TODO optional subproject handling
+set(DEP_LISTS_SOFT_FAIL true)
+
+add_subdirectory(external/mm-mesh)
+add_subdirectory(external/ucalib)
+
+set(DEP_LISTS_SOFT_FAIL false)
+
+######################
+
+dep_lists_pkg_search()
+dep_lists_prepare_env()
+
+# find_package(Qt5Widgets QUIET)
+# 
+# if (Qt5Widgets_FOUND)
+#   set(CLIF_BUILD_QT TRUE)
+#   # FIXME use CLIF_DEFINES
+#   add_definitions(-DCLIF_BUILD_QT)
+#   if (COMPILE_EXTERNAL)#This is necessary because windows somehow don't want to add the debug part when it gets compiled by openlf
+# 	list(APPEND CLIF_LINK_LIBRARIES ${Qt5Widgets_LIBRARIES} debug;Qt5::Widgets)
+#   else()
+# 	list(APPEND CLIF_LINK_LIBRARIES ${Qt5Widgets_LIBRARIES})
+#   endif()
+#   list(APPEND CLIF_INCLUDE_DIRS ${Qt5Widgets_INCLUDE_DIRS})
+#   list(APPEND CLIF_LIBRARY_DIRS ${Qt5Widgets_LIBRARY_DIRS})
+#   #message("QTQTQTQT: ${CLIF_LINK_LIBRARIES}")
+# else()
+#   set(CLIF_BUILD_QT_REASON "[Qt5Widgets not found]")
+# endif()
 
 # if (NOT DEFINED FNMATCH_USE_INTERNAL)
 #   find_path(FNMATCH_INCLUDE_DIR NAMES fnmatch.h)
@@ -285,7 +184,7 @@ list(APPEND CLIF_BUILD_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/include external
 
 # FIXME remove all content and move to _LIB, _LINK, _INC
 link_directories(${CLIF_LIBRARY_DIRS})
- link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 include_directories(${CLIF_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR}/include ${CMAKE_CURRENT_BINARY_DIR}/include/clif)
 list(APPEND ${PNU}_LIB ${CLIF_LINK_LIBRARIES})
 
@@ -298,11 +197,13 @@ foreach(dir ${CLIF_BUILD_COMPILE_DIRS})
   add_subdirectory(${dir})
 endforeach()
 
-message("build info:")
-message("  optional components:")
 
-msg_yesno("    qt-widgets" CLIF_BUILD_QT)
+
+message("build info: for ${PROJECT_NAME}:")
+message("  intern/extern:")
 msg_yesno("    internal fnmatch" FNMATCH_USE_INTERNAL COLOR Green)
+message("  optional components:")
+msg_yesno("    qt-widgets" CLIF_WITH_QT5WIDGETS)
 msg_yesno("    hdmarker detection" CLIF_WITH_HDMARKER)
 msg_yesno("    ucalib calibration" CLIF_WITH_UCALIB)
 msg_yesno("    mesh libigl" MM-MESH_WITH_LIBIGL)
