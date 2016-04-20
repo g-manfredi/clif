@@ -13,13 +13,13 @@
 #include <unistd.h>
 #endif
 
-#include "H5Cpp.h"
-#include "H5File.h"
+#include <H5Cpp.h>
+#include <H5File.h>
 
-#include "dataset.hpp"
-#include "clif.hpp"
+#include <clif/dataset.hpp>
+#include <clif/clif.hpp>
 
-#include "opencv2/highgui/highgui.hpp"
+#include <opencv2/highgui/highgui.hpp>
 
 
 using namespace clif;

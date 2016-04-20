@@ -44,6 +44,7 @@ if (${PNU}_BUILD_LIBIGL)
   endif()
 endif()
 
+set(${PNU}_HEADERS mesh.hpp)
 dep_lists_prepare_env()
 
 #####################################################
@@ -60,7 +61,6 @@ list(APPEND ${PNU}_EXPORT_LIBS mm-mesh)
 #####################################################
 ## PUBLIC HEADERS
 #####################################################
-set(${PNU}_HEADERS mesh.hpp)
 
 #copy headers and generate XXXConfig.cmake
 dep_lists_export_local()

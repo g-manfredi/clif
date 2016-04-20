@@ -1,14 +1,14 @@
 #ifndef _CLIFEPIDIALOG
 #define _CLIFEPIDIALOG
 
-#include "clif.hpp"
-#include "subset3d.hpp"
+#include <clif/clif.hpp>
+#include <clif/subset3d.hpp>
 
 #include "clifscaledimageview.hpp"
 
 #include <QDialog>
 
-#include "clif/config.h"
+#include <clif/config.hpp>
 
 class QVBoxLayout;
 class QImage;

@@ -1,8 +1,8 @@
 #include "clif_qt.hpp"
 
-#include "dataset.hpp"
-#include "subset3d.hpp"
-#include "preproc.hpp"
+#include <clif/dataset.hpp>
+#include <clif/subset3d.hpp>
+#include <clif/preproc.hpp>
 
 #include <limits>
 #include <opencv2/highgui/highgui.hpp>

@@ -14,17 +14,17 @@
 #endif
 
 
-#include "dataset.hpp"
-#include "hdf5.hpp"
-#include "clif_cv.hpp"
-#include "calib.hpp"
-#include "cam.hpp"
+#include <clif/dataset.hpp>
+#include <clif/hdf5.hpp>
+#include <clif/clif_cv.hpp>
+#include <clif/calib.hpp>
+#include <clif/cam.hpp>
 
 #include <H5Library.h>
 
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/calib3d/calib3d.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/calib3d/calib3d.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 using namespace clif;
 using namespace std;

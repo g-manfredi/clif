@@ -16,10 +16,6 @@
 #include "clifepiview.hpp"
 #include "clif_qt.hpp"
 
-#include "dataset.hpp"
-#include "subset3d.hpp"
-#include "preproc.hpp"
-
 namespace clif {
 
 clifStoreView::clifStoreView(Datastore *store, QWidget* parent)

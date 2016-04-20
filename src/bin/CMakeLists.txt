@@ -1,9 +1,12 @@
 cmake_minimum_required (VERSION 2.6)
 project(clif-bin)
 
-remove_definitions(-DCLIF_EXPORT_LIBRARY)
-
 cmake_policy(VERSION 2.8.11)
+
+dep_lists_init()
+dep_lists_append(clif)
+dep_lists_pkg_search()
+dep_lists_prepare_env()
 
 #add_executable(loadbench loadbench.cpp)
 add_executable(clif-bin clif.cpp)

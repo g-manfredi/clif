@@ -58,6 +58,8 @@ set(VIGRAIMPEX_VAR vigraimpex)
 dep_lists_append(Vigra Vigra_INCLUDE_DIRS "" VIGRAIMPEX_VAR)
 
 dep_lists_pkg_search()
+
+set(${PNU}_HEADERS mat.hpp basetype.hpp)
 dep_lists_prepare_env()
 
 ######################
@@ -80,7 +82,6 @@ set(${PNU}_EXPORT_LIBS metamat)
 #####################################################
 
 #copy headers and generate XXXConfig.cmake
-set(${PNU}_HEADERS mat.hpp basetype.hpp)
 dep_lists_export_local()
 
 

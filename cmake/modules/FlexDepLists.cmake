@@ -352,6 +352,35 @@ macro(dep_lists_prepare_env)
   list(APPEND ${_FDP_PNU}_LIBRARIES ${${_FDP_PNU}_LIB})
   list(APPEND ${_FDP_PNU}_INCLUDE_DIRS ${${_FDP_PNU}_INC})
   list(APPEND ${_FDP_PNU}_LIBRARY_DIRS ${${_FDP_PNU}_LIB})
+  
+  string(TOLOWER ${_FDP_PNU} PNL)
+  
+#####################################################
+## copy headers to common location
+#####################################################
+  if (dep_lists_append_HEADER_PREFIX)
+    set(_FDP_HEADER_PREFIX ${dep_lists_append_HEADER_PREFIX})
+  else()
+    string(TOLOWER ${_FDP_PNU} _FDP_HEADER_PREFIX)
+  endif()
+  
+  add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/ COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX})
+  set(_FPD_HEADER_DEPLIST ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX})
+                 
+  foreach(_H ${${_FDP_PNU}_HEADERS})
+    if (IS_ABSOLUTE ${_H})
+      set(_SRC_H ${_H})
+    else()
+      set(_SRC_H ${CMAKE_CURRENT_SOURCE_DIR}/${_H})
+    endif()
+    get_filename_component(_H ${_H} NAME)
+    add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/${_H}
+                       COMMAND ${CMAKE_COMMAND} -E copy ${_SRC_H} ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/
+                       DEPENDS ${_SRC_H})
+    list(APPEND _FPD_HEADER_DEPLIST ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/${_H})
+  endforeach()
+  
+  add_custom_target(${PNL}-header-export ALL DEPENDS ${_FPD_HEADER_DEPLIST})
 endmacro(dep_lists_prepare_env)
 
 macro(dep_lists_append _FDP_NAME)
@@ -428,6 +457,8 @@ macro(dep_lists_init)
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
+  
+  string(TOUPPER ${PROJECT_NAME} PNU)
 endmacro()
 
 # install ${${PNU}_HEADERS} into CMAKE_CURRENT_BINARY_DIR/${PNL}/
@@ -446,31 +477,6 @@ function(dep_lists_export_local)
   endif()
   
   string(TOLOWER ${_FDP_PNU} PNL)
-  
-  #output prefix (normally upper case project name)
-  if (dep_lists_append_HEADER_PREFIX)
-    set(_FDP_HEADER_PREFIX ${dep_lists_append_HEADER_PREFIX})
-  else()
-    string(TOLOWER ${_FDP_PNU} _FDP_HEADER_PREFIX)
-  endif()
-  
-  add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/ COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX})
-  set(_FPD_HEADER_DEPLIST ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX})
-                     
-  foreach(_H ${${_FDP_PNU}_HEADERS})
-    if (IS_ABSOLUTE ${_H})
-      set(_SRC_H ${_H})
-    else()
-      set(_SRC_H ${CMAKE_CURRENT_SOURCE_DIR}/${_H})
-    endif()
-    get_filename_component(_H ${_H} NAME)
-    add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/${_H}
-                       COMMAND ${CMAKE_COMMAND} -E copy ${_SRC_H} ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/
-                       DEPENDS ${_SRC_H})
-    list(APPEND _FPD_HEADER_DEPLIST ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/${_H})
-  endforeach()
-  
-  add_custom_target(${PNL}-header-export ALL DEPENDS ${_FPD_HEADER_DEPLIST})
 
   include(CMakePackageConfigListHelpers)
 

@@ -7,7 +7,7 @@
 
 #include <QLocalSocket>
 
-#include "clif_qt.hpp"
+#include <clif-qt/clif_qt.hpp>
 
 class DatasetRoot;
 class QLocalServer;

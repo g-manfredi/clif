@@ -3,7 +3,7 @@
 
 #include <QWidget>
 
-#include "clif/config.h"
+#include <clif/config.hpp>
 
 class QSlider;
 class QVBoxLayout;

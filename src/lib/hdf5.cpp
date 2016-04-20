@@ -106,25 +106,5 @@ ClifFile h5_memory_file()
   
   return cf;
 }
-
-void h5_create_path_groups(H5::H5File &f, boost::filesystem::path path) 
-{
-  boost::filesystem::path part;
-  
-  for(auto it = path.begin(); it != path.end(); ++it) {
-    part /= *it;
-    if (!clif::h5_obj_exists(f, part)) {
-      
-      hid_t gpid = H5Pcreate(H5P_GROUP_CREATE);
-      herr_t res = H5Pset_attr_phase_change(gpid, 0, 0);
-      if (res < 0)
-        abort();
-      
-      hid_t g = H5Gcreate(f.getId(), part.generic_string().c_str(), H5P_DEFAULT, gpid, H5P_DEFAULT);
-      uint min, max;
-      H5Pget_attr_phase_change(H5Gget_create_plist(g), &max, &min);
-    }
-  }
-}
   
 }

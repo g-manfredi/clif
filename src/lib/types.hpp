@@ -2,7 +2,7 @@
 #define _CLIF_TYPES_H
 
 #include "cliini.h"
-#include "clif/config.h"
+#include "clif/config.hpp"
 
 namespace clif {
   

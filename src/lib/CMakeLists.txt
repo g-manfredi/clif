@@ -1,5 +1,7 @@
 cmake_minimum_required (VERSION 2.6)
-project(libclif)
+project(clif)
+
+string(TOUPPER ${PROJECT_NAME} PNU)
 
 #CMP0020 - 2.8.11, CMP0022 - 2.8.12
 cmake_policy(VERSION 2.8.12)
@@ -29,51 +31,58 @@ file(READ "${CMAKE_SOURCE_DIR}/data/types.ini" CLIF_DEFAULT_TYPES_BUF)
 string(REPLACE "\n" "\\n" CLIF_DEFAULT_TYPES_BUF "${CLIF_DEFAULT_TYPES_BUF}")
 configure_file(types.cpp.in types.cpp)
 
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/include/clif)
+
 configure_file(enumtypes.hpp.in enumtypes.hpp)
 
-list(APPEND CLIF_BUILD_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
-list(APPEND LIBCLIF_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/enumtypes.hpp)
-set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} PARENT_SCOPE)
-include_directories(${CLIF_BUILD_INCLUDE_DIRS})
+foreach(define ${${PNU}_DEFINES})
+  set(${PNU}_DEFINES_STRING "${${PNU}_DEFINES_STRING}\n#define ${define}")
+endforeach()
+
+configure_file(config.hpp.in config.hpp)
+
+file(GLOB ${PNU}_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
+list(APPEND ${PNU}_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/enumtypes.hpp)
+list(APPEND ${PNU}_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/config.hpp)
+
+dep_lists_init()
+
+dep_lists_append(OpenCV OpenCV_INCLUDE_DIRS "" OpenCV_LIBS)
+dep_lists_append(MetaMat)
+dep_lists_append(cliini)
+
+set(VIGRAIMPEX_VAR vigraimpex)
+dep_lists_append(Vigra Vigra_INCLUDE_DIRS VIGRAIMPEX_VAR)
+
+dep_lists_append(hdmarker OPTIONAL)
+dep_lists_append(ucalib OPTIONAL)
+
+dep_lists_pkg_search()
+dep_lists_prepare_env()
+
+# list(APPEND CLIF_BUILD_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+# list(APPEND LIBCLIF_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/enumtypes.hpp)
+# set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} PARENT_SCOPE)
+# include_directories(${CLIF_BUILD_INCLUDE_DIRS})
 
 set(SOURCES enumtypes.cpp clif.cpp subset3d.cpp calib.cpp hdf5.cpp attribute.cpp helpers.cpp datastore.cpp dataset.cpp core.cpp clif_cv.cpp preproc.cpp tree_derived.cpp cam.cpp ${CMAKE_CURRENT_BINARY_DIR}/types.cpp mat_helpers.cpp)
 
-if (CLIF_WITH_LIBIGL)
-  list(APPEND SOURCES mesh.cpp)
-  list(APPEND LIBCLIF_HEADERS mesh.hpp)
-endif()
+add_library(clif ${SOURCES})
 
-add_library(clif ${CLIF_BUILD_TYPE} ${SOURCES})
+target_link_libraries(clif PUBLIC ${${PNU}_LIB})
+target_link_libraries(clif PRIVATE ${${PNU}_PRIVATE_LIB})
 
-target_link_libraries(clif PUBLIC ${CLIF_LINK_LIBRARIES} ${${PNU}_LIB})
-target_link_libraries(clif PRIVATE ${CLIF_PRIVATE_LINK_LIBRARIES} ${${PNU}_PRIVATE_LIB})
+set(${PNU}_EXPORT_LIBS clif)
 
-if(NOT CLIF_COMPILER_MSVC)
-  set(CLIF_LINK_LIBRARIES ${CLIF_LINK_LIBRARIES} clif PARENT_SCOPE)
-else()
-  set(CLIF_LINK_LIBRARIES ${CLIF_LINK_LIBRARIES} optimized;clif debug;clifd PARENT_SCOPE)
-endif()
-
-set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
-set(CLIF_BUILD_LINK_DIRS ${CLIF_BUILD_LINK_DIRS} ${CMAKE_CURRENT_BINARY_DIR} PARENT_SCOPE)
-
-list(APPEND LIBCLIF_HEADERS attribute.hpp calib.hpp clif_cv.hpp clif.hpp core.hpp dataset.hpp datastore.hpp hdf5.hpp helpers.hpp matio.hpp stringtree.hpp subset3d.hpp mat.hpp types.hpp preproc.hpp tree_derived.hpp cam.hpp mat_helpers.hpp)
-
-foreach(header ${LIBCLIF_HEADERS})
-  if (IS_ABSOLUTE ${header})
-    list(APPEND CLIF_FULLPATH_HEADERS "${header}")
-  else()
-    list(APPEND CLIF_FULLPATH_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/${header}")
-  endif()
-endforeach()
-
-set(CLIF_HEADERS "${CLIF_HEADERS}" PARENT_SCOPE)
-set(CLIF_FULLPATH_HEADERS "${CLIF_FULLPATH_HEADERS}" PARENT_SCOPE)
-
-install(TARGETS clif
-        EXPORT clif
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib)
-
+dep_lists_export_local()
         
+message("build info: for ${PROJECT_NAME}:")
+message("  intern/extern:")
+msg_yesno("    internal fnmatch" FNMATCH_USE_INTERNAL COLOR Green)
+message("  optional components:")
+msg_yesno("    hdmarker detection" CLIF_WITH_HDMARKER)
+msg_yesno("    ucalib calibration" CLIF_WITH_UCALIB)
+
+message("")
+

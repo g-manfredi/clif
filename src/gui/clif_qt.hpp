@@ -1,12 +1,12 @@
 #ifndef _CLIFQT_H
 #define _CLIFQT_H
 
-#include "subset3d.hpp"
-#include "clif.hpp"
+#include <clif/subset3d.hpp>
+#include <clif/clif.hpp>
 
 #include <QImage>
 
-#include "clif/config.h"
+#include <clif/config.hpp>
 
 namespace clif {
   

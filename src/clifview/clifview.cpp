@@ -6,11 +6,11 @@
 #include <QGraphicsPixmapItem>
 #include <QtNetwork>
 
-#include "dataset.hpp"
-#include "clifepiview.hpp"
-#include "clif_qt.hpp"
-#include "clifstoreview.hpp"
-#include "clifviewcaller.hpp"
+#include <clif/dataset.hpp>
+#include <clif-qt/clifepiview.hpp>
+#include <clif-qt/clif_qt.hpp>
+#include <clif-qt/clifstoreview.hpp>
+#include <clif-qt/clifviewcaller.hpp>
 
 using namespace clif;
 using namespace std;

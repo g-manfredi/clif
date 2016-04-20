@@ -1,3 +1,5 @@
+#include "clifepiview.hpp"
+
 #include <QtGui/QtGui>
 
 #include <QApplication>
@@ -7,13 +9,11 @@
 #include <QSlider>
 #include <QVBoxLayout>
 
-#include "dataset.hpp"
+#include <clif/dataset.hpp>
 
-#include "clifepiview.hpp"
 #include "clif_qt.hpp"
 
-#include "subset3d.hpp"
-#include "preproc.hpp"
+#include <clif/subset3d.hpp>
 
 namespace clif {
 
