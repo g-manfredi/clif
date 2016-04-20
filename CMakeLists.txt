@@ -54,10 +54,6 @@ endfunction()
 ## DEPENDENCIES
 #####################################################
 
-#eigen3
-list(APPEND ${PNU}_PKG_OPT Eigen3)
-list(APPEND ${PNU}_PKG_INC EIGEN3_INCLUDE_DIR)
-
 list(APPEND ${PNU}_PKG MetaMat)
 list(APPEND ${PNU}_PKG_INC  METAMAT_INCLUDE_DIRS)
 list(APPEND ${PNU}_PKG_LINK METAMAT_LIBRARY_DIRS)
@@ -141,8 +137,8 @@ add_subdirectory(external/mm)
 # TODO optional subproject handling
 set(DEP_LISTS_SOFT_FAIL true)
 
-add_subdirectory(external/ucalib)
 add_subdirectory(external/mm-mesh)
+add_subdirectory(external/ucalib)
 
 set(DEP_LISTS_SOFT_FAIL false)
 
@@ -156,23 +152,6 @@ dep_lists_pkg_search(${PNU})
 #####################################################
 ## FEATURES depending on multiple packages
 #####################################################
-
-if (CLIF_WITH_EIGEN3 AND CLIF_BUILD_LIBIGL)
-  set(CLIF_WITH_LIBIGL true)
-  list(APPEND ${PNU}_DEFINES CLIF_WITH_LIBIGL)
-  #execute_process(COMMAND git submodule update --init ${CMAKE_CURRENT_SOURCE_DIR}/external/libigl)
-  # FIXME not generic?
-  list(APPEND CLIF_INCLUDE_DIRS "external/libigl/include")
-endif()
-
-if (CLIF_WITH_LIBIGL AND CLIF_WITH_GLFW3 AND CLIF_WITH_GLEW)  
-  set(CLIF_WITH_LIBIGL_VIEWER true)
-  list(APPEND ${PNU}_DEFINES CLIF_WITH_LIBIGL_VIEWER)
-  if (CLIF_COMPILER_MSVC)
-    list(APPEND CLIF_LINK_LIBRARIES opengl32)
-  endif()
-  #add_definitions(-DIGL_VIEWER_WITH_NANOGUI)
-endif()
 
 find_package(OpenCV REQUIRED)
 
