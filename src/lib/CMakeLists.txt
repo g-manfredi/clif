@@ -61,11 +61,6 @@ dep_lists_append(ucalib OPTIONAL)
 dep_lists_pkg_search()
 dep_lists_prepare_env()
 
-# list(APPEND CLIF_BUILD_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
-# list(APPEND LIBCLIF_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/enumtypes.hpp)
-# set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} PARENT_SCOPE)
-# include_directories(${CLIF_BUILD_INCLUDE_DIRS})
-
 set(SOURCES enumtypes.cpp clif.cpp subset3d.cpp calib.cpp hdf5.cpp attribute.cpp helpers.cpp datastore.cpp dataset.cpp core.cpp clif_cv.cpp preproc.cpp tree_derived.cpp cam.cpp ${CMAKE_CURRENT_BINARY_DIR}/types.cpp mat_helpers.cpp)
 
 add_library(clif ${SOURCES})
