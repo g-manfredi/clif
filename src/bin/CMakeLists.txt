@@ -19,24 +19,26 @@ add_executable(h5remove h5remove.cpp)
 add_executable(clifvis clifvis.cpp)
 add_executable(clifprocstore clifprocstore.cpp)
 
+message("link: ${CLIF-BIN_LIBRARIES}")
+
 if (CLIF_COMPILER_MSVC)
   #link_directories("C:/Users/Test/Desktop/UniHD_OpenLF/glew-1.13.0/lib/Release/Win32")
-  target_link_libraries(clif-bin ${CLIF_LIBRARIES})
+  target_link_libraries(clif-bin ${CLIF-BIN_LIBRARIES})
 else()
   set_target_properties(clif-bin PROPERTIES OUTPUT_NAME clif)
-  target_link_libraries(clif-bin ${CLIF_LIBRARIES})
+  target_link_libraries(clif-bin ${CLIF-BIN_LIBRARIES})
 endif()
 
 
-target_link_libraries(clifinfo ${CLIF_LIBRARIES})
-target_link_libraries(clif_image_attribute ${CLIF_LIBRARIES})
-target_link_libraries(resolve_test ${CLIF_LIBRARIES})
+target_link_libraries(clifinfo ${CLIF-BIN_LIBRARIES})
+target_link_libraries(clif_image_attribute ${CLIF-BIN_LIBRARIES})
+target_link_libraries(resolve_test ${CLIF-BIN_LIBRARIES})
 
 
-target_link_libraries(h5reshape ${CLIF_LIBRARIES})
-target_link_libraries(h5resize ${CLIF_LIBRARIES})
-target_link_libraries(h5skip ${CLIF_LIBRARIES})
-target_link_libraries(h5remove ${CLIF_LIBRARIES})
-target_link_libraries(clifprocstore ${CLIF_LIBRARIES})
+target_link_libraries(h5reshape ${CLIF-BIN_LIBRARIES})
+target_link_libraries(h5resize ${CLIF-BIN_LIBRARIES})
+target_link_libraries(h5skip ${CLIF-BIN_LIBRARIES})
+target_link_libraries(h5remove ${CLIF-BIN_LIBRARIES})
+target_link_libraries(clifprocstore ${CLIF-BIN_LIBRARIES})
 
-target_link_libraries(clifvis ${CLIF_LIBRARIES})
+target_link_libraries(clifvis ${CLIF-BIN_LIBRARIES})

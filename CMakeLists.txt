@@ -36,6 +36,11 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /noOy /W2 /EHsc")
 endif()
   
+  
+#####################################################
+## SUB-PROJECTS
+#####################################################
+  
 if (NOT DEFINED FNMATCH_USE_INTERNAL)
   find_path(FNMATCH_INCLUDE_DIR NAMES fnmatch.h)
   if (NOT FNMATCH_INCLUDE_DIR)
@@ -49,7 +54,6 @@ if (FNMATCH_USE_INTERNAL)
   add_subdirectory(external/fnmatch)
 endif()
 
-#included external projects (are referenced as package above)
 add_subdirectory(external/cliini)
 add_subdirectory(external/mm)
 

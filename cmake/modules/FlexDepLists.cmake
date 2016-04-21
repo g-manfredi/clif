@@ -464,6 +464,9 @@ macro(dep_lists_init)
   
   # FIXME add Debug, etc. on win!
   if (WIN32)
+    # TODO for windows or only for MSVC?
+    set(CMAKE_DEBUG_POSTFIX "d")
+  
     foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
             string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
             set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
