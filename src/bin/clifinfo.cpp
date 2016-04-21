@@ -9,7 +9,7 @@
 #include <fnmatch.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifndef CLIF_COMPILER_MSVC
+#ifndef _MSC_VER
 #include <unistd.h>
 #endif
 

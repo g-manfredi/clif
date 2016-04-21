@@ -40,6 +40,18 @@ foreach(define ${${PNU}_DEFINES})
   set(${PNU}_DEFINES_STRING "${${PNU}_DEFINES_STRING}\n#define ${define}")
 endforeach()
 
+# FIXME move to prepare env?
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+  # FIXME use CLIF_DEFINES
+  add_definitions(-DCLIF_COMPILER_MSVC)
+  add_definitions(-DCLIF_EXPORT_LIBRARY)
+  add_definitions(-DCLIF_BUILD_STATIC)
+  set(CLIF_COMPILER_MSVC true)
+  set(CLIF_EXPORT "__declspec(dllexport)")
+  set(CLIF_IMPORT "__declspec(dllimport)")
+  set(CMAKE_DEBUG_POSTFIX "d")
+endif()
+
 configure_file(config.hpp.in config.hpp)
 
 file(GLOB ${PNU}_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
@@ -47,6 +59,10 @@ list(APPEND ${PNU}_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/enumtypes.hpp)
 list(APPEND ${PNU}_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/config.hpp)
 
 dep_lists_init()
+
+if (FNMATCH_USE_INTERNAL)
+  dep_lists_append(fnmatch)
+endif()
 
 dep_lists_append(OpenCV OpenCV_INCLUDE_DIRS "" OpenCV_LIBS)
 dep_lists_append(MetaMat)

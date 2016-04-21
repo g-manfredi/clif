@@ -1,20 +1,14 @@
 cmake_minimum_required (VERSION 2.6)
 project(fnmatch)
 
+dep_lists_init()
+
+set(FNMATCH_HEADERS fnmatch.h)
+
+dep_lists_prepare_env()
+
 add_library(fnmatch fnmatch.c)
 
-set(CLIF_LINK_LIBRARIES ${CLIF_LINK_LIBRARIES} Shlwapi.dll fnmatch PARENT_SCOPE)
-set(CLIF_BUILD_INCLUDE_DIRS ${CLIF_BUILD_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
-set(CLIF_BUILD_LINK_DIRS ${CLIF_BUILD_LINK_DIRS} ${CMAKE_CURRENT_BINARY_DIR} PARENT_SCOPE)
+set(FNMATCH_EXPORT_LIBS fnmatch)
 
-set(CLIF_HEADERS ${CLIF_HEADERS} fnmatch.h PARENT_SCOPE)
-set(CLIF_FULLPATH_HEADERS ${CLIF_FULLPATH_HEADERS} ${CMAKE_CURRENT_SOURCE_DIR}/fnmatch.h PARENT_SCOPE)
-
-install(TARGETS fnmatch
-	EXPORT clif
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib)
-
-
-
+dep_lists_export_local()

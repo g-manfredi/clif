@@ -36,18 +36,6 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /noOy /W2 /EHsc")
 endif()
   
-# FIXME move to prepare env?
-# if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-#   # FIXME use CLIF_DEFINES
-#   add_definitions(-DCLIF_COMPILER_MSVC)
-#   add_definitions(-DCLIF_EXPORT_LIBRARY)
-#   add_definitions(-DCLIF_BUILD_STATIC)
-#   set(CLIF_COMPILER_MSVC true)
-#   set(CLIF_EXPORT "__declspec(dllexport)")
-#   set(CLIF_IMPORT "__declspec(dllimport)")
-#   set(CMAKE_DEBUG_POSTFIX "d")
-# endif()
-
 if (NOT DEFINED FNMATCH_USE_INTERNAL)
   find_path(FNMATCH_INCLUDE_DIR NAMES fnmatch.h)
   if (NOT FNMATCH_INCLUDE_DIR)
@@ -59,8 +47,6 @@ endif()
 
 if (FNMATCH_USE_INTERNAL)
   add_subdirectory(external/fnmatch)
-  include_directories(external/fnmatch)
-  link_directories(external/fnmatch)
 endif()
 
 #included external projects (are referenced as package above)

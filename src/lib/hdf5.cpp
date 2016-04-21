@@ -5,7 +5,7 @@
 #include <H5FcreatProp.h>
 
 #include "enumtypes.hpp"
-#ifdef CLIF_COMPILER_MSVC
+#ifdef _MSC_VER
 #include "io.h"
 #include "Windows.h"
 #endif
@@ -75,7 +75,7 @@ ClifFile h5_memory_file()
   
   FileAccPropList acc_plist;
   acc_plist.setCore(16 * 1024, false);
-#ifdef CLIF_COMPILER_MSVC
+#ifdef _MSC_VER
   char *tmppath = (char*)malloc(1024);
   char *tmppath2 = (char*)malloc(1024);
   if (!GetTempPath(1024, tmppath))
@@ -97,7 +97,7 @@ ClifFile h5_memory_file()
   //FIXME handle file delete at the end!
   H5File f = H5File(tmpfilename, H5F_ACC_TRUNC, FileCreatPropList::DEFAULT, acc_plist);
   cf = ClifFile(f, tmpfilename);
-#ifdef CLIF_COMPILER_MSVC
+#ifdef _MSC_VER
   free(tmppath);
 #else
   close(handle);

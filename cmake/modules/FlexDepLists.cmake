@@ -38,6 +38,8 @@
 #   FDP_HAVE_SEARCHED_${PACKAGE}_COMPONENTS are the same, changes in environment
 #   will be ignored!
 
+#set(FDP_VERBOSE 3)
+
 if (NOT WIN32)
   string(ASCII 27 Esc)
   set(ColourReset "${Esc}[m")
@@ -374,12 +376,14 @@ macro(dep_lists_prepare_env)
       set(_SRC_H ${CMAKE_CURRENT_SOURCE_DIR}/${_H})
     endif()
     get_filename_component(_H ${_H} NAME)
+    dep_lists_msg_info("copy header: ${_SRC_H} -> ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/")
     add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/${_H}
                        COMMAND ${CMAKE_COMMAND} -E copy ${_SRC_H} ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/
                        DEPENDS ${_SRC_H})
     list(APPEND _FPD_HEADER_DEPLIST ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/${_H})
   endforeach()
   
+  dep_lists_msg_info("add target ${PNL}-header-export (${_FPD_HEADER_DEPLIST})")
   add_custom_target(${PNL}-header-export ALL DEPENDS ${_FPD_HEADER_DEPLIST})
 endmacro(dep_lists_prepare_env)
 
