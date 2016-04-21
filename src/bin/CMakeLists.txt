@@ -19,8 +19,6 @@ add_executable(h5remove h5remove.cpp)
 add_executable(clifvis clifvis.cpp)
 add_executable(clifprocstore clifprocstore.cpp)
 
-message("link: ${CLIF-BIN_LIBRARIES}")
-
 if (CLIF_COMPILER_MSVC)
   #link_directories("C:/Users/Test/Desktop/UniHD_OpenLF/glew-1.13.0/lib/Release/Win32")
   target_link_libraries(clif-bin ${CLIF-BIN_LIBRARIES})
