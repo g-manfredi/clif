@@ -529,13 +529,10 @@ function(dep_lists_export_local)
   set(_FDP_PCFILE "cmake/projectConfig.cmake.in")
   file(READ ${_FDP_PCFILE} _FDP_PCCONTENT)
   string(FIND "${_FDP_PCCONTENT}" "projectConfig.cmake.in"  _FDP_PCLINK)
-  message("content: ${_FDP_PCCONTENT} match: ${_FDP_PCLINK}")
   if (0 LESS ${_FDP_PCLINK})
 	set(_FDP_PCFILE "cmake/${_FDP_PCCONTENT}")
   endif()
-  
-  message("config for ${_FDP_PNU}: ${_FDP_PCFILE}")
-  
+    
   configure_package_config_file( ${_FDP_PCFILE}
                                 "${CMAKECONFIG_CMAKE_DIR}/${PROJECT_NAME}Config.cmake"
                                 INSTALL_DESTINATION "${CMAKECONFIG_CMAKE_DIR}"
