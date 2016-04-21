@@ -68,6 +68,11 @@ set(DEP_LISTS_SOFT_FAIL false)
 ######################
 
 add_subdirectory(src/lib)
-add_subdirectory(src/gui)
 add_subdirectory(src/bin)
+
+set(DEP_LISTS_SOFT_FAIL true)
+
+add_subdirectory(src/gui)
 add_subdirectory(src/clifview)
+
+set(DEP_LISTS_SOFT_FAIL false)

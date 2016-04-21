@@ -2,7 +2,6 @@ cmake_minimum_required (VERSION 2.6)
 project(fnmatch)
 
 dep_lists_init()
-dep_lists_append(cliini)
 dep_lists_pkg_search()
 
 set(FNMATCH_HEADERS fnmatch.h)
