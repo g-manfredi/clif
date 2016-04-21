@@ -525,7 +525,18 @@ function(dep_lists_export_local)
   set(CMAKECONFIG_LINK ${CMAKE_CURRENT_BINARY_DIR}/lib)
 
   set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
-  configure_package_config_file(cmake/projectConfig.cmake.in
+  
+  set(_FDP_PCFILE "cmake/projectConfig.cmake.in")
+  file(READ ${_FDP_PCFILE} _FDP_PCCONTENT)
+  string(FIND "${_FDP_PCCONTENT}" "projectConfig.cmake.in"  _FDP_PCLINK)
+  message("content: ${_FDP_PCCONTENT} match: ${_FDP_PCLINK}")
+  if (0 LESS ${_FDP_PCLINK})
+	set(_FDP_PCFILE "cmake/${_FDP_PCCONTENT}")
+  endif()
+  
+  message("config for ${_FDP_PNU}: ${_FDP_PCFILE}")
+  
+  configure_package_config_file( ${_FDP_PCFILE}
                                 "${CMAKECONFIG_CMAKE_DIR}/${PROJECT_NAME}Config.cmake"
                                 INSTALL_DESTINATION "${CMAKECONFIG_CMAKE_DIR}"
                                 PATH_VARS CMAKECONFIG_PKG CMAKECONFIG_PKG_INC CMAKECONFIG_PKG_LINK CMAKECONFIG_PKG_LIB CMAKECONFIG_INC CMAKECONFIG_LINK CMAKECONFIG_LIB CMAKECONFIG_PKG_COMPONENTS)
