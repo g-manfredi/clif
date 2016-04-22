@@ -3,7 +3,7 @@ project(cliini)
 
 dep_lists_init()
 
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   add_definitions(-D${PNU}_COMPILER_MSVC)
   add_definitions(-D${PNU}_EXPORT_LIBRARY)
   add_definitions(-D${PNU}_BUILD_STATIC)
