@@ -31,7 +31,7 @@ configure_file(config.h.in cliini_config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 if (FNMATCH_USE_INTERNAL)
-  dep_lists_append(fnmatch PRIVATE)
+  dep_lists_append(fnmatch)
 endif()
 
 dep_lists_pkg_search()
