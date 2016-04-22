@@ -68,6 +68,7 @@ dep_lists_append(OpenCV OpenCV_INCLUDE_DIRS "" OpenCV_LIBS)
 dep_lists_append(MetaMat)
 dep_lists_append(cliini)
 
+# FIXME this doesn't export through clifConfig!
 set(VIGRAIMPEX_VAR vigraimpex)
 dep_lists_append(Vigra Vigra_INCLUDE_DIRS VIGRAIMPEX_VAR)
 
