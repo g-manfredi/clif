@@ -10,8 +10,6 @@
 
 @PACKAGE_INIT@
 
-message("@PNU@ project config!")
-
 function(pkg_found PKG RET)
   string(TOLOWER ${PKG} LOW)
   string(TOUPPER ${PKG} UP)
