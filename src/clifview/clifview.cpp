@@ -284,6 +284,9 @@ void ClifView::open(const char *cliffile, const char *dataset,  const char *stor
      QString path(datasets[i].c_str());
      DatasetRoot *root = new DatasetRoot(&lf_file, datasets[i]);
      
+	 QHeaderView * pHeader = ui->tree->header();
+	 pHeader->setSectionResizeMode(QHeaderView::ResizeToContents);
+	 pHeader->setStretchLastSection(false);
      QTreeWidgetItem *item = new QTreeWidgetItem(ui->tree, QStringList(path));
      item->setChildIndicatorPolicy(QTreeWidgetItem::ShowIndicator);
      
