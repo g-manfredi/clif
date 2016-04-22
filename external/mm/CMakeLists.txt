@@ -2,13 +2,15 @@ cmake_minimum_required (VERSION 2.8.8)
 project(MetaMat)
 
 #####################################################
-## ENVIRONMENT
+## INIT
 #####################################################
 include(CMakePackageConfigListHelpers)
 include(FlexDepLists)
-
 dep_lists_init()
 
+#####################################################
+## ENVIRONMENT
+#####################################################
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
   list(APPEND CMAKE_CXX_FLAGS "-std=c++11")
   # FIXME

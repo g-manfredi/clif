@@ -60,10 +60,6 @@ list(APPEND ${PNU}_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/config.hpp)
 
 dep_lists_init()
 
-if (FNMATCH_USE_INTERNAL)
-  dep_lists_append(fnmatch)
-endif()
-
 dep_lists_append(OpenCV OpenCV_INCLUDE_DIRS "" OpenCV_LIBS)
 dep_lists_append(MetaMat)
 dep_lists_append(cliini)

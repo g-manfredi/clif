@@ -2,14 +2,16 @@ cmake_minimum_required(VERSION 2.8)
 project(mm-mesh)
 
 #####################################################
-## ENVIRONMENT
+## INIT
 #####################################################
-option(${PNU}_BUILD_LIBIGL "build with (internal) libigl" ON)
-
 include(CMakePackageConfigListHelpers)
 include(FlexDepLists)
-
 dep_lists_init()
+
+#####################################################
+## ENV
+#####################################################
+option(${PNU}_BUILD_LIBIGL "build with (internal) libigl" ON)
 
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
@@ -45,6 +47,7 @@ if (${PNU}_BUILD_LIBIGL)
   list(APPEND ${PNU}_FEATURES ${PNU}_WITH_LIBIGL)
 
   if (${PNU}_WITH_GLFW3 AND ${PNU}_WITH_GLEW)
+    set(${PNU}_WITH_VIEWER TRUE)
     list(APPEND ${PNU}_FEATURES ${PNU}_WITH_VIEWER)
   endif()
 endif()
