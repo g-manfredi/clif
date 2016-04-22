@@ -20,7 +20,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 endif()
 
 # default to static on win shared on others
-if (NOT BUILD_SHARED_LIBS)
+if (NOT DEFINED BUILD_SHARED_LIBS)
   if (WIN32)
     option(BUILD_SHARED_LIBS "build shared libraries" OFF)
   else()

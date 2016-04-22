@@ -20,7 +20,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 endif()
 
 # default to static on win shared on others
-if (NOT BUILD_SHARED_LIBS)
+if (NOT DEFINED BUILD_SHARED_LIBS)
   if (WIN32)
     option(BUILD_SHARED_LIBS "build shared libraries" OFF)
   else()
@@ -35,9 +35,10 @@ dep_lists_append(OpenCV OpenCV_INCLUDE_DIRS "" OpenCV_LIBS)
 dep_lists_append(HDF5 COMPONENTS C CXX)
 dep_lists_append(Boost Boost_INCLUDE_DIRS Boost_LIBRARY_DIRS Boost_LIBRARIES COMPONENTS filesystem system)
 
-# FIXME how to store vigraimpex into deps?
+# add variable which stores vigra library
 set(VIGRAIMPEX_VAR vigraimpex)
-dep_lists_append(Vigra Vigra_INCLUDE_DIRS "X" VIGRAIMPEX_VAR)
+list(APPEND ${PNU}_EXPORT_VARS "VIGRAIMPEX_VAR")
+dep_lists_append(Vigra Vigra_INCLUDE_DIRS "" VIGRAIMPEX_VAR)
 
 dep_lists_pkg_search()
 
