@@ -68,12 +68,22 @@ function(dep_lists_pkg_found PKG RET)
   
   if (${${PKG}_FOUND})
     set(${RET} TRUE PARENT_SCOPE)
+      return()
   endif()
   if (${${LOW}_FOUND})
     set(${RET} TRUE PARENT_SCOPE)
+      return()
   endif()
   if (${${UP}_FOUND})
     set(${RET} TRUE PARENT_SCOPE)
+      return()
+  endif()
+  
+  if (${PNU}_${PKG}_FOUND_INDICATOR)
+    if (${${PNU}_${PKG}_FOUND_INDICATOR})
+      set(${RET} TRUE PARENT_SCOPE)
+      return()
+    endif()
   endif()
 endfunction()
 
@@ -389,7 +399,7 @@ endmacro(dep_lists_prepare_env)
 
 macro(dep_lists_append _FDP_NAME)
   set(dep_lists_append_UNPARSED_ARGUMENTS "")
-  dep_lists_parse(dep_lists_append "OPTIONAL;PRIVATE" "PREFIX" "COMPONENTS" "${ARGN}")
+  dep_lists_parse(dep_lists_append "OPTIONAL;PRIVATE" "PREFIX;FOUND_INDICATOR" "COMPONENTS" "${ARGN}")
   
   string(TOUPPER ${_FDP_NAME} _FDP_NAME_UPPER)
   
@@ -398,6 +408,11 @@ macro(dep_lists_append _FDP_NAME)
     set(_FDP_PREFIX ${dep_lists_append_PREFIX})
   else()
     string(TOUPPER ${PROJECT_NAME} _FDP_PREFIX)
+  endif()
+  
+  if (dep_lists_append_FOUND_INDICATOR)
+    set(${_FDP_PREFIX}_${_FDP_NAME}_FOUND_INDICATOR ${dep_lists_append_FOUND_INDICATOR})
+    list(APPEND ${_FDP_PREFIX}_EXPORT_VARS "${_FDP_PREFIX}_${_FDP_NAME}_FOUND_INDICATOR" "${dep_lists_append_FOUND_INDICATOR}")
   endif()
   
   if (dep_lists_append_COMPONENTS)
@@ -500,10 +515,11 @@ function(dep_lists_export_local)
   #####################################################
   ## ...Config.cmake generation
   #####################################################
-  set(CMAKECONFIG_PKG ${${_FDP_PNU}_PKG})
+  set(CMAKECONFIG_PKG ${${_FDP_PNU}_EXPORT_DEPS})
   set(CMAKECONFIG_PKG_INC ${${_FDP_PNU}_PKG_INC_FOUND})
   set(CMAKECONFIG_PKG_LINK ${${_FDP_PNU}_PKG_LINK_FOUND})
   set(CMAKECONFIG_PKG_LIB ${${_FDP_PNU}_PKG_LIB_FOUND})
+  set(CMAKECONFIG_PKG_EXPORT_VARS ${${_FDP_PNU}_EXPORT_VARS})
   
   
   set(CMAKECONFIG_PKG_COMPONENTS ${${PNU}_PKG_COMPONENTS})
@@ -536,8 +552,16 @@ function(dep_lists_export_local)
   configure_package_config_file( ${_FDP_PCFILE}
                                 "${CMAKECONFIG_CMAKE_DIR}/${PROJECT_NAME}Config.cmake"
                                 INSTALL_DESTINATION "${CMAKECONFIG_CMAKE_DIR}"
-                                PATH_VARS CMAKECONFIG_PKG CMAKECONFIG_PKG_INC CMAKECONFIG_PKG_LINK CMAKECONFIG_PKG_LIB CMAKECONFIG_INC CMAKECONFIG_LINK CMAKECONFIG_LIB CMAKECONFIG_PKG_COMPONENTS)
+                                PATH_VARS CMAKECONFIG_PKG CMAKECONFIG_PKG_INC CMAKECONFIG_PKG_LINK CMAKECONFIG_PKG_LIB CMAKECONFIG_INC CMAKECONFIG_LINK CMAKECONFIG_LIB CMAKECONFIG_PKG_COMPONENTS CMAKECONFIG_PKG_EXPORT_VARS)
   export(PACKAGE ${PROJECT_NAME})
+  
+  
+  #####################################################
+  ## copy find macros
+  #####################################################
+  if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/cmake/find/)
+    file(COPY cmake/find DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/)
+  endif()
 endfunction()
 
 # args: TITLE BOOLVAR [LENGTH]

@@ -23,14 +23,7 @@ dep_lists_init()
 #deps
 dep_lists_append(MetaMat)
 dep_lists_append(Eigen3 EIGEN3_INCLUDE_DIR)
-
-#see https://github.com/glfw/glfw/issues/483
-find_package(glfw3 QUIET)
-if ("${GLFW3_INCLUDE_DIR}" STREQUAL "")
-  set(glfw3_DIR /usr/lib/cmake/glfw/)
-endif()
-
-dep_lists_append(glfw3 OPTIONAL GLFW3_INCLUDE_DIR GLFW3_LIBRARY_DIR GLFW3_LIBRARY)
+dep_lists_append(glfw3 OPTIONAL FOUND_INDICATOR GLFW3_LIBRARY GLFW3_INCLUDE_DIR GLFW3_LIBRARY_DIR GLFW3_LIBRARY)
 dep_lists_append(GLEW OPTIONAL)
 
 dep_lists_pkg_search()
