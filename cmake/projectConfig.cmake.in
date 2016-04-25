@@ -10,6 +10,8 @@
 
 @PACKAGE_INIT@
 
+cmake_policy(SET CMP0054 NEW)
+
 function(pkg_found PKG RET)
   string(TOLOWER ${PKG} LOW)
   string(TOUPPER ${PKG} UP)

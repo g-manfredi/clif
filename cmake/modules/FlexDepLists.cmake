@@ -103,11 +103,10 @@ endmacro()
 
 #like cmake_parse_arguments but keeps empty args
 macro(dep_lists_parse _dlp_NAME _dlp_OPTS _dlp_SINGLE _dlp_MULTI)
+  cmake_policy(SET CMP0054 NEW)
+
   set(_dlp_ARGS "")
   set(_dlp_ARGLIST "${ARGN}")
-  
-  # FIXME reset to input after macro?
-  cmake_policy(SET CMP0054 NEW)
   
   foreach(_dlp_ARG IN LISTS _dlp_ARGLIST)
     if("${_dlp_ARG}" STREQUAL "")
@@ -402,6 +401,8 @@ macro(dep_lists_prepare_env)
 endmacro(dep_lists_prepare_env)
 
 macro(dep_lists_append _FDP_NAME)
+  cmake_policy(SET CMP0054 NEW)
+
   set(dep_lists_append_UNPARSED_ARGUMENTS "")
   dep_lists_parse(dep_lists_append "OPTIONAL;PRIVATE" "PREFIX;FOUND_INDICATOR" "COMPONENTS;FIND_FLAGS" "${ARGN}")
   
