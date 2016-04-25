@@ -165,9 +165,9 @@ const char *ini_extension_pattern = ".ini";
 const char *mat_extension_pattern = ".mat";
 //ksh extension match using FNM_EXTMATCH
 #ifdef WIN32
-  const char *img_extension_pattern = "*.+(png|tif|tiff|jpg|jpeg|jpe|jp2|bmp|dib|pbm|pgm|ppm|sr|ras|exr)";
-#else
   const char *img_extension_pattern = ".tif";
+#else
+  const char *img_extension_pattern = "*.+(png|tif|tiff|jpg|jpeg|jpe|jp2|bmp|dib|pbm|pgm|ppm|sr|ras|exr)";
 #endif
   
 vector<string> extract_matching_strings(cliini_arg *arg, const char *pattern)
