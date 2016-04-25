@@ -95,7 +95,7 @@ if (NOT ${COMP_L_LEN} LESS 1)
     math(EXPR IDX2 "${IDX} + 1")
     list(GET @PNU@_PKG_EXPORT_VARS ${IDX} NAME)
     list(GET @PNU@_PKG_EXPORT_VARS ${IDX2} VALUE)
-    set(NAME ${VALUE})
+    set(${NAME} ${VALUE})
   endforeach()
 endif()
 
