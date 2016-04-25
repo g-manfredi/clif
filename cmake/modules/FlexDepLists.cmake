@@ -533,7 +533,15 @@ function(dep_lists_export_local)
   else()
     set(CMAKECONFIG_INC "include") #in build dir - headers were already copied above
   endif()
-  set(CMAKECONFIG_LIB ${${_FDP_PNU}_EXPORT_LIBS}) # our libs to link on import
+  
+  if (WIN32)
+    set(CMAKECONFIG_LIB "")
+    foreach(LIB ${${_FDP_PNU}_EXPORT_LIBS})
+      list(APPEND CMAKECONFIG_LIB optimized ${LIB} debug ${LIB}d)
+    endforeach()
+  else()
+    set(CMAKECONFIG_LIB ${${_FDP_PNU}_EXPORT_LIBS}) # our libs to link on import
+  endif()
   set(CMAKECONFIG_FEATURES ${${_FDP_PNU}_FEATURES})
 
 
