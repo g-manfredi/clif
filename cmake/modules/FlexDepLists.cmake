@@ -103,11 +103,10 @@ endmacro()
 
 #like cmake_parse_arguments but keeps empty args
 macro(dep_lists_parse _dlp_NAME _dlp_OPTS _dlp_SINGLE _dlp_MULTI)
+  cmake_policy(SET CMP0054 NEW)
+
   set(_dlp_ARGS "")
   set(_dlp_ARGLIST "${ARGN}")
-  
-  # FIXME reset to input after macro?
-  cmake_policy(SET CMP0054 NEW)
   
   foreach(_dlp_ARG IN LISTS _dlp_ARGLIST)
     if("${_dlp_ARG}" STREQUAL "")
@@ -145,9 +144,9 @@ macro(dep_lists_check_find PACKAGE RET PNU)
     set(FDP_HAVE_SEARCHED_${PACKAGE}_COMPONENTS ${${PNU}_${PACKAGE}_COMPONENTS})
     
     if (${PNU}_${PACKAGE}_COMPONENTS)
-      find_package(${PACKAGE} QUIET COMPONENTS ${${PNU}_${PACKAGE}_COMPONENTS})
+      find_package(${PACKAGE} QUIET COMPONENTS ${${PNU}_${PACKAGE}_COMPONENTS} ${${PNU}_${PACKAGE}_FIND_FLAGS})
     else()
-      find_package(${PACKAGE} QUIET)
+      find_package(${PACKAGE} QUIET ${${PNU}_${PACKAGE}_FIND_FLAGS})
     endif()
     
     string(TOLOWER ${PACKAGE} PKG_LOW)
@@ -159,9 +158,9 @@ macro(dep_lists_check_find PACKAGE RET PNU)
       list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/find/${PKG_LOW})
       
       if (${PNU}_${PACKAGE}_COMPONENTS)
-        find_package(${PACKAGE} QUIET COMPONENTS ${${PNU}_${PACKAGE}_COMPONENTS})
+        find_package(${PACKAGE} QUIET COMPONENTS ${${PNU}_${PACKAGE}_COMPONENTS} ${${PNU}_${PACKAGE}_FIND_FLAGS})
       else()
-        find_package(${PACKAGE} QUIET)
+        find_package(${PACKAGE} QUIET ${${PNU}_${PACKAGE}_FIND_FLAGS})
       endif()
       
       dep_lists_pkg_found(${PACKAGE} FOUND)
@@ -245,16 +244,15 @@ macro(dep_lists_pkg_search)
     
   if (${_FDP_PNU}_MISSING_OPTIONAL)
     message("${BoldRed}missing OPTIONAL packages for ${_FDP_PNU}:")
-    foreach(PACKAGE ${${_FDP_PNU}_MISSING_OPTIONAL})
-      message("   ${PACKAGE}")
+    foreach(PACKAGE ${${_FDP_PNU}_MISSING_OPTIONAL}${ColourReset})
+      message("   ${BoldRed}${PACKAGE}${ColourReset}")
     endforeach()
-    message("${ColourReset}")
   endif()
   
   if (${_FDP_PNU}_MISSING_REQUIRED)
     message("${BoldRed}missing REQUIRED packages for ${_FDP_PNU}::")
-    foreach(PACKAGE ${${_FDP_PNU}_MISSING_REQUIRED})
-      message("   ${PACKAGE}")
+    foreach(PACKAGE ${${_FDP_PNU}_MISSING_REQUIRED}${ColourReset})
+      message("   ${BoldRed}${PACKAGE}${ColourReset}")
     endforeach()
     if (NOT DEP_LISTS_SOFT_FAIL)
       message(FATAL_ERROR "required package(s) not found, exiting.")
@@ -263,6 +261,10 @@ macro(dep_lists_pkg_search)
       message("${ColourReset}")
       return()
     endif()
+  endif()
+  #output formatting
+  if (${_FDP_PNU}_MISSING_OPTIONAL)
+    message("")
   endif()
 endmacro(dep_lists_pkg_search)
 
@@ -402,8 +404,10 @@ macro(dep_lists_prepare_env)
 endmacro(dep_lists_prepare_env)
 
 macro(dep_lists_append _FDP_NAME)
+  cmake_policy(SET CMP0054 NEW)
+
   set(dep_lists_append_UNPARSED_ARGUMENTS "")
-  dep_lists_parse(dep_lists_append "OPTIONAL;PRIVATE" "PREFIX;FOUND_INDICATOR" "COMPONENTS" "${ARGN}")
+  dep_lists_parse(dep_lists_append "OPTIONAL;PRIVATE" "PREFIX;FOUND_INDICATOR" "COMPONENTS;FIND_FLAGS" "${ARGN}")
   
   string(TOUPPER ${_FDP_NAME} _FDP_NAME_UPPER)
   
@@ -421,6 +425,11 @@ macro(dep_lists_append _FDP_NAME)
   
   if (dep_lists_append_COMPONENTS)
     set(${_FDP_PREFIX}_${_FDP_NAME}_COMPONENTS ${dep_lists_append_COMPONENTS})
+  endif()
+  
+  if (dep_lists_append_FIND_FLAGS)
+    set(${_FDP_PREFIX}_${_FDP_NAME}_FIND_FLAGS ${dep_lists_append_FIND_FLAGS})
+    list(APPEND ${_FDP_PREFIX}_EXPORT_VARS_VALUES "${_FDP_PREFIX}_${_FDP_NAME}_FIND_FLAGS" "${dep_lists_append_FIND_FLAGS}")
   endif()
     
   dep_lists_opt_get(dep_lists_append_UNPARSED_ARGUMENTS 0 _FDP_A0)
@@ -475,6 +484,8 @@ macro(dep_lists_append _FDP_NAME)
 endmacro(dep_lists_append)
 
 macro(dep_lists_init)
+  cmake_policy(SET CMP0054 NEW)
+
   file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake")
   
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
@@ -533,7 +544,15 @@ function(dep_lists_export_local)
   else()
     set(CMAKECONFIG_INC "include") #in build dir - headers were already copied above
   endif()
-  set(CMAKECONFIG_LIB ${${_FDP_PNU}_EXPORT_LIBS}) # our libs to link on import
+  
+  if (WIN32)
+    set(CMAKECONFIG_LIB "")
+    foreach(LIB ${${_FDP_PNU}_EXPORT_LIBS})
+      list(APPEND CMAKECONFIG_LIB optimized ${LIB} debug ${LIB}d)
+    endforeach()
+  else()
+    set(CMAKECONFIG_LIB ${${_FDP_PNU}_EXPORT_LIBS}) # our libs to link on import
+  endif()
   set(CMAKECONFIG_FEATURES ${${_FDP_PNU}_FEATURES})
 
 

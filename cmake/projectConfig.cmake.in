@@ -10,6 +10,8 @@
 
 @PACKAGE_INIT@
 
+cmake_policy(SET CMP0054 NEW)
+
 function(pkg_found PKG RET)
   string(TOLOWER ${PKG} LOW)
   string(TOUPPER ${PKG} UP)
@@ -95,7 +97,7 @@ if (NOT ${COMP_L_LEN} LESS 1)
     math(EXPR IDX2 "${IDX} + 1")
     list(GET @PNU@_PKG_EXPORT_VARS ${IDX} NAME)
     list(GET @PNU@_PKG_EXPORT_VARS ${IDX2} VALUE)
-    set(NAME ${VALUE})
+    set(${NAME} ${VALUE})
   endforeach()
 endif()
 
@@ -109,11 +111,12 @@ foreach(PACKAGE ${@PNU@_PACKAGES})
     set(FDP_HAVE_SEARCHED_${PACKAGE} true)
     set(FDP_HAVE_SEARCHED_${PACKAGE}_COMPONENTS ${@PNU@_${PACKAGE}_COMPONENTS})
   
+  
     if (@PNU@_${PACKAGE}_COMPONENTS)
       #message(STATUS "search with COMPS: ${@PNU@_${PACKAGE}_COMPONENTS}")
-      find_package(${PACKAGE} QUIET COMPONENTS ${@PNU@_${PACKAGE}_COMPONENTS})
+      find_package(${PACKAGE} QUIET COMPONENTS ${@PNU@_${PACKAGE}_COMPONENTS} ${@PNU@_${PACKAGE}_FIND_FLAGS})
     else()
-      find_package(${PACKAGE} QUIET)
+      find_package(${PACKAGE} QUIET ${@PNU@_${PACKAGE}_FIND_FLAGS})
     endif()
     
     pkg_found(${PACKAGE} FOUND)
@@ -125,9 +128,9 @@ foreach(PACKAGE ${@PNU@_PACKAGES})
     endif()
     
     if (@PNU@_${PACKAGE}_COMPONENTS)
-      find_package(${PACKAGE} QUIET COMPONENTS ${@PNU@_${PACKAGE}_COMPONENTS})
+      find_package(${PACKAGE} QUIET COMPONENTS ${@PNU@_${PACKAGE}_COMPONENTS} ${@PNU@_${PACKAGE}_FIND_FLAGS})
     else()
-      find_package(${PACKAGE} QUIET)
+      find_package(${PACKAGE} QUIET ${@PNU@_${PACKAGE}_FIND_FLAGS})
     endif()
     
     
