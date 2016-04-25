@@ -475,6 +475,8 @@ macro(dep_lists_append _FDP_NAME)
 endmacro(dep_lists_append)
 
 macro(dep_lists_init)
+  cmake_policy(SET CMP0054 NEW)
+
   file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake")
   
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
