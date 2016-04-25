@@ -160,14 +160,16 @@ cliini_optgroup group = {
   0
 };
 
-const char *clif_extension_pattern = ".clif";
-const char *ini_extension_pattern = ".ini";
-const char *mat_extension_pattern = ".mat";
-//ksh extension match using FNM_EXTMATCH
 #ifdef WIN32
-  const char *img_extension_pattern = ".tif";
+  const char *img_extension_pattern =  ".tif";
+  const char *clif_extension_pattern = ".clif";
+  const char *ini_extension_pattern =  ".ini";
+  const char *mat_extension_pattern =  ".mat";
 #else
-  const char *img_extension_pattern = "*.+(png|tif|tiff|jpg|jpeg|jpe|jp2|bmp|dib|pbm|pgm|ppm|sr|ras|exr)";
+  const char *img_extension_pattern  = "*.+(png|tif|tiff|jpg|jpeg|jpe|jp2|bmp|dib|pbm|pgm|ppm|sr|ras|exr)";
+  const char *clif_extension_pattern = "*.clif";
+  const char *ini_extension_pattern  = "*.ini";
+  const char *mat_extension_pattern  = "*.mat";
 #endif
   
 vector<string> extract_matching_strings(cliini_arg *arg, const char *pattern)
@@ -176,8 +178,11 @@ vector<string> extract_matching_strings(cliini_arg *arg, const char *pattern)
   
   for(int i=0;i<cliarg_sum(arg);i++) {
     //FIXME not working on windows!
-	std::cout << boost::filesystem::extension(cliarg_nth_str(arg, i)) << "\n";
+#ifdef WIN32
     if (!boost::filesystem::extension(cliarg_nth_str(arg, i)).compare(pattern))
+#else
+    if (!fnmatch(pattern, cliarg_nth_str(arg, i), FNM_EXTMATCH | FNM_CASEFOLD))
+#endif
       files.push_back(cliarg_nth_str(arg, i));
   }
     
