@@ -103,7 +103,10 @@ endmacro()
 
 #like cmake_parse_arguments but keeps empty args
 macro(dep_lists_parse _dlp_NAME _dlp_OPTS _dlp_SINGLE _dlp_MULTI)
-  cmake_policy(SET CMP0054 NEW)
+  cmake_policy(SET CMP0011 NEW)
+  if (POLICY CMP0054)
+    cmake_policy(SET CMP0054 NEW)
+  endif()
 
   set(_dlp_ARGS "")
   set(_dlp_ARGLIST "${ARGN}")
@@ -190,12 +193,14 @@ macro(dep_lists_check_find PACKAGE RET PNU)
 endmacro()
 
 macro(dep_lists_exec_find PNU PKG SUCC FAIL)
-
-  cmake_policy(VERSION 3.1)
+  cmake_policy(SET CMP0011 NEW)
+  if (POLICY CMP0054)
+    cmake_policy(SET CMP0054 NEW)
+  endif()
 
   string(TOUPPER ${PKG} _FDP_PKG_UP)
   dep_lists_check_find(${PKG} ${PNU}_WITH_${_FDP_PKG_UP} ${PNU})
-  if (${${PNU}_WITH_${_FDP_PKG_UP}})
+  if (${PNU}_WITH_${_FDP_PKG_UP})
     if (NOT "${SUCC}" STREQUAL "")
       list(APPEND ${SUCC} ${PKG})
     endif()
@@ -404,7 +409,10 @@ macro(dep_lists_prepare_env)
 endmacro(dep_lists_prepare_env)
 
 macro(dep_lists_append _FDP_NAME)
-  cmake_policy(SET CMP0054 NEW)
+  cmake_policy(SET CMP0011 NEW)
+  if (POLICY CMP0054)
+    cmake_policy(SET CMP0054 NEW)
+  endif()
 
   set(dep_lists_append_UNPARSED_ARGUMENTS "")
   dep_lists_parse(dep_lists_append "OPTIONAL;PRIVATE" "PREFIX;FOUND_INDICATOR" "COMPONENTS;FIND_FLAGS" "${ARGN}")
@@ -484,7 +492,10 @@ macro(dep_lists_append _FDP_NAME)
 endmacro(dep_lists_append)
 
 macro(dep_lists_init)
-  cmake_policy(SET CMP0054 NEW)
+  cmake_policy(SET CMP0011 NEW)
+  if (POLICY CMP0054)
+    cmake_policy(SET CMP0054 NEW)
+  endif()
 
   file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake")
   
