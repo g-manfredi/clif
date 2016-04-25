@@ -34,7 +34,7 @@ endif()
 ## DEPENDENCIES
 #####################################################
 dep_lists_append(OpenCV OpenCV_INCLUDE_DIRS "" OpenCV_LIBS)
-dep_lists_append(HDF5 COMPONENTS C CXX)
+dep_lists_append(HDF5 COMPONENTS C CXX FIND_FLAGS CONFIG)
 dep_lists_append(Boost Boost_INCLUDE_DIRS Boost_LIBRARY_DIRS Boost_LIBRARIES COMPONENTS filesystem system)
 
 # add variable which stores vigra library
