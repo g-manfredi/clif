@@ -109,11 +109,12 @@ foreach(PACKAGE ${@PNU@_PACKAGES})
     set(FDP_HAVE_SEARCHED_${PACKAGE} true)
     set(FDP_HAVE_SEARCHED_${PACKAGE}_COMPONENTS ${@PNU@_${PACKAGE}_COMPONENTS})
   
+  
     if (@PNU@_${PACKAGE}_COMPONENTS)
       #message(STATUS "search with COMPS: ${@PNU@_${PACKAGE}_COMPONENTS}")
-      find_package(${PACKAGE} QUIET COMPONENTS ${@PNU@_${PACKAGE}_COMPONENTS})
+      find_package(${PACKAGE} QUIET COMPONENTS ${@PNU@_${PACKAGE}_COMPONENTS} ${@PNU@_${PACKAGE}_FIND_FLAGS})
     else()
-      find_package(${PACKAGE} QUIET)
+      find_package(${PACKAGE} QUIET ${@PNU@_${PACKAGE}_FIND_FLAGS})
     endif()
     
     pkg_found(${PACKAGE} FOUND)
@@ -125,9 +126,9 @@ foreach(PACKAGE ${@PNU@_PACKAGES})
     endif()
     
     if (@PNU@_${PACKAGE}_COMPONENTS)
-      find_package(${PACKAGE} QUIET COMPONENTS ${@PNU@_${PACKAGE}_COMPONENTS})
+      find_package(${PACKAGE} QUIET COMPONENTS ${@PNU@_${PACKAGE}_COMPONENTS} ${@PNU@_${PACKAGE}_FIND_FLAGS})
     else()
-      find_package(${PACKAGE} QUIET)
+      find_package(${PACKAGE} QUIET ${@PNU@_${PACKAGE}_FIND_FLAGS})
     endif()
     
     

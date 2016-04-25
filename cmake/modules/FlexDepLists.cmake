@@ -145,9 +145,9 @@ macro(dep_lists_check_find PACKAGE RET PNU)
     set(FDP_HAVE_SEARCHED_${PACKAGE}_COMPONENTS ${${PNU}_${PACKAGE}_COMPONENTS})
     
     if (${PNU}_${PACKAGE}_COMPONENTS)
-      find_package(${PACKAGE} QUIET COMPONENTS ${${PNU}_${PACKAGE}_COMPONENTS})
+      find_package(${PACKAGE} QUIET COMPONENTS ${${PNU}_${PACKAGE}_COMPONENTS} ${${PNU}_${PACKAGE}_FIND_FLAGS})
     else()
-      find_package(${PACKAGE} QUIET)
+      find_package(${PACKAGE} QUIET ${${PNU}_${PACKAGE}_FIND_FLAGS})
     endif()
     
     string(TOLOWER ${PACKAGE} PKG_LOW)
@@ -159,9 +159,9 @@ macro(dep_lists_check_find PACKAGE RET PNU)
       list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/find/${PKG_LOW})
       
       if (${PNU}_${PACKAGE}_COMPONENTS)
-        find_package(${PACKAGE} QUIET COMPONENTS ${${PNU}_${PACKAGE}_COMPONENTS})
+        find_package(${PACKAGE} QUIET COMPONENTS ${${PNU}_${PACKAGE}_COMPONENTS} ${${PNU}_${PACKAGE}_FIND_FLAGS})
       else()
-        find_package(${PACKAGE} QUIET)
+        find_package(${PACKAGE} QUIET ${${PNU}_${PACKAGE}_FIND_FLAGS})
       endif()
       
       dep_lists_pkg_found(${PACKAGE} FOUND)
@@ -403,7 +403,7 @@ endmacro(dep_lists_prepare_env)
 
 macro(dep_lists_append _FDP_NAME)
   set(dep_lists_append_UNPARSED_ARGUMENTS "")
-  dep_lists_parse(dep_lists_append "OPTIONAL;PRIVATE" "PREFIX;FOUND_INDICATOR" "COMPONENTS" "${ARGN}")
+  dep_lists_parse(dep_lists_append "OPTIONAL;PRIVATE" "PREFIX;FOUND_INDICATOR" "COMPONENTS;FIND_FLAGS" "${ARGN}")
   
   string(TOUPPER ${_FDP_NAME} _FDP_NAME_UPPER)
   
@@ -421,6 +421,11 @@ macro(dep_lists_append _FDP_NAME)
   
   if (dep_lists_append_COMPONENTS)
     set(${_FDP_PREFIX}_${_FDP_NAME}_COMPONENTS ${dep_lists_append_COMPONENTS})
+  endif()
+  
+  if (dep_lists_append_FIND_FLAGS)
+    set(${_FDP_PREFIX}_${_FDP_NAME}_FIND_FLAGS ${dep_lists_append_FIND_FLAGS})
+    list(APPEND ${_FDP_PREFIX}_EXPORT_VARS_VALUES "${_FDP_PREFIX}_${_FDP_NAME}_FIND_FLAGS" "${dep_lists_append_FIND_FLAGS}")
   endif()
     
   dep_lists_opt_get(dep_lists_append_UNPARSED_ARGUMENTS 0 _FDP_A0)
