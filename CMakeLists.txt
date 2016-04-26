@@ -8,10 +8,13 @@ string(TOUPPER ${PROJECT_NAME} PNU)
 
 option(GPL_BUILD "create GPL'ed binaries" OFF)
 
-if (WIN32)
-  option(BUILD_SHARED_LIBS "build shared libraries" OFF)
-else()
-  option(BUILD_SHARED_LIBS "build shared libraries" ON)
+# default to static on win shared on others
+if (NOT DEFINED BUILD_SHARED_LIBS)
+  if (WIN32)
+    option(BUILD_SHARED_LIBS "build shared libraries" OFF)
+  else()
+    option(BUILD_SHARED_LIBS "build shared libraries" ON)
+  endif()
 endif()
 
 #####################################################
