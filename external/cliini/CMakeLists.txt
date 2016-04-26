@@ -1,6 +1,7 @@
 cmake_minimum_required (VERSION 2.6)
 project(cliini)
 
+include(../flexdeplists/FlexDepLists.cmake)
 dep_lists_init()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")

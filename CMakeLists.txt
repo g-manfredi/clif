@@ -18,9 +18,7 @@ endif()
 ## GLOBAL
 #####################################################
 
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
-include(CMakePackageConfigListHelpers)
-include(FlexDepLists)
+include(external/flexdeplists/FlexDepLists.cmake)
 
 #####################################################
 ## COMPILER

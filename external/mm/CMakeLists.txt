@@ -4,8 +4,7 @@ project(MetaMat)
 #####################################################
 ## INIT
 #####################################################
-include(CMakePackageConfigListHelpers)
-include(FlexDepLists)
+include(../flexdeplists/FlexDepLists.cmake)
 dep_lists_init()
 
 #####################################################
