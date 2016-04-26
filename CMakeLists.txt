@@ -23,6 +23,8 @@ endif()
 
 include(external/flexdeplists/FlexDepLists.cmake)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
+
 #####################################################
 ## COMPILER
 #####################################################
