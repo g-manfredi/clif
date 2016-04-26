@@ -6,11 +6,11 @@
 #include <QGraphicsPixmapItem>
 #include <QtNetwork>
 
-#include "dataset.hpp"
-#include "clifepiview.hpp"
-#include "clif_qt.hpp"
-#include "clifstoreview.hpp"
-#include "clifviewcaller.hpp"
+#include <clif/dataset.hpp>
+#include <clif-qt/clifepiview.hpp>
+#include <clif-qt/clif_qt.hpp>
+#include <clif-qt/clifstoreview.hpp>
+#include <clif-qt/clifviewcaller.hpp>
 
 using namespace clif;
 using namespace std;
@@ -284,6 +284,9 @@ void ClifView::open(const char *cliffile, const char *dataset,  const char *stor
      QString path(datasets[i].c_str());
      DatasetRoot *root = new DatasetRoot(&lf_file, datasets[i]);
      
+	 QHeaderView * pHeader = ui->tree->header();
+	 pHeader->setSectionResizeMode(QHeaderView::ResizeToContents);
+	 pHeader->setStretchLastSection(false);
      QTreeWidgetItem *item = new QTreeWidgetItem(ui->tree, QStringList(path));
      item->setChildIndicatorPolicy(QTreeWidgetItem::ShowIndicator);
      

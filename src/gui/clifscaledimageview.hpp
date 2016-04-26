@@ -3,7 +3,7 @@
 
 #include <QtGui>
 #include <QGraphicsView>
-#include "clif/config.h"
+#include "clif/config.hpp"
 
 namespace clif {
   

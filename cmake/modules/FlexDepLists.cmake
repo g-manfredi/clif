@@ -38,6 +38,8 @@
 #   FDP_HAVE_SEARCHED_${PACKAGE}_COMPONENTS are the same, changes in environment
 #   will be ignored!
 
+#set(FDP_VERBOSE 3)
+
 if (NOT WIN32)
   string(ASCII 27 Esc)
   set(ColourReset "${Esc}[m")
@@ -64,14 +66,24 @@ function(dep_lists_pkg_found PKG RET)
   
   set(${RET} FALSE PARENT_SCOPE)
   
-  if (${${PKG}_FOUND})
+  if (${PKG}_FOUND)
     set(${RET} TRUE PARENT_SCOPE)
+      return()
   endif()
-  if (${${LOW}_FOUND})
+  if (${LOW}_FOUND)
     set(${RET} TRUE PARENT_SCOPE)
+      return()
   endif()
-  if (${${UP}_FOUND})
+  if (${UP}_FOUND)
     set(${RET} TRUE PARENT_SCOPE)
+      return()
+  endif()
+  
+  if (${PNU}_${PKG}_FOUND_INDICATOR)
+    if (${${PNU}_${PKG}_FOUND_INDICATOR})
+      set(${RET} TRUE PARENT_SCOPE)
+      return()
+    endif()
   endif()
 endfunction()
 
@@ -91,11 +103,13 @@ endmacro()
 
 #like cmake_parse_arguments but keeps empty args
 macro(dep_lists_parse _dlp_NAME _dlp_OPTS _dlp_SINGLE _dlp_MULTI)
+  cmake_policy(SET CMP0011 NEW)
+  if (POLICY CMP0054)
+    cmake_policy(SET CMP0054 NEW)
+  endif()
+
   set(_dlp_ARGS "")
   set(_dlp_ARGLIST "${ARGN}")
-  
-  # FIXME reset to input after macro?
-  cmake_policy(SET CMP0054 NEW)
   
   foreach(_dlp_ARG IN LISTS _dlp_ARGLIST)
     if("${_dlp_ARG}" STREQUAL "")
@@ -133,9 +147,9 @@ macro(dep_lists_check_find PACKAGE RET PNU)
     set(FDP_HAVE_SEARCHED_${PACKAGE}_COMPONENTS ${${PNU}_${PACKAGE}_COMPONENTS})
     
     if (${PNU}_${PACKAGE}_COMPONENTS)
-      find_package(${PACKAGE} QUIET COMPONENTS ${${PNU}_${PACKAGE}_COMPONENTS})
+      find_package(${PACKAGE} QUIET COMPONENTS ${${PNU}_${PACKAGE}_COMPONENTS} ${${PNU}_${PACKAGE}_FIND_FLAGS})
     else()
-      find_package(${PACKAGE} QUIET)
+      find_package(${PACKAGE} QUIET ${${PNU}_${PACKAGE}_FIND_FLAGS})
     endif()
     
     string(TOLOWER ${PACKAGE} PKG_LOW)
@@ -147,9 +161,9 @@ macro(dep_lists_check_find PACKAGE RET PNU)
       list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/find/${PKG_LOW})
       
       if (${PNU}_${PACKAGE}_COMPONENTS)
-        find_package(${PACKAGE} QUIET COMPONENTS ${${PNU}_${PACKAGE}_COMPONENTS})
+        find_package(${PACKAGE} QUIET COMPONENTS ${${PNU}_${PACKAGE}_COMPONENTS} ${${PNU}_${PACKAGE}_FIND_FLAGS})
       else()
-        find_package(${PACKAGE} QUIET)
+        find_package(${PACKAGE} QUIET ${${PNU}_${PACKAGE}_FIND_FLAGS})
       endif()
       
       dep_lists_pkg_found(${PACKAGE} FOUND)
@@ -179,12 +193,14 @@ macro(dep_lists_check_find PACKAGE RET PNU)
 endmacro()
 
 macro(dep_lists_exec_find PNU PKG SUCC FAIL)
-
-  cmake_policy(VERSION 3.1)
+  cmake_policy(SET CMP0011 NEW)
+  if (POLICY CMP0054)
+    cmake_policy(SET CMP0054 NEW)
+  endif()
 
   string(TOUPPER ${PKG} _FDP_PKG_UP)
   dep_lists_check_find(${PKG} ${PNU}_WITH_${_FDP_PKG_UP} ${PNU})
-  if (${${PNU}_WITH_${_FDP_PKG_UP}})
+  if (${PNU}_WITH_${_FDP_PKG_UP})
     if (NOT "${SUCC}" STREQUAL "")
       list(APPEND ${SUCC} ${PKG})
     endif()
@@ -226,19 +242,22 @@ macro(dep_lists_pkg_search)
   endforeach()
     
   dep_lists_clean_list(${_FDP_PNU}_MISSING_REQUIRED)
+  
+  foreach(VAR ${${_FDP_PREFIX}_EXPORT_VARS})
+    list(APPEND ${_FDP_PREFIX}_EXPORT_VARS_VALUES "VAR" "${VAR}")
+  endforeach()
     
   if (${_FDP_PNU}_MISSING_OPTIONAL)
     message("${BoldRed}missing OPTIONAL packages for ${_FDP_PNU}:")
-    foreach(PACKAGE ${${_FDP_PNU}_MISSING_OPTIONAL})
-      message("   ${PACKAGE}")
+    foreach(PACKAGE ${${_FDP_PNU}_MISSING_OPTIONAL}${ColourReset})
+      message("   ${BoldRed}${PACKAGE}${ColourReset}")
     endforeach()
-    message("${ColourReset}")
   endif()
   
   if (${_FDP_PNU}_MISSING_REQUIRED)
     message("${BoldRed}missing REQUIRED packages for ${_FDP_PNU}::")
-    foreach(PACKAGE ${${_FDP_PNU}_MISSING_REQUIRED})
-      message("   ${PACKAGE}")
+    foreach(PACKAGE ${${_FDP_PNU}_MISSING_REQUIRED}${ColourReset})
+      message("   ${BoldRed}${PACKAGE}${ColourReset}")
     endforeach()
     if (NOT DEP_LISTS_SOFT_FAIL)
       message(FATAL_ERROR "required package(s) not found, exiting.")
@@ -247,6 +266,10 @@ macro(dep_lists_pkg_search)
       message("${ColourReset}")
       return()
     endif()
+  endif()
+  #output formatting
+  if (${_FDP_PNU}_MISSING_OPTIONAL)
+    message("")
   endif()
 endmacro(dep_lists_pkg_search)
 
@@ -352,11 +375,47 @@ macro(dep_lists_prepare_env)
   list(APPEND ${_FDP_PNU}_LIBRARIES ${${_FDP_PNU}_LIB})
   list(APPEND ${_FDP_PNU}_INCLUDE_DIRS ${${_FDP_PNU}_INC})
   list(APPEND ${_FDP_PNU}_LIBRARY_DIRS ${${_FDP_PNU}_LIB})
+  
+  string(TOLOWER ${_FDP_PNU} PNL)
+  
+#####################################################
+## copy headers to common location
+#####################################################
+  if (dep_lists_append_HEADER_PREFIX)
+    set(_FDP_HEADER_PREFIX ${dep_lists_append_HEADER_PREFIX})
+  else()
+    string(TOLOWER ${_FDP_PNU} _FDP_HEADER_PREFIX)
+  endif()
+  
+  add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/ COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX})
+  set(_FPD_HEADER_DEPLIST ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX})
+                 
+  foreach(_H ${${_FDP_PNU}_HEADERS})
+    if (IS_ABSOLUTE ${_H})
+      set(_SRC_H ${_H})
+    else()
+      set(_SRC_H ${CMAKE_CURRENT_SOURCE_DIR}/${_H})
+    endif()
+    get_filename_component(_H ${_H} NAME)
+    dep_lists_msg_info("copy header: ${_SRC_H} -> ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/")
+    add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/${_H}
+                       COMMAND ${CMAKE_COMMAND} -E copy ${_SRC_H} ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/
+                       DEPENDS ${_SRC_H})
+    list(APPEND _FPD_HEADER_DEPLIST ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/${_H})
+  endforeach()
+  
+  dep_lists_msg_info("add target ${PNL}-header-export (${_FPD_HEADER_DEPLIST})")
+  add_custom_target(${PNL}-header-export ALL DEPENDS ${_FPD_HEADER_DEPLIST})
 endmacro(dep_lists_prepare_env)
 
 macro(dep_lists_append _FDP_NAME)
+  cmake_policy(SET CMP0011 NEW)
+  if (POLICY CMP0054)
+    cmake_policy(SET CMP0054 NEW)
+  endif()
+
   set(dep_lists_append_UNPARSED_ARGUMENTS "")
-  dep_lists_parse(dep_lists_append "OPTIONAL;PRIVATE" "PREFIX" "COMPONENTS" "${ARGN}")
+  dep_lists_parse(dep_lists_append "OPTIONAL;PRIVATE" "PREFIX;FOUND_INDICATOR" "COMPONENTS;FIND_FLAGS" "${ARGN}")
   
   string(TOUPPER ${_FDP_NAME} _FDP_NAME_UPPER)
   
@@ -367,8 +426,18 @@ macro(dep_lists_append _FDP_NAME)
     string(TOUPPER ${PROJECT_NAME} _FDP_PREFIX)
   endif()
   
+  if (dep_lists_append_FOUND_INDICATOR)
+    set(${_FDP_PREFIX}_${_FDP_NAME}_FOUND_INDICATOR ${dep_lists_append_FOUND_INDICATOR})
+    list(APPEND ${_FDP_PREFIX}_EXPORT_VARS_VALUES "${_FDP_PREFIX}_${_FDP_NAME}_FOUND_INDICATOR" "${dep_lists_append_FOUND_INDICATOR}")
+  endif()
+  
   if (dep_lists_append_COMPONENTS)
     set(${_FDP_PREFIX}_${_FDP_NAME}_COMPONENTS ${dep_lists_append_COMPONENTS})
+  endif()
+  
+  if (dep_lists_append_FIND_FLAGS)
+    set(${_FDP_PREFIX}_${_FDP_NAME}_FIND_FLAGS ${dep_lists_append_FIND_FLAGS})
+    list(APPEND ${_FDP_PREFIX}_EXPORT_VARS_VALUES "${_FDP_PREFIX}_${_FDP_NAME}_FIND_FLAGS" "${dep_lists_append_FIND_FLAGS}")
   endif()
     
   dep_lists_opt_get(dep_lists_append_UNPARSED_ARGUMENTS 0 _FDP_A0)
@@ -423,11 +492,31 @@ macro(dep_lists_append _FDP_NAME)
 endmacro(dep_lists_append)
 
 macro(dep_lists_init)
+  cmake_policy(SET CMP0011 NEW)
+  if (POLICY CMP0054)
+    cmake_policy(SET CMP0054 NEW)
+  endif()
+
   file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake")
   
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
+  
+  # FIXME add Debug, etc. on win!
+  if (WIN32)
+    # TODO for windows or only for MSVC?
+    set(CMAKE_DEBUG_POSTFIX "d")
+  
+    foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
+            string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
+            set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
+            set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+            set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    endforeach()
+  endif()
+  
+  string(TOUPPER ${PROJECT_NAME} PNU)
 endmacro()
 
 # install ${${PNU}_HEADERS} into CMAKE_CURRENT_BINARY_DIR/${PNL}/
@@ -446,41 +535,17 @@ function(dep_lists_export_local)
   endif()
   
   string(TOLOWER ${_FDP_PNU} PNL)
-  
-  #output prefix (normally upper case project name)
-  if (dep_lists_append_HEADER_PREFIX)
-    set(_FDP_HEADER_PREFIX ${dep_lists_append_HEADER_PREFIX})
-  else()
-    string(TOLOWER ${_FDP_PNU} _FDP_HEADER_PREFIX)
-  endif()
-  
-  add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/ COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX})
-  set(_FPD_HEADER_DEPLIST ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX})
-                     
-  foreach(_H ${${_FDP_PNU}_HEADERS})
-    if (IS_ABSOLUTE ${_H})
-      set(_SRC_H ${_H})
-    else()
-      set(_SRC_H ${CMAKE_CURRENT_SOURCE_DIR}/${_H})
-    endif()
-    get_filename_component(_H ${_H} NAME)
-    add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/${_H}
-                       COMMAND ${CMAKE_COMMAND} -E copy ${_SRC_H} ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/
-                       DEPENDS ${_SRC_H})
-    list(APPEND _FPD_HEADER_DEPLIST ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/${_H})
-  endforeach()
-  
-  add_custom_target(${PNL}-header-export ALL DEPENDS ${_FPD_HEADER_DEPLIST})
 
   include(CMakePackageConfigListHelpers)
 
   #####################################################
   ## ...Config.cmake generation
   #####################################################
-  set(CMAKECONFIG_PKG ${${_FDP_PNU}_PKG})
+  set(CMAKECONFIG_PKG ${${_FDP_PNU}_EXPORT_DEPS})
   set(CMAKECONFIG_PKG_INC ${${_FDP_PNU}_PKG_INC_FOUND})
   set(CMAKECONFIG_PKG_LINK ${${_FDP_PNU}_PKG_LINK_FOUND})
   set(CMAKECONFIG_PKG_LIB ${${_FDP_PNU}_PKG_LIB_FOUND})
+  set(CMAKECONFIG_PKG_EXPORT_VARS ${${_FDP_PNU}_EXPORT_VARS_VALUES})
   
   
   set(CMAKECONFIG_PKG_COMPONENTS ${${PNU}_PKG_COMPONENTS})
@@ -490,7 +555,15 @@ function(dep_lists_export_local)
   else()
     set(CMAKECONFIG_INC "include") #in build dir - headers were already copied above
   endif()
-  set(CMAKECONFIG_LIB ${${_FDP_PNU}_EXPORT_LIBS}) # our libs to link on import
+  
+  if (WIN32)
+    set(CMAKECONFIG_LIB "")
+    foreach(LIB ${${_FDP_PNU}_EXPORT_LIBS})
+      list(APPEND CMAKECONFIG_LIB optimized ${LIB} debug ${LIB}d)
+    endforeach()
+  else()
+    set(CMAKECONFIG_LIB ${${_FDP_PNU}_EXPORT_LIBS}) # our libs to link on import
+  endif()
   set(CMAKECONFIG_FEATURES ${${_FDP_PNU}_FEATURES})
 
 
@@ -506,18 +579,23 @@ function(dep_lists_export_local)
   set(_FDP_PCFILE "cmake/projectConfig.cmake.in")
   file(READ ${_FDP_PCFILE} _FDP_PCCONTENT)
   string(FIND "${_FDP_PCCONTENT}" "projectConfig.cmake.in"  _FDP_PCLINK)
-  message("content: ${_FDP_PCCONTENT} match: ${_FDP_PCLINK}")
   if (0 LESS ${_FDP_PCLINK})
 	set(_FDP_PCFILE "cmake/${_FDP_PCCONTENT}")
   endif()
-  
-  message("config for ${_FDP_PNU}: ${_FDP_PCFILE}")
-  
+    
   configure_package_config_file( ${_FDP_PCFILE}
                                 "${CMAKECONFIG_CMAKE_DIR}/${PROJECT_NAME}Config.cmake"
                                 INSTALL_DESTINATION "${CMAKECONFIG_CMAKE_DIR}"
-                                PATH_VARS CMAKECONFIG_PKG CMAKECONFIG_PKG_INC CMAKECONFIG_PKG_LINK CMAKECONFIG_PKG_LIB CMAKECONFIG_INC CMAKECONFIG_LINK CMAKECONFIG_LIB CMAKECONFIG_PKG_COMPONENTS)
+                                PATH_VARS CMAKECONFIG_PKG CMAKECONFIG_PKG_INC CMAKECONFIG_PKG_LINK CMAKECONFIG_PKG_LIB CMAKECONFIG_INC CMAKECONFIG_LINK CMAKECONFIG_LIB CMAKECONFIG_PKG_COMPONENTS CMAKECONFIG_PKG_EXPORT_VARS)
   export(PACKAGE ${PROJECT_NAME})
+  
+  
+  #####################################################
+  ## copy find macros
+  #####################################################
+  if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/cmake/find/)
+    file(COPY cmake/find DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/)
+  endif()
 endfunction()
 
 # args: TITLE BOOLVAR [LENGTH]
@@ -562,3 +640,8 @@ function(msg_yesno TITLE BOOLVAR)
   endif()
   
 endfunction(msg_yesno)
+
+macro(dep_lists_pkg_recheck PKG)
+  set(FDP_HAVE_SEARCHED_${PKG} "")
+  dep_lists_pkg_search()
+endmacro()

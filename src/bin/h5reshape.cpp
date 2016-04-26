@@ -3,10 +3,7 @@
 #include <cstdlib>
 #include <vector>
 
-#include "H5Cpp.h"
-#include "H5File.h"
-
-#include "hdf5.hpp"
+#include <clif/hdf5.hpp>
 
 using namespace clif;
 using namespace std;

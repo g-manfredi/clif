@@ -261,6 +261,7 @@ bool Mesh::show(bool block)
 #endif
 }
 
+#ifdef MM_MESH_WITH_VIEWER
 static bool _update_viewer(igl::viewer::Viewer& viewer, Mesh *m)
 { 
 
@@ -272,15 +273,20 @@ static bool _update_viewer(igl::viewer::Viewer& viewer, Mesh *m)
   
   return false;
 }
+#endif
 
 Mesh& Mesh::operator=(const Mesh &m)
 {
   V = m.V;
   F = m.F;
   C = m.C;
-  
+
+#ifdef MM_MESH_WITH_VIEWER
   if (_viewer)
     _viewer->callback_pre_draw = std::bind(_update_viewer, std::placeholders::_1, this);
+#endif
+
+  return *this;
 }
 
 } //namespace clif

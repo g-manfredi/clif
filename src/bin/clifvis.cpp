@@ -9,18 +9,15 @@
 #include <fnmatch.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifndef CLIF_COMPILER_MSVC
+#ifndef _MSC_VER
 #include <unistd.h>
 #endif
 
-#include "H5Cpp.h"
-#include "H5File.h"
-
-#include "dataset.hpp"
-#include "clif.hpp"
+#include <clif/dataset.hpp>
+#include <clif/clif.hpp>
 
 #ifdef CLIF_WITH_LIBIGL
-  #include "mesh.hpp"
+  #include <clif/mesh.hpp>
 #endif
 
 #ifdef CLIF_WITH_LIBIGL_VIEWER

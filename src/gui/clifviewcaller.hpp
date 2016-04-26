@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include <QLocalSocket>
-#include "clif/config.h"
+#include <clif/config.hpp>
 
 class CLIF_EXPORT ExternalClifViewer : public QObject
 {

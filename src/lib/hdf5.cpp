@@ -5,7 +5,7 @@
 #include <H5FcreatProp.h>
 
 #include "enumtypes.hpp"
-#ifdef CLIF_COMPILER_MSVC
+#ifdef _MSC_VER
 #include "io.h"
 #include "Windows.h"
 #endif
@@ -75,7 +75,7 @@ ClifFile h5_memory_file()
   
   FileAccPropList acc_plist;
   acc_plist.setCore(16 * 1024, false);
-#ifdef CLIF_COMPILER_MSVC
+#ifdef _MSC_VER
   char *tmppath = (char*)malloc(1024);
   char *tmppath2 = (char*)malloc(1024);
   if (!GetTempPath(1024, tmppath))
@@ -97,7 +97,7 @@ ClifFile h5_memory_file()
   //FIXME handle file delete at the end!
   H5File f = H5File(tmpfilename, H5F_ACC_TRUNC, FileCreatPropList::DEFAULT, acc_plist);
   cf = ClifFile(f, tmpfilename);
-#ifdef CLIF_COMPILER_MSVC
+#ifdef _MSC_VER
   free(tmppath);
 #else
   close(handle);
@@ -105,26 +105,6 @@ ClifFile h5_memory_file()
 #endif
   
   return cf;
-}
-
-void h5_create_path_groups(H5::H5File &f, boost::filesystem::path path) 
-{
-  boost::filesystem::path part;
-  
-  for(auto it = path.begin(); it != path.end(); ++it) {
-    part /= *it;
-    if (!clif::h5_obj_exists(f, part)) {
-      
-      hid_t gpid = H5Pcreate(H5P_GROUP_CREATE);
-      herr_t res = H5Pset_attr_phase_change(gpid, 0, 0);
-      if (res < 0)
-        abort();
-      
-      hid_t g = H5Gcreate(f.getId(), part.generic_string().c_str(), H5P_DEFAULT, gpid, H5P_DEFAULT);
-      uint min, max;
-      H5Pget_attr_phase_change(H5Gget_create_plist(g), &max, &min);
-    }
-  }
 }
   
 }

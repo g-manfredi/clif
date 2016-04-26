@@ -14,8 +14,6 @@ namespace clif {
 bool h5_obj_exists(H5::H5File f, const char * const path);
 bool h5_obj_exists(H5::H5File f, const std::string path);
 bool h5_obj_exists(H5::H5File f, const boost::filesystem::path path);
-
-void h5_create_path_groups(H5::H5File &f, boost::filesystem::path path);
   
 ClifFile h5_memory_file();
 

@@ -3,8 +3,8 @@
 #include <cstdlib>
 #include <vector>
 
-#include "dataset.hpp"
-#include "clif.hpp"
+#include <clif/dataset.hpp>
+#include <clif/clif.hpp>
 
 #include <opencv2/imgproc/imgproc.hpp>
 

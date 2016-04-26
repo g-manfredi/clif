@@ -9,18 +9,19 @@
 #include <fnmatch.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifndef CLIF_COMPILER_MSVC
+#ifndef _MSC_VER
 #include <unistd.h>
 #endif
 
-#include "H5Cpp.h"
-#include "H5File.h"
+#include <clif/clif_cv.hpp>
+#include <clif/calib.hpp>
 
-#include "clif_cv.hpp"
-#include "calib.hpp"
+#include <H5Cpp.h>
+#include <H5File.h>
 
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/calib3d/calib3d.hpp"
+
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/calib3d/calib3d.hpp>
 
 
 using namespace clif;
