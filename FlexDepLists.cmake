@@ -40,6 +40,11 @@
 
 #set(FDP_VERBOSE 3)
 
+# used to include CMakePackageConfigListHelpers.cmake and projectConfig.cmake.in
+set(FLEXDEPLISTS_DIR ${CMAKE_CURRENT_LIST_DIR})
+
+include(CMakeParseArguments)
+
 if (NOT WIN32)
   string(ASCII 27 Esc)
   set(ColourReset "${Esc}[m")
@@ -536,7 +541,7 @@ function(dep_lists_export_local)
   
   string(TOLOWER ${_FDP_PNU} PNL)
 
-  include(CMakePackageConfigListHelpers)
+  include(${FLEXDEPLISTS_DIR}/CMakePackageConfigListHelpers.cmake)
 
   #####################################################
   ## ...Config.cmake generation
@@ -576,7 +581,7 @@ function(dep_lists_export_local)
 
   set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
   
-  set(_FDP_PCFILE "cmake/projectConfig.cmake.in")
+  set(_FDP_PCFILE "${FLEXDEPLISTS_DIR}/projectConfig.cmake.in")
   file(READ ${_FDP_PCFILE} _FDP_PCCONTENT)
   string(FIND "${_FDP_PCCONTENT}" "projectConfig.cmake.in"  _FDP_PCLINK)
   if (0 LESS ${_FDP_PCLINK})
