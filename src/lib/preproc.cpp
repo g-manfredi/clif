@@ -439,7 +439,7 @@ void proc_image(Mat &in, Mat &out, const ProcData & proc, const Idx & pos)
 			cv::Mat out_mat = cvMat(curr_out.bind(2, c));
 			cv::Mat in_mat = out_mat.clone();
 			cv::warpPerspective(in_mat, out_mat, H, img_size,
-					cv::INTER_LINEAR | cv::WARP_INVERSE_MAP);
+					cv::INTER_LANCZOS4 | cv::WARP_INVERSE_MAP);
 		}
     }
     }
