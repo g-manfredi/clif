@@ -377,6 +377,11 @@ static int parse_line(char *line, cliini_args *args, cliini_optgroup *group, cha
   char *section;
   char optsstring[SECTION_MAXLEN];
   
+  //remove '\r' by unix newline
+  for(int i=0;i<strlen(line);i++)
+    if (line[i] == '\r')
+      line[i] = '\n';
+    
   count = split_string(line, parts, MAXPARTS);
   
   if (count == -1) {
@@ -422,7 +427,7 @@ static int parse_line(char *line, cliini_args *args, cliini_optgroup *group, cha
       return 0;
     }
     else {
-      printf("error! unable to parse line\n");
+      printf("error! unable to parse line: \"%s\"\n", line);
       return 1;
     }
   }
