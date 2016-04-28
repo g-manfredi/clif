@@ -132,6 +132,7 @@ static int _cliini_opt_arg_invalid(cliini_opt *opt, const char *arg)
       printf("invalid opt specification!\n");
       abort();
   }
+  return 0;
 }
 
 static int _type_size(int type)
