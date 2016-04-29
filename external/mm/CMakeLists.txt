@@ -10,16 +10,6 @@ dep_lists_init()
 #####################################################
 ## ENVIRONMENT
 #####################################################
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-  list(APPEND CMAKE_CXX_FLAGS "-std=c++11")
-  # FIXME
-  add_definitions(-DFNM_EXTMATCH=0)
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -fno-omit-frame-pointer -fPIC -std=c++11 -march=native")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /noOy /W2 /EHsc")
-endif()
-
 # default to static on win shared on others
 if (NOT DEFINED BUILD_SHARED_LIBS)
   if (WIN32)
@@ -27,6 +17,26 @@ if (NOT DEFINED BUILD_SHARED_LIBS)
   else()
     option(BUILD_SHARED_LIBS "build shared libraries" ON)
   endif()
+endif()
+
+# fixme check wether we can find openmp!
+if (WIN32)
+  option(${PNU}_WITH_OPENMP "use openmp" OFF)
+else()
+  option(${PNU}_WITH_OPENMP "use openmp" ON)
+endif()
+
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+  list(APPEND CMAKE_CXX_FLAGS "-std=c++11")
+  # FIXME
+  add_definitions(-DFNM_EXTMATCH=0)
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -fno-omit-frame-pointer -fPIC -std=c++11 -march=native")
+  if (${PNU}_WITH_OPENMP)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+  endif()
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /noOy /W2 /EHsc")
 endif()
 
 #####################################################
