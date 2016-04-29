@@ -33,11 +33,12 @@ endif()
 ## DEPENDENCIES
 #####################################################
 dep_lists_append(OpenCV OpenCV_INCLUDE_DIRS "" OpenCV_LIBS)
+#HDF5_INCLUDE_DIR is deprecated but used by our acutally used hdf5 version
 if (WIN32)
   # global FindHDF5.cmake gives wrong paths...
-  dep_lists_append(HDF5 COMPONENTS C CXX FIND_FLAGS CONFIG)
+  dep_lists_append(HDF5 HDF5_INCLUDE_DIR COMPONENTS C CXX FIND_FLAGS CONFIG)
 else()
-  dep_lists_append(HDF5 COMPONENTS C CXX FIND_FLAGS)
+  dep_lists_append(HDF5 HDF5_INCLUDE_DIR COMPONENTS C CXX)
 endif()
 dep_lists_append(Boost Boost_INCLUDE_DIRS Boost_LIBRARY_DIRS Boost_LIBRARIES COMPONENTS filesystem system)
 
