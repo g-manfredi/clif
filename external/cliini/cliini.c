@@ -132,6 +132,7 @@ static int _cliini_opt_arg_invalid(cliini_opt *opt, const char *arg)
       printf("invalid opt specification!\n");
       abort();
   }
+  return 0;
 }
 
 static int _type_size(int type)
@@ -512,24 +513,19 @@ CLIINI_EXPORT cliini_args *cliini_parsefile(const char *filename, cliini_optgrou
       
       fseek(f, filepos, SEEK_SET);
       curlen = fread(buf, 1, maxsize, f);
+	  memset(buf + curlen, 0, maxsize - curlen);
       if (!curlen) 
         break;
       if (curlen < maxsize) {
         buf[curlen] = '\n'; //at line break at end of file
         curlen++;
       }
-      //printf("read %d!\n", curlen);
-      //printf("read %s\n", buf);
       bufpos = 0;
       continue;
     }
     *line_end = '\0';
-    //printf("%s\n", buf+bufpos);
     error += parse_line(buf+bufpos, args, group, currsection);
-    //put to 1 after last line
-    //printf("proc %d\n", line_end-(buf+bufpos)+1);
-    filepos += line_end-(buf+bufpos)+1;
-    //printf("filepos %d\n", filepos);
+    filepos += line_end-(buf+bufpos)+2;
     bufpos = line_end-buf+1;
   }
   
