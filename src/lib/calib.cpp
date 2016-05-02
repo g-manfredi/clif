@@ -234,7 +234,7 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
             cv::merge(debug_imgs, 3, debug_img);
       }
       else {
-        cv::Mat debug_imgs[proc.d()];
+        cv::Mat *debug_imgs = new cv::Mat[proc.d()];
         
         //grayscale rough detection
         //FIXME move this up - mmapped reallocation not possible...
@@ -285,6 +285,8 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
           else
             cv::merge(debug_imgs, proc.d(), debug_img);
         }
+
+        delete debug_imgs;
       }
       
       if (debug_store) {

@@ -8,19 +8,22 @@ string(TOUPPER ${PROJECT_NAME} PNU)
 
 option(GPL_BUILD "create GPL'ed binaries" OFF)
 
-if (WIN32)
-  option(BUILD_SHARED_LIBS "build shared libraries" OFF)
-else()
-  option(BUILD_SHARED_LIBS "build shared libraries" ON)
+# default to static on win shared on others
+if (NOT DEFINED BUILD_SHARED_LIBS)
+  if (WIN32)
+    option(BUILD_SHARED_LIBS "build shared libraries" OFF)
+  else()
+    option(BUILD_SHARED_LIBS "build shared libraries" ON)
+  endif()
 endif()
 
 #####################################################
 ## GLOBAL
 #####################################################
 
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
-include(CMakePackageConfigListHelpers)
-include(FlexDepLists)
+include(external/flexdeplists/FlexDepLists.cmake)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 
 #####################################################
 ## COMPILER
@@ -31,7 +34,7 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL Clang)
   # FIXME add to _DEFINES?
   add_definitions(-DFNM_EXTMATCH=0)
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL GNU)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -fno-omit-frame-pointer -fPIC -std=c++11 -march=native -fopenmp")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -fno-omit-frame-pointer -fPIC -std=c++11 -march=native")
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /noOy /W2 /EHsc")
 endif()

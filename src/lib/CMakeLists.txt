@@ -70,6 +70,12 @@ dep_lists_append(ucalib OPTIONAL)
 dep_lists_pkg_search()
 dep_lists_prepare_env()
 
+# FIXME should be provided through find_package?
+# GCC only!
+if (METAMAT_WITH_OPENMP)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+endif()
+
 set(SOURCES enumtypes.cpp clif.cpp subset3d.cpp calib.cpp hdf5.cpp attribute.cpp helpers.cpp datastore.cpp dataset.cpp core.cpp clif_cv.cpp preproc.cpp tree_derived.cpp cam.cpp ${CMAKE_CURRENT_BINARY_DIR}/types.cpp mat_helpers.cpp)
 
 add_library(clif ${SOURCES})

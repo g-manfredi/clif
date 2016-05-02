@@ -40,6 +40,11 @@
 
 #set(FDP_VERBOSE 3)
 
+# used to include CMakePackageConfigListHelpers.cmake and projectConfig.cmake.in
+set(FLEXDEPLISTS_DIR ${CMAKE_CURRENT_LIST_DIR})
+
+include(CMakeParseArguments)
+
 if (NOT WIN32)
   string(ASCII 27 Esc)
   set(ColourReset "${Esc}[m")
@@ -501,7 +506,9 @@ macro(dep_lists_init)
   
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
-  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
+  if (NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
+  endif()
   
   # FIXME add Debug, etc. on win!
   if (WIN32)
@@ -509,10 +516,10 @@ macro(dep_lists_init)
     set(CMAKE_DEBUG_POSTFIX "d")
   
     foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
-            string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
-            set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
-            set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
-            set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+      string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
+      set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
+      set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+      set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
     endforeach()
   endif()
   
@@ -536,7 +543,7 @@ function(dep_lists_export_local)
   
   string(TOLOWER ${_FDP_PNU} PNL)
 
-  include(CMakePackageConfigListHelpers)
+  include(${FLEXDEPLISTS_DIR}/CMakePackageConfigListHelpers.cmake)
 
   #####################################################
   ## ...Config.cmake generation
@@ -576,7 +583,7 @@ function(dep_lists_export_local)
 
   set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
   
-  set(_FDP_PCFILE "cmake/projectConfig.cmake.in")
+  set(_FDP_PCFILE "${FLEXDEPLISTS_DIR}/projectConfig.cmake.in")
   file(READ ${_FDP_PCFILE} _FDP_PCCONTENT)
   string(FIND "${_FDP_PCCONTENT}" "projectConfig.cmake.in"  _FDP_PCLINK)
   if (0 LESS ${_FDP_PCLINK})

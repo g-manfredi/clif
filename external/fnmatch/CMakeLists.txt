@@ -1,6 +1,7 @@
 cmake_minimum_required (VERSION 2.8)
 project(fnmatch)
 
+include(../flexdeplists/FlexDepLists.cmake)
 dep_lists_init()
 dep_lists_pkg_search()
 
