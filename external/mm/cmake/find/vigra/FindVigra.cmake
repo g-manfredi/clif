@@ -12,6 +12,8 @@
 
 SET( VIGRA_FOUND "NO" )
 
+include(FindLibraryWithDebug)
+
 IF(WIN32)
   FIND_PATH(VIGRA_INCLUDE_DIR vigra/gaborfilter.hxx 
       PATHS ${SOURCE_BASE_DIR}/vigra/include

@@ -377,7 +377,7 @@ macro(dep_lists_prepare_env)
     add_definitions(-D${F})
   endforeach()
   
-  list(APPEND ${_FDP_PNU}_LIBRARIES ${${_FDP_PNU}_LIB})
+  list(APPEND ${_FDP_PNU}_LIBRARIES ${${_FDP_PNU}_LIB} ${${_FDP_PNU}_EXTRA_LIBS})
   list(APPEND ${_FDP_PNU}_INCLUDE_DIRS ${${_FDP_PNU}_INC})
   list(APPEND ${_FDP_PNU}_LIBRARY_DIRS ${${_FDP_PNU}_LIB})
   
@@ -568,6 +568,7 @@ function(dep_lists_export_local)
     foreach(LIB ${${_FDP_PNU}_EXPORT_LIBS})
       list(APPEND CMAKECONFIG_LIB optimized ${LIB} debug ${LIB}d)
     endforeach()
+	list(APPEND CMAKECONFIG_LIB ${${_FDP_PNU}_EXTRA_LIBS})
   else()
     set(CMAKECONFIG_LIB ${${_FDP_PNU}_EXPORT_LIBS}) # our libs to link on import
   endif()

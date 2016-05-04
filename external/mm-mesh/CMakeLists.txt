@@ -34,7 +34,8 @@ endif()
 #####################################################
 dep_lists_append(MetaMat)
 dep_lists_append(Eigen3 EIGEN3_INCLUDE_DIR)
-dep_lists_append(glfw3 OPTIONAL FOUND_INDICATOR GLFW3_LIBRARY GLFW3_INCLUDE_DIR GLFW3_LIBRARY_DIR GLFW3_LIBRARY)
+
+dep_lists_append(glfw3 OPTIONAL GLFW3_INCLUDE_DIR GLFW3_LIBRARY_DIR GLFW3_LIBRARY)
 dep_lists_append(GLEW OPTIONAL)
 
 # search pkgs
@@ -47,6 +48,9 @@ if (${PNU}_BUILD_LIBIGL)
 
   if (${PNU}_WITH_GLFW3 AND ${PNU}_WITH_GLEW)
     set(${PNU}_WITH_VIEWER TRUE)
+	if (WIN32)
+		set(${PNU}_EXTRA_LIBS glu32 opengl32)
+	endif()
     list(APPEND ${PNU}_FEATURES ${PNU}_WITH_VIEWER)
   endif()
 endif()
