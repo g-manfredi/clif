@@ -93,7 +93,7 @@ bool DepthDist::load(Dataset *set)
       _map.create({IR(_w, "x"),IR(_h, "y")});
   
       cv::Mat tmp;
-      cv::initUndistortRectifyMap(cv_cam, cv_dist, cv::noArray(), cv::noArray(), cv::Size(_w,_h), CV_32FC2, cvMat(_map), tmp);
+      cv::initUndistortRectifyMap(cv_cam, cv::Mat(cv_dist), cv::noArray(), cv::noArray(), cv::Size(_w,_h), CV_32FC2, cvMat(_map), tmp);
   
       return true;
     }
