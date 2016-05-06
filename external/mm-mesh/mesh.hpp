@@ -28,6 +28,11 @@ public:
   void color(bool use_color);
   
   bool show(bool block = true);
+#ifdef MM_MESH_WITH_VIEWER 
+  void callback_key_pressed(std::function<bool(Mesh *mesh, unsigned int key, int modifiers)> cb);
+  //c++ problem: should not be public but otherwise we'd have to expose a function (as friend) from the cpp which would expouse the viewer implementation from igl!
+  std::function<bool(Mesh *mesh, unsigned int key, int modifiers)> _callback_key_pressed;
+#endif
   
   Eigen::MatrixXd V;
   Eigen::MatrixXi F;
@@ -36,6 +41,7 @@ private:
 #ifdef MM_MESH_WITH_VIEWER
   igl::viewer::Viewer *_viewer = NULL;
   std::thread *_viewer_thread = NULL;
+  void _run_viewer();
 public :
   ~Mesh();
 #endif

@@ -9,6 +9,8 @@
   #include <thread>
 #endif
 
+#include <cstddef>
+
 namespace clif {
 
 void Mesh::writeOBJ(const char *filename)
@@ -223,22 +225,42 @@ Mesh::~Mesh()
   }
 }
 
-static void _run_viewer(const Mesh *mesh, igl::viewer::Viewer **viewer)
+static bool callback_key_pressed_f(igl::viewer::Viewer& viewer, unsigned int key, int modifiers)
 {
-  if (!(*viewer))
-    *viewer =  new igl::viewer::Viewer;
+  Mesh *m = (Mesh*)viewer.callback_key_pressed_data;
   
-  (*viewer)->core.set_rotation_type(
+  bool ret = m->_callback_key_pressed(m, key, modifiers);
+  
+  if (ret) {
+    printf("update viewer data!\n");
+    viewer.data.set_mesh(m->V, m->F);
+    if (m->C.rows())
+      viewer.data.set_colors(m->C);
+  }
+  
+  return ret;
+}
+
+void Mesh::_run_viewer()
+{
+  if (!_viewer) {
+    _viewer =  new igl::viewer::Viewer;
+    if (_callback_key_pressed)
+      _viewer->callback_key_pressed = callback_key_pressed_f;
+    _viewer->callback_key_pressed_data = this;
+  }
+  
+  _viewer->core.set_rotation_type(
     igl::viewer::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
-  (*viewer)->data.set_mesh(mesh->V, mesh->F);
-  if (mesh->C.rows())
-    (*viewer)->data.set_colors(mesh->C);
+  _viewer->data.set_mesh(this->V, this->F);
+  if (this->C.rows())
+    _viewer->data.set_colors(this->C);
   
-  (*viewer)->core.show_lines = false;
-  //(*viewer)->core.shininess = 0.0;
-  (*viewer)->core.lighting_factor = 0.0;
+  _viewer->core.show_lines = false;
+  //_viewer->core.shininess = 0.0;
+  _viewer->core.lighting_factor = 0.0;
   
-  (*viewer)->launch();
+  _viewer->launch();
 }
 #endif
 
@@ -249,12 +271,12 @@ bool Mesh::show(bool block)
     return false;
   
   if (block) {
-    _run_viewer(this, &_viewer);
+    _run_viewer();
     delete _viewer;
     _viewer = NULL;
   }
   else
-    _viewer_thread = new std::thread(_run_viewer, this, &_viewer);
+    _viewer_thread = new std::thread(&Mesh::_run_viewer, this);
   return true;
 #else
   return false;
@@ -272,6 +294,18 @@ static bool _update_viewer(igl::viewer::Viewer& viewer, Mesh *m)
   glfwPostEmptyEvent();
   
   return false;
+}
+
+void Mesh::callback_key_pressed(std::function<bool(Mesh *mesh, unsigned int key, int modifiers)> cb)
+{
+  _callback_key_pressed = cb;
+  if (_viewer) {
+    if (_callback_key_pressed)
+     _viewer->callback_key_pressed = callback_key_pressed_f;
+    else
+      _viewer->callback_key_pressed = NULL;
+    _viewer->callback_key_pressed_data = this;
+  }
 }
 #endif
 
