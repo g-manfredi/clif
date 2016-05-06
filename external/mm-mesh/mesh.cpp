@@ -303,7 +303,7 @@ void Mesh::callback_key_pressed(std::function<bool(Mesh *mesh, unsigned int key,
     if (_callback_key_pressed)
      _viewer->callback_key_pressed = callback_key_pressed_f;
     else
-      _viewer->callback_key_pressed = NULL;
+      _viewer->callback_key_pressed = nullptr;
     _viewer->callback_key_pressed_data = this;
   }
 }
