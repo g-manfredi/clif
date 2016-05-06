@@ -326,9 +326,6 @@ void Datastore::link(const Datastore *other, Dataset *dataset)
   
   reset();
   
-  if (!other->valid())
-    return;
-  
   _readonly = true;
   
   _type = other->_type; 
