@@ -33,14 +33,7 @@ typedef unsigned int uint;
 bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_imgs)
 {
   cpath img_root, map_root;
-  bool wtf;
-  wtf = s->deriveGroup("calibration/imgs", imgset, "calibration/mapping", calibset, img_root, map_root);
-  std::cout << wtf << "\n";
-  if (!wtf)
-    //abort();
-    printf("should actually abort!\n");
-  else
-    printf("all good\n");
+  s->deriveGroup("calibration/imgs", imgset, "calibration/mapping", calibset, img_root, map_root);
   
   Datastore *debug_store = NULL;
 
@@ -99,11 +92,11 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
       int succ = findChessboardCorners(ch, Size(size[0],size[1]), corners, CV_CALIB_CB_ADAPTIVE_THRESH+CV_CALIB_CB_NORMALIZE_IMAGE+CALIB_CB_FAST_CHECK+CV_CALIB_CB_FILTER_QUADS);
       
       if (succ) {
-        printf("found %6lu corners\n", corners.size());
+        printf("found %6lu corners\n", corners.size()); fflush(NULL);
         cornerSubPix(ch, corners, Size(8,8), Size(-1,-1), TermCriteria(cv::TermCriteria::MAX_ITER | cv::TermCriteria::EPS,100,0.0001));
       }
       else
-        printf("found      0 corners\n");
+        printf("found      0 corners\n"); fflush(NULL);
       
       ipoints.push_back(std::vector<Point2f>());
       wpoints.push_back(std::vector<Point2f>());
@@ -124,8 +117,8 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
       }
     }
   }
-#ifdef CLIF_WITH_HDMARKER
   else if (pattern == CalibPattern::HDMARKER) {
+#ifdef CLIF_WITH_HDMARKER
     
     double unit_size; //marker size in mm
     double unit_size_res;
@@ -183,7 +176,7 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
               abort();
           }
           
-          printf("process %d x %d\n", pos[1], pos[2]);
+          printf("process bayer %d x %d\n", pos[1], pos[2]); fflush(NULL);
           
           cv::Mat debug_imgs[3];
           
@@ -286,22 +279,29 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
             cv::merge(debug_imgs, proc.d(), debug_img);
         }
 
-        delete debug_imgs;
+        delete[] debug_imgs;
       }
       
       if (debug_store) {
         debug_store->appendImage(&debug_img);
         s->flush();
         
+        printf("wrote debug store image?\n"); fflush(NULL);
+        
         //char buf[128];
         //sprintf(buf, "col_fit_img%03d.tif", j);
         //imwrite(buf, debug_img);
       }
     }
+#else
+  printf("ERROR: compiled without hdmarker support!\n"); fflush(NULL);
+  abort();
+#endif
   }
-  #endif
-  else
+  else {
+    printf("unknown calibration scheme!\n"); fflush(NULL);
     abort();
+  }
   
   s->setAttribute(map_root / "img_points", ipoints_m);
   s->setAttribute(map_root / "world_points", wpoints_m);
