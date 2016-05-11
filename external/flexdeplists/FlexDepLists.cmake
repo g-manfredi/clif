@@ -248,8 +248,8 @@ macro(dep_lists_pkg_search)
     
   dep_lists_clean_list(${_FDP_PNU}_MISSING_REQUIRED)
   
-  foreach(VAR ${${_FDP_PREFIX}_EXPORT_VARS})
-    list(APPEND ${_FDP_PREFIX}_EXPORT_VARS_VALUES "VAR" "${VAR}")
+  foreach(VAR ${${_FDP_PNU}_EXPORT_VARS})
+    list(APPEND ${_FDP_PNU}_EXPORT_VARS_VALUES "${VAR}" "${${VAR}}")
   endforeach()
     
   if (${_FDP_PNU}_MISSING_OPTIONAL)
