@@ -24,7 +24,8 @@ namespace {
   hid_t _fapl_create()
   {
     hid_t fapl = H5Pcreate(H5P_FILE_ACCESS);
-    H5Pset_libver_bounds(fapl, H5F_LIBVER_18, H5F_LIBVER_18);
+    //should be H5Pset_libver_bounds(fapl, H5F_LIBVER_18, H5F_LIBVER_LATEST); but it seems H5F_LIBVER_18 is gone with 1.10!
+    H5Pset_libver_bounds(fapl, H5F_LIBVER_LATEST, H5F_LIBVER_LATEST);
     
     return fapl;
   }
