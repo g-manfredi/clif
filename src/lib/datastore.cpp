@@ -88,17 +88,18 @@ time_t Datastore::mtime()
 }
 
 //FIXME add file timestamp!
-static cpath _cache_filename(Datastore *store, int idx, int flags, float scale, float depth)
+static cpath _cache_filename(Datastore *store, Idx idx, int flags, float scale, float depth)
 {
   cpath name;
   std::ostringstream longkey_stream;
   std::ostringstream shortkey_stream;
   std::string shortkey, longkey;
   
+  idx.names({});
   shortkey_stream << "_" << idx << "_" << flags << " " << scale << depth << store->mtime();
   shortkey = shortkey_stream.str();
   
-  name = "clif/004/cached_imgs";
+  name = "clif/005/cached_imgs";
   std::hash<std::string> hasher;
   std::string dset_path = store->dataset()->path().generic_string() + "|" + store->io_path().string();
   longkey_stream << hasher(dset_path) << "_" << hasher(store->path().generic_string()) << "_" << hasher(shortkey);
@@ -970,7 +971,7 @@ void Datastore::readImage(const Idx& idx, cv::Mat *img, const ProcData &proc)
     
     if (((act_proc.flags() & NO_DISK_CACHE) == 0) && _get_cache_path(cache_file)) {
       use_disk_cache = true;
-      cache_file /= _cache_filename(this, idx[3], act_proc.flags(), act_proc.scale(), depth);
+      cache_file /= _cache_filename(this, idx, act_proc.flags(), act_proc.scale(), depth);
       
       Idx _fixme_storage_size(3);
       BaseType _fixme_storage_type = act_proc.type();

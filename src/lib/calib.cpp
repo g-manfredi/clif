@@ -142,7 +142,7 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
     for(;pos<map_size;pos.step(1, map_size)) {
       cout << "processing: " << pos << " of " << map_size << "\n";
       std::vector<int> idx(imgs->dims());
-      for(int i=3;i<idx.size();i++)
+      for(int i=2;i<idx.size();i++)
         idx[i] = pos[i-2];
     
       std::vector<Corner> corners_rough;
@@ -232,12 +232,17 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
         //grayscale rough detection
         //FIXME move this up - mmapped reallocation not possible...
         cv::Mat img;
+        std::cout << "readimage: " << idx << "\n";
         imgs->readImage(idx, &img, readflags);
         cv::Mat gray = clifMat_channel(img, 0);
         Marker::detect(gray, corners_rough);
         
         cv::Mat img_color;
         imgs->readImage(idx, &img_color, CVT_8U);
+        
+        char buf[128];
+        sprintf(buf, "read_%02d_%02d_%02d.tif", idx[2], idx[3], idx[4]);
+        cv::imwrite(buf, gray);
         
         
         for(int c=0;c<channels;c++) {
@@ -250,6 +255,7 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
           
           unit_size_res = unit_size;
           hdmarker_detect_subpattern(ch, corners_rough, corners, recursion_depth, &unit_size_res, debug_img_ptr, NULL, 0, limit);
+          //corners = corners_rough;
           
           printf("found %6lu corners for channel %d\n", corners.size(), c);
           
@@ -267,6 +273,9 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
             wpoints_v[ci] = Point2f(w_2d.x, w_2d.y);
           }
           
+          std::cout << idx << "\n";
+          printf("%fx%f -> %fx%f\n", ipoints_v[10].x, ipoints_v[10].y, wpoints_v[10].x, wpoints_v[10].y);
+          fflush(NULL);
           wpoints_m(pos) = wpoints_v;
           ipoints_m(pos) = ipoints_v;
           s->flush();
@@ -283,6 +292,7 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
       }
       
       if (debug_store) {
+        printf("dadd debuzg img\n"); fflush(NULL);
         debug_store->appendImage(&debug_img);
         s->flush();
         
@@ -410,18 +420,19 @@ bool ucalib_calibrate(Dataset *set, cpath proxy, cpath calib)
     Mat_<double> lines;
     Mat_<double> extrinsics;
     Mat_<double> extrinsics_rel;
+    Mat_<double> proj;
     
     //FIXME hack!
-    /*std::cout << proxy_m << "\n";
+    std::cout << proxy_m << "\n";
     for(auto pos : Idx_It_Dims(proxy_m, 0,-1)) {
       if (!isnan(proxy_m(pos))) {
         if (pos["cams"] == 0 && pos["views"] == 0)
           printf("%dx%d %d: %f -> %f\n",pos["x"],pos["y"],pos["point"],proxy_m(pos),proxy_m(pos)*5);
         proxy_m(pos) *= 10;
       }
-    }*/
+    }
     
-    double rms = fit_cams_lines_multi(proxy_m, cv::Point2i(im_size[0],im_size[1]), lines, extrinsics, extrinsics_rel);
+    double rms = fit_cams_lines_multi(proxy_m, cv::Point2i(im_size[0],im_size[1]), lines, extrinsics, extrinsics_rel, proj);
     
     Datastore *line_store = set->addStore(calib_root/"lines");
     line_store->write(lines);
@@ -516,6 +527,11 @@ bool generate_proxy_loess(Dataset *set, int proxy_w, int proxy_h , cpath map, cp
       Mat proxy_bound = proxy_m;
       for(int i=proxy_m.size()-1;i>=3;i--)
         proxy_bound = proxy_bound.bind(i, map_pos[i-3]);
+       
+      std::cout << map_pos << "\n";
+      printf("%fx%f -> %fx%f\n", ipoints[100].x, ipoints[100].y, wpoints[100].x, wpoints[100].y);
+      fflush(NULL);
+        
       proxy_backwards_poly_generate(proxy_bound, ipoints, wpoints, Point2i(im_size[0], im_size[1]));
     }
   }
