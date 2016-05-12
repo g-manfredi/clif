@@ -450,7 +450,7 @@ bool ucalib_calibrate(Dataset *set, cpath proxy, cpath calib)
     
     cv::Point3f step(extrinsics_rel(3,0,extrinsics_rel["cams"]-1),extrinsics_rel(4,0,extrinsics_rel["cams"]-1),extrinsics_rel(5,0,extrinsics_rel["cams"]-1));
     std::cout << step << "\n";
-    std::vector<double> step_vec = {norm(step)/extrinsics_rel["cams"],0,0};
+    std::vector<double> step_vec = {norm(step)/(extrinsics_rel["cams"]-1),0,0};
     set->setAttribute(extr_root/"line_step", step_vec);
     printf("baseline: %f\n", step_vec[0]);
     set->setAttribute(extr_root/"type", "LINE");
