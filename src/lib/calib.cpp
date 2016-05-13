@@ -232,18 +232,12 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
         //grayscale rough detection
         //FIXME move this up - mmapped reallocation not possible...
         cv::Mat img;
-        std::cout << "readimage: " << idx << "\n";
         imgs->readImage(idx, &img, readflags);
         cv::Mat gray = clifMat_channel(img, 0);
         Marker::detect(gray, corners_rough);
         
         cv::Mat img_color;
         imgs->readImage(idx, &img_color, CVT_8U);
-        
-        char buf[128];
-        sprintf(buf, "read_%02d_%02d_%02d.tif", idx[2], idx[3], idx[4]);
-        cv::imwrite(buf, gray);
-        
         
         for(int c=0;c<channels;c++) {
           if (debug_store)
@@ -255,13 +249,8 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
           
           unit_size_res = unit_size;
           hdmarker_detect_subpattern(ch, corners_rough, corners, recursion_depth, &unit_size_res, debug_img_ptr, NULL, 0, limit);
-          //corners = corners_rough;
           
           printf("found %6lu corners for channel %d\n", corners.size(), c);
-          
-          //char buf[128];
-          //sprintf(buf, "debug_img%03d_ch%d.tif", j, c);
-          //imwrite(buf, *debug_img_ptr);
           
           std::vector<Point2f> ipoints_v(corners.size());
           std::vector<Point2f> wpoints_v(corners.size());
@@ -273,9 +262,6 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
             wpoints_v[ci] = Point2f(w_2d.x, w_2d.y);
           }
           
-          std::cout << idx << "\n";
-          printf("%fx%f -> %fx%f\n", ipoints_v[10].x, ipoints_v[10].y, wpoints_v[10].x, wpoints_v[10].y);
-          fflush(NULL);
           wpoints_m(pos) = wpoints_v;
           ipoints_m(pos) = ipoints_v;
           s->flush();
@@ -292,15 +278,8 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
       }
       
       if (debug_store) {
-        printf("dadd debuzg img\n"); fflush(NULL);
         debug_store->appendImage(&debug_img);
         s->flush();
-        
-        printf("wrote debug store image?\n"); fflush(NULL);
-        
-        //char buf[128];
-        //sprintf(buf, "col_fit_img%03d.tif", j);
-        //imwrite(buf, debug_img);
       }
     }
 #else
@@ -528,10 +507,6 @@ bool generate_proxy_loess(Dataset *set, int proxy_w, int proxy_h , cpath map, cp
       for(int i=proxy_m.size()-1;i>=3;i--)
         proxy_bound = proxy_bound.bind(i, map_pos[i-3]);
        
-      std::cout << map_pos << "\n";
-      printf("%fx%f -> %fx%f\n", ipoints[100].x, ipoints[100].y, wpoints[100].x, wpoints[100].y);
-      fflush(NULL);
-        
       proxy_backwards_poly_generate(proxy_bound, ipoints, wpoints, Point2i(im_size[0], im_size[1]));
     }
   }
