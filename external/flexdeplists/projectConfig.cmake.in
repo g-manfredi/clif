@@ -176,9 +176,10 @@ else()
   set(@PNU@_FOUND FALSE)
   set(@PROJECT_NAME@_FOUND FALSE)
   
-  message(WARNING "@PNU@ missing dependencies")
+  message("@PNU@ missing dependencies")
   foreach(L ${@PNU@_MISSING})
     message("   ${L}")
   endforeach()
+  message(FATAL_ERROR "@PROJECT_NAME@Config.cmake missing required dependencies - your system may have changed since creating this config, either provide the missing dependencies or remove this project from your dependecy search!")
 endif()
 
