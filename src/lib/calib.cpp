@@ -142,7 +142,7 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
     for(;pos<map_size;pos.step(1, map_size)) {
       cout << "processing: " << pos << " of " << map_size << "\n";
       std::vector<int> idx(imgs->dims());
-      for(int i=3;i<idx.size();i++)
+      for(int i=2;i<idx.size();i++)
         idx[i] = pos[i-2];
     
       std::vector<Corner> corners_rough;
@@ -239,7 +239,6 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
         cv::Mat img_color;
         imgs->readImage(idx, &img_color, CVT_8U);
         
-        
         for(int c=0;c<channels;c++) {
           if (debug_store)
             debug_img_ptr = &debug_imgs[c];
@@ -252,10 +251,6 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
           hdmarker_detect_subpattern(ch, corners_rough, corners, recursion_depth, &unit_size_res, debug_img_ptr, NULL, 0, limit);
           
           printf("found %6lu corners for channel %d\n", corners.size(), c);
-          
-          //char buf[128];
-          //sprintf(buf, "debug_img%03d_ch%d.tif", j, c);
-          //imwrite(buf, *debug_img_ptr);
           
           std::vector<Point2f> ipoints_v(corners.size());
           std::vector<Point2f> wpoints_v(corners.size());
@@ -285,12 +280,6 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
       if (debug_store) {
         debug_store->appendImage(&debug_img);
         s->flush();
-        
-        printf("wrote debug store image?\n"); fflush(NULL);
-        
-        //char buf[128];
-        //sprintf(buf, "col_fit_img%03d.tif", j);
-        //imwrite(buf, debug_img);
       }
     }
 #else
@@ -410,18 +399,19 @@ bool ucalib_calibrate(Dataset *set, cpath proxy, cpath calib)
     Mat_<double> lines;
     Mat_<double> extrinsics;
     Mat_<double> extrinsics_rel;
+    Mat_<double> proj;
     
     //FIXME hack!
-    /*std::cout << proxy_m << "\n";
+    std::cout << proxy_m << "\n";
     for(auto pos : Idx_It_Dims(proxy_m, 0,-1)) {
       if (!isnan(proxy_m(pos))) {
         if (pos["cams"] == 0 && pos["views"] == 0)
           printf("%dx%d %d: %f -> %f\n",pos["x"],pos["y"],pos["point"],proxy_m(pos),proxy_m(pos)*5);
         proxy_m(pos) *= 10;
       }
-    }*/
+    }
     
-    double rms = fit_cams_lines_multi(proxy_m, cv::Point2i(im_size[0],im_size[1]), lines, extrinsics, extrinsics_rel);
+    double rms = fit_cams_lines_multi(proxy_m, cv::Point2i(im_size[0],im_size[1]), lines, extrinsics, extrinsics_rel, proj);
     
     Datastore *line_store = set->addStore(calib_root/"lines");
     line_store->write(lines);
@@ -439,7 +429,7 @@ bool ucalib_calibrate(Dataset *set, cpath proxy, cpath calib)
     
     cv::Point3f step(extrinsics_rel(3,0,extrinsics_rel["cams"]-1),extrinsics_rel(4,0,extrinsics_rel["cams"]-1),extrinsics_rel(5,0,extrinsics_rel["cams"]-1));
     std::cout << step << "\n";
-    std::vector<double> step_vec = {norm(step)/extrinsics_rel["cams"],0,0};
+    std::vector<double> step_vec = {norm(step)/(extrinsics_rel["cams"]-1),0,0};
     set->setAttribute(extr_root/"line_step", step_vec);
     printf("baseline: %f\n", step_vec[0]);
     set->setAttribute(extr_root/"type", "LINE");
@@ -516,6 +506,7 @@ bool generate_proxy_loess(Dataset *set, int proxy_w, int proxy_h , cpath map, cp
       Mat_<float> proxy_bound = proxy_m;
       for(int i=proxy_m.size()-1;i>=3;i--)
         proxy_bound = proxy_bound.bind(i, map_pos[i-3]);
+       
       proxy_backwards_poly_generate(proxy_bound, ipoints, wpoints, Point2i(im_size[0], im_size[1]));
     }
   }

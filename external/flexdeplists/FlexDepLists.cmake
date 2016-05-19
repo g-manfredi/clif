@@ -409,6 +409,9 @@ macro(dep_lists_prepare_env)
     list(APPEND _FPD_HEADER_DEPLIST ${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX}/${_H})
   endforeach()
   
+  include_directories(${CMAKE_CURRENT_BINARY_DIR}/include/${_FDP_HEADER_PREFIX})
+  include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
+  
   dep_lists_msg_info("add target ${PNL}-header-export (${_FPD_HEADER_DEPLIST})")
   add_custom_target(${PNL}-header-export ALL DEPENDS ${_FPD_HEADER_DEPLIST})
 endmacro(dep_lists_prepare_env)
@@ -562,6 +565,10 @@ function(dep_lists_export_local)
   else()
     set(CMAKECONFIG_INC "include") #in build dir - headers were already copied above
   endif()
+  
+  foreach(LIB ${${_FDP_PNU}_EXPORT_LIBS})
+    add_dependencies(${LIB} ${PNL}-header-export)
+  endforeach()
   
   if (WIN32)
     set(CMAKECONFIG_LIB "")
