@@ -57,7 +57,7 @@ public:
   
   double _f[2];
   double step_length;
-  double focus_point;
+  double focus_point = std::numeric_limits<double>::quiet_NaN();
   
   cpath extrinsics_group();
   //double world_to_camera[6];
