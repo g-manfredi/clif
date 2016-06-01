@@ -540,7 +540,8 @@ int main(const int argc, const char *argv[])
         idx[3] = c;
         in_imgs->readImage(idx, &img);
         clifMat2cv(&img, &img);
-        cvtColor(img, img, COLOR_RGB2BGR);
+        if (img.channels() == 3)
+          cvtColor(img, img, COLOR_RGB2BGR);
         imwrite(buf, img);
       }
       delete in_set;
