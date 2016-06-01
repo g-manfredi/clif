@@ -9,8 +9,8 @@
 
 namespace clif {
   
-ProcData::ProcData(int flags, Datastore *store, double min, double max, double depth, Interpolation interp, float scale, int every)
-: _flags(flags), _min(min), _max(max), _depth(depth), _interpolation(interp), _scale(scale), _every(every)
+ProcData::ProcData(int flags, Datastore *store, double min, double max, double depth, Interpolation interp, float scale, int skip, int custom_epi_height)
+: _flags(flags), _min(min), _max(max), _depth(depth), _interpolation(interp), _scale(scale), _skip(skip), _custom_epi_height(custom_epi_height)
 {  
   if (store)
     set_store(store);
@@ -271,6 +271,8 @@ void proc_image(Mat &in, Mat &out, const ProcData & proc, const Idx & pos)
   double max = proc.max();
   Datastore *store = proc.store();
   double depth = proc.depth();
+
+  double focus_point = proc.focus_point();
     
   flags &= ~NO_MEM_CACHE;
   flags &= ~NO_DISK_CACHE;
@@ -388,6 +390,58 @@ void proc_image(Mat &in, Mat &out, const ProcData & proc, const Idx & pos)
       printf("distortion model not supported\n");
       abort();
       }
+    if (!std::isnan(focus_point) && focus_point != 0) {
+    	std::cout << "focus_point: " << focus_point << std::endl;
+    	//do rectification
+		double step_length = proc.step_length();
+		double fx = proc.f(0);
+		double fy = proc.f(1);
+		int w = proc.w();
+		int h = proc.h();
+    	double cx = w / 2.0;
+    	double cy = h / 2.0;
+    	double k[3][3] = {{fx, 0,  cx},
+    					  {0,  fy, cy},
+    				      {0,  0,   1}};
+    	cv::Mat K = cv::Mat(3, 3, CV_64F, k);
+    	double init_trans;
+    	double translation;
+    	init_trans = (proc.img_count() - 1) * step_length / 2.0;
+    	translation = init_trans - pos[3] * step_length;
+        double alpha = -atan2(translation, focus_point);
+        cv::Mat t = cv::Mat::zeros(3, 1, CV_64F); // translation vector
+		t.at<double>(2, 0) = focus_point;
+		//TODO for now we only support horizontal lines!
+		t.at<double>(0, 0) = translation;
+		// vertical: t.at<double>(1, 0) = translation;
+
+		t = t / t.at<double>(2, 0); // normalize vector
+		// construct translation matrix
+		cv::Mat T = cv::Mat::eye(3, 3, CV_64F);
+		t.copyTo(T.col(2));
+		// Define rotation matrix
+		//TODO for now we only support horizontal lines!
+		double r[3][3] = {{cos(alpha),  0, sin(alpha)},
+						  {0,           1, 0         },
+						  {-sin(alpha), 0, cos(alpha)}};
+		/* vertical:
+		double r[3][3] = {{1, 0,           0         },
+						  {0, cos(alpha),  sin(alpha)},
+						  {0, -sin(alpha), cos(alpha)}};*/
+		cv::Mat R = cv::Mat(3, 3, CV_64F, r);
+		cv::Mat H = cv::Mat(3, 3, CV_64F);
+		H = K * R * T * K.inv(); // compute homography matrix
+		H = H / H.at<double>(2, 2); // normalize matrix
+
+		cv::Size img_size = cv::Size_<int>(w, h);
+		// iterate color channels
+		for(int c=0;c<curr_out[2];c++){
+			cv::Mat out_mat = cvMat(curr_out.bind(2, c));
+			cv::Mat in_mat = out_mat.clone();
+			cv::warpPerspective(in_mat, out_mat, H, img_size,
+					cv::INTER_LINEAR | cv::WARP_INVERSE_MAP);
+		}
+    }
     }
   }
   

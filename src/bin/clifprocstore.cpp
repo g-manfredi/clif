@@ -93,7 +93,7 @@ int main(const int argc, const char *argv[])
   
   ProcData proc;
   proc.set_flags(UNDISTORT);
-  proc.set_scale(0.5);
+//  proc.set_scale(0.5);
   
   Mat m_out;
   in_store->read(m_out, proc);
