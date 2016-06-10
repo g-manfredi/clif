@@ -822,6 +822,23 @@ CLIINI_EXPORT int cliarg_nth_int(cliini_arg *arg, int n)
   return ((int*)arg->vals)[n];
 }
 
+CLIINI_EXPORT int cliarg_int(cliini_arg *arg)
+{
+  return cliarg_nth_int(arg, 0);
+}
+
+CLIINI_EXPORT double cliarg_nth_double(cliini_arg *arg, int n)
+{
+  if (!arg)
+    return 0.0;
+  return ((double*)arg->vals)[n];
+}
+
+CLIINI_EXPORT double cliarg_double(cliini_arg *arg)
+{
+  return cliarg_nth_double(arg, 0);
+}
+
 //static int _max_help_len(cliini_optgroup *group)
 
 static void print_help_opt(cliini_opt *opt)
