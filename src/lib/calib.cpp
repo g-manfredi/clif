@@ -123,16 +123,17 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
     double unit_size; //marker size in mm
     double unit_size_res;
     int recursion_depth;
-    cv::Rect limit;
+    std::vector<cv::Rect> limits;
     
     s->get(img_root / "marker_size", unit_size);
     s->get(img_root / "hdmarker_recursion", recursion_depth);
     
     Attribute *bbox_a = s->get(img_root/"bbox");
     if (bbox_a) {
-      int bbox_vals[4];
-      bbox_a->get(bbox_vals, 4);
-      limit = cv::Rect(bbox_vals[0],bbox_vals[1],bbox_vals[2],bbox_vals[3]);
+      std::vector<int> bbox_vals;
+      bbox_a->get(bbox_vals);
+      for(int i=0;i<bbox_vals.size()-3;i+=4)
+        limits.push_back(cv::Rect(bbox_vals[i+0],bbox_vals[i+1],bbox_vals[i+2],bbox_vals[i+3]));
     }
   
     
@@ -201,12 +202,13 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
             
             unit_size_res = unit_size;
             mask_ptr = &masks[c][0];
-            hdmarker_detect_subpattern(bayer, corners_rough, corners, recursion_depth, &unit_size_res, debug_img_ptr, mask_ptr, 0, limit);
+            hdmarker_detect_subpattern(bayer, corners_rough, corners, recursion_depth, &unit_size_res, debug_img_ptr, mask_ptr, 0, limits);
             
             printf("found %6lu corners for channel %d\n", corners.size(), c);
             
-            //sprintf(buf, "debug_img%03d_ch%d.tif", j, c);
-            //imwrite(buf, *debug_img_ptr);
+            static int dbg_counter = 0;
+            sprintf(buf, "debug_img%03d_ch%d.tif", dbg_counter++, c);
+            imwrite(buf, *debug_img_ptr);
             
             std::vector<Point2f> ipoints_v(corners.size());
             std::vector<Point2f> wpoints_v(corners.size());
@@ -248,7 +250,7 @@ bool pattern_detect(Dataset *s, cpath imgset, cpath calibset, bool write_debug_i
           cv::Mat ch = clifMat_channel(img_color, 0);
           
           unit_size_res = unit_size;
-          hdmarker_detect_subpattern(ch, corners_rough, corners, recursion_depth, &unit_size_res, debug_img_ptr, NULL, 0, limit);
+          hdmarker_detect_subpattern(ch, corners_rough, corners, recursion_depth, &unit_size_res, debug_img_ptr, NULL, 0, limits);
           
           printf("found %6lu corners for channel %d\n", corners.size(), c);
           
