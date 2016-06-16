@@ -37,12 +37,13 @@ endif()
 
 dep_lists_pkg_search()
 
-set(CLIINI_HEADERS cliini.h ${CMAKE_CURRENT_BINARY_DIR}/cliini_config.h)
+set(CLIINI_HEADERS cliini.h cliini.hpp ${CMAKE_CURRENT_BINARY_DIR}/cliini_config.h)
 
 dep_lists_prepare_env()
 
 add_library(cliini cliini.c)
+add_library(cliini-cpp cliini.cpp)
 
-set(CLIINI_EXPORT_LIBS cliini)
+set(CLIINI_EXPORT_LIBS cliini cliini-cpp)
 
 dep_lists_export_local(DIRECT_HEADER_INCLUDE)
