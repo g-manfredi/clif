@@ -225,7 +225,7 @@ static int _cliini_opt_parse(const int argc, const char *argv[], int argpos, cli
   arg->inst_count++;
   if (opt->argcount_min >= 1 || opt->argcount_max == CLIINI_ARGCOUNT_ANY) {   
     for(i=1; i<=opt->argcount_max || opt->argcount_max == CLIINI_ARGCOUNT_ANY;i++) {
-        if (argpos + i >= argc || (opt->argcount_max == CLIINI_ARGCOUNT_ANY && !blind && _isopt(argv[argpos+i]))) {
+        if (argpos + i >= argc || (!blind && _isopt(argv[argpos+i]))) {
           if (i < opt->argcount_min && opt->argcount_min != CLIINI_ARGCOUNT_ANY) {
             printf("ERROR: not enough arguments for option %s (required at least %d, found %d)\n", opt->longflag, opt->argcount_min, i-1);
             errors++;
