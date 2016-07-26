@@ -6,6 +6,7 @@
 #include <string.h>
 #include <cstdint>
 #include <vector>
+#include <assert.h>
 
 #include <opencv2/core/core.hpp>
 
